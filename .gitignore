@@ -8,3 +8,13 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Documentos internos (briefing, referências visuais e protótipo antigo)
+# Não fazem parte do sistema; o produto versionado é a pasta /golden
+/01_REFERENCIA_VISUAL_APROVADA.png
+/02_LOGO_REFERENCIA_ENVIADA.png
+/BRIEFING_PARA_MARCELO.docx
+/LEIA-ME-MARCELO.md
+/index.html
+/script.js
+/style.css
