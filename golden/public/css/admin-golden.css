@@ -1,0 +1,20 @@
+/* Golden admin — ajustes sobre AdminLTE 4 */
+.app-sidebar .nav-link.active{background:linear-gradient(90deg,rgba(201,134,42,.18),transparent);color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+.app-sidebar .nav-link.active .nav-icon{color:var(--gold)}
+.btn-golden{background:linear-gradient(135deg,#e0a33e,#c9862a);color:#241a06;border:0;font-weight:600}
+.btn-golden:hover{color:#241a06;filter:brightness(1.05)}
+.stat-card{border:0;border-radius:16px;overflow:hidden}
+.stat-card .icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:1.3rem}
+.stat-card .value{font-family:"Poppins";font-size:1.9rem;font-weight:800;line-height:1}
+.stat-card .label{color:var(--bs-secondary-color);font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.funnel{display:flex;flex-direction:column;gap:8px}
+.funnel-row{display:flex;align-items:center;gap:12px}
+.funnel-bar{height:34px;border-radius:8px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:700;font-size:.85rem;min-width:44px;transition:width .4s}
+.badge-status{font-weight:600;padding:.4em .7em;border-radius:999px;font-size:.76rem}
+.st-novo{background:#e8f1fb;color:#1c5d99}.st-contatado{background:#fff3e0;color:#a8630f}.st-proposta{background:#ede7f6;color:#5e35b1}.st-vendido{background:#e7f6ef;color:#12694f}.st-perdido{background:#fdecec;color:#9b2c2c}
+.timeline{list-style:none;padding:0;margin:0;position:relative}
+.timeline:before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--bs-border-color)}
+.timeline li{position:relative;padding:0 0 18px 30px}
+.timeline li:before{content:"";position:absolute;left:4px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2px solid var(--bs-body-bg)}
+.table-leads td{vertical-align:middle}
+.filters-card{border-radius:14px}

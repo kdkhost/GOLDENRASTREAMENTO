@@ -1,0 +1,10 @@
+# Clone de referência (repo foc7, não faz parte do produto)
+/foco7_temp/
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+*.swp
+
+# Logs
+*.log
