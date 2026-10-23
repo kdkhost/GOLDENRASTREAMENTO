@@ -113,7 +113,7 @@ seeders de demonstração em produção (`--seed`); eles criam a senha `golden12
 ### Site público (multipágina)
 | Rota | Página |
 |------|--------|
-| `/` | Home (hero, benefícios, plataforma, segmentos, kits, como funciona, depoimentos, FAQ, contato) |
+| `/` | Home (hero, benefícios, plataforma, segmentos, kits, como funciona, depoimentos em carrossel, FAQ) |
 | `/solucoes` | Funcionalidades da plataforma |
 | `/para-quem` | Segmentos atendidos |
 | `/planos` | Kits e perguntas frequentes |
@@ -148,6 +148,14 @@ Aplicativo e Faturamento & Mensalidade — e cada canal já leva a **mensagem pr
 (`wa_url($msg, $numero)`). Canais, textos e número de cada canal são editáveis em
 **Admin → Configurações → Botão do WhatsApp no site**; desligando a caixa, o botão volta a
 ser link direto.
+
+Os **depoimentos** da home são um **carrossel arrastável** no mesmo padrão: **um depoimento
+por vez** em telas menores, dois a partir de 768px, com **segurar-e-arrastar** (dedo no
+celular e mouse no computador), setas, *bullets* clicáveis, teclado (`←`/`→`) e
+auto-rotação de 5,5s que pausa no hover e volta ao início no fim (`rewind`). A biblioteca é
+o **Swiper 11**, servida localmente em `public/vendor/swiper/` e carregada só na home via
+`@push('styles')` / `@push('scripts')`; sem JavaScript o bloco continua legível como lista.
+Com `prefers-reduced-motion: reduce` a auto-rotação desliga e o deslocamento fica instantâneo.
 
 ### CRM (`/admin/clientes`)
 - **Clientes** com dados de empresa (documento, tipo física/jurídica, endereço, cidade/UF,

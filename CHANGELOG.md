@@ -3,6 +3,44 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.4.0] - 2026-10-22
+
+### Adicionado
+- **Depoimentos da home viraram carrossel arrastável** (padrão do sistema de referência):
+  **um depoimento por vez** em telas menores e **dois a partir de 768px**, com
+  **segurar-e-arrastar** — dedo no celular e mouse no computador (`grabCursor` +
+  `simulateTouch`, `threshold: 5`, `touchRatio: 1.2`), setas anterior/próximo, *bullets*
+  clicáveis, teclado `←`/`→` e auto-rotação de 5,5s que pausa no hover (`pauseOnMouseEnter`)
+  e volta ao começo no último card (`rewind`) em vez de parar.
+  - `initDepoimentos()` em `public/js/golden-site.js` monta o carrossel a partir de
+    `.js-depoimentos`, com `slidesPerView`/`spaceBetween` por breakpoint (1/16 → 2/24) e
+    `watchOverflow`, que desliga a navegação quando todos os cards cabem na tela.
+  - Markup em `resources/views/site/home.blade.php`: `.depo > .swiper > .swiper-wrapper >
+    .swiper-slide > .depo-card`, mais a linha de controles `.depo-ctl` (seta, *bullets*,
+    seta) fora da área de arraste.
+  - Estados com `prefers-reduced-motion: reduce`: auto-rotação desligada e deslocamento
+    instantâneo (`speed: 0`), sem quebrar o arraste.
+  - `@stack('styles')` no `<head>` do layout do site, para a home carregar o CSS/JS do
+    carrossel sem empilhar peso nas outras páginas.
+
+### Alterado
+- **Swiper 11.2.10 versionado no repositório** (`public/vendor/swiper/swiper-bundle.min.{css,js}`)
+  em vez de CDN: sem dependência externa em tempo de execução, sem *hash* SRI para manter,
+  e com a mesma versão fixa para dev e produção. Carregado só na home.
+- CSS dos depoimentos em `public/css/golden-site.css`: `.depo` deixou de ser `display:grid`
+  de duas colunas e passou a ser o palco do carrossel — cards em `flex` de altura
+  equivalente (o autor fica ancorado embaixo com `margin-top:auto`), cursor de **mão**
+  (`grab`/`:active` → `grabbing`), `user-select:none` para o arraste não selecionar texto,
+  *bullets* na cor da marca com o ativo alongado (9px → 26px) e transição usando a mesma
+  `cubic-bezier(.22,.61,.36,1)` do menu, da gaveta e da central de WhatsApp.
+- `.depo` saiu das listas de `grid-template-columns` dos breakpoints 960px/600px, e as setas
+  somem abaixo de 700px (ali o gesto é o caminho).
+- Sem JavaScript (ou sem o bundle) o bloco não trava: enquanto o carrossel não inicializa,
+  `.swiper:not(.swiper-initialized)` quebra os cards em lista e nada fica escondido dentro
+  de um `overflow:hidden`.
+- README: a rota `/` passou a descrever "depoimentos em carrossel" e perdeu o "contato" que
+  saiu da home na 2.2.0.
+
 ## [2.3.0] - 2026-10-22
 
 ### Adicionado

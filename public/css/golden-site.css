@@ -139,15 +139,28 @@ section{padding:84px 0}
 .step p{color:var(--slate);font-size:.9rem;margin:0}
 .sec-dark .step p{color:#aeb9c4}
 
-/* Depoimentos */
-.depo{display:grid;grid-template-columns:repeat(2,1fr);gap:26px;margin-top:44px}
-.depo-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px}
+/* Depoimentos — carrossel arrastável */
+.depo{margin-top:44px;--swiper-theme-color:var(--gold);--swiper-wrapper-transition-timing-function:cubic-bezier(.22,.61,.36,1);--swiper-pagination-bullet-inactive-color:#cdd6e0;--swiper-pagination-bullet-inactive-opacity:1}
+.depo .swiper{overflow:hidden}
+.depo .swiper:not(.swiper-initialized) .swiper-wrapper{flex-wrap:wrap;gap:26px}
+.depo .swiper:not(.swiper-initialized) .swiper-slide{flex:1 1 300px}
+.depo .swiper-slide{height:auto;display:flex}
+.depo-card{flex:1;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;cursor:grab;-webkit-user-select:none;user-select:none;transition:border-color .2s ease,box-shadow .3s ease}
+.depo-card:active{cursor:grabbing}
+.depo .swiper.swiper-grabbing .depo-card{cursor:grabbing;border-color:var(--gold-soft);box-shadow:var(--shadow)}
 .stars{color:var(--gold);margin-bottom:12px}
-.depo-card p{color:var(--slate);font-style:italic}
-.depo-who{display:flex;align-items:center;gap:12px;margin-top:14px}
+.depo-card p{color:var(--slate);font-style:italic;margin:0}
+.depo-who{display:flex;align-items:center;gap:12px;margin-top:auto;padding-top:16px}
 .avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal-2));color:#fff;display:grid;place-items:center;font-weight:700}
 .depo-who b{display:block;font-size:.95rem}
 .depo-who small{color:var(--slate)}
+.depo-ctl{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:26px}
+.depo .swiper-pagination{position:static;width:auto;min-height:11px;display:flex;align-items:center;gap:7px}
+.depo .swiper-pagination-bullet{width:9px;height:9px;border-radius:6px;opacity:1;background:#cdd6e0;transition:width .3s cubic-bezier(.22,.61,.36,1),background .3s ease}
+.depo .swiper-pagination-bullet-active{width:26px;background:var(--gold)}
+.depo-nav{flex:none;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#fff;border:1px solid var(--line);color:var(--gold-2);font-size:.9rem;cursor:pointer;box-shadow:0 10px 22px -16px rgba(18,22,26,.5);transition:transform .28s cubic-bezier(.22,.61,.36,1),background .2s ease,color .2s ease,opacity .2s ease}
+.depo-nav:hover{background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;transform:scale(1.08)}
+.depo-nav.swiper-button-disabled{opacity:.32;pointer-events:none;transform:none}
 
 /* FAQ */
 .faq{max-width:820px;margin:40px auto 0}
@@ -266,7 +279,7 @@ body.nav-open .nav-toggle .icon-close{opacity:1;transform:none}
 /* Responsivo */
 @media(max-width:960px){
   .hero-grid,.lead-panel{grid-template-columns:1fr;gap:34px}
-  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.depo{grid-template-columns:repeat(2,1fr)}
+  .grid-3,.kits,.steps,.trust-grid,.seg-grid{grid-template-columns:repeat(2,1fr)}
   .foot-grid{grid-template-columns:1fr 1fr}
   .nav-cta .btn:not(.nav-toggle){display:none}
   .nav-links{display:none}
@@ -342,19 +355,26 @@ body.nav-open .nav-toggle .icon-close{opacity:1;transform:none}
 }
 @media(max-width:600px){
   section{padding:60px 0}
-  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.depo,.row-2{grid-template-columns:1fr}
+  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.row-2{grid-template-columns:1fr}
   .foot-grid{grid-template-columns:1fr}
   .cookie{right:16px}
   .wa-float{width:52px;height:52px;font-size:1.5rem;right:16px;bottom:16px}
   .wa-tip{display:none}
   .wa-popup{right:16px;bottom:80px}
   .wa-body{max-height:min(46vh,360px)}
+  .depo-card{padding:22px}
+}
+@media(max-width:700px){
+  .depo-ctl{margin-top:20px}
+  .depo-nav{display:none}
 }
 
 @media(prefers-reduced-motion:reduce){
+  .depo{--swiper-wrapper-transition-timing-function:linear}
   .wa-float::before{animation:none}
   .nav-drawer,.nav-drawer .nav-item,.nav-drawer .nav-sub,.nav-drawer .nav-caret,.nav-links .nav-sub,.nav-arrow,
   .nav-backdrop,.drawer-head,.drawer-cta,.drawer-foot,.nav-toggle i,.drawer-close,
+  .depo-nav,.depo .swiper-pagination-bullet,
   .wa-float,.wa-popup,.wa-channel,.wa-tip{
     transition-duration:.01ms!important;transition-delay:0s!important}
 }

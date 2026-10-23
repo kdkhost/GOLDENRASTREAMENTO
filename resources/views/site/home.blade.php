@@ -170,22 +170,39 @@
 
 {{-- DEPOIMENTOS --}}
 @if($depoimentos->isNotEmpty())
+@push('styles')
+<link rel="stylesheet" href="{{ asset('vendor/swiper/swiper-bundle.min.css') }}?v={{ filemtime(public_path('vendor/swiper/swiper-bundle.min.css')) }}">
+@endpush
+@push('scripts')
+<script src="{{ asset('vendor/swiper/swiper-bundle.min.js') }}?v={{ filemtime(public_path('vendor/swiper/swiper-bundle.min.js')) }}"></script>
+@endpush
 <section class="sec-light">
     <div class="wrap">
         <span class="eyebrow">Depoimentos</span>
         <h2>Quem confia, recomenda.</h2>
-        <p class="lead-sub">Avaliações reais de clientes Golden Rastreamento.</p>
+        <p class="lead-sub">Avaliações reais de clientes Golden Rastreamento. Segure e arraste para ver mais.</p>
         <div class="depo">
-            @foreach($depoimentos as $d)
-            <div class="depo-card">
-                <div class="stars">{{ str_repeat('★', max(1, min(5, (int) $d->nota))) }}</div>
-                <p>"{{ $d->texto }}"</p>
-                <div class="depo-who">
-                    <div class="avatar">{{ strtoupper(substr($d->nome, 0, 1)) }}</div>
-                    <div><b>{{ $d->nome }}</b>@if($d->papel)<small>{{ $d->papel }}@if($d->cidade) · {{ $d->cidade }}@endif</small>@endif</div>
+            <div class="swiper js-depoimentos">
+                <div class="swiper-wrapper">
+                    @foreach($depoimentos as $d)
+                    <div class="swiper-slide">
+                        <div class="depo-card">
+                            <div class="stars">{{ str_repeat('★', max(1, min(5, (int) $d->nota))) }}</div>
+                            <p>"{{ $d->texto }}"</p>
+                            <div class="depo-who">
+                                <div class="avatar">{{ strtoupper(substr($d->nome, 0, 1)) }}</div>
+                                <div><b>{{ $d->nome }}</b>@if($d->papel)<small>{{ $d->papel }}@if($d->cidade) · {{ $d->cidade }}@endif</small>@endif</div>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
             </div>
-            @endforeach
+            <div class="depo-ctl">
+                <button type="button" class="depo-nav depo-prev" aria-label="Depoimento anterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                <div class="swiper-pagination depo-dots"></div>
+                <button type="button" class="depo-nav depo-next" aria-label="Próximo depoimento"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+            </div>
         </div>
     </div>
 </section>

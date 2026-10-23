@@ -268,6 +268,34 @@
     });
   }
 
+  /* ---------- Depoimentos: carrossel arrastável (1 por vez em telas menores) ---------- */
+  function initDepoimentos() {
+    var swiperEl = document.querySelector('.js-depoimentos');
+    if (!swiperEl || typeof window.Swiper === 'undefined') return;
+    var caixa = swiperEl.closest('.depo');
+    var parado = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    new window.Swiper(swiperEl, {
+      slidesPerView: 1,
+      spaceBetween: 16,
+      grabCursor: true,
+      simulateTouch: true,
+      touchRatio: 1.2,
+      threshold: 5,
+      watchOverflow: true,
+      rewind: true,
+      speed: parado ? 0 : 600,
+      keyboard: { enabled: true, onlyInViewport: true },
+      a11y: { prevSlideMessage: 'Depoimento anterior', nextSlideMessage: 'Próximo depoimento' },
+      autoplay: parado ? false : { delay: 5500, disableOnInteraction: false, pauseOnMouseEnter: true },
+      pagination: { el: caixa.querySelector('.depo-dots'), clickable: true },
+      navigation: { prevEl: caixa.querySelector('.depo-prev'), nextEl: caixa.querySelector('.depo-next') },
+      breakpoints: {
+        768: { slidesPerView: 2, spaceBetween: 24 }
+      }
+    });
+  }
+
   /* ---------- CTAs com rastreamento ---------- */
   function initCtas() {
     document.querySelectorAll('[data-track]').forEach(function (el) {
@@ -278,7 +306,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initCtas();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initCtas();
     track('page_view', { page: location.pathname });
   });
 })();
