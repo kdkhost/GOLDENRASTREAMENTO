@@ -106,10 +106,10 @@ return [
     ],
 
     'passos' => [
-        ['n' => '01', 'icone' => 'fa-cart-shopping', 'titulo' => 'Escolha seu kit', 'texto' => 'Selecione a quantidade de veículos.'],
-        ['n' => '02', 'icone' => 'fa-box-open', 'titulo' => 'Receba o equipamento', 'texto' => 'Rastreadores com chips M2M.'],
-        ['n' => '03', 'icone' => 'fa-wrench', 'titulo' => 'Faça a instalação', 'texto' => 'Com profissional de sua confiança, por sua conta.'],
-        ['n' => '04', 'icone' => 'fa-chart-line', 'titulo' => 'Comece a usar', 'texto' => 'Ative e acompanhe tudo pela plataforma.'],
+        ['icone' => 'fa-cart-shopping', 'titulo' => 'Escolha seu kit', 'texto' => 'Selecione a quantidade de veículos.'],
+        ['icone' => 'fa-box-open', 'titulo' => 'Receba o equipamento', 'texto' => 'Rastreadores com chips M2M.'],
+        ['icone' => 'fa-wrench', 'titulo' => 'Faça a instalação', 'texto' => 'Com profissional de sua confiança, por sua conta.'],
+        ['icone' => 'fa-chart-line', 'titulo' => 'Comece a usar', 'texto' => 'Ative e acompanhe tudo pela plataforma.'],
     ],
 
     // Menu do site (header + gaveta mobile). Itens com 'grupo' recebem filhos

@@ -159,7 +159,6 @@ section{padding:84px 0}
 /* Passos */
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:48px}
 .step{text-align:center;position:relative}
-.step .n{font-family:"Poppins";font-size:.9rem;font-weight:800;color:var(--gold);letter-spacing:.1em}
 .step .ic{width:64px;height:64px;margin:12px auto 16px;border-radius:18px;background:linear-gradient(135deg,rgba(224,163,62,.16),rgba(31,158,134,.14));color:var(--gold-2);display:grid;place-items:center;font-size:1.5rem}
 .sec-dark .step .ic{background:rgba(255,255,255,.06);color:var(--gold)}
 .step h4{margin:0 0 6px;font-size:1.05rem}

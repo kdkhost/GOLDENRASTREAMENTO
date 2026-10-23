@@ -18,7 +18,7 @@
             <p class="lead-sub">Confirme seus dados abaixo. Depois de registrar você recebe o link do pedido por e-mail e pode acompanhar cada etapa.</p>
 
             <fieldset>
-                <legend>1. Quem compra</legend>
+                <legend>Quem compra</legend>
                 <div class="grid-2">
                     <label>Nome completo<input name="nome" required value="{{ old('nome') }}" autocomplete="name">
                         @error('nome')<span class="form-err">{{ $message }}</span>@enderror
@@ -42,7 +42,7 @@
             </fieldset>
 
             <fieldset>
-                <legend>2. Entrega</legend>
+                <legend>Entrega</legend>
                 <div class="radio-row">
                     @foreach($entregas as $valor => $rotulo)
                     <label class="radio card-radio">
@@ -84,7 +84,7 @@
             </fieldset>
 
             <fieldset>
-                <legend>3. Pagamento</legend>
+                <legend>Pagamento</legend>
                 <div class="radio-row">
                     @foreach($pagamentos as $valor => $rotulo)
                     <label class="radio card-radio" data-pag-entrega="{{ $valor === 'retirada' ? 'retira' : 'qualquer' }}">
@@ -100,7 +100,7 @@
             </fieldset>
 
             <fieldset>
-                <legend>4. Observações</legend>
+                <legend>Observações</legend>
                 <label>Alguma informação para a equipe? (modelo do veículo, placa, preferência de instalação)<textarea name="notas" rows="3" placeholder="Ex.: 3 caminhões VW, instalação na matriz">{{ old('notas') }}</textarea></label>
                 @error('notas')<span class="form-err">{{ $message }}</span>@enderror
             </fieldset>

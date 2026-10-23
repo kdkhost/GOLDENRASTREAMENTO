@@ -16,7 +16,6 @@
         <div class="steps" style="margin-top:0">
             @foreach($passos as $p)
             <div class="step">
-                <div class="n">{{ $p['n'] }}</div>
                 <div class="ic"><i class="fa-solid {{ $p['icone'] }}"></i></div>
                 <h4>{{ $p['titulo'] }}</h4>
                 <p>{{ $p['texto'] }}</p>

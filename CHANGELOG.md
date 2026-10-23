@@ -3,6 +3,16 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.8.1] - 2026-10-23
+
+### Removido
+- **Numeração de passos** — o pedido explícito é não exibir isso em lugar nenhum do sistema.
+  - `/como-funciona`: o contador dourado `01 / 02 / 03 / 04` acima de cada ícone saiu da view,
+    as chaves `'n'` saíram de `config('golden.passos')` e a regra `.step .n` saiu do CSS. O
+    passo continua com ícone, título e texto.
+  - Checkout da loja: os `legend` eram `1. Quem compra`, `2. Entrega`, `3. Pagamento`,
+    `4. Observações`; agora são só os nomes, sem o número na frente.
+
 ## [2.8.0] - 2026-10-23
 
 ### Adicionado
