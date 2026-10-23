@@ -242,9 +242,9 @@ fi
 passo "Gerando o arquivo .env"
 [ -f .env.example ] || erro "Falta .env.example no repositório."
 if [ -f .env ]; then
-  BACKUP=".env.bak-$(date +%Y%m%d-%H%M%S)"
-  cp .env "$BACKUP"
-  aviso "O .env anterior foi preservado em $BACKUP"
+  ARQUIVO_ENV_ANTERIOR=".env.bak-$(date +%Y%m%d-%H%M%S)"
+  cp .env "$ARQUIVO_ENV_ANTERIOR"
+  aviso "O .env anterior foi preservado em $ARQUIVO_ENV_ANTERIOR"
 fi
 cp .env.example .env
 

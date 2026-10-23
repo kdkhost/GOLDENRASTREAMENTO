@@ -272,4 +272,21 @@ class FluxoDaLojaTest extends TestCase
         $this->assertSame($cliente->id, (int) $this->ultimoPedido()->customer_id);
         $this->assertSame(1, Customer::where('documento', '12345678901')->count());
     }
+
+    public function test_todo_status_do_pedido_sobrevive_ida_e_volta_no_banco(): void
+    {
+        // 'aguardando_pagamento' tem 20 caracteres e o MySQL truncava em 16: o
+        // pedido morria no meio do fluxo. O SQLite aceita qualquer tamanho, então
+        // é no banco real (MySQL em produção) que este teste vira barreira.
+        $pedido = Order::firstOrFail();
+
+        foreach (array_keys(Order::STATUS) as $status) {
+            $pedido->update(['status' => $status]);
+            OrderHistory::create(['order_id' => $pedido->id, 'status' => $status]);
+
+            $this->assertSame($status, $pedido->refresh()->status);
+            $this->assertSame($status, OrderHistory::latest('id')->firstOrFail()->status);
+            $this->assertNotSame('', $pedido->statusLabel());
+        }
+    }
 }
