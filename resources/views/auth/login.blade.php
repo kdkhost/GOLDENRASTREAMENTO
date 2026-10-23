@@ -64,7 +64,9 @@
             <button type="submit"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>
         </form>
 
+        @if (app()->environment('local'))
         <div class="demo"><strong>Ambiente de demonstração</strong><br>admin@golden.com.br · senha: golden123</div>
+        @endif
         <div class="back"><a href="{{ route('site.home') }}">← Voltar ao site</a></div>
     </div>
 </body>

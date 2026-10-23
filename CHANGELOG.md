@@ -3,6 +3,16 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.12.1] - 2026-10-23
+
+### Corrigido
+- **A tela de login não entrega mais a credencial de demonstração em produção** — o aviso
+  "Ambiente de demonstração / admin@golden.com.br · senha: golden123" era impresso para
+  qualquer visitante do `https://dominio/login`, mesmo no servidor de produção, onde o
+  instalador já trocou a senha por uma forte. Além de entregar o e-mail do administrador,
+  o texto dava a entender que a senha padrão ainda vale. Agora ele só aparece com
+  `APP_ENV=local`, que é quando o seed de demonstração está de fato em uso.
+
 ## [2.12.0] - 2026-10-23
 
 ### Corrigido
