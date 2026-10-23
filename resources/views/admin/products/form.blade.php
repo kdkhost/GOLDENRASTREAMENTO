@@ -9,7 +9,7 @@
 @endsection
 
 @section('content')
-<form method="POST" enctype="multipart/form-data" action="{{ $editando ? route('admin.catalogo.produtos.update',$produto) : route('admin.catalogo.produtos.store') }}">
+<form method="POST" action="{{ $editando ? route('admin.catalogo.produtos.update',$produto) : route('admin.catalogo.produtos.store') }}">
     @csrf
     <div class="row g-3">
         <div class="col-lg-8">
@@ -41,9 +41,19 @@
                     @foreach($categorias as $c)<option value="{{ $c->id }}" @selected(old('category_id', $produto->category_id)==$c->id)>{{ $c->nome }}</option>@endforeach
                 </select>
 
-                <div class="mt-3"><label class="form-label small">Imagem</label>
-                    @if($produto->imagem)<div class="mb-1"><img src="{{ asset('storage/'.$produto->imagem) }}" class="img-fluid rounded" style="max-height:120px"></div>@endif
-                    <input type="file" name="imagem" accept="image/*" class="form-control form-control-sm">
+                @include('partials.upload', [
+                    'campo' => 'produto_imagem',
+                    'name' => 'imagem',
+                    'valor' => old('imagem', $produto->imagem),
+                ])
+
+                <div class="mt-3">
+                @include('partials.upload', [
+                    'campo' => 'produto_video',
+                    'name' => 'video',
+                    'valor' => old('video', $produto->video),
+                    'dica' => 'Opcional. Aparece no vídeo da página do produto na loja.',
+                ])
                 </div>
 
                 <div class="row g-2 mt-3">

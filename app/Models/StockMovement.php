@@ -21,15 +21,22 @@ class StockMovement extends Model
         return $this->belongsTo(User::class);
     }
 
-    public static function registrar(Product $produto, string $tipo, int $quantidade, ?string $motivo = null, ?int $userId = null, ?int $orderId = null): self
+    /**
+     * Registra a movimentação e devolve o produto com o novo saldo.
+     * $saldoAnterior é para o ajuste vindo do cadastro, em que o produto já carrega o
+     * estoque novo: sem ele a diferença sairia errada (e copiar o modelo antigo, id a menos).
+     */
+    public static function registrar(Product $produto, string $tipo, int $quantidade, ?string $motivo = null, ?int $userId = null, ?int $orderId = null, ?int $saldoAnterior = null): self
     {
+        $antes = $saldoAnterior ?? $produto->estoque;
+
         $delta = match ($tipo) {
             'entrada' => abs($quantidade),
             'saida' => -abs($quantidade),
-            default => $quantidade - $produto->estoque, // ajuste
+            default => $quantidade - $antes, // ajuste: a diferença entre o novo e o que estava
         };
 
-        $produto->estoque = max(0, $produto->estoque + $delta);
+        $produto->estoque = max(0, $antes + $delta);
         $produto->save();
         $produto->refresh();
 

@@ -42,7 +42,7 @@ class Order extends Model
         'numero', 'customer_id', 'lead_id', 'user_id', 'nome', 'email', 'telefone',
         'tipo_pessoa', 'documento', 'entrega', 'endereco', 'bairro', 'complemento',
         'cidade', 'uf', 'cep', 'subtotal_cents', 'frete_cents', 'desconto_cents',
-        'total_cents', 'pagamento', 'status', 'notas', 'consent_given', 'ip_hash',
+        'total_cents', 'pagamento', 'status', 'notas', 'consent_given', 'documentos', 'ip_hash',
         'visitor_id', 'pago_em', 'enviado_em',
     ];
 
@@ -52,6 +52,7 @@ class Order extends Model
         'desconto_cents' => 'integer',
         'total_cents' => 'integer',
         'consent_given' => 'boolean',
+        'documentos' => 'array',
         'pago_em' => 'datetime',
         'enviado_em' => 'datetime',
     ];

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TestimonialController;
+use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Site\LeadController as SiteLeadController;
@@ -93,6 +94,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::get('/', fn () => redirect()->route('admin.dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Envios dos campos de arrastar-e-soltar (imagem, vídeo, documento) do painel.
+    Route::post('/uploads', [UploadController::class, 'store'])->middleware('throttle:40,1')->name('uploads.store');
+    Route::delete('/uploads', [UploadController::class, 'destroy'])->middleware('throttle:40,1')->name('uploads.destroy');
+
     // Comercial: Leads (admin + vendedor)
     Route::prefix('leads')->name('leads.')->middleware('role:admin,vendedor')->group(function () {
         Route::get('/', [AdminLeadController::class, 'index'])->name('index');
@@ -152,6 +157,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{pedido}', [OrderController::class, 'show'])->name('show');
         Route::post('/{pedido}/status', [OrderController::class, 'atualizarStatus'])->name('status');
+        Route::post('/{pedido}/documentos', [OrderController::class, 'documentos'])->name('documentos');
         Route::delete('/{pedido}', [OrderController::class, 'destroy'])->name('destroy')->middleware('role:admin');
     });
 

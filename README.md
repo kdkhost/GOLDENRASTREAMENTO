@@ -211,7 +211,7 @@ Com `prefers-reduced-motion: reduce` a auto-rotação desliga e o deslocamento f
 - Listagem com busca, filtro por status, contagem de pedidos e interações.
 
 ### ERP (`/admin/produtos`, `/admin/pedidos`)
-- **Catálogo**: categorias, produtos (preço, preço promocional, mensalidade, imagem,
+- **Catálogo**: categorias, produtos (preço, preço promocional, mensalidade, imagem, **vídeo**,
   destaque, ativo) e **fornecedores**.
 - **Estoque real**: cada produto tem `estoque` e `estoque_minimo`; todo movimento é
   registrado no razão `stock_movements` (entrada / saída / ajuste) com saldo resultante,
@@ -222,7 +222,8 @@ Com `prefers-reduced-motion: reduce` a auto-rotação desliga e o deslocamento f
   (`entrega` / `retira`); funil `pendente → aguardando pagamento → pago → em separação →
   enviado → entregue` (ou `cancelado`), com datas automáticas de `pago_em` / `enviado_em`.
   Cada transição grava um marco em `order_histories` (status, recado, autor), que vira a
-  linha do tempo do cliente e o histórico do painel.
+  linha do tempo do cliente e o histórico do painel. Comprovantes e notas do pedido entram
+  pelo campo de documentos (até 12 arquivos por pedido).
 - **Faturamento** da loja no dashboard e alerta de **estoque baixo**.
 
 ### CMS (`/admin/paginas`)
@@ -269,6 +270,34 @@ gestão no painel**, com e-mail de confirmação nas duas pontas.
 - **Gestão no painel** (`/admin/pedidos`): mudar status, forma de pagamento e notas, com um
   "recado para a linha do tempo" opcional que aparece para o cliente; link público do pedido
   pronto para copiar e atalho para criar o cliente no CRM.
+
+### Campos de envio (imagens, vídeos, documentos)
+Todo campo de arquivo do painel é o mesmo componente de **arrastar-e-soltar**: soltar o
+arquivo dentro do campo, ver o preview ali mesmo, acompanhar o progresso real do envio com o
+tempo decorrido, e ler **dentro do campo** a regra que ele aceita — formatos, tamanho máximo e
+a dimensão ideal.
+
+- `config/envios.php` é a **regra única**: por campo (`produto_imagem`, `produto_video`,
+  `pedido_documento`) ficam o tipo, a pasta de destino, os formatos, o limite em MB e a
+  dimensão/proporção ideais. A linha que o operador lê e o que o servidor valida saem da
+  mesma fonte — não há segunda cópia escrita à mão para desandear.
+- **Um endpoint para tudo** (`POST` / `DELETE` `/admin/uploads`, `throttle:40,1`): o navegador
+  manda o arquivo e a **chave** do campo; a pasta nunca vem do pedido, então não existe como
+  escolher onde o sistema escreve. A resposta é JSON porque o progresso, o tempo e as dimensões
+  do arquivo só existem numa troca assíncrona.
+- **Caminho é texto no formulário, e texto não é confiável**: ao salvar, o valor precisa começar
+  na pasta daquele campo, não pode ter travessia e o arquivo tem que estar no disco público
+  (`Envio::caminhoConfere`). Documento de pedido apontando para a pasta de imagem é recusado.
+- **A extensão gravada vem do conteúdo**, nunca do nome enviado, e precisa estar entre os
+  formatos do campo — um script PHP chamado `foto.jpg` é recusado em vez de virar `.php`
+  executável dentro de `public/storage`.
+- **Nome legível em disco**: `rastreador-j16-original-H4k2p9Qz.png`. O caminho é o que aparece
+  no pedido meses depois; hash puro não diz o que é o arquivo.
+- Remover um arquivo recém-enviado apaga na hora; trocar a imagem de um produto que já está no
+  ar só apaga a antiga quando o formulário é salvo — cancelar a edição não quebra a vitrine.
+- Onde está: imagem e **vídeo** do produto (`/admin/catalogo/produtos`, vídeo também toca na
+  página da loja) e **documentos** do pedido (comprovantes/notas, até 12 por pedido, em cartão
+  próprio na ficha do pedido).
 
 ### Painel administrativo de leads (`/admin`) — prioridade do briefing
 - **Dashboard**: KPIs (total, novos, taxa de conversão, receita fechada), funil visual,
@@ -327,18 +356,22 @@ app/
   Mail/    PedidoRecebido, PedidoNovoEquipe
   Services/LeadService.php               # atribuição + criação + funil
   Support/Carrinho.php                   # sacola em sessão, sobre o catálogo em cache
+  Support/Envio.php                      # regras e gravação dos campos de arrastar-e-soltar
   Support/helpers.php                    # brl(), loja_ativa(), slugify_pt()
 config/golden.php                        # conteúdo do site + contatos reais
+config/envios.php                        # formatos, limite, pasta e dimensão de cada campo de envio
 database/migrations/                     # leads/campanhas + CRM + ERP + CMS
 database/seeders/                        # Database, Catalog, Cms, Crm, Orders
 resources/views/{layouts,site,site/store,mail,auth,admin}
-public/{css,js,img}                      # tema do site e do painel
+public/{css,js,img}                      # tema do site e do painel; golden-upload.* e golden-to-top.*
 tests/Feature/FluxoDaLojaTest.php        # vitrine -> sacola -> checkout -> pedido -> painel
+tests/Feature/CamposDeEnvioTest.php      # regras de upload, preview gravado, caminhos forjados
 tests/Feature/LevezaDasPaginasTest.php   # zero consultas com cache quente
 tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas as telas
+tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (58 testes).
+`php artisan test` roda tudo contra SQLite em memória (84 testes).
 
 ## 6. Pendências para produção (do briefing)
 

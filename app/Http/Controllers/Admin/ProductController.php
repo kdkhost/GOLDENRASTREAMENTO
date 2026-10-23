@@ -7,13 +7,17 @@ use App\Models\Activity;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    /** Campos de mídia do produto → chave das regras em config/envios.php. */
+    private const MIDIAS = ['imagem' => 'produto_imagem', 'video' => 'produto_video'];
+
     public function index(Request $request): View
     {
         $produtos = Product::with('category')
@@ -41,9 +45,6 @@ class ProductController extends Controller
     {
         $data = $this->validateProduct($request);
         $data['slug'] = slugify_pt($data['nome']);
-        if ($request->hasFile('imagem')) {
-            $data['imagem'] = $request->file('imagem')->store('produtos', 'public');
-        }
 
         $produto = Product::create($data);
 
@@ -53,7 +54,7 @@ class ProductController extends Controller
 
         Activity::log('produto_criado', "Produto {$produto->nome} criado.", $produto);
 
-        return redirect()->route('admin.produtos.index')->with('success', 'Produto criado.');
+        return redirect()->route('admin.catalogo.produtos.index')->with('success', 'Produto criado.');
     }
 
     public function edit(Product $produto): View
@@ -68,37 +69,32 @@ class ProductController extends Controller
     {
         $estoqueAnterior = $produto->estoque;
         $data = $this->validateProduct($request);
-        if ($request->hasFile('imagem')) {
-            if ($produto->imagem) {
-                Storage::disk('public')->delete($produto->imagem);
-            }
-            $data['imagem'] = $request->file('imagem')->store('produtos', 'public');
-        }
-
+        $this->descartarSubstituidos($produto, $data);
         $produto->update($data);
 
         if ($produto->controle_estoque && $produto->estoque !== $estoqueAnterior) {
             StockMovement::registrar(
-                $produto->setRawAttributes(['estoque' => $estoqueAnterior], true),
+                $produto,
                 'ajuste',
                 $produto->estoque,
                 'Ajuste manual pelo painel',
-                $request->user()->id
+                $request->user()->id,
+                null,
+                $estoqueAnterior
             );
             $produto->refresh();
         }
 
         Activity::log('produto_atualizado', "Produto {$produto->nome} atualizado.", $produto);
 
-        return redirect()->route('admin.produtos.index')->with('success', 'Produto atualizado.');
+        return redirect()->route('admin.catalogo.produtos.index')->with('success', 'Produto atualizado.');
     }
 
     public function destroy(Product $produto): RedirectResponse
     {
         $nome = $produto->nome;
-        if ($produto->imagem) {
-            Storage::disk('public')->delete($produto->imagem);
-        }
+        Envio::remover($produto->imagem, 'produto_imagem');
+        Envio::remover($produto->video, 'produto_video');
         $produto->delete();
         Activity::log('produto_excluido', "Produto {$nome} excluído.");
 
@@ -136,8 +132,22 @@ class ProductController extends Controller
             'destaque' => ['nullable', 'boolean'],
             'ativo' => ['nullable', 'boolean'],
             'controle_estoque' => ['nullable', 'boolean'],
-            'imagem' => ['nullable', 'image', 'max:4096'],
+            'imagem' => ['nullable', 'string', 'max:255'],
+            'video' => ['nullable', 'string', 'max:255'],
         ]);
+
+        // Só se aceita arquivo que esteja de fato na pasta do campo (caminho vem do dropzone).
+        foreach (self::MIDIAS as $campo => $envio) {
+            $caminho = $data[$campo] ?? null;
+
+            if ($caminho !== null && ! Envio::caminhoConfere($caminho, $envio)) {
+                throw ValidationException::withMessages([
+                    $campo => 'Este arquivo não foi carregado por aqui. Solte-o no campo de novo.',
+                ]);
+            }
+
+            $data[$campo] = $caminho;
+        }
 
         return [
             'nome' => $data['nome'],
@@ -151,10 +161,24 @@ class ProductController extends Controller
             'estoque' => $data['estoque'] ?? 0,
             'estoque_minimo' => $data['estoque_minimo'] ?? 0,
             'ordem' => $data['ordem'] ?? 0,
+            'imagem' => $data['imagem'],
+            'video' => $data['video'],
             'destaque' => $request->boolean('destaque'),
             'ativo' => $request->boolean('ativo', true),
             'controle_estoque' => $request->boolean('controle_estoque', true),
         ];
+    }
+
+    /** Tira do disco o arquivo que o operador acabou de substituir ou remover. */
+    private function descartarSubstituidos(Product $produto, array $data): void
+    {
+        foreach (self::MIDIAS as $campo => $envio) {
+            $anterior = $produto->{$campo};
+
+            if ($anterior && $anterior !== $data[$campo]) {
+                Envio::remover($anterior, $envio);
+            }
+        }
     }
 
     private function paraCentavos($valor): int

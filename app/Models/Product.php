@@ -17,7 +17,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'nome', 'slug', 'sku', 'resumo', 'descricao',
         'preco_cents', 'preco_promocional_cents', 'mensalidade_cents',
-        'estoque', 'estoque_minimo', 'imagem', 'destaque', 'ativo', 'controle_estoque', 'ordem',
+        'estoque', 'estoque_minimo', 'imagem', 'video', 'destaque', 'ativo', 'controle_estoque', 'ordem',
     ];
 
     protected $casts = [
@@ -108,6 +108,7 @@ class Product extends Model
                     'promocao' => $p->temPromocao(),
                     'mensalidade' => $p->mensalidade_cents,
                     'imagem' => $p->imagem,
+                    'video' => $p->video,
                     'destaque' => (bool) $p->destaque,
                     'estoque' => (int) $p->estoque,
                     'controle_estoque' => (bool) $p->controle_estoque,

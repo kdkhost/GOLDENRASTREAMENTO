@@ -28,7 +28,7 @@ class PageController extends Controller
         $p = Page::create($data);
         Activity::log('pagina_criada', "Página {$p->titulo} criada.", $p);
 
-        return redirect()->route('admin.paginas.index')->with('success', 'Página criada.');
+        return redirect()->route('admin.conteudo.paginas.index')->with('success', 'Página criada.');
     }
 
     public function edit(Page $pagina): View
@@ -43,7 +43,7 @@ class PageController extends Controller
         $pagina->update($data);
         Activity::log('pagina_atualizada', "Página {$pagina->titulo} atualizada.", $pagina);
 
-        return redirect()->route('admin.paginas.index')->with('success', 'Página atualizada.');
+        return redirect()->route('admin.conteudo.paginas.index')->with('success', 'Página atualizada.');
     }
 
     public function destroy(Page $pagina): RedirectResponse

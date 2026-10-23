@@ -3,6 +3,62 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.10.0] - 2026-10-23
+
+### Adicionado
+- **Campos de envio com arrastar-e-soltar em todo o painel** — imagem do produto, vídeo do
+  produto e documentos do pedido. Cada campo aceita arrastar arquivos para dentro dele, mostra
+  o preview do que subiu, o progresso real do envio com o tempo decorrido, uma animação curta
+  de processamento e a regra do campo escrita dentro do próprio campo (formatos, tamanho
+  máximo e dimensão ideal).
+  - `config/envios.php` — a regra única de cada campo: tipo, pasta de destino, formatos,
+    limite em MB, dimensão e proporção ideais. É a mesma fonte que imprime a dica na tela e
+    que o servidor valida; nada de cópia à mão.
+  - `app/Support/Envio.php` — monta a dica legível ("JPG / JPEG / PNG / WEBP · até 4 MB ·
+    ideal 1200 × 1200 px (1:1)"), grava o arquivo, descreve o arquivo para o preview
+    (bytes, tamanho formatado, largura × altura) e confere caminho: só aceita valor que
+    comece na pasta do próprio campo, sem travessia, e que exista no disco público.
+  - `app/Http/Controllers/Admin/UploadController.php` — destino único (`POST` /
+    `DELETE` `/admin/uploads`, `throttle:40,1`). O navegador manda o arquivo e a **chave** do
+    campo; a pasta nunca vem do pedido, então não há como escolher onde escrever.
+  - `resources/views/partials/upload.blade.php` + `public/css/golden-upload.css` +
+    `public/js/golden-upload.js` — o componente: zona de arraste (com elevação quando o
+    arquivo está em cima), miniatura/anexos, barra de progresso com *shimmer*, chips dos
+    arquivos múltiplos e o rodapé "Carregado em 151 ms · 6 KB · 1280 × 720 px".
+  - `database/migrations/2026_10_23_000003_envios_de_midia.php` — colunas que dão realidade a
+    "vídeos" e "documentos": `products.video` e `orders.documentos` (JSON).
+  - Testes: `tests/Feature/CamposDeEnvioTest.php` (16), `tests/Unit/ExtensaoDoArquivoEnviadoTest.php` (3),
+    `tests/Feature/EstoqueDoProdutoTest.php` (3) e `tests/Feature/NomesDeRotaTest.php`, que varre o
+    projeto atrás de `route('nome')` inexistente.
+
+### Corrigido
+- **Salvar um produto com ajuste de estoque dava 404.** `StockMovement::registrar()` recebia um
+  *clone* com `setRawAttributes(['estoque' => …], true)` para representar o saldo anterior — o
+  que apaga a chave primária — e o `refresh()` de dentro explodia em
+  `ModelNotFoundException`. Agora o saldo anterior entra como parâmetro explícito.
+- **Criar ou editar uma página do CMS morria no redirecionamento** (`Route [admin.paginas.index]
+  not defined`); o nome certo é `admin.conteudo.paginas.index`. O mesmo tipo de erro existia em
+  `ProductController` (`admin.produtos.index` → `admin.catalogo.produtos.index`).
+- Gravação de arquivo: a extensão no disco é a **do conteúdo** do arquivo, e o envio é recusado
+  se ela não estiver entre os formatos do campo — o nome que o navegador manda não decide nada,
+  porque um script PHP batizado de `capa.jpg` acabaria gravado como `.php` dentro de
+  `public/storage`, executável. A barreira fica em `Envio::guardar()` (a gravação em si), e o
+  endpoint devolve a recusa no mesmo formato JSON que o campo já mostra na tela.
+- O nome gravado em disco voltou a ser legível (`rastreador-j16-original-H4k2p9Qz.png`): o
+  caminho é o que sobra no pedido meses depois, e hash puro não diz o que é o arquivo.
+- Toda tela do painel agora mostra um painel de erros de validação no topo — antes, uma
+  recusa do servidor podia não aparecer em lugar nenhum do formulário.
+
+### Alterado
+- A vitrine continua com **zero consultas**: o vídeo do produto entrou no blob de catálogo
+  (`golden.loja_catalogo`), e a leitura é `$produto['video'] ?? null` para uma cache antiga não
+  quebrar a página.
+- O formulário de produto deixou de ser `multipart`: o arquivo sobe sozinho, no seu ritmo, e o
+  formulário guarda só o caminho devolvido pelo endpoint.
+- `resources/views/admin/layouts/app.blade.php` carrega `golden-upload.css`/`.js` junto do
+  componente ao topo, e a curva de movimento compartilhada (`cubic-bezier(.22,.61,.36,1)`) +
+  `prefers-reduced-motion` valem para as animações de upload também.
+
 ## [2.9.0] - 2026-10-23
 
 ### Adicionado

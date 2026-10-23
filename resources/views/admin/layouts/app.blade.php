@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/golden-upload.css') }}?v={{ filemtime(public_path('css/golden-upload.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/admin-golden.css') }}?v={{ filemtime(public_path('css/admin-golden.css')) }}">
     <style>
         :root{--bs-primary:#c9862a;--bs-primary-rgb:201,134,42;--gold:#e0a33e;}
@@ -122,7 +123,16 @@
                 </div>
             </div>
         </div>
-        <div class="app-content"><div class="container-fluid">@yield('content')</div></div>
+        <div class="app-content"><div class="container-fluid">
+            @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius:14px">
+                <strong><i class="fas fa-triangle-exclamation me-1"></i> Não deu para salvar:</strong>
+                <ul class="mb-0 small mt-1">@foreach($errors->all() as $erro)<li>{{ $erro }}</li>@endforeach</ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+            @endif
+            @yield('content')
+        </div></div>
     </main>
 
     <footer class="app-footer py-3">
@@ -153,6 +163,7 @@ $(function(){
 });
 </script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
+<script src="{{ asset('js/golden-upload.js') }}?v={{ filemtime(public_path('js/golden-upload.js')) }}"></script>
 @yield('scripts')
 @stack('scripts')
 </body>

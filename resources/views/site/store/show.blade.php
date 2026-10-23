@@ -8,11 +8,16 @@
     <div class="wrap">
         <a href="{{ route('site.loja.index') }}" style="color:var(--muted);text-decoration:none"><i class="fa-solid fa-arrow-left"></i> Voltar para a loja</a>
         <div class="hero-grid" style="margin-top:16px">
-            <div class="prod-media">
-                @if($produto['imagem'])
-                    <img src="{{ asset('storage/' . $produto['imagem']) }}" alt="{{ $produto['nome'] }}">
-                @else
-                    <i class="fa-solid fa-satellite-dish"></i>
+            <div>
+                <div class="prod-media">
+                    @if($produto['imagem'])
+                        <img src="{{ asset('storage/' . $produto['imagem']) }}" alt="{{ $produto['nome'] }}">
+                    @else
+                        <i class="fa-solid fa-satellite-dish"></i>
+                    @endif
+                </div>
+                @if($produto['video'] ?? null)
+                    <video class="prod-video" src="{{ asset('storage/' . $produto['video']) }}" controls preload="metadata" playsinline></video>
                 @endif
             </div>
             <div>
@@ -112,6 +117,7 @@
 .prod-media{height:320px;border-radius:18px;background:linear-gradient(160deg,#1b2127,#0d1114);display:grid;place-items:center;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
 .prod-media img{width:100%;height:100%;object-fit:cover}
 .prod-media i{font-size:5rem;color:var(--gold);opacity:.85}
+.prod-video{display:block;width:100%;margin-top:12px;border-radius:16px;background:#0d1114;border:1px solid rgba(255,255,255,.08)}
 .prod-desc{margin-top:12px;color:var(--muted);font-size:.95rem;line-height:1.6}
 .prod-meta{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:16px;font-size:.85rem;color:var(--muted)}
 .prod-price s{color:var(--muted);margin-right:8px}

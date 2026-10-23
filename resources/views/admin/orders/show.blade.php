@@ -40,6 +40,21 @@
             <h6 class="fw-bold">Observações do cliente</h6><p class="small mb-0">{{ $pedido->notas }}</p>
         </div></div>
         @endif
+
+        <div class="card shadow-sm mt-3" style="border-radius:16px"><div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="fas fa-paperclip text-warning me-1"></i> Documentos do pedido</h6>
+            <form method="POST" action="{{ route('admin.pedidos.documentos',$pedido) }}">
+                @csrf
+                @include('partials.upload', [
+                    'campo' => 'pedido_documento',
+                    'name' => 'documentos',
+                    'valor' => old('documentos', $pedido->documentos ?? []),
+                    'multiplo' => true,
+                    'dica' => 'Ficam no painel; o cliente acompanha o pedido pela linha do tempo.',
+                ])
+                <button class="btn btn-golden btn-sm mt-2"><i class="fas fa-save me-1"></i> Salvar documentos</button>
+            </form>
+        </div></div>
     </div>
 
     <div class="col-lg-5">
