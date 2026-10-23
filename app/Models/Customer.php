@@ -17,6 +17,12 @@ class Customer extends Model
 
     protected $casts = ['frota_tamanho' => 'integer', 'valor_anual_cents' => 'integer'];
 
+    /** Rótulo de um status, com o próprio valor por baixo quando o status não é conhecido. */
+    public static function label(?string $status): string
+    {
+        return self::STATUS[$status ?? ''] ?? (string) $status;
+    }
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
@@ -34,7 +40,7 @@ class Customer extends Model
 
     public function orders(): HasMany
     {
-        return $this->hasMany(Order::class);
+        return $this->hasMany(Order::class)->latest();
     }
 
     public static function deLead(Lead $lead): self

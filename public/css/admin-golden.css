@@ -57,25 +57,25 @@ a.stat-link{color:inherit;text-decoration:none}
 .stat-card{transition:box-shadow .3s var(--ease),transform .3s var(--ease)}
 a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transform:translateY(-2px)}
 
-/* Funil: a largura chega por variável (--w), a cor por status. */
+/* Funil: a largura chega por variável (--w) e a cor pelo NOME DO TOM, o mesmo que o selo
+   de situação usa — assim a barra e o badge de um status nunca discordam. */
 .funnel{display:flex;flex-direction:column;gap:8px}
 .funnel-row{display:flex;align-items:center;gap:12px}
 .funnel-label{width:96px;flex:none;font-size:.85rem;color:var(--bs-secondary-color)}
 .funnel-bar{width:var(--w,20%);height:34px;border-radius:var(--radius-md);display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:.85rem;min-width:44px;transition:width .4s var(--ease)}
 .funnel-bar:hover{filter:brightness(1.08)}
-.fb-novo{background:var(--brand-blue);color:var(--on-solid)}
-.fb-contatado{background:var(--brand-gold);color:var(--brand-gold-ink)}
-.fb-proposta{background:var(--brand-violet);color:var(--on-solid)}
-.fb-vendido{background:var(--brand-teal);color:var(--on-solid)}
-.fb-perdido{background:var(--brand-red);color:var(--on-solid)}
+.fb-gold{background:var(--brand-gold);color:var(--brand-gold-ink)}
+.fb-teal{background:var(--brand-teal);color:var(--on-solid)}
+.fb-blue{background:var(--brand-blue);color:var(--on-solid)}
+.fb-violet{background:var(--brand-violet);color:var(--on-solid)}
+.fb-green{background:var(--brand-green);color:var(--on-solid)}
+.fb-amber{background:var(--brand-amber);color:var(--on-solid)}
+.fb-red{background:var(--brand-red);color:var(--on-solid)}
+.fb-neutral{background:var(--bs-secondary-bg);color:var(--bs-secondary-color)}
 
-/* Situações do funil e do pedido: o mesmo par fundo+texto dos ícones. */
+/* Selo de situação: só a forma; a cor vem do utilitário .tone-* do tema, escolhida por
+   tom_por_status() a partir de config('golden.tons_status'). */
 .badge-status{font-weight:600;padding:.4em .7em;border-radius:999px;font-size:.76rem;white-space:nowrap}
-.st-novo{background:var(--t-blue-bg);color:var(--t-blue-fg)}
-.st-contatado{background:var(--t-amber-bg);color:var(--t-amber-fg)}
-.st-proposta{background:var(--t-violet-bg);color:var(--t-violet-fg)}
-.st-vendido{background:var(--t-green-bg);color:var(--t-green-fg)}
-.st-perdido{background:var(--t-red-bg);color:var(--t-red-fg)}
 
 /* Avisos de estado no lugar dos alerts do Bootstrap, que mudam só com o tema claro. */
 .callout{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--bs-border-color-translucent);background:var(--bs-tertiary-bg);border-radius:var(--radius-lg);padding:.6rem .9rem;font-size:.86rem}
@@ -105,17 +105,17 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 
 /* miúdos que aparecem em mais de uma página */
 .avatar-letter{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--t-gold-bg);color:var(--t-gold-fg)}
-.canal-linha .form-control{max-width:150px;flex:none}
+.canal-linha{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.35rem .75rem;padding:.4rem 0;border-top:1px solid var(--bs-border-color-translucent)}
+.canal-linha > div:first-child{flex:1 1 11rem}
 .canal-linha small{font-size:.7rem!important}
+.canal-numero{flex:0 0 8.5rem}
 
 /* Imagens do site (CMS): um card por slot, com a foto que está no ar na frente.
    Só tokens — o mesmo card serve no tema claro e no escuro. */
 .slot{display:flex;flex-direction:column;gap:.45rem;height:100%;padding:.75rem;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg);background:var(--bs-tertiary-bg)}
 .slot-cabeca{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:.9rem}
-.slot-selo{font-size:.68rem;font-weight:700;letter-spacing:.03em;padding:.3em .65em;border-radius:999px;white-space:nowrap}
 .slot-miniatura{display:block;width:100%;height:132px;object-fit:contain;padding:6px;border-radius:var(--radius-md);border:1px solid var(--bs-border-color-translucent);background:var(--bs-body-bg)}
 .slot-miniatura.vazia{display:grid;place-items:center;align-content:center;gap:6px;color:var(--bs-secondary-color);font-size:.78rem;text-align:center;padding:0 14px;background:var(--bs-body-bg)}
 .slot-miniatura.vazia i{font-size:1.3rem}
 .slot-meta{font-size:.76rem;color:var(--bs-secondary-color)}
-.slot-voltar{display:flex;align-items:center;gap:8px;margin:.2rem 0 0;font-size:.8rem;color:var(--bs-secondary-color);cursor:pointer}
 .slot .upload{background:var(--bs-body-bg)}

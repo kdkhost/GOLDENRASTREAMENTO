@@ -45,7 +45,5 @@
             </table>
         </div>
     </div>
-    @if($paginator)
-        <div class="card-footer bg-body-tertiary">{{ $paginator->links() }}</div>
-    @endif
+    @if($paginator)<x-admin.pager :paginas="$paginator" />@endif
 </div>

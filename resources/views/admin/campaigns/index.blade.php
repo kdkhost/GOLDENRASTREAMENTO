@@ -8,23 +8,38 @@
 @endsection
 
 @section('content')
-<x-admin.table :headers="['Campanha', 'Canal', 'center:Leads', 'center:Novos', 'center:Vendidos', 'center:Conversão', 'end:Receita', 'end:Ações']" empty="Nenhuma campanha cadastrada.">
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><x-admin.stat label="Campanhas" :value="$kpis['total']" icon="fa-bullhorn" tone="blue" pequeno /></div>
+    <div class="col-6 col-lg-3"><x-admin.stat label="No ar" :value="$kpis['ativas']" icon="fa-play" tone="green" pequeno /></div>
+    <div class="col-6 col-lg-3"><x-admin.stat label="Com leads" :value="$kpis['com_leads']" icon="fa-user-plus" tone="gold" pequeno /></div>
+    <div class="col-6 col-lg-3"><x-admin.stat label="Receita de vendidos" :value="brl($kpis['receita'])" icon="fa-sack-dollar" tone="teal" pequeno /></div>
+</div>
+
+<x-admin.filters :reset="route('admin.campanhas.index')">
+    <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-5" placeholder="Nome, source, medium ou conteúdo..." />
+    <x-admin.filter name="canal" type="select" label="Canal" col="col-6 col-md-3" :options="\App\Models\Campaign::CANAIS" empty="Todos os canais" />
+    <x-admin.filter name="situacao" type="select" label="Situação" col="col-6 col-md-4" :options="['ativa' => 'No ar', 'pausada' => 'Pausada']" empty="Todas" />
+</x-admin.filters>
+
+<x-admin.table :headers="['Campanha', 'Canal', 'center:Leads', 'center:Novos', 'center:Vendidos', 'center:Conversão', 'end:Receita', 'end:Ações']"
+    empty="Nenhuma campanha com esse filtro."
+    :paginator="$campanhas">
     @foreach($campanhas as $c)
         <tr>
             <td>
                 <a href="{{ route('admin.leads.index', ['campanha' => $c->id]) }}" class="fw-semibold text-decoration-none">{{ $c->name }}</a>
                 <div class="small text-secondary mt-1">
                     <code>{{ $c->source ?: '—' }}</code> · <code>{{ $c->medium ?: '—' }}</code>
-                    @unless($c->ativa)<span class="badge tone-neutral ms-2">pausada</span>@endunless
+                    @unless($c->ativa)<x-admin.status rotulo="pausada" :tom="tom_por_flag($c->ativa)" class="ms-2" />@endunless
                 </div>
             </td>
-            <td><span class="badge bg-body-secondary text-body">{{ $c->canalLabel() }}</span></td>
+            <td><span class="badge tone-neutral">{{ $c->canalLabel() }}</span></td>
             <td class="text-center">{{ $c->leads_count }}</td>
             <td class="text-center">{{ $c->leads_novos }}</td>
             <td class="text-center">{{ $c->leads_vendidos }}</td>
             <td class="text-center">
-                @php $taxo = $c->leads_count ? round($c->leads_vendidos / $c->leads_count * 100, 1) : 0; @endphp
-                <span class="badge-status {{ $taxo > 0 ? 'st-vendido' : 'st-novo' }}">{{ $taxo }}%</span>
+                @php $taxo = $c->conversao(); @endphp
+                <x-admin.status :rotulo="$taxo.'%'" :tom="tom_por_flag($taxo > 0)" />
             </td>
             <td class="text-end small">{{ $c->leads_receita ? brl($c->leads_receita) : '—' }}</td>
             <td>
@@ -34,9 +49,9 @@
                         @csrf
                         <button class="btn btn-sm btn-outline-secondary" title="{{ $c->ativa ? 'Pausar' : 'Ativar' }}"><i class="fas fa-{{ $c->ativa ? 'pause' : 'play' }}"></i></button>
                     </form>
-                    @if(auth()->user()->isAdmin())
+                    @can('admin')
                         <x-admin.delete :action="route('admin.campanhas.destroy', $c)" confirm="Excluir campanha? Os leads permanecem, apenas perdem o vínculo." />
-                    @endif
+                    @endcan
                 </div>
             </td>
         </tr>

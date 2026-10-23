@@ -33,12 +33,9 @@
 
                     <div class="row g-3">
                         @foreach(['rotulo' => 'Rótulo do caminho', 'eyebrow' => 'Linha de destaque', 'titulo' => 'Título', 'subtitulo' => 'Subtítulo'] as $campo => $rotulo)
-                            @php
-                                $padrao = $pagina['padrao'][$campo] ?? '';
-                                $atual = old('paginas_site.'.$pagina['chave'].'.'.$campo, $pagina['valores'][$campo] ?? '');
-                            @endphp
+                            @php $padrao = $pagina['padrao'][$campo] ?? ''; @endphp
                             <x-admin.field :name="'paginas_site['.$pagina['chave'].']['.$campo.']'" :label="$rotulo"
-                                :type="$campo === 'subtitulo' ? 'textarea' : 'text'" :value="$atual" :rows="3" :opcional="true"
+                                :type="$campo === 'subtitulo' ? 'textarea' : 'text'" :value="$pagina['valores'][$campo] ?? ''" :rows="3" :opcional="true"
                                 :placeholder="$padrao ?: '—'"
                                 :hint="$padrao === null ? 'Esta página não tem texto padrão: só aparece se você escrever aqui.' : 'Em branco, volta o texto original.'" />
                         @endforeach

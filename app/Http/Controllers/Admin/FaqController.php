@@ -11,9 +11,23 @@ use Illuminate\View\View;
 
 class FaqController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('admin.faqs.index', ['faqs' => Faq::orderBy('ordem')->get()]);
+        return view('admin.faqs.index', [
+            'faqs' => $this->query($request)->paginate(itens_por_pagina())->withQueryString(),
+        ]);
+    }
+
+    /** A mesma régua filtra a listagem e pagina a lista. */
+    private function query(Request $request)
+    {
+        return Faq::query()
+            ->when($request->filled('busca'), function ($q) use ($request) {
+                $t = '%' . $request->busca . '%';
+                $q->where(fn ($w) => $w->where('pergunta', 'like', $t)->orWhere('resposta', 'like', $t));
+            })
+            ->when($request->filled('situacao'), fn ($q) => $q->where('ativa', $request->situacao === 'ativa'))
+            ->orderBy('ordem');
     }
 
     public function create(): View

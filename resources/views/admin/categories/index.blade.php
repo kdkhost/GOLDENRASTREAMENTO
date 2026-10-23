@@ -8,7 +8,14 @@
 @endsection
 
 @section('content')
-<x-admin.table :headers="['Categoria', 'center:Produtos', 'center:Status', 'end:Ações']" empty="Nenhuma categoria cadastrada.">
+<x-admin.filters :reset="route('admin.catalogo.categorias.index')">
+    <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-8" placeholder="Nome ou descrição..." />
+    <x-admin.filter name="situacao" type="select" label="Situação" col="col-12 col-md-4" :options="['ativa' => 'Ativa', 'inativa' => 'Inativa']" empty="Todas" />
+</x-admin.filters>
+
+<x-admin.table :headers="['Categoria', 'center:Produtos', 'center:Status', 'end:Ações']"
+    empty="Nenhuma categoria com esse filtro."
+    :paginator="$categorias">
     @foreach($categorias as $c)
         <tr>
             <td>
@@ -16,11 +23,13 @@
                 <div class="small text-secondary mt-1">{{ $c->descricao ?: '—' }} · ordem {{ $c->ordem }}</div>
             </td>
             <td class="text-center">{{ $c->products_count }}</td>
-            <td class="text-center"><span class="badge {{ $c->ativa ? 'tone-green' : 'tone-neutral' }}">{{ $c->ativa ? 'ativa' : 'inativa' }}</span></td>
+            <td class="text-center"><x-admin.status :rotulo="$c->ativa ? 'ativa' : 'inativa'" :tom="tom_por_flag($c->ativa)" /></td>
             <td>
                 <div class="table-actions">
                     <a href="{{ route('admin.catalogo.categorias.edit', $c) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>
-                    <x-admin.delete :action="route('admin.catalogo.categorias.destroy', $c)" confirm="Excluir categoria? Os produtos ficam sem categoria." />
+                    @can('admin')
+                        <x-admin.delete :action="route('admin.catalogo.categorias.destroy', $c)" confirm="Excluir categoria? Os produtos ficam sem categoria." />
+                    @endcan
                 </div>
             </td>
         </tr>

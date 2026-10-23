@@ -200,6 +200,34 @@ return [
     'whatsapp' => env('GOLDEN_WHATSAPP', '5519997101483'),
     'email' => env('GOLDEN_EMAIL', 'comercial@goldenrastreamento.com.br'),
 
+    // Página de listagem do painel: quantos registros cabem em uma página. As 12 listagens
+    // paginam por aqui; nenhuma tela escolhe número próprio.
+    'itens_por_pagina' => 20,
+
+    // Cor de cada status do painel, agrupada por domínio. Os tons são os utilitários .tone-*
+    // do tema, que já têm par no claro e no escuro. Nenhuma view decide cor: ela pergunta
+    // o tom pela função tom_por_status(), que lê esta lista.
+    'tons_status' => [
+        'funil' => [
+            'novo' => 'blue', 'contatado' => 'amber', 'proposta' => 'violet',
+            'vendido' => 'green', 'perdido' => 'red',
+        ],
+        'cliente' => ['prospecto' => 'violet', 'ativo' => 'green', 'inativo' => 'red'],
+        'pedido' => [
+            'pendente' => 'amber', 'aguardando_pagamento' => 'gold', 'pago' => 'blue',
+            'separando' => 'teal', 'enviado' => 'violet', 'entregue' => 'green', 'cancelado' => 'red',
+        ],
+        'usuario' => ['ativo' => 'green', 'inativo' => 'red'],
+        // Estado do estoque, calculado por Product::estadoEstoque() — o painel e a vitrine
+        // usam a mesma régua: sem controle, zerado, abaixo do mínimo ou abastecido.
+        'estoque' => ['livre' => 'neutral', 'zerado' => 'red', 'baixo' => 'gold', 'ok' => 'green'],
+        // Movimentação do estoque (StockMovement::TIPOS): o saldo subiu, desceu ou foi conferido.
+        'movimento' => ['entrada' => 'green', 'saida' => 'red', 'ajuste' => 'gold'],
+        // Selo de cada fotografia do site (SiteContentController::imagens): qual arquivo está no ar.
+        'slot_imagem' => ['enviada' => 'gold', 'pacote' => 'neutral', 'ausente' => 'neutral'],
+        'fallback' => 'neutral',
+    ],
+
     'parceiros_m2m' => ['Vivo', 'Claro', 'Algar', 'TIM'],
     'pagamentos' => ['Cartão', 'Boleto bancário'],
     'equipamento' => 'Rastreador J16 4G/2G',

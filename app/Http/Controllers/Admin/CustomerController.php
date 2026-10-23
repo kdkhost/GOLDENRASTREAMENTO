@@ -17,13 +17,13 @@ class CustomerController extends Controller
     {
         $clientes = Customer::withCount(['orders', 'interactions'])
             ->with('owner')
-            ->when($request->filled('q'), function ($q) use ($request) {
-                $t = '%' . $request->q . '%';
+            ->when($request->filled('busca'), function ($q) use ($request) {
+                $t = '%' . $request->busca . '%';
                 $q->where(fn ($w) => $w->where('nome', 'like', $t)->orWhere('telefone', 'like', $t)->orWhere('email', 'like', $t));
             })
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->latest()
-            ->paginate(20)
+            ->paginate(itens_por_pagina())
             ->withQueryString();
 
         return view('admin.customers.index', [
@@ -73,8 +73,13 @@ class CustomerController extends Controller
 
     public function show(Customer $cliente): View
     {
+        $cliente->load(['owner', 'lead']);
+
         return view('admin.customers.show', [
-            'cliente' => $cliente->load(['owner', 'lead', 'interactions.user', 'orders']),
+            'cliente' => $cliente,
+            // As duas listas da ficha paginam por nomes próprios: um link não mexe na outra.
+            'interacoes' => $cliente->interactions()->with('user')->paginate(itens_por_pagina(), ['*'], 'historico')->withQueryString(),
+            'pedidos' => $cliente->orders()->paginate(itens_por_pagina(), ['*'], 'pedidos')->withQueryString(),
             'tipos' => Interaction::TIPOS,
         ]);
     }

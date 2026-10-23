@@ -61,6 +61,26 @@ class Product extends Model
         return $this->ativo && (! $this->controle_estoque || $this->estoque > 0);
     }
 
+    /**
+     * Estado do estoque em uma palavra: 'livre' (sem controle), 'zerado', 'baixo'
+     * (no mínimo ou abaixo) ou 'ok'. É a régua que decide a cor do selo no painel e
+     * o aviso na vitrine, para as duas telas não discordarem sobre o mesmo saldo.
+     */
+    public static function estado(bool $controle, int $estoque, int $minimo): string
+    {
+        return match (true) {
+            ! $controle => 'livre',
+            $estoque <= 0 => 'zerado',
+            $estoque <= $minimo => 'baixo',
+            default => 'ok',
+        };
+    }
+
+    public function estadoEstoque(): string
+    {
+        return self::estado((bool) $this->controle_estoque, (int) $this->estoque, (int) $this->estoque_minimo);
+    }
+
     public function scopeAtivos($q)
     {
         return $q->where('ativo', true)->orderBy('ordem');
@@ -69,6 +89,20 @@ class Product extends Model
     public function scopeVitrine($q)
     {
         return $q->where('ativo', true)->orderByDesc('destaque')->orderBy('ordem');
+    }
+
+    /**
+     * A régua do alarme de estoque, nos mesmos termos de estado(): só conta quem tem
+     * controle de estoque; 'baixo' é o saldo no mínimo ou abaixo dele (zerado incluso).
+     */
+    public function scopeEstoqueBaixo($q)
+    {
+        return $q->where('controle_estoque', true)->whereColumn('estoque', '<=', 'estoque_minimo');
+    }
+
+    public function scopeEstoqueZerado($q)
+    {
+        return $q->where('controle_estoque', true)->where('estoque', '<=', 0);
     }
 
     public static function booted(): void

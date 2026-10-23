@@ -28,6 +28,13 @@ class SiteContentController extends Controller
     /** Campos de texto de cada página, com o limite de cada um. */
     private const TEXTOS = ['rotulo' => 60, 'eyebrow' => 120, 'titulo' => 190, 'subtitulo' => 500];
 
+    /** O selo de cada slot: a palavra vai na tela, a cor vem de config('golden.tons_status.slot_imagem'). */
+    private const ESTADOS = [
+        'enviada' => 'enviada pelo painel',
+        'pacote' => 'foto do pacote',
+        'ausente' => 'sem foto no ar',
+    ];
+
     public function imagens(): View
     {
         $grupos = [];
@@ -36,14 +43,20 @@ class SiteContentController extends Controller
             $itens = [];
 
             foreach ($slots as $slot => $registro) {
+                $enviada = ConteudoSite::enviada($slot);
+                $url = ConteudoSite::url($slot);
+                $estado = $enviada ? 'enviada' : ($url ? 'pacote' : 'ausente');
+
                 $itens[] = [
                     'slot' => $slot,
                     'registro' => $registro,
-                    'enviada' => ConteudoSite::enviada($slot),
-                    'url' => ConteudoSite::url($slot),
+                    'enviada' => $enviada,
+                    'url' => $url,
                     'alt' => ConteudoSite::alt($slot),
                     'sem_arquivo' => ! ConteudoSite::padraoExiste($slot),
                     'rota' => $this->rotaDaPagina($pagina),
+                    'estado' => $estado,
+                    'estado_rotulo' => self::ESTADOS[$estado],
                 ];
             }
 
@@ -71,7 +84,7 @@ class SiteContentController extends Controller
 
             if ($novo !== '' && $novo !== $atual) {
                 if (! Envio::caminhoConfere($novo, 'site_imagem')) {
-                    $erros["imagem[{$slot}]"] = "A foto de {$registro['titulo']} não é um arquivo enviado por este campo.";
+                    $erros["imagem.{$slot}"] = "A foto de {$registro['titulo']} não é um arquivo enviado por este campo.";
                     continue;
                 }
 
@@ -90,7 +103,7 @@ class SiteContentController extends Controller
             $alt = $revertida ? '' : trim((string) ($alts[$slot] ?? ''));
 
             if (mb_strlen($alt) > 190) {
-                $erros["alt[{$slot}]"] = "O texto alternativo de {$registro['titulo']} passou de 190 caracteres.";
+                $erros["alt.{$slot}"] = "O texto alternativo de {$registro['titulo']} passou de 190 caracteres.";
                 continue;
             }
 
@@ -146,7 +159,7 @@ class SiteContentController extends Controller
                 $padrao = (string) ($pagina[$campo] ?? '');
 
                 if (mb_strlen($valor) > $max) {
-                    $erros["paginas_site[{$chave}][{$campo}]"] = $pagina['nome'].' — '.ucfirst($campo)
+                    $erros["paginas_site.{$chave}.{$campo}"] = $pagina['nome'].' — '.ucfirst($campo)
                         .' passou de '.$max.' caracteres.';
                     continue;
                 }

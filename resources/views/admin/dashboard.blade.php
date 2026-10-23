@@ -10,7 +10,7 @@
 
 @section('content')
 @php
-    $admin = auth()->user()->isAdmin();
+    $admin = auth()->user()->can('admin');
     $funil = ['novo' => $novos, 'contatado' => $contatado, 'proposta' => $proposta, 'vendido' => $vendido, 'perdido' => $perdido];
     $funilLider = max($total, 1);
 @endphp
@@ -99,7 +99,7 @@
                     <div class="funnel-row">
                         <div class="funnel-label">{{ \App\Models\Lead::label($status) }}</div>
                         <a href="{{ route('admin.leads.index', ['status' => $status]) }}" class="flex-grow-1 text-decoration-none">
-                            <div class="funnel-bar fb-{{ $status }}" style="--w:{{ round(max($quantidade / $funilLider, .08) * 100) }}%">{{ $quantidade }}</div>
+                            <div class="funnel-bar fb-{{ tom_por_status('funil', $status) }}" style="--w:{{ round(max($quantidade / $funilLider, .08) * 100) }}%">{{ $quantidade }}</div>
                         </a>
                     </div>
                 @endforeach
@@ -113,10 +113,10 @@
             @foreach($campanhas as $c)
                 <tr>
                     <td><a href="{{ route('admin.leads.index', ['campanha' => $c->id]) }}" class="fw-semibold text-decoration-none">{{ $c->name }}</a></td>
-                    <td><span class="badge-status tone-neutral">{{ $c->canalLabel() }}</span></td>
+                    <td><x-admin.status :rotulo="$c->canalLabel()" tom="neutral" /></td>
                     <td class="text-center">{{ $c->leads_count }}</td>
                     <td class="text-center">{{ $c->leads_vendidos }}</td>
-                    <td class="text-center"><span class="badge-status {{ $c->taxo_conversao > 0 ? 'st-vendido' : 'st-novo' }}">{{ $c->taxo_conversao }}%</span></td>
+                    <td class="text-center"><x-admin.status :rotulo="$c->conversao().'%'" :tom="tom_por_flag($c->conversao() > 0)" /></td>
                 </tr>
             @endforeach
         </x-admin.table>
@@ -130,7 +130,7 @@
                     <td><a href="{{ route('admin.leads.show', $l) }}" class="fw-semibold text-decoration-none">{{ $l->name }}</a></td>
                     <td class="small text-secondary">{{ $l->phone ?: $l->email }}</td>
                     <td class="small text-secondary">{{ $l->campaign?->name ?? 'Sem campanha' }}</td>
-                    <td class="text-center"><span class="badge-status st-{{ $l->status }}">{{ \App\Models\Lead::label($l->status) }}</span></td>
+                    <td class="text-center"><x-admin.status :rotulo="\App\Models\Lead::label($l->status)" :tom="tom_por_status('funil', $l->status)" /></td>
                     <td class="small text-secondary">{{ $l->created_at->diffForHumans() }}</td>
                 </tr>
             @endforeach

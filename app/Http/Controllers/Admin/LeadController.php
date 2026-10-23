@@ -18,13 +18,13 @@ class LeadController extends Controller
 {
     public function index(Request $request): View
     {
-        $leads = $this->query($request)->paginate(15)->withQueryString();
+        $leads = $this->query($request)->paginate(itens_por_pagina())->withQueryString();
 
         return view('admin.leads.index', [
             'leads' => $leads,
             'filtros' => $request->only(['status', 'campanha', 'inicio', 'fim', 'busca', 'responsavel']),
-            'campanhas' => Campaign::orderBy('name')->get(),
-            'responsaveis' => User::whereIn('role', ['admin', 'vendedor'])->orderBy('name')->get(),
+            'campanhas' => Campaign::orderBy('name')->pluck('name', 'id'),
+            'responsaveis' => User::whereIn('role', ['admin', 'vendedor'])->orderBy('name')->pluck('name', 'id'),
             'contagem' => Lead::selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status'),
         ]);
     }

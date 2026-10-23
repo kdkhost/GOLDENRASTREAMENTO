@@ -7,10 +7,12 @@ use App\Models\Lead;
 use App\Models\Order;
 use App\Models\Page;
 use App\Models\Setting;
+use App\Models\User;
 use App\Support\Carrinho;
 use App\Support\MenuPainel;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -36,6 +38,11 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        // "É administrador" tem uma única pergunta no sistema inteiro: @can('admin').
+        // As rotas continuam travadas pelo middleware de papel (a regra que vale é a da
+        // rota); o gate serve para a tela não oferecer um botão que a rota negaria.
+        Gate::define('admin', fn (User $usuario): bool => $usuario->isAdmin());
 
         View::composer(['layouts.site', 'site.*', 'admin.layouts.app'], function ($view) {
             $view->with('golden', $this->dadosDoSite());
@@ -64,7 +71,7 @@ class AppServiceProvider extends ServiceProvider
     {
         return $this->menuPainel ??= MenuPainel::montar(
             $this->pendenciasDoPainel(),
-            (bool) optional(auth()->user())->isAdmin(),
+            (bool) optional(auth()->user())->can('admin'),
             ['loja_ativa' => $lojaAtiva],
         );
     }

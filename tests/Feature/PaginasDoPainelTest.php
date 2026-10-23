@@ -81,8 +81,8 @@ class PaginasDoPainelTest extends TestCase
         $this->actingAs($this->admin);
 
         $this->get(route('admin.leads.index', ['status' => 'novo', 'campanha' => Campaign::firstOrFail()->id, 'busca' => 'a']))->assertOk();
-        $this->get(route('admin.clientes.index', ['status' => 'ativo', 'q' => 'a']))->assertOk();
-        $this->get(route('admin.pedidos.index', ['status' => 'pendente', 'q' => 'GR']))->assertOk();
+        $this->get(route('admin.clientes.index', ['status' => 'ativo', 'busca' => 'a']))->assertOk();
+        $this->get(route('admin.pedidos.index', ['status' => 'pendente', 'busca' => 'GR']))->assertOk();
         $this->get(route('admin.catalogo.produtos.index', ['estoque' => 'baixo', 'categoria' => Category::firstOrFail()->id]))->assertOk();
         $this->get(route('admin.activities.index', ['acao' => 'lead_recebido']))->assertOk();
     }

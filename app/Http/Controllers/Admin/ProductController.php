@@ -20,22 +20,31 @@ class ProductController extends Controller
 
     public function index(Request $request): View
     {
-        $produtos = Product::with('category')
-            ->when($request->filled('q'), fn ($q) => $q->where('nome', 'like', '%' . $request->q . '%'))
-            ->when($request->filled('categoria'), fn ($q) => $q->where('category_id', $request->categoria))
-            ->when($request->query('estoque') === 'baixo', function ($q) {
-                $q->where('controle_estoque', true)
-                    ->where(fn ($w) => $w->whereColumn('estoque', '<=', 'estoque_minimo')->orWhere('estoque', '<=', 0));
-            })
-            ->orderBy('ordem')
-            ->orderBy('nome')
-            ->paginate(30)
-            ->withQueryString();
-
         return view('admin.products.index', [
-            'produtos' => $produtos,
-            'categorias' => Category::orderBy('nome')->get(),
+            'produtos' => $this->query($request)->paginate(itens_por_pagina())->withQueryString(),
+            'categorias' => Category::orderBy('nome')->pluck('nome', 'id'),
+            // KPIs na mesma régua do filtro e de Product::estadoEstoque().
+            'kpis' => [
+                'total' => Product::count(),
+                'no_ar' => Product::where('ativo', true)->count(),
+                'baixo' => Product::estoqueBaixo()->where('estoque', '>', 0)->count(),
+                'zerado' => Product::estoqueZerado()->count(),
+            ],
         ]);
+    }
+
+    /** A mesma régua da listagem e do filtro: quem filtra e quem pagina lêem isto. */
+    private function query(Request $request)
+    {
+        return Product::with('category')
+            ->when($request->filled('busca'), function ($q) use ($request) {
+                $t = '%' . $request->busca . '%';
+                $q->where(fn ($w) => $w->where('nome', 'like', $t)->orWhere('sku', 'like', $t));
+            })
+            ->when($request->filled('categoria'), fn ($q) => $q->where('category_id', $request->categoria))
+            ->when($request->filled('estoque'), fn ($q) => $q->estoqueBaixo())
+            ->orderBy('ordem')
+            ->orderBy('nome');
     }
 
     public function create(): View
@@ -110,7 +119,7 @@ class ProductController extends Controller
     {
         return view('admin.products.estoque', [
             'produto' => $produto,
-            'movimentos' => $produto->movements()->latest()->limit(50)->get(),
+            'movimentos' => $produto->movements()->with('user')->latest()->paginate(itens_por_pagina())->withQueryString(),
         ]);
     }
 

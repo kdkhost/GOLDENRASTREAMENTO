@@ -41,9 +41,7 @@
                         <div class="slot">
                             <div class="slot-cabeca">
                                 <b>{{ $registro['titulo'] }}</b>
-                                <span class="slot-selo {{ $item['enviada'] ? 'tone-gold' : 'tone-neutral' }}">
-                                    {{ $item['enviada'] ? 'enviada pelo painel' : ($item['url'] ? 'foto do pacote' : 'sem foto no ar') }}
-                                </span>
+                                <x-admin.status :rotulo="$item['estado_rotulo']" :tom="tom_por_status('slot_imagem', $item['estado'])" />
                             </div>
 
                             @if($item['url'])
@@ -71,22 +69,14 @@
                                 'titulo' => 'Trocar a foto',
                                 'dica' => $item['enviada'] ? null : ($item['url'] ? 'Sem envio, continua a foto atual.' : 'Sem envio, o título fica sobre o fundo padrão da página.'),
                             ])
-                            @error('imagem['.$slot.']')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                            @error('imagem.'.$slot)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 
-                            <label class="form-label mt-2" for="alt-{{ $slot }}">
-                                Texto alternativo
-                                <span class="form-hint">(leitor de tela, Google e a legenda quando a foto não carrega)</span>
-                            </label>
-                            <textarea id="alt-{{ $slot }}" name="alt[{{ $slot }}]" rows="2" maxlength="190"
-                                      class="form-control {{ $errors->has('alt['.$slot.']') ? 'is-invalid' : '' }}"
-                                      placeholder="{{ $registro['alt'] ?? '' }}">{{ old('alt.'.$slot, $item['alt']) }}</textarea>
-                            @error('alt['.$slot.']')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                            <x-admin.field name="alt[{{ $slot }}]" type="textarea" label="Texto alternativo" rows="2" maxlength="190"
+                                :hint="'leitor de tela, Google e a legenda quando a foto não carrega'"
+                                :value="$item['alt']" :opcional="true" />
 
                             @if($item['enviada'])
-                                <label class="slot-voltar">
-                                    <input class="form-check-input" type="checkbox" name="voltar_ao_padrao[{{ $slot }}]" value="1">
-                                    <span>Voltar à foto original do pacote</span>
-                                </label>
+                                <x-admin.switch name="voltar_ao_padrao[{{ $slot }}]" label="Voltar à foto original do pacote" />
                             @endif
                         </div>
                     </div>

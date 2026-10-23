@@ -7,9 +7,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockMovement extends Model
 {
+    /** Os três jeitos de mexer no saldo: a tela mostra esta palavra, não o sinal do número. */
+    public const TIPOS = ['entrada' => 'entrada', 'saida' => 'saída', 'ajuste' => 'ajuste'];
+
     protected $fillable = ['product_id', 'tipo', 'quantidade', 'saldo_after', 'motivo', 'user_id', 'order_id'];
 
     protected $casts = ['quantidade' => 'integer', 'saldo_after' => 'integer'];
+
+    public function rotulo(): string
+    {
+        return self::TIPOS[$this->tipo] ?? $this->tipo;
+    }
 
     public function product(): BelongsTo
     {

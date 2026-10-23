@@ -8,9 +8,6 @@
 @endsection
 
 @section('content')
-@php
-    $corStatus = ['ativo' => 'st-vendido', 'inativo' => 'st-perdido'];
-@endphp
 <div class="row g-3 mb-3">
     <div class="col-6 col-lg-3"><x-admin.stat label="Ativos" :value="$kpis['ativos']" icon="fa-user-check" tone="teal" pequeno /></div>
     <div class="col-6 col-lg-3"><x-admin.stat label="Prospectos" :value="$kpis['prospectos']" icon="fa-seedling" tone="gold" pequeno /></div>
@@ -19,7 +16,7 @@
 </div>
 
 <x-admin.filters :reset="route('admin.clientes.index')">
-    <x-admin.filter name="q" label="Buscar" col="col-12 col-md-5" placeholder="Nome, telefone ou e-mail..." />
+    <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-5" placeholder="Nome, telefone ou e-mail..." />
     <x-admin.filter name="status" type="select" label="Status" :options="\App\Models\Customer::STATUS" empty="Todos os status" col="col-6 col-md-3" />
 </x-admin.filters>
 
@@ -35,15 +32,15 @@
             <td class="small">{{ $c->telefone ?: '—' }}<div class="text-secondary">{{ $c->email ?: '—' }}</div></td>
             <td class="small">{{ config('golden.perfis')[$c->segmento] ?? '—' }}</td>
             <td class="text-center small">{{ $c->frota_tamanho ?: '—' }}</td>
-            <td class="text-center"><span class="badge-status {{ $corStatus[$c->status] ?? 'st-proposta' }}">{{ \App\Models\Customer::STATUS[$c->status] }}</span></td>
+            <td class="text-center"><x-admin.status :rotulo="\App\Models\Customer::label($c->status)" :tom="tom_por_status('cliente', $c->status)" /></td>
             <td class="text-center">{{ $c->orders_count }}</td>
             <td class="text-center">{{ $c->interactions_count }}</td>
             <td>
                 <div class="table-actions">
                     <a href="{{ route('admin.clientes.show', $c) }}#ficha" class="btn btn-sm btn-outline-secondary" title="Editar ficha"><i class="fas fa-pen"></i></a>
-                    @if(auth()->user()->isAdmin())
+                    @can('admin')
                         <x-admin.delete :action="route('admin.clientes.destroy', $c)" confirm="Excluir o cliente {{ $c->nome }}? As interações e pedidos dele também saem." />
-                    @endif
+                    @endcan
                 </div>
             </td>
         </tr>

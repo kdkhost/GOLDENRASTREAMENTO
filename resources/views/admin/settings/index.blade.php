@@ -59,7 +59,7 @@
     <div class="col-lg-5">
         <x-admin.card title="Loja virtual" icon="fa-store" :descricao="$lojaAtiva ? 'Ativa — as páginas /loja estão no ar e no menu do site.' : 'Desativada — /loja sai do ar e some do menu.'">
             <x-slot:actions>
-                <span class="badge {{ $lojaAtiva ? 'tone-green' : 'tone-neutral' }}">{{ $lojaAtiva ? 'Ativa' : 'Desativada' }}</span>
+                <x-admin.status :rotulo="$lojaAtiva ? 'ativa' : 'desativada'" :tom="tom_por_flag($lojaAtiva)" />
             </x-slot:actions>
             <form method="POST" action="{{ route('admin.settings.loja') }}" class="mb-3">
                 @csrf
@@ -86,7 +86,7 @@
         <x-admin.card title="Botão do WhatsApp no site" icon="fa-brands fa-whatsapp" class="mt-3"
             :descricao="$boxAtivo ? 'Abre a central de canais com a mensagem pronta por segmento.' : 'Link direto para o número principal.'">
             <x-slot:actions>
-                <span class="badge {{ $boxAtivo ? 'tone-green' : 'tone-neutral' }}">{{ $boxAtivo ? 'Caixa multicanal' : 'Link direto' }}</span>
+                <x-admin.status :rotulo="$boxAtivo ? 'caixa multicanal' : 'link direto'" :tom="tom_por_flag($boxAtivo)" />
             </x-slot:actions>
             <form method="POST" action="{{ route('admin.settings.whatsapp') }}" class="row g-3">
                 @csrf
@@ -99,15 +99,13 @@
                     <div class="form-hint d-block mb-2">O número do canal é opcional: vazio, usa o WhatsApp principal ({{ $numeroPadrao }}).</div>
                     @foreach(config('golden.whatsapp_box.canais') as $canal)
                         @php $chave = 'whatsapp_canal_'.$canal['id']; @endphp
-                        <div class="canal-linha d-flex align-items-center gap-2 mb-2">
-                            <input class="form-check-input mt-0" type="checkbox" name="{{ $chave }}_ativo" value="1" id="{{ $chave }}-ativo"
-                                @checked(($settings[$chave.'_ativo'] ?? '1') === '1')>
-                            <label for="{{ $chave }}-ativo" class="small flex-grow-1 mb-0">
+                        <div class="canal-linha">
+                            <x-admin.switch name="{{ $chave }}_ativo" col="" :checked="($settings[$chave.'_ativo'] ?? '1') === '1'">
                                 <i class="fas {{ $canal['icone'] }} text-gold me-1" aria-hidden="true"></i>{{ $canal['nome'] }}
-                                <span class="d-block text-secondary">{{ $canal['msg'] }}</span>
-                            </label>
-                            <input name="{{ $chave }}_numero" class="form-control form-control-sm"
-                                value="{{ $settings[$chave.'_numero'] ?? '' }}" placeholder="só dígitos" aria-label="Número do canal {{ $canal['nome'] }}">
+                                <span class="d-block text-secondary small">{{ $canal['msg'] }}</span>
+                            </x-admin.switch>
+                            <x-admin.field name="{{ $chave }}_numero" label="Número" col="" class="canal-numero"
+                                :value="$settings[$chave.'_numero'] ?? ''" placeholder="só dígitos" />
                         </div>
                     @endforeach
                 </div>

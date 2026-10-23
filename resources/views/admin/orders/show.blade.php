@@ -122,11 +122,11 @@
                     <button class="btn btn-golden btn-sm"><i class="fas fa-save me-1"></i> Atualizar pedido</button>
                 </div>
             </form>
-            @if(auth()->user()->isAdmin())
+            @can('admin')
                 <div class="border-top mt-3 pt-3">
                     <x-admin.delete :action="route('admin.pedidos.destroy', $pedido)" label="Excluir pedido" confirm="Excluir o pedido {{ $pedido->numero }}?" />
                 </div>
-            @endif
+            @endcan
         </x-admin.card>
     </div>
 </div>

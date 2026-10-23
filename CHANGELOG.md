@@ -3,7 +3,64 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
-## [2.17.0] - 2026-10-23
+## [2.18.0] - 2026-10-23
+
+### Adicionado
+- **`config/golden.php` → `itens_por_pagina` e `tons_status`** — o painel passou a ter uma régua
+  por domínio. Os 20 itens de cada listagem moram numa chave só; a cor de cada situação mora em
+  `tons_status`, agrupada por `funil`, `cliente`, `pedido`, `usuario`, `estoque`, `movimento` e
+  `slot_imagem`, e todo valor usa os tons `tone-*` do tema, que já têm par no claro e no escuro.
+- **`tom_por_status(string $grupo, ?string $valor)` e `tom_por_flag(bool)`** em
+  `app/Support/helpers.php` — a view pergunta o tom, nunca escolhe. Quem inventa um status novo
+  no model e esquece a cor cai no `fallback`, e o teste avisa.
+- **`resources/views/components/admin/status.blade.php`** — o selo de situação do painel
+  (`.badge-status` + `tone-X`). Substituiu as três linguagens paralelas que existiam: os chips
+  `.st-*`, os `.badge tone-green` escritos à mão e os ternários de cor dentro das tabelas.
+- **`resources/views/components/admin/pager.blade.php`** — o rodapé de paginação compartilhado
+  entre tabela e linha do tempo; ele só aparece quando há para onde ir.
+- **`Gate::define('admin')`** em `AppServiceProvider` — a pergunta única da tela
+  (`@can('admin')`), enquanto o middleware `role:admin,vendedor` continua sendo a regra que vale
+  na rota. Nenhuma view volta a chamar `isAdmin()`.
+- **Regras que estavam repetidas em view e controller viraram método do model**:
+  `Product::estado()` / `estadoEstoque()`, `Product::estoqueBaixo()` / `estoqueZerado()`
+  (as duas scopes que alimentam filtro e KPIs), `Campaign::conversao()`, `Customer::label()`,
+  `StockMovement::TIPOS` / `rotulo()` e `Interaction::ICONES` / `icone()`.
+- **`tests/Feature/PadronizacaoDoPainelTest.php`** — 5 travas: a lista para na página do config,
+  nenhum controller de lista escolhe número próprio, todo status dos models tem cor no config e
+  o tom existe no tema, as listagens usam o selo padronizado, e o botão de excluir só aparece
+  para quem a rota deixa excluir.
+
+### Alterado
+- **As 12 listagens do painel** (`Activity`, `Campaign`, `Category`, `Customer`, `Faq`, `Lead`,
+  `Order`, `Page`, `Product`, `Supplier`, `Testimonial`, `User`) passaram ao mesmo molde: um
+  `private function query(Request)` usado pelo filtro e pela paginação, `paginate(itens_por_pagina())`
+  com `withQueryString()`, o parâmetro de busca chamado `busca` em todo lugar, e o
+  `<x-admin.table :paginator>` na view. Produtos e campanhas ganharam a fileira de KPIs.
+- **Auditoria** ganhou o filtro **Quem agiu**, que o controller já aceitava mas nenhuma tela
+  oferecia; **Configurações** e **Imagens do site** tiveram os últimos campos escritos à mão
+  levados para `<x-admin.field>` e `<x-admin.switch>` (cada canal agora é um interruptor com o
+  próprio campo "Número"); a **nota rápida do lead** e o **formulário de interação do cliente**
+  idem; a ficha do cliente paginou o histórico e os pedidos com nomes de página próprios
+  (`?historico=2` não mexe em `?pedidos=`).
+- **CSS**: `public/css/admin-golden.css` perdeu `.st-*`, `.slot-selo` e `.slot-voltar`; as barras
+  do funil (`.fb-*`) passaram a ser escolhidas pelo **nome do tom**, o mesmo que o selo usa, para
+  barra e badge nunca discordarem.
+
+### Corrigido
+- **Erro de validação invisível em campo de array.** `SiteContentController` gravava as chaves
+  como `alt[home_hero]` e `paginas_site[faq][titulo]`, enquanto `old()` e `@error` procuram por
+  ponto: o texto alternativo estourado voltava para a tela sem nenhuma mensagem. As chaves
+  passaram à notação de ponto e `<x-admin.field>` / `<x-admin.switch>` convertem o nome HTML
+  (`alt[x]`) na chave de ponto (`alt.x`) — com isso a view de textos dispensou o `old()` próprio
+  que tinha.
+- **Página 2 da lista de categorias estava inacessível** — o controller paginava e a view não
+  tinha rodapé.
+- **Dois N+1**: a listagem de pedidos carregava `with('items')` para contar linha a linha
+  (`withCount('items')` agora) e o histórico de estoque consultava o usuário registro a registro.
+- **Movimentação "ajuste" aparecia como entrada ou saída** — a tela deduzia o rótulo do sinal do
+  número e perdia o tipo real que o cadastro grava.
+- **A ficha de usuário tinha a própria lista de perfis**, separada da lista do filtro e da regra
+  de validação; as três passaram a ler as constantes de `UserController`.
 
 ### Adicionado
 - **`config/golden.php` → `menu_painel`** — o menu do painel inteiro passou a ser um registro:

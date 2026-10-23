@@ -179,7 +179,7 @@ class ImagensDoSitePeloCmsTest extends TestCase
 
         $this->actingAs($this->admin)->post(route('admin.conteudo.imagens.update'), [
             'imagem' => ['home_cta' => 'produtos/foto-de-outro-campo.jpg'],
-        ])->assertSessionHasErrors('imagem[home_cta]');
+        ])->assertSessionHasErrors('imagem.home_cta');
 
         $this->assertNull(Setting::get('imagem.home_cta'));
     }

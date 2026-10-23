@@ -12,7 +12,7 @@
 <div class="row g-3">
     <div class="col-lg-5">
         <div class="row g-3 mb-3">
-            <div class="col-6"><x-admin.stat label="Saldo atual" :value="$produto->estoque" icon="fa-boxes-stacked" :tone="$produto->estoque <= $produto->estoque_minimo ? 'red' : 'teal'" /></div>
+            <div class="col-6"><x-admin.stat label="Saldo atual" :value="$produto->estoque" icon="fa-boxes-stacked" :tone="tom_por_status('estoque', $produto->estadoEstoque())" /></div>
             <div class="col-6"><x-admin.stat label="Mínimo" :value="$produto->estoque_minimo" icon="fa-arrow-down-1-9" tone="gold" /></div>
         </div>
 
@@ -33,11 +33,12 @@
     </div>
 
     <div class="col-lg-7">
-        <x-admin.table :headers="['Quando', 'Tipo', 'center:Qtde', 'center:Saldo', 'Responsável', 'Motivo']" empty="Nenhuma movimentação registrada.">
+        <x-admin.table :headers="['Quando', 'Tipo', 'center:Qtde', 'center:Saldo', 'Responsável', 'Motivo']"
+            empty="Nenhuma movimentação registrada." :paginator="$movimentos">
             @foreach($movimentos as $m)
                 <tr>
                     <td class="small text-secondary">{{ $m->created_at->format('d/m/Y H:i') }}</td>
-                    <td><span class="badge-status {{ $m->quantidade >= 0 ? 'st-vendido' : 'st-perdido' }}">{{ $m->quantidade >= 0 ? 'entrada' : 'saída' }}</span></td>
+                    <td><x-admin.status :rotulo="$m->rotulo()" :tom="tom_por_status('movimento', $m->tipo)" /></td>
                     <td class="text-center small fw-semibold">{{ $m->quantidade >= 0 ? '+' : '' }}{{ $m->quantidade }}</td>
                     <td class="text-center small">{{ $m->saldo_after }}</td>
                     <td class="small">{{ $m->user?->name ?? 'Sistema' }}</td>

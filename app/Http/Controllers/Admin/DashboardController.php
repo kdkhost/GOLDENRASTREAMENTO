@@ -48,12 +48,7 @@ class DashboardController extends Controller
             ->withCount(['leads as leads_novos' => fn ($q) => $q->where('status', 'novo')])
             ->orderByDesc('leads_count')
             ->limit(8)
-            ->get()
-            ->map(function ($c) {
-                $c->taxo_conversao = $c->leads_count > 0 ? round($c->leads_vendidos / $c->leads_count * 100, 1) : 0;
-
-                return $c;
-            });
+            ->get();
 
         // Visão consolidada dos módulos integrados (CRM + ERP + CMS)
         $modulos = [

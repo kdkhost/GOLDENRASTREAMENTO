@@ -12,7 +12,7 @@
 </div>
 
 <x-admin.filters :reset="route('admin.pedidos.index')">
-    <x-admin.filter name="q" label="Buscar" col="col-12 col-md-5" placeholder="Nº do pedido, nome ou telefone..." />
+    <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-5" placeholder="Nº do pedido, nome ou telefone..." />
     <x-admin.filter name="status" type="select" label="Status" col="col-6 col-md-3" :options="$statuses" empty="Todos os status" />
 </x-admin.filters>
 
@@ -23,10 +23,10 @@
         <tr>
             <td><a href="{{ route('admin.pedidos.show', $o) }}" class="fw-semibold text-decoration-none">{{ $o->numero }}</a></td>
             <td class="small">{{ $o->nome }}<div class="text-secondary">{{ $o->telefone }}</div></td>
-            <td class="text-center small">{{ $o->items->count() }}</td>
+            <td class="text-center small">{{ $o->items_count }}</td>
             <td class="small">{{ $o->pagamentoLabel() }}</td>
             <td class="text-end small fw-semibold">{{ brl($o->total_cents) }}</td>
-            <td class="text-center"><span class="badge-status {{ in_array($o->status, ['pago', 'enviado', 'entregue']) ? 'st-vendido' : ($o->status === 'cancelado' ? 'st-perdido' : 'st-proposta') }}">{{ $o->statusLabel() }}</span></td>
+            <td class="text-center"><x-admin.status :rotulo="$o->statusLabel()" :tom="tom_por_status('pedido', $o->status)" /></td>
             <td class="text-center small text-secondary">{{ $o->created_at->format('d/m/Y') }}</td>
         </tr>
     @endforeach

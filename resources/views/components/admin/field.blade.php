@@ -14,8 +14,11 @@
 ])
 @php
     $id = 'f-'.preg_replace('/[^a-z0-9]+/i', '-', $name);
-    $atual = old($name, $value);
-    $comErro = $errors->has($name) ? ' is-invalid' : '';
+    // Nome de array HTML (alt[home_hero]) vira chave de ponto (alt.home_hero): é assim que o
+    // validador guarda o erro e é assim que old() procura — sem isso o campo nunca acusa erro.
+    $chave = rtrim(str_replace(['[', ']'], ['.', ''], $name), '.');
+    $atual = old($chave, $value);
+    $comErro = $errors->has($chave) ? ' is-invalid' : '';
     $classe = ($type === 'select' ? 'form-select' : 'form-control').$comErro;
     $extra = $attributes->except('class');
 @endphp
@@ -43,5 +46,5 @@
             @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required) required @endif {!! $extra !!}>
     @endif
 
-    @error($name)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+    @error($chave)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 </div>

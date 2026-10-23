@@ -8,7 +8,15 @@
 @endsection
 
 @section('content')
-<x-admin.table :headers="['Depoimento', 'center:Nota', 'center:Status', 'end:Ações']" empty="Nenhum depoimento cadastrado.">
+<x-admin.filters :reset="route('admin.conteudo.depoimentos.index')">
+    <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-6" placeholder="Nome, papel, cidade ou texto..." />
+    <x-admin.filter name="nota" type="select" label="Nota" col="col-6 col-md-3" :options="['5' => '5 estrelas', '4' => '4 estrelas', '3' => '3 estrelas', '2' => '2 estrelas', '1' => '1 estrela']" empty="Todas" />
+    <x-admin.filter name="situacao" type="select" label="Situação" col="col-6 col-md-3" :options="['aprovado' => 'Visível', 'pendente' => 'Oculto']" empty="Todas" />
+</x-admin.filters>
+
+<x-admin.table :headers="['Depoimento', 'center:Nota', 'center:Status', 'end:Ações']"
+    empty="Nenhum depoimento com esse filtro."
+    :paginator="$depoimentos">
     @foreach($depoimentos as $d)
         <tr>
             <td>
@@ -16,11 +24,13 @@
                 <div class="small text-secondary">“{{ Str::limit($d->texto, 90) }}”</div>
             </td>
             <td class="text-center text-warning small">{{ str_repeat('★', $d->nota) }}</td>
-            <td class="text-center"><span class="badge {{ $d->aprovado ? 'tone-green' : 'tone-neutral' }}">{{ $d->aprovado ? 'visível' : 'oculto' }}</span></td>
+            <td class="text-center"><x-admin.status :rotulo="$d->aprovado ? 'visível' : 'oculto'" :tom="tom_por_flag($d->aprovado)" /></td>
             <td>
                 <div class="table-actions">
                     <a href="{{ route('admin.conteudo.depoimentos.edit', $d) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>
-                    <x-admin.delete :action="route('admin.conteudo.depoimentos.destroy', $d)" confirm="Remover este depoimento?" />
+                    @can('admin')
+                        <x-admin.delete :action="route('admin.conteudo.depoimentos.destroy', $d)" confirm="Remover este depoimento?" />
+                    @endcan
                 </div>
             </td>
         </tr>

@@ -13,9 +13,25 @@ use Illuminate\View\View;
 
 class PageController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('admin.pages.index', ['paginas' => Page::orderBy('ordem_menu')->orderBy('titulo')->get()]);
+        return view('admin.pages.index', [
+            'paginas' => $this->query($request)->paginate(itens_por_pagina())->withQueryString(),
+        ]);
+    }
+
+    /** A mesma régua da listagem e do filtro: quem filtra e quem pagina lêem isto. */
+    private function query(Request $request)
+    {
+        return Page::query()
+            ->when($request->filled('busca'), function ($q) use ($request) {
+                $t = '%' . $request->busca . '%';
+                $q->where(fn ($w) => $w->where('titulo', 'like', $t)->orWhere('slug', 'like', $t));
+            })
+            ->when($request->filled('situacao'), fn ($q) => $q->where('publicada', $request->situacao === 'publicada'))
+            ->when($request->filled('menu'), fn ($q) => $q->where('exibir_menu', $request->menu === 'no_menu'))
+            ->orderBy('ordem_menu')
+            ->orderBy('titulo');
     }
 
     public function create(): View

@@ -85,3 +85,34 @@ if (!function_exists('site_pagina')) {
         return ConteudoSite::pagina($chave, $campo);
     }
 }
+
+if (!function_exists('itens_por_pagina')) {
+    /** Regra única de paginação das listagens do painel. */
+    function itens_por_pagina(): int
+    {
+        return (int) config('golden.itens_por_pagina', 20);
+    }
+}
+
+if (!function_exists('tom_por_status')) {
+    /**
+     * Tom (classe .tone-*) de um status do painel, lido de
+     * config('golden.tons_status')[$grupo]. O grupo é o domínio ('funil', 'cliente',
+     * 'pedido', 'usuario'); status desconhecido cai no tom de fallback — a tela continua
+     * legível mesmo se alguém inventar um status novo no banco.
+     */
+    function tom_por_status(string $grupo, ?string $valor): string
+    {
+        $mapa = (array) config("golden.tons_status.{$grupo}");
+
+        return $mapa[$valor ?? ''] ?? config('golden.tons_status.fallback', 'neutral');
+    }
+}
+
+if (!function_exists('tom_por_flag')) {
+    /** Todo sim/não do painel usa o mesmo par de tons: verde aceso, neutro apagado. */
+    function tom_por_flag(bool $valor): string
+    {
+        return $valor ? 'green' : 'neutral';
+    }
+}

@@ -33,10 +33,12 @@
                     </form>
                 @endforeach
             </div>
-            <form method="POST" action="{{ route('admin.leads.nota', $lead) }}" class="d-flex gap-2">
+            <form method="POST" action="{{ route('admin.leads.nota', $lead) }}" class="row g-2 align-items-end">
                 @csrf
-                <input name="note" class="form-control form-control-sm" placeholder="Registrar nota de atendimento..." maxlength="1000" required aria-label="Nota de atendimento">
-                <button class="btn btn-sm btn-golden" title="Salvar nota"><i class="fas fa-note-sticky" aria-hidden="true"></i></button>
+                <x-admin.field name="note" label="Nota de atendimento" col="col" placeholder="O que foi combinado com o cliente..." :required="true" maxlength="1000" />
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-golden" title="Salvar nota"><i class="fas fa-note-sticky" aria-hidden="true"></i></button>
+                </div>
             </form>
         </x-admin.card>
 
@@ -100,11 +102,11 @@
                     <li class="text-secondary small">Sem registros.</li>
                 @endforelse
             </ul>
-            @if(auth()->user()->isAdmin())
+            @can('admin')
                 <div class="border-top mt-2 pt-3">
                     <x-admin.delete :action="route('admin.leads.destroy', $lead)" label="Excluir lead" confirm="Excluir definitivamente este lead?" />
                 </div>
-            @endif
+            @endcan
         </x-admin.card>
     </div>
 </div>

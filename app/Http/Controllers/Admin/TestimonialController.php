@@ -11,9 +11,28 @@ use Illuminate\View\View;
 
 class TestimonialController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('admin.testimonials.index', ['depoimentos' => Testimonial::orderBy('ordem')->latest()->get()]);
+        return view('admin.testimonials.index', [
+            'depoimentos' => $this->query($request)->paginate(itens_por_pagina())->withQueryString(),
+        ]);
+    }
+
+    /** A mesma régua da listagem e do filtro: quem filtra e quem pagina lêem isto. */
+    private function query(Request $request)
+    {
+        return Testimonial::query()
+            ->when($request->filled('busca'), function ($q) use ($request) {
+                $t = '%' . $request->busca . '%';
+                $q->where(fn ($w) => $w->where('nome', 'like', $t)
+                    ->orWhere('papel', 'like', $t)
+                    ->orWhere('cidade', 'like', $t)
+                    ->orWhere('texto', 'like', $t));
+            })
+            ->when($request->filled('nota'), fn ($q) => $q->where('nota', (int) $request->nota))
+            ->when($request->filled('situacao'), fn ($q) => $q->where('aprovado', $request->situacao === 'aprovado'))
+            ->orderBy('ordem')
+            ->latest();
     }
 
     public function create(): View

@@ -28,4 +28,21 @@ class Campaign extends Model
     {
         return self::CANAIS[$this->channel] ?? $this->channel;
     }
+
+    /**
+     * Percentual de leads que viraram venda. Usa os contadores que a própria listagem
+     * carregou (leads_count e leads_vendidos); sem eles, conta pela relação.
+     */
+    public function conversao(): float
+    {
+        $total = (int) ($this->attributes['leads_count'] ?? $this->leads()->count());
+
+        if ($total === 0) {
+            return 0.0;
+        }
+
+        $vendidos = (int) ($this->attributes['leads_vendidos'] ?? $this->leads()->where('status', 'vendido')->count());
+
+        return round($vendidos / $total * 100, 1);
+    }
 }

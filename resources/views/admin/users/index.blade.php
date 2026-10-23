@@ -8,7 +8,13 @@
 @endsection
 
 @section('content')
-<x-admin.table :headers="['Usuário', 'Perfil', 'Status', 'center:Leads', 'end:Ações']" :paginator="$usuarios" empty="Nenhum usuário cadastrado.">
+<x-admin.filters :reset="route('admin.usuarios.index')">
+    <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-6" placeholder="Nome ou e-mail..." />
+    <x-admin.filter name="perfil" type="select" label="Perfil" col="col-6 col-md-3" :options="$perfis" empty="Todos" />
+    <x-admin.filter name="situacao" type="select" label="Situação" col="col-6 col-md-3" :options="$situacoes" empty="Todas" />
+</x-admin.filters>
+
+<x-admin.table :headers="['Usuário', 'Perfil', 'Status', 'center:Leads', 'end:Ações']" :paginator="$usuarios" empty="Nenhum usuário com esse filtro.">
     @foreach($usuarios as $usr)
         <tr>
             <td>
@@ -17,15 +23,17 @@
                     <div><span class="fw-semibold">{{ $usr->name }}</span><div class="small text-secondary">{{ $usr->email }}</div></div>
                 </div>
             </td>
-            <td><span class="badge bg-body-secondary text-body">{{ ucfirst($usr->role) }}</span></td>
-            <td><span class="badge-status {{ $usr->status === 'ativo' ? 'st-vendido' : 'st-perdido' }}">{{ ucfirst($usr->status) }}</span></td>
+            <td><span class="badge tone-neutral">{{ $perfis[$usr->role] ?? ucfirst($usr->role) }}</span></td>
+            <td><x-admin.status :rotulo="ucfirst($usr->status)" :tom="tom_por_status('usuario', $usr->status)" /></td>
             <td class="text-center small">{{ $usr->leads_count }}</td>
             <td>
                 <div class="table-actions">
                     <a href="{{ route('admin.usuarios.edit', $usr) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>
-                    @if($usr->id !== auth()->id())
-                        <x-admin.delete :action="route('admin.usuarios.destroy', $usr)" confirm="Excluir este usuário?" />
-                    @endif
+                    @can('admin')
+                        @if($usr->id !== auth()->id())
+                            <x-admin.delete :action="route('admin.usuarios.destroy', $usr)" confirm="Excluir este usuário?" />
+                        @endif
+                    @endcan
                 </div>
             </td>
         </tr>

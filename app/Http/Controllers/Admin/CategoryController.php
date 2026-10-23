@@ -11,11 +11,23 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         return view('admin.categories.index', [
-            'categorias' => Category::withCount('products')->orderBy('ordem')->get(),
+            'categorias' => $this->query($request)->paginate(itens_por_pagina())->withQueryString(),
         ]);
+    }
+
+    /** A mesma régua filtra a listagem e pagina a lista. */
+    private function query(Request $request)
+    {
+        return Category::withCount('products')
+            ->when($request->filled('busca'), function ($q) use ($request) {
+                $t = '%' . $request->busca . '%';
+                $q->where(fn ($w) => $w->where('nome', 'like', $t)->orWhere('descricao', 'like', $t));
+            })
+            ->when($request->filled('situacao'), fn ($q) => $q->where('ativa', $request->situacao === 'ativa'))
+            ->orderBy('ordem');
     }
 
     public function create(): View

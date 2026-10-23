@@ -39,10 +39,10 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow">
                         <li><span class="dropdown-item-text small text-secondary">{{ auth()->user()->email }} · <strong>{{ ucfirst(auth()->user()->role) }}</strong></span></li>
                         <li><hr class="dropdown-divider"></li>
-                        @if(auth()->user()->isAdmin())
+                        @can('admin')
                         <li><a class="dropdown-item" href="{{ route('admin.usuarios.index') }}"><i class="fas fa-user-shield me-2 text-gold"></i> Usuários &amp; permissões</a></li>
                         <li><a class="dropdown-item" href="{{ route('admin.settings.index') }}"><i class="fas fa-sliders me-2 text-gold"></i> Configurações</a></li>
-                        @endif
+                        @endcan
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="event.preventDefault();document.getElementById('formLogout').submit();"><i class="fas fa-arrow-right-from-bracket me-2"></i> Encerrar sessão</a></li>
                     </ul>

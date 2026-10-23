@@ -16,14 +16,14 @@ class OrderController extends Controller
 {
     public function index(Request $request): View
     {
-        $pedidos = Order::with('items')
+        $pedidos = Order::withCount('items')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
-            ->when($request->filled('q'), function ($q) use ($request) {
-                $t = '%'.$request->q.'%';
+            ->when($request->filled('busca'), function ($q) use ($request) {
+                $t = '%'.$request->busca.'%';
                 $q->where(fn ($w) => $w->where('numero', 'like', $t)->orWhere('nome', 'like', $t)->orWhere('telefone', 'like', $t));
             })
             ->latest()
-            ->paginate(20)
+            ->paginate(itens_por_pagina())
             ->withQueryString();
 
         return view('admin.orders.index', [

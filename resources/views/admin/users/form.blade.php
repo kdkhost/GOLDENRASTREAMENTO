@@ -1,8 +1,6 @@
 @extends('admin.layouts.app')
 @php
     $editando = $usuario->exists;
-    $perfis = ['vendedor' => 'Vendedor', 'visualizador' => 'Visualizador', 'admin' => 'Administrador'];
-    $situacoes = ['ativo' => 'Ativo', 'inativo' => 'Inativo'];
 @endphp
 @section('title', $editando ? 'Editar usuário' : 'Novo usuário')
 @section('page_title', $editando ? 'Editar: '.$usuario->name : 'Novo usuário')
