@@ -107,9 +107,9 @@ Exemplos
   # cPanel reaproveitando um banco que já existe no plano
   GOLDEN_DB_PASSWORD='...' GOLDEN_ADMIN_PASSWORD='...' \
     bash deploy/instalador-golden.sh \
-      --url=https://foco.server-golden.com.br \
+      --url=https://seudominio.com.br \
       --php=/usr/bin/ea-php83 \
-      --nome=focogolden_cms --usuario=focogolden_cms --limpar-banco
+      --nome=usuario_do_banco --usuario=usuario_do_banco --limpar-banco
 
   # VPS limpa, criando o banco
   bash deploy/instalador-golden.sh --url=https://painel.exemplo.com.br \
