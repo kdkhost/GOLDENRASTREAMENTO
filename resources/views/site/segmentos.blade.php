@@ -26,14 +26,15 @@
 </section>
 
 <section class="sec-alt">
-    <div class="wrap lead-panel">
-        <div>
-            <span class="eyebrow">Seu segmento</span>
-            <h2>Tem uma frota ou um único veículo?</h2>
-            <p class="lead-sub">Independentemente do tamanho da operação, montamos a proposta certa. Informe sua quantidade de veículos e perfil para receber condições de kit e mensalidade.</p>
-            <a href="{{ route('site.planos') }}" class="btn btn-dark" style="margin-top:10px">Conhecer os kits →</a>
+    <div class="wrap center">
+        <span class="eyebrow">Seu segmento</span>
+        <h2>Tem uma frota ou um único veículo?</h2>
+        <p class="lead-sub">Independentemente do tamanho da operação, montamos a proposta certa. Informe sua quantidade de veículos e perfil para receber condições de kit e mensalidade.</p>
+        <div style="margin-top:22px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <a href="{{ route('site.contato') }}" class="btn btn-gold" data-track="contact" data-cta="segmentos">Solicitar minha proposta →</a>
+            <a href="{{ route('site.planos') }}" class="btn btn-dark">Conhecer os kits →</a>
+            <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-ghost" data-track="whatsapp_click" data-cta="segmentos"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
         </div>
-        @include('site.partials.lead-form')
     </div>
 </section>
 @endsection

@@ -47,6 +47,19 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Removido o `$golden['menu']` (lista flat) do *view composer* — só existia para montar o
   menu; agora é `$golden['nav']`.
 
+### Removido
+- **Fim da duplicidade do formulário de lead.** Ele existia em três páginas ao mesmo tempo
+  (home, `/para-quem` e `/contato`), sempre pelo mesmo parcial `site/partials/lead-form`.
+  Agora vive **somente na página dedicada** (`/contato`):
+  - Na **home**, a seção "Fale com a Golden" com o formulário saiu; a página termina em
+    FAQ → CTA final, que já levava para `/contato` e WhatsApp.
+  - Em **`/para-quem`**, o painel de duas colunas com o formulário virou um bloco central
+    com três caminhos: "Solicitar minha proposta →" (`/contato`), "Conhecer os kits →"
+    (`/planos`) e WhatsApp.
+  - Os botões de kit continuam mandando para `/contato?kit=…`, e o *select* "Kit de
+    interesse" da página de contato já vem preenchido com o kit escolhido — a remoção do
+    formulário inline não perdeu a pré-seleção.
+
 ## [2.1.0] - 2026-10-22
 
 ### Adicionado

@@ -210,22 +210,6 @@
     </div>
 </section>
 
-{{-- CONTATO / LEAD --}}
-<section class="sec-light" id="contato">
-    <div class="wrap lead-panel">
-        <div>
-            <span class="eyebrow">Fale com a Golden</span>
-            <h2>Vamos encontrar a solução ideal para seus veículos?</h2>
-            <p class="lead-sub">Solicite uma proposta para sua frota ou fale com nossa equipe. Retornamos rapidamente com as condições dos kits e da mensalidade.</p>
-            <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
-                <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-gold" data-track="whatsapp_click" data-cta="contact"><i class="fa-brands fa-whatsapp"></i> Conversar agora</a>
-            </div>
-            <p class="fine" style="margin-top:16px"><i class="fa-solid fa-lock" style="color:var(--teal)"></i> Seus dados ficam seguros e são usados apenas para o seu atendimento.</p>
-        </div>
-        @include('site.partials.lead-form')
-    </div>
-</section>
-
 {{-- CTA FINAL --}}
 <section style="padding-top:0">
     <div class="wrap">

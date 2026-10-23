@@ -201,6 +201,10 @@ automaticamente; desligar a loja remove o grupo inteiro da árvore.
   medição (GA4/Pixel/GTM) com *switch* de consentimento e a loja virtual.
 
 ### Captura de leads (`POST /leads`)
+- **Um único formulário no site**, na página dedicada `/contato`
+  (`resources/views/site/partials/lead-form.blade.php`). As demais páginas convertem por
+  CTA — os botões de kit apontam para `/contato?kit=…` e o *select* de interesse já vem
+  preenchido; não há formulário duplicado embutido em home nem em `/para-quem`.
 - Validação no servidor + **rate limit** (`throttle:8,1`) + **honeypot** anti-spam.
 - Preserva **UTMs, `gclid`/`fbclid`**, página de origem e um **ID de visita** anônimo
   (cookie `golden_visitor`, 90 dias).
