@@ -46,11 +46,26 @@ Route::post('/leads', [SiteLeadController::class, 'store'])
 */
 Route::middleware('loja')->group(function () {
     Route::get('/loja', [StoreController::class, 'index'])->name('site.loja.index');
+
+    // Sacola: adicionar, ajustar quantidade e remover mantêm o carrinho na sessão.
+    Route::get('/loja/carrinho', [StoreController::class, 'carrinho'])->name('site.loja.carrinho');
+    Route::post('/loja/carrinho', [StoreController::class, 'adicionar'])
+        ->middleware('throttle:40,1')->name('site.loja.carrinho.adicionar');
+    Route::post('/loja/carrinho/quantidade', [StoreController::class, 'atualizar'])
+        ->middleware('throttle:40,1')->name('site.loja.carrinho.atualizar');
+    Route::post('/loja/carrinho/remover', [StoreController::class, 'remover'])
+        ->middleware('throttle:40,1')->name('site.loja.carrinho.remover');
+
+    // Pedido: formulário, gravação e acompanhamento por número + token.
+    Route::get('/loja/checkout', [StoreController::class, 'checkout'])->name('site.loja.checkout');
+    Route::post('/loja/pedido', [StoreController::class, 'registrar'])
+        ->middleware('throttle:8,1')->name('site.loja.pedido.registrar');
+    Route::get('/loja/pedido/{numero}/{token}', [StoreController::class, 'pedido'])
+        ->where(['numero' => 'GR\d{2}-\d{4,6}', 'token' => '[A-Za-z0-9]{20,40}'])
+        ->name('site.loja.pedido');
+
+    // Produto precisa ficar por último: {slug} aceita qualquer caminho de um segmento.
     Route::get('/loja/{slug}', [StoreController::class, 'show'])->name('site.loja.produto');
-    Route::post('/loja/checkout', [StoreController::class, 'checkout'])
-        ->middleware('throttle:10,1')
-        ->name('site.loja.checkout');
-    Route::get('/loja/pedido/{numero}', [StoreController::class, 'confirmacao'])->name('site.loja.confirmacao');
 });
 
 /*
@@ -178,6 +193,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/', [SettingController::class, 'index'])->name('index');
         Route::post('/', [SettingController::class, 'update'])->name('update');
         Route::post('/loja', [SettingController::class, 'loja'])->name('loja');
+        Route::post('/loja-regras', [SettingController::class, 'regras'])->name('loja-regras');
         Route::post('/whatsapp', [SettingController::class, 'whatsapp'])->name('whatsapp');
     });
 });

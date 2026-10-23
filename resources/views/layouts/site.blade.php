@@ -41,6 +41,12 @@
             @include('site.partials.nav-links', ['escopo' => 'topo'])
         </nav>
         <div class="nav-cta">
+            @if($golden['loja_ativa'])
+            <a href="{{ route('site.loja.carrinho') }}" class="cart-link" aria-label="Abrir carrinho ({{ $golden['carrinho_itens'] }} {{ $golden['carrinho_itens'] === 1 ? 'item' : 'itens' }})" title="Carrinho">
+                <i class="fa-solid fa-basket-shopping"></i>
+                <span class="cart-count" data-cart-count @if($golden['carrinho_itens'] <= 0) hidden @endif>{{ $golden['carrinho_itens'] }}</span>
+            </a>
+            @endif
             <a href="{{ route('site.contato') }}" class="btn btn-gold btn-sm" data-track="contact" data-cta="header">Falar com especialista</a>
             <button class="nav-toggle" id="navToggle" type="button" aria-label="Abrir menu" aria-controls="navDrawer" aria-expanded="false">
                 <i class="fa-solid fa-bars icon-open"></i>
@@ -69,6 +75,12 @@
 <button type="button" class="nav-backdrop" id="navBackdrop" tabindex="-1" aria-label="Fechar menu"></button>
 
 <main>
+@if (session('success') || session('error'))
+    <div class="flash" role="status">
+        @if (session('success'))<span class="ok"><i class="fa-solid fa-circle-check"></i> {{ session('success') }}</span>@endif
+        @if (session('error'))<span class="err"><i class="fa-solid fa-triangle-exclamation"></i> {{ session('error') }}</span>@endif
+    </div>
+@endif
 @yield('content')
 </main>
 

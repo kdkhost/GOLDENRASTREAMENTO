@@ -95,7 +95,7 @@
                 @forelse($lead->histories as $h)
                 <li>
                     <div class="d-flex justify-content-between"><span class="fw-semibold small">
-                        @if($h->from_status && $h->from_status!==$h->to_status){{ \App\Models\Lead::label($h->from_status) }} → {{ \App\Models\Lead::label($h->to_status) }}@elseif($h->from_status===$h->to_status)Nota@else{{ \App\Models\Lead::label($h->to_status) }}@endif
+                        @if($h->from_status && $h->from_status!==$h->to_status){{ \App\Models\Lead::label($h->from_status) }} → {{ \App\Models\Lead::label($h->to_status) }}@elseif($h->from_status===$h->to_status)Nota @else{{ \App\Models\Lead::label($h->to_status) }}@endif
                     </span><small class="text-secondary">{{ $h->created_at->format('d/m H:i') }}</small></div>
                     @if($h->note)<div class="small text-secondary">{{ $h->note }}</div>@endif
                     @if($h->user)<div class="small text-secondary">— {{ $h->user->name }}</div>@endif

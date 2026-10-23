@@ -44,10 +44,27 @@
 
     <div class="col-lg-5">
         <div class="card shadow-sm" style="border-radius:16px"><div class="card-body">
-            <h6 class="fw-bold mb-3"><i class="fas fa-user text-warning me-1"></i> Dados de entrega</h6>
+            <h6 class="fw-bold mb-3"><i class="fas fa-user text-warning me-1"></i> Comprador e entrega</h6>
             <p class="small mb-1"><strong>{{ $pedido->nome }}</strong></p>
             <p class="small text-secondary mb-1">{{ $pedido->telefone }} @if($pedido->email)· {{ $pedido->email }}@endif</p>
-            <p class="small text-secondary">{{ $pedido->endereco }} — {{ $pedido->cidade }}/{{ $pedido->uf }} @if($pedido->cep)· CEP {{ $pedido->cep }}@endif</p>
+            @if($pedido->documento)
+            <p class="small text-secondary mb-1"><i class="fas fa-id-card me-1"></i> {{ $pedido->documentoFormatado() }} · {{ $pedido->tipo_pessoa === 'juridica' ? 'pessoa jurídica' : 'pessoa física' }}</p>
+            @endif
+            <p class="small text-secondary mb-1"><i class="fas fa-truck me-1"></i> {{ $pedido->entregaLabel() }}</p>
+            @if($pedido->entrega !== 'retira')
+            <p class="small text-secondary">{{ $pedido->enderecoFormatado() }}</p>
+            @endif
+            @if($pedido->consent_given)
+            <p class="small text-success"><i class="fas fa-shield-halved me-1"></i> Consentimento LGPD registrado em {{ $pedido->created_at->format('d/m/Y H:i') }}</p>
+            @endif
+
+            <div class="border-top pt-2 mt-2">
+                <label class="form-label small mb-1">Link público do pedido (o cliente acompanha por aqui)</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control font-monospace" readonly value="{{ $pedido->registroUrl() }}" id="publicLink">
+                    <button class="btn btn-outline-secondary" type="button" onclick="const i=document.getElementById('publicLink');i.select();navigator.clipboard&&navigator.clipboard.writeText(i.value);this.innerHTML='ok'"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
 
             @if($pedido->customer)
             <div class="border-top pt-2 mt-2 small"><i class="fas fa-users me-1"></i> Cliente no CRM: <a href="{{ route('admin.clientes.show',$pedido->customer) }}">{{ $pedido->customer->nome }}</a></div>
@@ -57,16 +74,35 @@
                 <input type="hidden" name="nome" value="{{ $pedido->nome }}">
                 <input type="hidden" name="telefone" value="{{ $pedido->telefone }}">
                 <input type="hidden" name="email" value="{{ $pedido->email }}">
+                <input type="hidden" name="documento" value="{{ $pedido->documento }}">
                 <input type="hidden" name="endereco" value="{{ $pedido->endereco }}">
                 <input type="hidden" name="cidade" value="{{ $pedido->cidade }}">
                 <input type="hidden" name="uf" value="{{ $pedido->uf }}">
                 <input type="hidden" name="cep" value="{{ $pedido->cep }}">
-                <input type="hidden" name="tipo" value="fisica">
+                <input type="hidden" name="tipo" value="{{ $pedido->tipo_pessoa ?: 'fisica' }}">
                 <input type="hidden" name="status" value="ativo">
                 <input type="hidden" name="valor_anual" value="{{ $pedido->total_cents/100 }}">
                 <button class="btn btn-sm btn-outline-success"><i class="fas fa-user-plus me-1"></i> Criar cliente deste pedido</button>
             </form>
             @endif
+        </div></div>
+
+        <div class="card shadow-sm mt-3" style="border-radius:16px"><div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="fas fa-timeline text-warning me-1"></i> Linha do tempo</h6>
+            <ul class="list-unstyled small mb-0" style="position:relative;padding-left:18px">
+                <span style="position:absolute;left:4px;top:6px;bottom:6px;width:2px;background:rgba(0,0,0,.1)"></span>
+                @forelse($pedido->histories->sortByDesc('created_at') as $h)
+                <li style="position:relative;padding:0 0 12px">
+                    <span style="position:absolute;left:-18px;top:5px;width:9px;height:9px;border-radius:50%;background:{{ $loop->first ? '#e0a33e' : '#319e86' }}"></span>
+                    <strong>{{ $h->statusLabel() }}</strong>
+                    <span class="text-secondary">· {{ $h->created_at->format('d/m/Y H:i') }}</span>
+                    @if($h->observacao)<div class="text-secondary">{{ $h->observacao }}</div>@endif
+                    @if($h->user)<div class="text-secondary fst-italic">por {{ $h->user->name }}</div>@endif
+                </li>
+                @empty
+                <li class="text-secondary">Nenhum marco registrado.</li>
+                @endforelse
+            </ul>
         </div></div>
 
         <div class="card shadow-sm mt-3" style="border-radius:16px"><div class="card-body">
@@ -76,12 +112,13 @@
                 <div class="row g-2">
                     <div class="col-6"><label class="form-label small">Status</label><select name="status" class="form-select form-select-sm">@foreach($statuses as $k=>$v)<option value="{{ $k }}" @selected($pedido->status===$k)>{{ $v }}</option>@endforeach</select></div>
                     <div class="col-6"><label class="form-label small">Pagamento</label><select name="pagamento" class="form-select form-select-sm">@foreach(\App\Models\Order::PAGAMENTOS as $k=>$v)<option value="{{ $k }}" @selected($pedido->pagamento===$k)>{{ $v }}</option>@endforeach</select></div>
+                    <div class="col-12"><label class="form-label small">Recado para a linha do tempo do cliente (opcional)</label><input name="observacao" class="form-control form-control-sm" maxlength="255" placeholder="Ex.: Pagamento confirmado, enviamos hoje."></div>
                     <div class="col-12"><label class="form-label small">Notas internas</label><textarea name="notas" rows="3" class="form-control form-control-sm">{{ $pedido->notas }}</textarea></div>
                 </div>
                 <button class="btn btn-golden btn-sm mt-3"><i class="fas fa-save me-1"></i> Atualizar pedido</button>
             </form>
             @if(auth()->user()->isAdmin())
-            <form method="POST" action="{{ route('admin.pedidos.destroy',$pedido) }}" class="mt-2" onsubmit="return confirm('Excluir o pedido {{ $pedido->numero }}?')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger w-100"><i class="fas fa-trash me-1"></i> Excluir pedido</button></form>
+            <form method="POST" action="{{ route('admin.pedidos.destroy',$pedido) }}" class="mt-2" onsubmit="return confirm('Excluir o pedido {{ $pedido->numero }}?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger w-100"><i class="fas fa-trash me-1"></i> Excluir pedido</button></form>
             @endif
         </div></div>
     </div>

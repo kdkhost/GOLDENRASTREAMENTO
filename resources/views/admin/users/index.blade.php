@@ -36,7 +36,7 @@
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#edit{{ $usr->id }}"><i class="fas fa-pen"></i></button>
                                 @if($usr->id !== auth()->id())
-                                <form method="POST" action="{{ route('admin.usuarios.destroy',$usr) }}" class="d-inline" onsubmit="return confirm('Excluir usuário?')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                                <form method="POST" action="{{ route('admin.usuarios.destroy',$usr) }}" class="d-inline" onsubmit="return confirm('Excluir usuário?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
                                 @endif
                             </td>
                         </tr>

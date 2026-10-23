@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Faq;
+use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -48,6 +49,9 @@ class LevezaDasPaginasTest extends TestCase
             '/contato',
             '/privacidade',
             '/p/sobre',
+            '/loja',
+            '/loja/rastreador-j16-4g',
+            '/loja/carrinho',
         ];
     }
 
@@ -88,6 +92,32 @@ class LevezaDasPaginasTest extends TestCase
     public function test_pagina_inedita_do_cms_responde_404(): void
     {
         $this->get('/p/nao-existe')->assertNotFound();
+    }
+
+    /** Checkout com a sacola cheia: a tela inteira sai do catálogo em cache. */
+    public function test_checkout_com_carrinho_preenchido_nao_consulta_o_banco(): void
+    {
+        $produto = Product::where('slug', 'rastreador-j16-4g')->firstOrFail();
+
+        $this->post('/loja/carrinho', ['produto' => $produto->id, 'quantidade' => 2])->assertRedirect('/loja/carrinho');
+        $this->get('/loja/carrinho')->assertOk();
+
+        $this->assertSame(
+            [],
+            $this->consultasDaRequisicao('GET', '/loja/checkout'),
+            'O checkout consultou o banco mesmo com o catálogo em cache.'
+        );
+    }
+
+    /** Mexer no catálogo pelo painel derruba a vitrine cacheada na hora. */
+    public function test_edicao_do_catalogo_invalida_a_vitrine(): void
+    {
+        $produto = Product::where('slug', 'chip-m2m-vivo')->firstOrFail();
+        $this->get('/loja')->assertSee('Chip M2M — Vivo');
+
+        $produto->update(['nome' => 'Chip M2M — Vivo renamed']);
+
+        $this->get('/loja')->assertOk()->assertSee('renamed');
     }
 
     /**

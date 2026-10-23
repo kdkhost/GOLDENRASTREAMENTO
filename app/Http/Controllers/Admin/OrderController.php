@@ -17,7 +17,7 @@ class OrderController extends Controller
         $pedidos = Order::with('items')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('q'), function ($q) use ($request) {
-                $t = '%' . $request->q . '%';
+                $t = '%'.$request->q.'%';
                 $q->where(fn ($w) => $w->where('numero', 'like', $t)->orWhere('nome', 'like', $t)->orWhere('telefone', 'like', $t));
             })
             ->latest()
@@ -34,29 +34,28 @@ class OrderController extends Controller
     public function show(Order $pedido): View
     {
         return view('admin.orders.show', [
-            'pedido' => $pedido->load(['items.product', 'customer', 'user']),
+            'pedido' => $pedido->load(['items.product', 'customer', 'user', 'histories.user']),
             'statuses' => Order::STATUS,
             'clientes' => Customer::orderBy('nome')->get(),
         ]);
     }
 
+    /**
+     * Muda status/pagamento e grava o marco na linha do tempo que o cliente vê. As datas
+     * de pago_em/enviado_em são consequência do status (Order::registrarStatus).
+     */
     public function atualizarStatus(Request $request, Order $pedido): RedirectResponse
     {
         $data = $request->validate([
-            'status' => ['required', 'in:' . implode(',', array_keys(Order::STATUS))],
-            'pagamento' => ['nullable', 'in:' . implode(',', array_keys(Order::PAGAMENTOS))],
+            'status' => ['required', 'in:'.implode(',', array_keys(Order::STATUS))],
+            'pagamento' => ['nullable', 'in:'.implode(',', array_keys(Order::PAGAMENTOS))],
             'notas' => ['nullable', 'string', 'max:5000'],
+            'observacao' => ['nullable', 'string', 'max:255'],
         ]);
 
         $anterior = $pedido->status;
-        $pedido->fill($data);
-        if ($data['status'] === 'pago' && $anterior !== 'pago' && !$pedido->pago_em) {
-            $pedido->pago_em = now();
-        }
-        if ($data['status'] === 'enviado' && !$pedido->enviado_em) {
-            $pedido->enviado_em = now();
-        }
-        $pedido->save();
+        $pedido->registrarStatus($data['status'], $data['observacao'] ?: null, $request->user()->id);
+        $pedido->update(['pagamento' => $data['pagamento'], 'notas' => $data['notas'] ?? null]);
 
         Activity::log('pedido_status', "Pedido {$pedido->numero}: {$anterior} → {$data['status']}.", $pedido);
 

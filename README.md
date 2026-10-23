@@ -128,9 +128,11 @@ seeders de demonstração em produção (`--seed`); eles criam a senha `golden12
 | `/faq` | Dúvidas frequentes |
 | `/contato` | Formulário de lead + canais |
 | `/privacidade` | Política de Privacidade (LGPD) |
-| `/loja` | **Loja virtual** (vitrine de rastreadores, chips M2M e acessórios) |
+| `/loja` | **Loja virtual** (vitrine de rastreadores, chips M2M e acessórios; filtro por categoria) |
 | `/loja/{slug}` | Página do produto + compra direta |
-| `/loja/pedido/{numero}` | Confirmação do pedido |
+| `/loja/carrinho` | Sacola (quantidades, subtotal, regra de frete) |
+| `/loja/checkout` | Checkout em 4 etapas: comprador, entrega, pagamento, consentimento |
+| `/loja/pedido/{numero}/{token}` | Pedido do cliente: linha do tempo, endereço, totais |
 | `/p/{slug}` | Páginas institucionais criadas no **CMS** |
 
 Conteúdo de marketing (benefícios, segmentos, kits, passos, FAQ) fica centralizado em
@@ -143,12 +145,17 @@ funciona, FAQ e Contato; `/planos` e `/como-funciona` levam ao `/faq` em vez de 
 e `/solucoes` leva ao `/como-funciona` em vez de repetir os passos.
 
 **Leveza:** a página pública não consulta o banco. Menu, configurações, categorias,
-depoimentos, FAQs e páginas do CMS passam por `Cache::rememberForever` e são invalidados por
-evento de gravação do modelo (trait `App\Models\Concerns\CachesContent`); `Setting` guarda a
-rodada em memória e `AppServiceProvider::dadosDoSite()` monta `$golden` uma única vez por
-requisição. Por isso sessão e cache ficam em arquivo (`SESSION_DRIVER=file`,
-`CACHE_STORE=file`) — nada de SELECT/INSERT por visita. `tests/Feature/LevezaDasPaginasTest.php`
-mede isso: cache frio = poucas consultas por página (`/` faz 4), cache quente = **zero**.
+depoimentos, FAQs, páginas do CMS e **o catálogo inteiro da loja** (blob `golden.loja_catalogo`,
+com preço, estoque e categoria de cada item ativo) passam por `Cache::rememberForever` e são
+invalidados por evento de gravação do modelo (trait `App\Models\Concerns\CachesContent`);
+`Setting` guarda a rodada em memória e `AppServiceProvider::dadosDoSite()` monta `$golden` uma
+única vez por requisição. A sacola vive na sessão e resolve os itens contra esse catálogo —
+vitrine, página de produto, carrinho e checkout não fazem nenhuma consulta; preço e estoque só
+são relidos no `DB::transaction` que grava o pedido. Por isso sessão e cache ficam em arquivo
+(`SESSION_DRIVER=file`, `CACHE_STORE=file`) — nada de SELECT/INSERT por visita, e nenhum
+pico de banco no meio de uma campanha.
+`tests/Feature/LevezaDasPaginasTest.php` mede isso: cache frio = poucas consultas por página
+(`/` faz 4), cache quente = **zero**.
 Índices dos caminhos de leitura em `2026_10_23_000001_add_leitura_indexes.php`. Ao publicar,
 use `composer deploy` (migrations + `config:cache` + `route:cache` + `view:cache`); depois de
 mudar conteúdo no painel, `php artisan optimize:clear` se quiser reaquecer o cache na hora.
@@ -206,10 +213,13 @@ Com `prefers-reduced-motion: reduce` a auto-rotação desliga e o deslocamento f
 - **Estoque real**: cada produto tem `estoque` e `estoque_minimo`; todo movimento é
   registrado no razão `stock_movements` (entrada / saída / ajuste) com saldo resultante,
   usuário, motivo e pedido relacionado. Ajustes feitos pelo painel geram lançamento.
-- **Pedidos**: numeração `GR26-00001`, itens com snapshot de nome/preço, subtotal, frete,
-  desconto e total em centavos; pagamento `cartao` / `boleto` / `pix` / `não`;
-  status `pendente → pago → em andamento → enviado → entregue` (ou `cancelado`), com
-  datas automáticas de `pago_em` / `enviado_em` nas transições.
+- **Pedidos**: numeração `GR26-00007` (derivada do id dentro da transação, sem corrida de
+  `MAX()+1`), itens com snapshot de nome/SKU/preço, subtotal, frete, desconto e total em
+  centavos; pagamento `cartao` / `boleto` / `pix` / `retirada` / `não`; entrega
+  (`entrega` / `retira`); funil `pendente → aguardando pagamento → pago → em separação →
+  enviado → entregue` (ou `cancelado`), com datas automáticas de `pago_em` / `enviado_em`.
+  Cada transição grava um marco em `order_histories` (status, recado, autor), que vira a
+  linha do tempo do cliente e o histórico do painel.
 - **Faturamento** da loja no dashboard e alerta de **estoque baixo**.
 
 ### CMS (`/admin/paginas`)
@@ -220,16 +230,42 @@ Com `prefers-reduced-motion: reduce` a auto-rotação desliga e o deslocamento f
 - **Depoimentos** e **FAQs** editáveis, publicados no site sem tocar em código.
 
 ### Loja virtual com *switch* no painel
+Fluxo de ponta a ponta: **vitrine → sacola → checkout → pedido numerado → linha do tempo →
+gestão no painel**, com e-mail de confirmação nas duas pontas.
+
 - **Menu Comercial / Vendas / Site / Administração** na sidebar, com um
   **botão liga/desliga a loja** direto na barra lateral (e o mesmo controle na tela de
-  Configurações, junto de frete grátis e valor do frete).
+  Configurações).
 - Desativar a loja faz o middleware `loja` (`LojaAtiva`) responder **404** em todas as
   rotas `/loja*` e esconder os links do menu e do rodapé — o restante do site e o painel
   seguem funcionando, nada é apagado.
-- **Checkout transacional**: `POST /loja/checkout` valida os itens, usa
-  `DB::transaction` para criar pedido + itens + lançamentos de baixa de estoque, aplica
-  frete (grátis ou valor configurado), honeypot anti-spam, `throttle:10,1`, IP
-  pseudonimizado e `visitor_id` para atribuição de campanha.
+- **Vitrine** `/loja` com filtros por categoria (contagem por grupo), preço/promoção/
+  mensalidade, estoque publicado e *CTA* de WhatsApp quando o item está sem estoque.
+- **Sacola** em sessão (`App\Support\Carrinho`): ajuste de quantidades, remoção por linha,
+  subtotal, frete e quanto falta para o frete grátis — tudo resolvido contra o catálogo em
+  cache, sem tocar no banco. O contador do topo (`carrinho_itens`) vem do mesmo pacote.
+- **Checkout** `/loja/checkout` em quatro etapas: comprador (pessoa física/jurídica, CPF 11
+  ou CNPJ 14 dígitos), entrega (endereço completo obrigatório quando a modalidade é entrega;
+  retirada na loja aparece só quando o painel liga), pagamento (Pix com a chave configurada,
+  cartão, boleto ou pagamento na retirada) e observações, com **consentimento LGPD** gravado,
+  campo-mel anti-spam, máscaras de telefone/CEP/CPF-CNPJ e *autofill* de endereço pelo ViaCEP.
+- **Pedido transacional**: `POST /loja/pedido` (`throttle:8,1`) reabre o catálogo no
+  `DB::transaction`, confere preço e estoque reais (barra a venda se a prateleira esvaziou por
+  fora do painel), cria pedido + itens, lança a baixa em `stock_movements`, leva o comprador
+  ao CRM (reaproveitando o cadastro pelo documento ou e-mail), registra o primeiro marco da
+  linha do tempo, pseudonimiza o IP e esvazia a sacola.
+- **Confirmação por e-mail**: `PedidoRecebido` ao cliente (com o botão "Acompanhar meu
+  pedido") e `PedidoNovoEquipe` para a equipe quando `loja_email_equipe` estiver preenchido.
+  O envio é em `queue()` dentro de `try/catch` — SMTP sem credencial nunca anula a venda.
+- **Acompanhamento público** `/loja/pedido/{numero}/{token}`: o token de 32 caracteres no
+  caminho substitui o login; sem o link recebido por e-mail o pedido não é enumerável.
+- **Regras da loja no painel** (Configurações → Loja): frete grátis / combinar entrega
+  (`loja_livre`), valor do frete fixo, frete grátis acima de um valor, chave Pix, retirada na
+  loja e e-mail da equipe — em formulário próprio (`admin.settings.loja-regras`), separado da
+  chave que liga/desliga a loja.
+- **Gestão no painel** (`/admin/pedidos`): mudar status, forma de pagamento e notas, com um
+  "recado para a linha do tempo" opcional que aparece para o cliente; link público do pedido
+  pronto para copiar e atalho para criar o cliente no CRM.
 
 ### Painel administrativo de leads (`/admin`) — prioridade do briefing
 - **Dashboard**: KPIs (total, novos, taxa de conversão, receita fechada), funil visual,
@@ -284,15 +320,22 @@ app/
   Http/Middleware/IdentificadorVisita.php
   Models/  Lead, Campaign, LeadStatusHistory, Activity, Setting, User,
            Customer, Interaction, Product, Category, Supplier,
-           StockMovement, Order, OrderItem, Page, Testimonial, Faq
+           StockMovement, Order, OrderItem, OrderHistory, Page, Testimonial, Faq
+  Mail/    PedidoRecebido, PedidoNovoEquipe
   Services/LeadService.php               # atribuição + criação + funil
+  Support/Carrinho.php                   # sacola em sessão, sobre o catálogo em cache
   Support/helpers.php                    # brl(), loja_ativa(), slugify_pt()
 config/golden.php                        # conteúdo do site + contatos reais
 database/migrations/                     # leads/campanhas + CRM + ERP + CMS
 database/seeders/                        # Database, Catalog, Cms, Crm, Orders
-resources/views/{layouts,site,site/store,auth,admin}
+resources/views/{layouts,site,site/store,mail,auth,admin}
 public/{css,js,img}                      # tema do site e do painel
+tests/Feature/FluxoDaLojaTest.php        # vitrine -> sacola -> checkout -> pedido -> painel
+tests/Feature/LevezaDasPaginasTest.php   # zero consultas com cache quente
+tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas as telas
 ```
+
+`php artisan test` roda tudo contra SQLite em memória (58 testes).
 
 ## 6. Pendências para produção (do briefing)
 

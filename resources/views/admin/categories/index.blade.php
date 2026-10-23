@@ -29,7 +29,7 @@
                         <td class="text-center"><span class="badge {{ $c->ativa ? 'bg-success':'bg-secondary' }}">{{ $c->ativa ? 'ativa':'inativa' }}</span></td>
                         <td class="text-end">
                             <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cat{{ $c->id }}"><i class="fas fa-pen"></i></button>
-                            <form method="POST" action="{{ route('admin.catalogo.categorias.destroy',$c) }}" class="d-inline" onsubmit="return confirm('Excluir categoria? Produtos ficam sem categoria.')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                            <form method="POST" action="{{ route('admin.catalogo.categorias.destroy',$c) }}" class="d-inline" onsubmit="return confirm('Excluir categoria? Produtos ficam sem categoria.')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
                         </td>
                     </tr>
                     <div class="modal fade" id="cat{{ $c->id }}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><form method="POST" action="{{ route('admin.catalogo.categorias.update',$c) }}" class="modal-content">

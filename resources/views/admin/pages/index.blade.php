@@ -22,7 +22,7 @@
                 <td class="text-end">
                     <a href="{{ route('site.pagina',$pg->slug) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver"><i class="fas fa-external-link-alt"></i></a>
                     <a href="{{ route('admin.conteudo.paginas.edit',$pg) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>
-                    <form method="POST" action="{{ route('admin.conteudo.paginas.destroy',$pg) }}" class="d-inline" onsubmit="return confirm('Excluir página?')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                    <form method="POST" action="{{ route('admin.conteudo.paginas.destroy',$pg) }}" class="d-inline" onsubmit="return confirm('Excluir página?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
                 </td>
             </tr>
         @empty

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Category;
 use App\Models\Page;
 use App\Models\Setting;
+use App\Support\Carrinho;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -67,6 +68,7 @@ class AppServiceProvider extends ServiceProvider
             'pagamentos' => config('golden.pagamentos'),
             'parceiros' => config('golden.parceiros_m2m'),
             'loja_ativa' => $lojaAtiva,
+            'carrinho_itens' => $lojaAtiva ? Carrinho::daSessao()->totalItens() : 0,
             'nav' => $this->montarMenu($lojaAtiva),
             'tracking' => $pegar('tracking_enabled', '0') === '1',
             'ga_id' => $pegar('ga_measurement_id'),
@@ -128,7 +130,7 @@ class AppServiceProvider extends ServiceProvider
         };
 
         return collect(config('golden.nav'))
-            ->reject(fn ($item) => ($item['grupo'] ?? null) === 'loja' && !$lojaAtiva)
+            ->reject(fn ($item) => ($item['grupo'] ?? null) === 'loja' && ! $lojaAtiva)
             ->map(function ($item) use ($montar, $paginas) {
                 if (($item['grupo'] ?? null) === 'loja') {
                     $item['rota'] = 'site.loja.index';
@@ -170,16 +172,16 @@ class AppServiceProvider extends ServiceProvider
         foreach (config('golden.whatsapp_box.canais') as $canal) {
             $id = $canal['id'];
 
-            if (Setting::get('whatsapp_canal_' . $id . '_ativo', '1') !== '1') {
+            if (Setting::get('whatsapp_canal_'.$id.'_ativo', '1') !== '1') {
                 continue;
             }
 
             $canais[] = [
                 'id' => $id,
                 'icone' => $canal['icone'],
-                'nome' => Setting::get('whatsapp_canal_' . $id . '_nome', $canal['nome']),
-                'desc' => Setting::get('whatsapp_canal_' . $id . '_desc', $canal['desc']),
-                'url' => wa_url($canal['msg'], Setting::get('whatsapp_canal_' . $id . '_numero')),
+                'nome' => Setting::get('whatsapp_canal_'.$id.'_nome', $canal['nome']),
+                'desc' => Setting::get('whatsapp_canal_'.$id.'_desc', $canal['desc']),
+                'url' => wa_url($canal['msg'], Setting::get('whatsapp_canal_'.$id.'_numero')),
             ];
         }
 

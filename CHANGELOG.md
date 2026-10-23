@@ -3,6 +3,72 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.8.0] - 2026-10-23
+
+### Adicionado
+- **Loja com fluxo comercial completo**: vitrine → sacola → checkout → pedido numerado com
+  link público → linha do tempo → gestão no painel.
+  - `app/Support/Carrinho.php`: sacola na sessão do visitante, resolvida contra o catálogo em
+    cache — adicionar, trocar quantidade e ver o total não custam consulta ao banco. A
+    quantidade é limitada à prateleira publicada (999 quando o produto não tem controle de
+    estoque) e item que sai da vitrine some da sessão.
+  - **Checkout em quatro etapas**: quem compra (pessoa física/jurídica com CPF 11 / CNPJ 14
+    dígitos), entrega (endereço obrigatório quando a modalidade é entrega), pagamento (Pix,
+    cartão, boleto, pagamento na retirada) e observações. Inclui consentimento LGPD gravado
+    (`consent_given`/`consent_em`), campo-mel (`website`) e *throttle* próprio por ação.
+  - `order_histories` + `App\Models\OrderHistory`: toda mudança de status vira um marco com
+    autor e recado do painel. Alimenta a "Linha do tempo" do cliente (`Order::jornada()`) e o
+    histórico da tela do pedido.
+  - **Página pública do pedido** `/loja/pedido/{numero}/{token}`: token de 32 caracteres no
+    caminho, gerado na criação — sem o link recebido, o pedido não é enumerável. `token` e
+    `ip_hash` ficaram em `Order::$hidden`.
+  - **Confirmação por e-mail** (`App\Mail\PedidoRecebido` com botão "Acompanhar meu pedido" e
+    `PedidoNovoEquipe` para a equipe quando `loja_email_equipe` estiver preenchido), enviados
+    em `queue()` dentro de `try/catch`: falha de SMTP nunca anula a venda.
+  - **Regras da loja no painel** (Configurações → Loja): `loja_livre` (frete grátis / combinar
+    entrega), frete fixo, frete grátis acima de um valor, chave Pix, retirada na loja e e-mail
+    da equipe — rota `admin.settings.loja-regras`, separada da chave de ligar/desligar.
+  - Numeração de pedido derivada do próprio id (`GR26-00007`) dentro da transação, com valor
+    provisório no `creating` — evita o `MAX()+1` que duplica sob pico de campanha.
+  - Migração `2026_10_23_000002_aprimora_fluxo_da_loja`: colunas de comprador/entrega em
+    `orders`, `order_items.sku`, tabela `order_histories`, e reescreve o funil antigo
+    (`em_andamento` → `separando`) com a linha do tempo de volta.
+
+### Alterado
+- **Vitrine, página de produto, sacola e checkout não consultam o banco**: o catálogo ativo
+  inteiro passou a morar num blob `golden.loja_catalogo` (`Product::catalogoParaSite()`),
+  invalidado pelos eventos de `Product`/`Category`. Preço e estoque só são relidos dentro do
+  `DB::transaction` que grava o pedido — é ele que barra a venda quando a prateleira esvaziou
+  por fora do painel. `LevezaDasPaginasTest` agora cobre `/loja`, `/loja/{slug}`,
+  `/loja/carrinho` e o checkout com sacola cheia.
+- Topo do site ganhou a sacola com contador (`carrinho_itens` no pacote `$golden`) com
+  animação de *pop*, e o `main` passou a renderizar o *flash* de sucesso/erro.
+- Funil de pedido virou estado de verdade: `Order::STATUS`/`JORNADA`
+  (pendente → aguardando pagamento → pago → em separação → enviado → entregue → cancelado) e
+  `Order::ABERTOS`, usados pelo painel e pelos contadores do *dashboard*.
+- Produto de plano (sem valor à vista) mostra só a mensalidade; antes aparecia "R$ 0,00".
+
+### Corrigido
+- `GET /loja/checkout` com a sacola vazia dava **500**: o método era tipado `: View` e o
+  caminho de carrinho vazio devolvia um `RedirectResponse` (`View|RedirectResponse` agora, com
+  teste próprio).
+- **Todos os botões "Excluir" do painel gravavam como POST.** `@csrf@method('DELETE')` cola a
+  diretiva na palavra anterior e o Blade não a compila: o texto `@method('DELETE')` saía na
+  tela e a rota `DELETE` respondia 405. Corrigido nas nove listagens (produtos, categorias,
+  fornecedores, FAQs, páginas, depoimentos, campanhas, usuários e pedidos) e no `Nota@else`
+  da linha do tempo de lead; `tests/Unit/DiretivasBladeTest.php` varre as 41 telas para o
+  padrão não voltar.
+- `Carrinho::gravar()` tinha o teto de estoque calculado duas vezes, com ramos que podiam
+  divergir.
+
+### Testado
+- `tests/Feature/FluxoDaLojaTest` (9 cenários / 88 asserções): vitrine com filtros, jornada
+  completa até o pedido numerado, estoque baixando com razão no `stock_movements`, cliente
+  entrando no CRM (e reaproveitando cadastro existente), barreiras de documento/consentimento/
+  campo-mel, confereção de estoque real na transação, regras de frete vindas do painel,
+  mudança de status no painel alimentando a linha do tempo pública e loja desligada virando
+  404.
+
 ## [2.7.0] - 2026-10-23
 
 ### Adicionado

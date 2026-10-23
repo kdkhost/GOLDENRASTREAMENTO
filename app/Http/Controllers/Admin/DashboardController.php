@@ -7,7 +7,10 @@ use App\Models\Campaign;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\Order;
+use App\Models\Page;
 use App\Models\Product;
+use App\Models\Setting;
+use App\Models\Testimonial;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -48,6 +51,7 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($c) {
                 $c->taxo_conversao = $c->leads_count > 0 ? round($c->leads_vendidos / $c->leads_count * 100, 1) : 0;
+
                 return $c;
             });
 
@@ -58,11 +62,11 @@ class DashboardController extends Controller
             'produtos' => Product::where('ativo', true)->count(),
             'estoque_baixo' => Product::where('ativo', true)->where('controle_estoque', true)->whereColumn('estoque', '<=', 'estoque_minimo')->count(),
             'pedidos' => Order::count(),
-            'pedidos_abertos' => Order::whereIn('status', ['pendente', 'pago', 'em_andamento'])->count(),
+            'pedidos_abertos' => Order::whereIn('status', Order::ABERTOS)->count(),
             'faturamento_loja' => (int) Order::whereNotIn('status', ['cancelado'])->sum('total_cents'),
-            'loja_ativa' => \App\Models\Setting::get('loja_ativa', '1') === '1',
-            'paginas' => \App\Models\Page::where('publicada', true)->count(),
-            'depoimentos' => \App\Models\Testimonial::where('aprovado', true)->count(),
+            'loja_ativa' => Setting::get('loja_ativa', '1') === '1',
+            'paginas' => Page::where('publicada', true)->count(),
+            'depoimentos' => Testimonial::where('aprovado', true)->count(),
         ];
 
         return view('admin.dashboard', [

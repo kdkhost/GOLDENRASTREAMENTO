@@ -41,7 +41,7 @@
                             <td class="text-end">
                                 <form method="POST" action="{{ route('admin.campanhas.toggle',$c) }}" class="d-inline">@csrf<button class="btn btn-sm btn-outline-secondary" title="{{ $c->ativa ? 'Pausar':'Ativar' }}"><i class="fas fa-{{ $c->ativa ? 'pause':'play' }}"></i></button></form>
                                 @if(auth()->user()->isAdmin())
-                                <form method="POST" action="{{ route('admin.campanhas.destroy',$c) }}" class="d-inline" onsubmit="return confirm('Excluir campanha? Os leads permanecem, apenas perdem o vínculo.')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                                <form method="POST" action="{{ route('admin.campanhas.destroy',$c) }}" class="d-inline" onsubmit="return confirm('Excluir campanha? Os leads permanecem, apenas perdem o vínculo.')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
                                 @endif
                             </td>
                         </tr>

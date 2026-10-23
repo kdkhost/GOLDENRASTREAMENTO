@@ -53,7 +53,7 @@
     <form id="formLogout" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
 
     {{-- SIDEBAR --}}
-    @php $u = auth()->user(); $novos = \App\Models\Lead::where('status','novo')->count(); $pedidosAbertos = \App\Models\Order::whereIn('status',['pendente','pago','em_andamento'])->count(); \App\Models\Setting::all_values(); @endphp
+    @php $u = auth()->user(); $novos = \App\Models\Lead::where('status','novo')->count(); $pedidosAbertos = \App\Models\Order::whereIn('status', \App\Models\Order::ABERTOS)->count(); \App\Models\Setting::all_values(); @endphp
     <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
         <div class="sidebar-brand d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary">
             <a href="{{ route('admin.dashboard') }}" class="brand-link text-decoration-none d-flex align-items-center gap-2">

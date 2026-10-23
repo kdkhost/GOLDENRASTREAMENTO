@@ -36,7 +36,7 @@
                         <td class="text-center"><span class="badge {{ $f->ativo ? 'bg-success':'bg-secondary' }}">{{ $f->ativo ? 'ativo':'inativo' }}</span></td>
                         <td class="text-end">
                             <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#for{{ $f->id }}"><i class="fas fa-pen"></i></button>
-                            <form method="POST" action="{{ route('admin.catalogo.fornecedores.destroy',$f) }}" class="d-inline" onsubmit="return confirm('Remover fornecedor?')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                            <form method="POST" action="{{ route('admin.catalogo.fornecedores.destroy',$f) }}" class="d-inline" onsubmit="return confirm('Remover fornecedor?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
                         </td>
                     </tr>
                     <div class="modal fade" id="for{{ $f->id }}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><form method="POST" action="{{ route('admin.catalogo.fornecedores.update',$f) }}" class="modal-content">

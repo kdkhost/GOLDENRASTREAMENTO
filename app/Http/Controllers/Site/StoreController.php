@@ -3,43 +3,56 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
+use App\Mail\PedidoNovoEquipe;
+use App\Mail\PedidoRecebido;
+use App\Models\Activity;
 use App\Models\Customer;
-use App\Models\Lead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\StockMovement;
+use App\Support\Carrinho;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+/**
+ * Loja virtual. As telas de navegação (vitrine, produto, carrinho, checkout) são montadas
+ * sobre o catálogo e as configurações já em cache — nenhuma consulta ao banco por visita.
+ * A única leitura fresca acontece em registrar(), dentro da transação do pedido, onde preço
+ * e estoque precisam ser os reais daquele instante.
+ */
 class StoreController extends Controller
 {
     public function index(Request $request): View
     {
-        $produtos = Product::with('category')
-            ->vitrine()
-            ->when($request->filled('categoria'), function ($q) use ($request) {
-                $q->whereHas('category', fn ($c) => $c->where('slug', $request->categoria));
-            })
-            ->get();
+        $atual = (string) $request->query('categoria', '');
+
+        $produtos = collect(Product::catalogoParaSite())
+            ->when($atual !== '', fn ($c) => $c->where('categoria_slug', $atual))
+            ->values();
 
         return view('site.store.index', [
             'produtos' => $produtos,
-            'categorias' => Category::ativas()->withCount(['products' => fn ($q) => $q->where('ativo', true)])->get(),
-            'categoriaAtual' => $request->categoria,
+            'categorias' => collect(Product::categoriasDaVitrine())->where('slug', '!=', '')->values(),
+            'categoriaAtual' => $atual,
         ]);
     }
 
-    public function show(Request $request, string $slug): View|RedirectResponse
+    public function show(string $slug): View
     {
-        $produto = Product::with('category')->where('slug', $slug)->where('ativo', true)->firstOrFail();
-        $relacionados = Product::vitrine()
-            ->where('id', '!=', $produto->id)
-            ->where('category_id', $produto->category_id)
-            ->limit(3)
-            ->get();
+        $produto = Product::paraSite($slug);
+        abort_if($produto === null, 404);
+
+        $relacionados = collect(Product::catalogoParaSite())
+            ->where('categoria_slug', $produto['categoria_slug'])
+            ->where('slug', '!=', $produto['slug'])
+            ->take(3)
+            ->values();
 
         return view('site.store.show', [
             'produto' => $produto,
@@ -47,99 +60,336 @@ class StoreController extends Controller
         ]);
     }
 
-    public function checkout(Request $request): RedirectResponse
+    public function carrinho(): View
+    {
+        $carrinho = Carrinho::daSessao();
+        $linhas = $carrinho->linhas();
+        $subtotal = array_sum(array_column($linhas, 'subtotal'));
+
+        return view('site.store.cart', [
+            'linhas' => $linhas,
+            'subtotal' => $subtotal,
+            'frete' => Carrinho::fretePara($subtotal),
+            'freteGratisEm' => Carrinho::faltaParaFreteGratis($subtotal),
+        ]);
+    }
+
+    public function adicionar(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'produto' => ['required', 'integer'],
+            'quantidade' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'ir' => ['nullable', 'in:carrinho,checkout'],
+        ]);
+
+        $produto = Product::doCatalogo((int) $data['produto']);
+
+        if ($produto === null) {
+            return back()->with('error', 'Este produto não está disponível.');
+        }
+
+        if (! $produto['disponivel']) {
+            return back()->with('error', "O {$produto['nome']} está esgotado. Fale no WhatsApp para encomendar a reposição.");
+        }
+
+        Carrinho::daSessao()->adicionar((int) $produto['id'], (int) ($data['quantidade'] ?? 1));
+
+        $destino = ($data['ir'] ?? 'carrinho') === 'checkout'
+            ? route('site.loja.checkout')
+            : route('site.loja.carrinho');
+
+        return redirect()->to($destino)->with('success', "{$produto['nome']} adicionado ao carrinho.");
+    }
+
+    public function atualizar(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'quantidades' => ['required', 'array'],
+            'quantidades.*' => ['integer', 'min:0', 'max:999'],
+        ]);
+
+        $carrinho = Carrinho::daSessao();
+
+        foreach ($data['quantidades'] as $id => $quantidade) {
+            $carrinho->ajustar((int) $id, (int) $quantidade);
+        }
+
+        return back()->with('success', 'Carrinho atualizado.');
+    }
+
+    public function remover(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['produto' => ['required', 'integer']]);
+
+        Carrinho::daSessao()->remover((int) $data['produto']);
+
+        return back()->with('success', 'Item removido do carrinho.');
+    }
+
+    public function checkout(): View|RedirectResponse
+    {
+        $carrinho = Carrinho::daSessao();
+        $linhas = $carrinho->linhas();
+
+        if ($linhas === []) {
+            return redirect()->route('site.loja.index')->with('error', 'Seu carrinho está vazio.');
+        }
+
+        $subtotal = array_sum(array_column($linhas, 'subtotal'));
+
+        return view('site.store.checkout', $this->dadosDoCheckout($linhas, $subtotal) + [
+            'entregas' => $this->entregasDisponiveis(),
+            'pagamentos' => $this->pagamentosDoFormulario(),
+        ]);
+    }
+
+    /**
+     * Grava o pedido. Preços e estoque são relidos do banco aqui: o que entra na
+     * transação é o valor real da venda, nunca o que estava em cache na vitrine.
+     */
+    public function registrar(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'nome' => ['required', 'string', 'max:160'],
-            'email' => ['nullable', 'email', 'max:160'],
+            'email' => ['required', 'email', 'max:160'],
             'telefone' => ['required', 'string', 'max:32'],
-            'endereco' => ['required', 'string', 'max:255'],
-            'cidade' => ['required', 'string', 'max:96'],
-            'uf' => ['required', 'string', 'max:4'],
+            'tipo_pessoa' => ['required', 'in:fisica,juridica'],
+            'documento' => ['required', 'string', 'max:20'],
+            'entrega' => ['required', 'in:entrega,retira'],
             'cep' => ['nullable', 'string', 'max:12'],
-            'pagamento' => ['required', 'in:cartao,boleto,pix'],
+            'endereco' => ['required', 'string', 'max:160'],
+            'bairro' => ['required', 'string', 'max:96'],
+            'complemento' => ['nullable', 'string', 'max:120'],
+            'cidade' => ['required', 'string', 'max:96'],
+            'uf' => ['required', 'string', 'max:2'],
+            'pagamento' => ['required', 'string', 'max:16'],
             'notas' => ['nullable', 'string', 'max:2000'],
-            'produtos' => ['required', 'array', 'min:1'],
-            'produtos.*.product_id' => ['required', 'integer'],
-            'produtos.*.quantidade' => ['required', 'integer', 'min:1', 'max:999'],
+            'consent' => ['accepted'],
             'website' => ['nullable'], // honeypot
         ], [
-            'produtos.min' => 'Seu carrinho está vazio.',
+            'consent.accepted' => 'É preciso aceitar o uso dos dados para processar o pedido.',
         ]);
 
         if ($request->filled('website')) {
-            abort(422);
+            return back()->with('error', 'Pedido não registrado.');
         }
 
-        $itens = [];
-        foreach ($data['produtos'] as $linha) {
-            $produto = Product::where('id', $linha['product_id'])->where('ativo', true)->first();
-            if (!$produto) {
-                continue;
+        $entregas = $this->entregasDisponiveis();
+
+        if (! array_key_exists($data['entrega'], $entregas)) {
+            throw ValidationException::withMessages(['entrega' => 'Esta modalidade de entrega não está disponível.']);
+        }
+
+        if ($data['entrega'] === 'entrega') {
+            foreach (['cep', 'endereco', 'bairro'] as $campo) {
+                if (blank($request->input($campo))) {
+                    throw ValidationException::withMessages([$campo => 'Preencha o endereço completo para receber a entrega.']);
+                }
             }
-            $qtd = min(999, max(1, (int) $linha['quantidade']));
-            $itens[] = ['produto' => $produto, 'quantidade' => $qtd];
         }
 
-        if ($itens === []) {
-            return back()->with('error', 'Nenhum produto válido no pedido.');
+        $documento = preg_replace('/\D/', '', $data['documento']);
+
+        if (strlen($documento) !== ($data['tipo_pessoa'] === 'fisica' ? 11 : 14)) {
+            throw ValidationException::withMessages([
+                'documento' => $data['tipo_pessoa'] === 'fisica' ? 'Informe um CPF válido (somente números).' : 'Informe um CNPJ válido (somente números).',
+            ]);
         }
 
-        $pedido = \DB::transaction(function () use ($data, $itens, $request) {
+        $pagamentos = $this->pagamentosDoFormulario();
+
+        if (! array_key_exists($data['pagamento'], $pagamentos)) {
+            throw ValidationException::withMessages(['pagamento' => 'Escolha uma forma de pagamento válida.']);
+        }
+
+        if ($data['pagamento'] === 'retirada' && $data['entrega'] !== 'retira') {
+            throw ValidationException::withMessages(['pagamento' => 'Pagamento na retirada exige a modalidade "Retirada na loja".']);
+        }
+
+        $itensDaSessao = Carrinho::daSessao()->linhas();
+
+        if ($itensDaSessao === []) {
+            return redirect()->route('site.loja.index')->with('error', 'Seu carrinho está vazio.');
+        }
+
+        $pedido = DB::transaction(function () use ($request, $data, $documento, $itensDaSessao) {
+            $produtos = Product::whereIn('id', array_column($itensDaSessao, 'id'))
+                ->where('ativo', true)
+                ->get()
+                ->keyBy('id');
+
+            $aprovados = [];
+            $subtotal = 0;
+
+            foreach ($itensDaSessao as $linha) {
+                $produto = $produtos->get($linha['id']);
+
+                if ($produto === null) {
+                    throw ValidationException::withMessages(['carrinho' => "{$linha['nome']} não está mais disponível."]);
+                }
+
+                if ($produto->controle_estoque && $produto->estoque < $linha['quantidade']) {
+                    throw ValidationException::withMessages([
+                        'carrinho' => "Estoque insuficiente de {$produto->nome}: restam {$produto->estoque} unidade(s).",
+                    ]);
+                }
+
+                $unit = $produto->preco();
+                $aprovados[] = ['produto' => $produto, 'quantidade' => $linha['quantidade'], 'unit' => $unit];
+                $subtotal += $unit * $linha['quantidade'];
+            }
+
+            $frete = Carrinho::fretePara($subtotal, $data['entrega']);
+
             $pedido = Order::create([
-                'numero' => Order::proximoNumero(),
                 'nome' => $data['nome'],
-                'email' => $data['email'] ?? null,
+                'email' => $data['email'],
                 'telefone' => $data['telefone'],
+                'tipo_pessoa' => $data['tipo_pessoa'],
+                'documento' => $documento,
+                'entrega' => $data['entrega'],
                 'endereco' => $data['endereco'],
+                'bairro' => $data['bairro'],
+                'complemento' => $data['complemento'] ?? null,
                 'cidade' => $data['cidade'],
-                'uf' => $data['uf'],
-                'cep' => $data['cep'] ?? null,
+                'uf' => strtoupper($data['uf']),
+                'cep' => preg_replace('/\D/', '', (string) $data['cep']) ?: null,
+                'subtotal_cents' => $subtotal,
+                'frete_cents' => $frete,
+                'desconto_cents' => 0,
+                'total_cents' => $subtotal + $frete,
                 'pagamento' => $data['pagamento'],
                 'status' => 'pendente',
                 'notas' => $data['notas'] ?? null,
+                'consent_given' => true,
+                'customer_id' => $this->clienteDaCompra($data, $documento)?->id,
                 'visitor_id' => $request->cookie('golden_visitor'),
-                'ip_hash' => $request->ip() ? hash('sha256', $request->ip() . config('app.key')) : null,
-                'frete_cents' => \App\Models\Setting::get('loja_livre', '0') === '1' ? 0 : (int) \App\Models\Setting::get('loja_frete_cents', 0),
+                'ip_hash' => $request->ip() ? hash('sha256', $request->ip().config('app.key')) : null,
             ]);
 
-            $subtotal = 0;
-            foreach ($itens as $linha) {
+            foreach ($aprovados as $linha) {
                 $produto = $linha['produto'];
-                $unit = $produto->preco();
-                $sub = $unit * $linha['quantidade'];
+
                 OrderItem::create([
                     'order_id' => $pedido->id,
                     'product_id' => $produto->id,
                     'nome' => $produto->nome,
+                    'sku' => $produto->sku,
                     'quantidade' => $linha['quantidade'],
-                    'preco_unit_cents' => $unit,
-                    'subtotal_cents' => $sub,
+                    'preco_unit_cents' => $linha['unit'],
+                    'subtotal_cents' => $linha['unit'] * $linha['quantidade'],
                 ]);
-                $subtotal += $sub;
 
                 if ($produto->controle_estoque) {
-                    StockMovement::registrar($produto, 'saida', $linha['quantidade'], 'Venda pelo site (pedido #' . $pedido->numero . ')', null, $pedido->id);
+                    StockMovement::registrar($produto, 'saida', $linha['quantidade'], 'Venda pelo site (pedido #'.$pedido->numero.')', null, $pedido->id);
                 }
             }
 
-            $pedido->subtotal_cents = $subtotal;
-            $pedido->total_cents = $subtotal + (int) $pedido->frete_cents;
-            $pedido->save();
+            $pedido->registrarStatus('pendente', 'Pedido criado pela loja virtual.');
 
             return $pedido;
         });
 
-        \App\Models\Activity::log('pedido_site', "Pedido {$pedido->numero} recebido pela loja ({$data['nome']}).", $pedido);
+        Activity::log('pedido_site', "Pedido {$pedido->numero} recebido pela loja ({$data['nome']}).", $pedido);
+        $this->avisar($pedido);
+        Carrinho::daSessao()->limpar();
 
-        return redirect()->route('site.loja.confirmacao', $pedido->numero)
-            ->with('success', 'Pedido registrado! Entraremos em contato para confirmar o pagamento.');
+        return redirect()->to($pedido->registroUrl())
+            ->with('success', 'Pedido registrado! Enviamos a confirmação por e-mail.');
     }
 
-    public function confirmacao(string $numero): View
+    /**
+     * Status público do pedido: número + token aleatório na URL. Sem o token não há
+     * como percorrer a sequência de números e expor dados de outro cliente.
+     */
+    public function pedido(Request $request, string $numero, string $token): View
     {
-        $pedido = Order::where('numero', $numero)->firstOrFail();
+        $pedido = Order::where('numero', $numero)->where('token', $token)->firstOrFail();
 
-        return view('site.store.confirm', ['pedido' => $pedido->load('items')]);
+        return view('site.store.pedido', [
+            'pedido' => $pedido->load(['items', 'histories.user']),
+            'pixChave' => Setting::get('loja_pix_chave', ''),
+        ]);
+    }
+
+    /** Cliente do CRM: reaproveita pelo documento ou e-mail, cria quando é a primeira compra. */
+    private function clienteDaCompra(array $data, string $documento): ?Customer
+    {
+        $cliente = Customer::where('documento', $documento)->first()
+            ?? Customer::where('email', $data['email'])->first();
+
+        if ($cliente !== null) {
+            return $cliente;
+        }
+
+        $novo = new Customer([
+            'nome' => $data['nome'],
+            'documento' => $documento,
+            'tipo' => $data['tipo_pessoa'],
+            'telefone' => $data['telefone'],
+            'email' => $data['email'],
+            'endereco' => $data['endereco'],
+            'cidade' => $data['cidade'],
+            'uf' => strtoupper($data['uf']),
+            'cep' => $data['cep'] ?? null,
+            'status' => 'prospecto',
+        ]);
+        $novo->save();
+
+        return $novo;
+    }
+
+    /**
+     * E-mails transacionais da venda. Um servidor de SMTP fora do ar nunca pode anular um
+     * pedido já gravado — por isso tudo aqui é registrado e seguido em frente.
+     */
+    private function avisar(Order $pedido): void
+    {
+        try {
+            Mail::to($pedido->email)->queue(new PedidoRecebido($pedido));
+
+            if (($equipe = Setting::get('loja_email_equipe', '')) !== '') {
+                Mail::to($equipe)->queue(new PedidoNovoEquipe($pedido));
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** @return array<string, string> */
+    private function entregasDisponiveis(): array
+    {
+        $entregas = ['entrega' => Order::ENTREGAS['entrega']];
+
+        if (Setting::get('loja_retirada', '0') === '1') {
+            $entregas['retira'] = Order::ENTREGAS['retira'];
+        }
+
+        return $entregas;
+    }
+
+    /** Formas de pagamento do checkout; "na retirada" só quando a retirada está ligada. */
+    private function pagamentosDoFormulario(): array
+    {
+        $pagamentos = Order::PAGAMENTOS;
+        unset($pagamentos['nao']);
+
+        if (! array_key_exists('retira', $this->entregasDisponiveis())) {
+            unset($pagamentos['retirada']);
+        }
+
+        return $pagamentos;
+    }
+
+    /** @return array<string, mixed> */
+    private function dadosDoCheckout(array $linhas, int $subtotal): array
+    {
+        return [
+            'linhas' => $linhas,
+            'subtotal' => $subtotal,
+            'frete' => Carrinho::fretePara($subtotal, 'entrega'),
+            'freteGratisEm' => Carrinho::faltaParaFreteGratis($subtotal),
+            'pixChave' => Setting::get('loja_pix_chave', ''),
+        ];
     }
 }

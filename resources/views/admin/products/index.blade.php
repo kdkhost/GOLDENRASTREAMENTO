@@ -45,7 +45,7 @@
                     <td class="text-end">
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#estoque{{ $p->id }}" title="Movimentar estoque"><i class="fas fa-boxes-stacked"></i></button>
                         <a href="{{ route('admin.catalogo.produtos.edit',$p) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>
-                        <form method="POST" action="{{ route('admin.catalogo.produtos.destroy',$p) }}" class="d-inline" onsubmit="return confirm('Excluir produto {{ $p->nome }}?')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                        <form method="POST" action="{{ route('admin.catalogo.produtos.destroy',$p) }}" class="d-inline" onsubmit="return confirm('Excluir produto {{ $p->nome }}?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
                     </td>
                 </tr>
                 {{-- Modal estoque --}}

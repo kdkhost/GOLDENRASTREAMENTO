@@ -62,9 +62,9 @@ class SettingController extends Controller
         Setting::set('whatsapp_box_subtitulo', $data['whatsapp_box_subtitulo'] ?? '');
 
         foreach (config('golden.whatsapp_box.canais') as $canal) {
-            $chave = 'whatsapp_canal_' . $canal['id'];
-            Setting::set($chave . '_ativo', $request->boolean($chave . '_ativo') ? '1' : '0');
-            Setting::set($chave . '_numero', preg_replace('/\D/', '', (string) $request->input($chave . '_numero')));
+            $chave = 'whatsapp_canal_'.$canal['id'];
+            Setting::set($chave.'_ativo', $request->boolean($chave.'_ativo') ? '1' : '0');
+            Setting::set($chave.'_numero', preg_replace('/\D/', '', (string) $request->input($chave.'_numero')));
         }
 
         Activity::log('configuracao_salva', 'Caixa de WhatsApp do site atualizada.');
@@ -78,17 +78,33 @@ class SettingController extends Controller
         $ativa = $request->boolean('ativa') ? '1' : '0';
         Setting::set('loja_ativa', $ativa);
 
-        // Os campos de frete só são aplicados quando vindos do formulário de configurações;
-        // o botão rápido da sidebar envia apenas 'ativa' e não deve sobrescrever os demais.
-        if ($request->has('loja_livre')) {
-            Setting::set('loja_livre', $request->boolean('loja_livre') ? '1' : '0');
-        }
-        if ($request->filled('loja_frete')) {
-            Setting::set('loja_frete_cents', (int) round(((float) $request->loja_frete) * 100));
-        }
-
-        Activity::log('loja_toggle', 'Loja virtual ' . ($ativa === '1' ? 'ativada' : 'desativada') . '.');
+        Activity::log('loja_toggle', 'Loja virtual '.($ativa === '1' ? 'ativada' : 'desativada').'.');
 
         return back()->with('success', $ativa === '1' ? 'Loja ativada.' : 'Loja desativada.');
+    }
+
+    /**
+     * Regras comerciais da loja: frete (fixo, grátis acima de um valor ou liberado),
+     * retirada na loja, chave Pix para o checkout e o e-mail que recebe alerta de venda.
+     */
+    public function regras(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'loja_frete' => ['nullable', 'numeric', 'min:0', 'max:99999'],
+            'loja_frete_gratis_acima' => ['nullable', 'numeric', 'min:0', 'max:99999'],
+            'loja_pix_chave' => ['nullable', 'string', 'max:120'],
+            'loja_email_equipe' => ['nullable', 'email', 'max:160'],
+        ]);
+
+        Setting::set('loja_livre', $request->boolean('loja_livre') ? '1' : '0');
+        Setting::set('loja_retirada', $request->boolean('loja_retirada') ? '1' : '0');
+        Setting::set('loja_frete_cents', (int) round(((float) ($data['loja_frete'] ?? 0)) * 100));
+        Setting::set('loja_frete_gratis_acima_cents', (int) round(((float) ($data['loja_frete_gratis_acima'] ?? 0)) * 100));
+        Setting::set('loja_pix_chave', trim($data['loja_pix_chave'] ?? ''));
+        Setting::set('loja_email_equipe', strtolower(trim($data['loja_email_equipe'] ?? '')));
+
+        Activity::log('loja_regras', 'Regras comerciais da loja atualizadas.');
+
+        return back()->with('success', 'Regras da loja salvas.');
     }
 }

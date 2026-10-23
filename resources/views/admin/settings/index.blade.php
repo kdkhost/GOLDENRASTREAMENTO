@@ -3,7 +3,14 @@
 @section('page_title', 'Configurações do sistema')
 @section('page_description', 'Contato oficial, endereço da empresa, loja virtual e ferramentas de medição.')
 
-@php $lojaAtiva = ($settings['loja_ativa'] ?? '1') === '1'; $livre = ($settings['loja_livre'] ?? '0') === '1'; @endphp
+@php
+    $lojaAtiva = ($settings['loja_ativa'] ?? '1') === '1';
+    $livre = ($settings['loja_livre'] ?? '0') === '1';
+    $retirada = ($settings['loja_retirada'] ?? '0') === '1';
+    $paraExibir = fn ($cents) => ((int) $cents) > 0 ? number_format(((int) $cents) / 100, 2, '.', '') : '';
+    $frete = $paraExibir($settings['loja_frete_cents'] ?? 0);
+    $gratisAcima = $paraExibir($settings['loja_frete_gratis_acima_cents'] ?? 0);
+@endphp
 
 @section('content')
 <div class="row g-3">
@@ -53,17 +60,27 @@
             </div>
             <div class="card-body">
                 <p class="small text-secondary">A loja vende rastreadores, chips e acessórios cadastrados no ERP. Desligue a qualquer momento — as páginas <code>/loja</code> saem do ar na hora e somem do menu do site.</p>
-                <form method="POST" action="{{ route('admin.settings.loja') }}">
+                <form method="POST" action="{{ route('admin.settings.loja-regras') }}" class="mt-2">
                     @csrf
-                    <input type="hidden" name="ativa" value="{{ $lojaAtiva ? '0' : '1' }}">
-                    <div class="d-flex gap-2 align-items-center flex-wrap mb-3">
-                        <input type="checkbox" name="loja_livre" value="1" id="livre" class="form-check-input mt-0" @checked($livre)>
-                        <label for="livre" class="small flex-grow-1">Frete grátis / combinar entrega (não cobra valor fixo)</label>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="checkbox" name="loja_livre" value="1" id="livre" class="form-check-input mt-0" @checked($livre)>
+                            <label for="livre" class="small flex-grow-1">Frete grátis / combinar entrega (não cobra valor fixo)</label>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="checkbox" name="loja_retirada" value="1" id="retira" class="form-check-input mt-0" @checked($retirada)>
+                            <label for="retira" class="small flex-grow-1">Permitir retirada na loja (sem frete)</label>
+                        </div>
                     </div>
-                    <div class="row g-2 align-items-end mb-3">
-                        <div class="col-7"><label class="form-label small">Frete fixo (R$) — se não for grátis</label><input type="number" step="0.01" min="0" name="loja_frete" class="form-control form-control-sm" placeholder="0,00" @disabled($livre)></div>
-                        <div class="col-5"><button class="btn btn-sm btn-golden w-100"><i class="fas fa-save me-1"></i> Salvar</button></div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6"><label class="form-label small">Frete fixo (R$)</label><input type="number" step="0.01" min="0" name="loja_frete" class="form-control form-control-sm" value="{{ $frete ?: '' }}" placeholder="0,00" @disabled($livre)></div>
+                        <div class="col-6"><label class="form-label small">Frete grátis acima de (R$)</label><input type="number" step="0.01" min="0" name="loja_frete_gratis_acima" class="form-control form-control-sm" value="{{ $gratisAcima ?: '' }}" placeholder="ex.: 997,00" @disabled($livre)></div>
                     </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-12"><label class="form-label small">Chave Pix exibida no checkout</label><input name="loja_pix_chave" class="form-control form-control-sm" value="{{ $settings['loja_pix_chave'] ?? '' }}" placeholder="CPF, CNPJ, e-mail ou aleatória"></div>
+                        <div class="col-12"><label class="form-label small">E-mail da equipe (alerta de venda nova)</label><input type="email" name="loja_email_equipe" class="form-control form-control-sm" value="{{ $settings['loja_email_equipe'] ?? '' }}" placeholder="vendas@suadominio.com.br"></div>
+                    </div>
+                    <button class="btn btn-sm btn-golden w-100"><i class="fas fa-save me-1"></i> Salvar regras da loja</button>
                 </form>
                 <form method="POST" action="{{ route('admin.settings.loja') }}">
                     @csrf

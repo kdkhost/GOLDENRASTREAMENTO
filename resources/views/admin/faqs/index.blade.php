@@ -28,7 +28,7 @@
                         <td class="text-center"><span class="badge {{ $f->ativa ? 'bg-success':'bg-secondary' }}">{{ $f->ativa ? 'ativa':'oculta' }}</span></td>
                         <td class="text-end">
                             <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#faq{{ $f->id }}"><i class="fas fa-pen"></i></button>
-                            <form method="POST" action="{{ route('admin.conteudo.faqs.destroy',$f) }}" class="d-inline" onsubmit="return confirm('Remover pergunta?')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                            <form method="POST" action="{{ route('admin.conteudo.faqs.destroy',$f) }}" class="d-inline" onsubmit="return confirm('Remover pergunta?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
                         </td>
                     </tr>
                     <div class="modal fade" id="faq{{ $f->id }}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><form method="POST" action="{{ route('admin.conteudo.faqs.update',$f) }}" class="modal-content">

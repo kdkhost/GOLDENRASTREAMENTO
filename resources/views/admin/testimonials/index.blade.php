@@ -37,7 +37,7 @@
                         <td class="text-center"><span class="badge {{ $d->aprovado ? 'bg-success':'bg-secondary' }}">{{ $d->aprovado ? 'visível':'oculto' }}</span></td>
                         <td class="text-end">
                             <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#dep{{ $d->id }}"><i class="fas fa-pen"></i></button>
-                            <form method="POST" action="{{ route('admin.conteudo.depoimentos.destroy',$d) }}" class="d-inline" onsubmit="return confirm('Remover depoimento?')">@csrf@method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                            <form method="POST" action="{{ route('admin.conteudo.depoimentos.destroy',$d) }}" class="d-inline" onsubmit="return confirm('Remover depoimento?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
                         </td>
                     </tr>
                     <div class="modal fade" id="dep{{ $d->id }}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><form method="POST" action="{{ route('admin.conteudo.depoimentos.update',$d) }}" class="modal-content">
