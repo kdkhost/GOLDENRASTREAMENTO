@@ -21,8 +21,9 @@ Construído em **Laravel 13** seguindo a mesma estrutura/padrão do repositório
 
 ## 2. Rodar local (SQLite / offline)
 
+A **raiz deste repositório é o próprio projeto** Laravel — não existe subpasta do sistema.
+
 ```bash
-cd golden
 composer install
 cp .env.example .env
 php artisan key:generate

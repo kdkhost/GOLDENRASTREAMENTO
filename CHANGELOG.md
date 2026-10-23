@@ -17,6 +17,10 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Dados oficiais da empresa aplicados no site (endereço, telefones, parceiros M2M, formas de pagamento) e novo bloco "Módulos integrados" no dashboard.
 
 ### Atualizado
+- **Estrutura do repositório**: o projeto Laravel agora ocupa a **raiz** do repositório — as
+  migrações, controllers, views e o restante do sistema foram movidos de `golden/` para a raiz
+  (histórico preservado como *rename*). O `.gitignore` da raiz unificou as regras do framework
+  com a lista de documentos internos, que continuam fora do versionamento.
 - Sidebar do painel reorganizada em Comercial (CRM) / Vendas (ERP) / Site (CMS) / Administração + atalho de liga/desliga da loja.
 - Rodapé e cabeçalho do site com endereço, telefones, cobertura de chips e pagamento reais.
 - `config/golden.php`, `.env.example` e `AppServiceProvider` com os dados oficiais da Golden.
