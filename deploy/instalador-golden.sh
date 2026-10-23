@@ -36,6 +36,7 @@ AMBIENTE=production
 DEBUG=false
 HTACCESS=1
 SEM_CACHE=0
+BACKUP=1
 
 if [ -t 1 ]; then
   C_INICIO=$'\033[1m'; C_OK=$'\033[32m'; C_AVISO=$'\033[33m'; C_ERRO=$'\033[31m'; C_FIM=$'\033[0m'
@@ -47,6 +48,20 @@ passo() { printf '\n%s==>%s %s\n' "$C_INICIO" "$C_FIM" "$*"; }
 ok()    { printf '     %s✔%s %s\n' "$C_OK" "$C_FIM" "$*"; }
 aviso() { printf '     %s!%s %s\n' "$C_AVISO" "$C_FIM" "$*"; }
 erro()  { printf '\n%sERRO:%s %s\n\n' "$C_ERRO" "$C_FIM" "$*" >&2; exit 1; }
+
+# Todo o texto dos comandos vai para um log; a tela mostra só o resultado. Se um
+# comando falhar, a última parte do log aparece na hora — sem precisar caçar.
+LOG_INSTALACAO="storage/logs/instalador-$(date +%Y%m%d-%H%M%S).log"
+rodar() {
+  mkdir -p "$(dirname "$LOG_INSTALACAO")"
+  printf '\n$ %s\n' "$*" >> "$LOG_INSTALACAO"
+  if ! "$@" >> "$LOG_INSTALACAO" 2>&1; then
+    printf '\n%sERRO no comando:%s %s\n' "$C_ERRO" "$C_FIM" "$*" >&2
+    printf '     Últimas linhas de %s:\n' "$LOG_INSTALACAO" >&2
+    tail -25 "$LOG_INSTALACAO" >&2
+    exit 1
+  fi
+}
 
 ajuda() {
   cat <<'TEXTO'
@@ -83,6 +98,7 @@ Comportamento
   --dev                     APP_ENV=local e APP_DEBUG=true (só para testes).
   --sem-htaccess            não escreve o .htaccess de proteção na raiz.
   --sem-cache               não gera cache de config/rotas/views.
+  --sem-backup              não tirar cópia do banco antes de limpar as tabelas.
   --php=/caminho            força o binário do PHP (ex.: /usr/bin/ea-php83).
   --composer=/caminho       força o binário do Composer.
   --help                    esta tela.
@@ -132,6 +148,7 @@ while [ $# -gt 0 ]; do
     --dev) AMBIENTE=local; DEBUG=true; shift ;;
     --sem-htaccess) HTACCESS=0; shift ;;
     --sem-cache) SEM_CACHE=1; shift ;;
+    --sem-backup) BACKUP=0; shift ;;
     --php=*) PHP_BIN="${1#*=}"; shift ;;
     --composer=*) COMPOSER_BIN="${1#*=}"; shift ;;
     --help|-h) ajuda; exit 0 ;;
@@ -284,14 +301,14 @@ chmod 600 .env
 ok ".env escrito com permissão 600 (banco: $BANCO, ambiente: $AMBIENTE)"
 
 passo "Gerando a chave da aplicação"
-"$PHP_BIN" artisan key:generate --force --ansi >/dev/null
+rodar "$PHP_BIN" artisan key:generate --force --quiet
 ok "APP_KEY definida"
 
 # ---------------------------------------------------------------------------
 # 4. Dependências
 # ---------------------------------------------------------------------------
 passo "Instalando as dependências (sem as de desenvolvimento)"
-$COMPOSER_BIN install --no-dev --prefer-dist --optimize-autoloader --no-interaction --quiet
+rodar $COMPOSER_BIN install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 ok "Dependências instaladas"
 
 # ---------------------------------------------------------------------------
@@ -340,15 +357,28 @@ if [ "${TABELAS:-0}" -gt 0 ]; then
       erro "O banco não está vazio e a limpeza precisa de confirmação. Rode de novo com --limpar-banco."
     fi
   fi
-  "$PHP_BIN" artisan migrate:fresh --force >/dev/null
+  # Cópia de segurança antes de apagar: vai para a pasta ACIMA do projeto, que
+  # não é servida pelo navegador, e fica legível só para o dono da conta.
+  if [ "$BANCO" = mysql ] && [ "${BACKUP:-1}" -eq 1 ] && command -v mysqldump >/dev/null 2>&1; then
+    ARQUIVO_BACKUP="$(dirname "$RAIZ")/backup-banco-${NOME_BANCO}-$(date +%Y%m%d-%H%M).sql.gz"
+    if MYSQL_PWD="$SENHA_BANCO" mysqldump --single-transaction --skip-lock-tables \
+        --host="$HOST_BANCO" --port="$PORTA_BANCO" --user="$USUARIO_BANCO" "$NOME_BANCO" 2>>"$LOG_INSTALACAO" | gzip > "$ARQUIVO_BACKUP"; then
+      chmod 600 "$ARQUIVO_BACKUP"
+      ok "Cópia de segurança do banco em $ARQUIVO_BACKUP"
+    else
+      rm -f "$ARQUIVO_BACKUP"
+      aviso "Não foi possível copiar o banco (mysqldump indisponível ou sem privilégio)."
+    fi
+  fi
+  rodar "$PHP_BIN" artisan migrate:fresh --force
   ok "Tabelas antigas removidas e recriadas pelo Golden"
 fi
 
 if [ "$COM_DEMO" -eq 1 ]; then
-  "$PHP_BIN" artisan migrate --force --seed --ansi >/dev/null
+  rodar "$PHP_BIN" artisan migrate --force --seed
   ok "Migrations e dados de demonstração aplicados"
 else
-  "$PHP_BIN" artisan migrate --force --ansi >/dev/null
+  rodar "$PHP_BIN" artisan migrate --force
   ok "Migrations aplicadas (sem dados de demonstração)"
 fi
 
@@ -367,7 +397,7 @@ if [ -z "$SENHA_ADMIN" ]; then
 fi
 
 if [ -n "$SENHA_ADMIN" ]; then
-  ADMIN_EMAIL="$EMAIL_ADMIN" ADMIN_SENHA="$SENHA_ADMIN" ADMIN_NOME="$NOME_ADMIN" "$PHP_BIN" -r '
+  rodar env ADMIN_EMAIL="$EMAIL_ADMIN" ADMIN_SENHA="$SENHA_ADMIN" ADMIN_NOME="$NOME_ADMIN" "$PHP_BIN" -r '
     require "vendor/autoload.php";
     $app = require "bootstrap/app.php";
     $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
@@ -387,7 +417,7 @@ fi
 # 7. Storage, .htaccess e caches
 # ---------------------------------------------------------------------------
 passo "Disponibilizando public/storage"
-"$PHP_BIN" artisan storage:link >/dev/null 2>&1 || [ -e public/storage ] || ln -s ../storage public/storage
+rodar "$PHP_BIN" artisan storage:link || [ -e public/storage ] || ln -s ../storage public/storage
 ok "public/storage pronto"
 
 if [ "$HTACCESS" -eq 1 ]; then
@@ -423,11 +453,11 @@ fi
 
 if [ "$SEM_CACHE" -eq 0 ]; then
   passo "Otimizando para produção"
-  "$PHP_BIN" artisan config:clear >/dev/null
-  "$PHP_BIN" artisan migrate --force >/dev/null 2>&1 || true
-  "$PHP_BIN" artisan config:cache >/dev/null
-  "$PHP_BIN" artisan route:cache >/dev/null
-  "$PHP_BIN" artisan view:cache >/dev/null
+  rodar "$PHP_BIN" artisan config:clear
+  rodar "$PHP_BIN" artisan migrate --force
+  rodar "$PHP_BIN" artisan config:cache
+  rodar "$PHP_BIN" artisan route:cache
+  rodar "$PHP_BIN" artisan view:cache
   ok "Cache de configuração, rotas e views gerado"
 fi
 
@@ -443,6 +473,7 @@ cat <<RESUMO
   Banco ........ $([ "$BANCO" = mysql ] && echo "mysql $HOST_BANCO:$PORTA_BANCO/$NOME_BANCO como $USUARIO_BANCO" || echo "sqlite $NOME_BANCO")
   Ambiente ..... $AMBIENTE, depuração $DEBUG
   PHP .......... $VERSAO_PHP
+  Log .......... $LOG_INSTALACAO   (texto completo dos comandos rodados)
 
 Depois de instalar
   1. Abra $URL e confira a home, /loja, uma página de produto e o painel /admin.
