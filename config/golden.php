@@ -328,6 +328,44 @@ return [
         ['titulo' => 'Contato', 'rota' => 'site.contato'],
     ],
 
+    // Menu do painel (sidebar). Item com 'filhos' vira grupo de treeview: o clique abre
+    // e fecha o grupo, e o accordion do AdminLTE mantém um só aberto por vez.
+    // 'prefixo' acende o item em qualquer rota do recurso (show, edit, estoque...),
+    // 'admin' esconde de quem não é administrador, 'bolha' é a chave de
+    // AppServiceProvider::pendenciasDoPainel(), 'tom' usa os utilitários .tone-* e
+    // 'desligada' é a bandeira que, quando falsa, mostra o aviso e esmaece o item.
+    'menu_painel' => [
+        ['titulo' => 'Dashboard', 'rota' => 'admin.dashboard', 'prefixo' => 'admin.dashboard', 'icone' => 'fa-gauge-high'],
+
+        ['titulo' => 'Comercial', 'icone' => 'fa-chart-simple', 'filhos' => [
+            ['titulo' => 'Leads', 'rota' => 'admin.leads.index', 'prefixo' => 'admin.leads.', 'icone' => 'fa-user-plus', 'bolha' => 'leads_novos', 'tom' => 'gold'],
+            ['titulo' => 'Clientes', 'rota' => 'admin.clientes.index', 'prefixo' => 'admin.clientes.', 'icone' => 'fa-users'],
+            ['titulo' => 'Campanhas', 'rota' => 'admin.campanhas.index', 'prefixo' => 'admin.campanhas.', 'icone' => 'fa-bullhorn'],
+        ]],
+
+        ['titulo' => 'Vendas', 'icone' => 'fa-cart-shopping', 'filhos' => [
+            ['titulo' => 'Pedidos', 'rota' => 'admin.pedidos.index', 'prefixo' => 'admin.pedidos.', 'icone' => 'fa-receipt', 'bolha' => 'pedidos_abertos', 'tom' => 'blue'],
+            ['titulo' => 'Produtos e estoque', 'rota' => 'admin.catalogo.produtos.index', 'prefixo' => 'admin.catalogo.produtos.', 'icone' => 'fa-boxes-stacked', 'admin' => true],
+            ['titulo' => 'Categorias', 'rota' => 'admin.catalogo.categorias.index', 'prefixo' => 'admin.catalogo.categorias.', 'icone' => 'fa-tags', 'admin' => true],
+            ['titulo' => 'Fornecedores', 'rota' => 'admin.catalogo.fornecedores.index', 'prefixo' => 'admin.catalogo.fornecedores.', 'icone' => 'fa-truck', 'admin' => true],
+            ['titulo' => 'Loja no site', 'rota' => 'site.loja.index', 'prefixo' => 'site.loja.', 'icone' => 'fa-store', 'externo' => true, 'desligada' => 'loja_ativa'],
+        ]],
+
+        ['titulo' => 'Conteúdo do site', 'icone' => 'fa-file-lines', 'admin' => true, 'filhos' => [
+            ['titulo' => 'Páginas', 'rota' => 'admin.conteudo.paginas.index', 'prefixo' => 'admin.conteudo.paginas.', 'icone' => 'fa-newspaper'],
+            ['titulo' => 'Imagens do site', 'rota' => 'admin.conteudo.imagens.index', 'prefixo' => 'admin.conteudo.imagens.', 'icone' => 'fa-image'],
+            ['titulo' => 'Textos das páginas', 'rota' => 'admin.conteudo.textos.index', 'prefixo' => 'admin.conteudo.textos.', 'icone' => 'fa-heading'],
+            ['titulo' => 'Depoimentos', 'rota' => 'admin.conteudo.depoimentos.index', 'prefixo' => 'admin.conteudo.depoimentos.', 'icone' => 'fa-quote-left'],
+            ['titulo' => 'FAQs', 'rota' => 'admin.conteudo.faqs.index', 'prefixo' => 'admin.conteudo.faqs.', 'icone' => 'fa-circle-question'],
+        ]],
+
+        ['titulo' => 'Sistema', 'icone' => 'fa-gear', 'admin' => true, 'filhos' => [
+            ['titulo' => 'Configurações', 'rota' => 'admin.settings.index', 'prefixo' => 'admin.settings.', 'icone' => 'fa-sliders'],
+            ['titulo' => 'Usuários', 'rota' => 'admin.usuarios.index', 'prefixo' => 'admin.usuarios.', 'icone' => 'fa-user-shield'],
+            ['titulo' => 'Auditoria', 'rota' => 'admin.activities.index', 'prefixo' => 'admin.activities.', 'icone' => 'fa-shield-halved'],
+        ]],
+    ],
+
     'faq' => [
         ['q' => 'O rastreador funciona em qualquer veículo?', 'a' => 'O J16 4G/2G é compatível com a maioria dos veículos leves, motos e linha pesada. Confirme a compatibilidade no atendimento.'],
         ['q' => 'A instalação é feita pela Golden?', 'a' => 'Não. A instalação é contratada e paga pelo cliente diretamente ao profissional de sua confiança.'],

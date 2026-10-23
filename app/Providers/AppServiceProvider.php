@@ -8,6 +8,9 @@ use App\Models\Order;
 use App\Models\Page;
 use App\Models\Setting;
 use App\Support\Carrinho;
+use App\Support\MenuPainel;
+use Illuminate\Routing\Events\RouteMatched;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -19,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
 
     /** @var array<string, int>|null contadores do menu do painel, nesta requisição */
     private ?array $pendencias = null;
+
+    /** @var array<int,array<string,mixed>>|null árvore da sidebar do painel, nesta requisição */
+    private ?array $menuPainel = null;
 
     public function register(): void
     {
@@ -36,8 +42,34 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('admin.layouts.app', function ($view) {
-            $view->with('pendencias', $this->pendenciasDoPainel());
+            $dados = $this->dadosDoSite();
+
+            $view->with('pendencias', $this->pendenciasDoPainel())
+                ->with('menu_painel', $this->menuDoPainel($dados['loja_ativa']));
         });
+
+        // As memórias acima valem para UMA requisição: o provider sobrevive entre duas
+        // requisições do mesmo teste (e entre requisições em servidor embutido com
+        // keep-alive), e o menu/contadores da página anterior chegariam prontos na
+        // próxima. Cada rota casada limpa o estado.
+        Event::listen(RouteMatched::class, function () {
+            $this->site = null;
+            $this->pendencias = null;
+            $this->menuPainel = null;
+        });
+    }
+
+    /**
+     * Árvore da sidebar, memoizada como o resto: a view do layout é composta uma vez por
+     * requisição, mas o custo de montar de novo seria pago em cada include da sidebar.
+     */
+    private function menuDoPainel(bool $lojaAtiva): array
+    {
+        return $this->menuPainel ??= MenuPainel::montar(
+            $this->pendenciasDoPainel(),
+            (bool) optional(auth()->user())->isAdmin(),
+            ['loja_ativa' => $lojaAtiva],
+        );
     }
 
     /**

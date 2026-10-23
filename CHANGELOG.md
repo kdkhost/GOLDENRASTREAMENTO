@@ -3,6 +3,51 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.17.0] - 2026-10-23
+
+### Adicionado
+- **`config/golden.php` → `menu_painel`** — o menu do painel inteiro passou a ser um registro:
+  cinco entradas de topo (Dashboard solto e os grupos **Comercial**, **Vendas**, **Conteúdo do
+  site** e **Sistema**), cada uma com `icone`, `rota`, `prefixo`, `bolha`, `tom`, `externo`,
+  `admin` e `filhos`. A sidebar não tem mais um `<li>` escrito à mão: o que muda aqui muda no
+  painel, e nenhuma view decide agrupamento.
+- **`app/Support/MenuPainel.php`** — resolve a árvore contra a rota atual: `prefixo` acende o
+  item em qualquer rota do recurso (`/admin/leads/12` marca *Leads*), o grupo herda o estado dos
+  filhos, só o grupo da página aberta nasce `menu-open`, e o que é `admin` some para quem não é.
+- **`resources/views/admin/partials/sidebar-menu.blade.php`** — treeview de dois níveis no
+  desenho do AdminLTE 4 (`.nav-item.has-child` + `.nav-treeview` + `data-lte-toggle="treeview"`).
+  O abrir/fechar e o **um grupo por vez** são o accordion nativo do plugin (`accordion:true`,
+  300 ms), então a seta, a altura animada e o `prefers-reduced-motion` já vêm prontos.
+- **`tests/Feature/MenuDoPainelTest.php`** — 8 testes: nenhuma listagem do painel fica sem item
+  no menu, todo grupo tem gatilho e submenu, a página aberta abre um só grupo e fica marcada,
+  rota interna acende o pai pelo prefixo, Dashboard fica fora de grupo, a bolha de pendências
+  mora dentro do grupo sem abri-lo, o vendedor vê só Comercial e Vendas, e a loja desligada
+  continua no menu com o aviso.
+
+### Corrigido
+- **O item ativo do menu ficava branco** — a regra do AdminLTE que pinta o link ativo
+  (`[data-bs-theme=dark] .app-sidebar`, seis seletores) ganhava do dourado escrito à mão no CSS
+  do tema. O dourado passou a entrar pelos tokens do próprio framework
+  (`--lte-sidebar-active-color`, `--lte-sidebar-menu-active-color`,
+  `--lte-sidebar-submenu-active-color`), com o `[data-bs-theme]` no seletor para ter a mesma
+  força; a barra de página aberta é uma só, no filho ativo, e o grupo que o contém fica dourado
+  sem barra.
+- **"Produtos e estoque" aparecia reticenciado** no submenu (135 px de texto em 133 px): o recuo
+  do treeview caiu de 2,7rem para 2,2rem, e nenhum título de item é cortado nos 250 px da sidebar.
+- **`aria-expanded` ficava em `false` com o grupo aberto** — o plugin dispara
+  `expanded.lte.treeview`/`collapsed.lte.treeview` com o ponto no próprio nome do evento e sem
+  bolha, então a escuta passou a ser em cada `.nav-item`, não delegada na lista.
+- **Menu memoizado atravessava de uma requisição para outra** — o `AppServiceProvider` guardava o
+  pacote do site, as pendências e agora a árvore em memória de instância, e duas requisições na
+  no mesmo processo compartilhavam o menu da primeira. Cada `RouteMatched` limpa as três memórias.
+
+### Alterado
+- Os cinco rótulos de seção (`Visão geral`, `Comercial`, `Vendas`, `Conteúdo do site`,
+  `Sistema`) deixaram de ser texto solto: os quatro últimos viraram os grupos clicáveis da
+  árvore, e a regra de CSS do `.nav-header`, que ficou sem uso, saiu do `admin-golden.css`.
+- *Conteúdo do site* e *Sistema* agora se escondem inteiros para o vendedor, em vez de item por
+  item dentro da lista plana.
+
 ## [2.16.0] - 2026-10-23
 
 ### Adicionado

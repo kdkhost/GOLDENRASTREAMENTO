@@ -66,36 +66,7 @@
         <div class="sidebar-wrapper">
             <nav class="mt-2">
                 <ul class="nav sidebar-menu flex-column" role="menu">
-                    <li class="nav-header">Visão geral</li>
-                    <li class="nav-item"><a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="nav-icon fas fa-gauge-high"></i><p>Dashboard</p></a></li>
-
-                    <li class="nav-header">Comercial</li>
-                    <li class="nav-item"><a href="{{ route('admin.leads.index') }}" class="nav-link {{ request()->routeIs('admin.leads.*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-plus"></i><p>Leads @if($pendencias['leads_novos'] > 0)<span class="badge badge-menu tone-gold ms-auto">{{ $pendencias['leads_novos'] }}</span>@endif</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.clientes.index') }}" class="nav-link {{ request()->routeIs('admin.clientes.*') ? 'active' : '' }}"><i class="nav-icon fas fa-users"></i><p>Clientes</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.campanhas.index') }}" class="nav-link {{ request()->routeIs('admin.campanhas.*') ? 'active' : '' }}"><i class="nav-icon fas fa-bullhorn"></i><p>Campanhas</p></a></li>
-
-                    <li class="nav-header">Vendas</li>
-                    <li class="nav-item"><a href="{{ route('admin.pedidos.index') }}" class="nav-link {{ request()->routeIs('admin.pedidos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-receipt"></i><p>Pedidos @if($pendencias['pedidos_abertos'] > 0)<span class="badge badge-menu tone-blue ms-auto">{{ $pendencias['pedidos_abertos'] }}</span>@endif</p></a></li>
-                    @if($u->isAdmin())
-                    <li class="nav-item"><a href="{{ route('admin.catalogo.produtos.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.produtos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-boxes-stacked"></i><p>Produtos e estoque</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.catalogo.categorias.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.categorias.*') ? 'active' : '' }}"><i class="nav-icon fas fa-tags"></i><p>Categorias</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.catalogo.fornecedores.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.fornecedores.*') ? 'active' : '' }}"><i class="nav-icon fas fa-truck"></i><p>Fornecedores</p></a></li>
-                    @endif
-                    <li class="nav-item"><a href="{{ route('site.loja.index') }}" target="_blank" rel="noopener" class="nav-link {{ $golden['loja_ativa'] ? '' : 'opacity-50' }}"><i class="nav-icon fas fa-store"></i><p>Loja no site @if(! $golden['loja_ativa'])<span class="badge tone-neutral ms-auto">desligada</span>@endif</p></a></li>
-
-                    <li class="nav-header">Conteúdo do site</li>
-                    @if($u->isAdmin())
-                    <li class="nav-item"><a href="{{ route('admin.conteudo.paginas.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.paginas.*') ? 'active' : '' }}"><i class="nav-icon fas fa-file-lines"></i><p>Páginas</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.conteudo.imagens.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.imagens.*') ? 'active' : '' }}"><i class="nav-icon fas fa-image"></i><p>Imagens do site</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.conteudo.textos.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.textos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-heading"></i><p>Textos das páginas</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.conteudo.depoimentos.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.depoimentos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-quote-left"></i><p>Depoimentos</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.conteudo.faqs.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.faqs.*') ? 'active' : '' }}"><i class="nav-icon fas fa-circle-question"></i><p>FAQs</p></a></li>
-
-                    <li class="nav-header">Sistema</li>
-                    <li class="nav-item"><a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}"><i class="nav-icon fas fa-sliders"></i><p>Configurações</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.usuarios.index') }}" class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-shield"></i><p>Usuários</p></a></li>
-                    <li class="nav-item"><a href="{{ route('admin.activities.index') }}" class="nav-link {{ request()->routeIs('admin.activities.*') ? 'active' : '' }}"><i class="nav-icon fas fa-shield-halved"></i><p>Auditoria</p></a></li>
-                    @endif
+                    @include('admin.partials.sidebar-menu')
                 </ul>
             </nav>
         </div>
@@ -147,8 +118,18 @@ $(function(){
     apply(theme);
     $('#adminThemeToggle').on('click',function(){theme=theme==='dark'?'light':'dark';localStorage.setItem('golden_admin_theme',theme);apply(theme);});
 
-    toastr.options={timeOut:4000,positionClass:'toast-top-right'};
-    @foreach(['success'=>'success','error'=>'error','warning'=>'warning','info'=>'info'] as $k=>$fn)
+    // O plugin de treeview faz o accordion (um grupo aberto por vez) mas não mexe no
+    // aria-expanded, que precisa acompanhar o estado para o leitor de tela. Os eventos
+    // dele têm o ponto no próprio nome ('expanded.lte.treeview') e não sobem, então a
+    // escuta é em cada item, não delegada na lista.
+    document.querySelectorAll('.sidebar-menu .nav-item').forEach(function(li){
+        var link = li.querySelector(':scope > .nav-link');
+        if (!link || !li.querySelector(':scope > .nav-treeview')) return;
+        li.addEventListener('expanded.lte.treeview', function(){ link.setAttribute('aria-expanded','true'); });
+        li.addEventListener('collapsed.lte.treeview', function(){ link.setAttribute('aria-expanded','false'); });
+    });
+
+    toastr.options={timeOut:4000,positionClass:'toast-top-right'};    @foreach(['success'=>'success','error'=>'error','warning'=>'warning','info'=>'info'] as $k=>$fn)
         @if(session($k)) toastr.{{ $fn }}(@json(session($k))); @endif
     @endforeach
 });

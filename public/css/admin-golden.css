@@ -1,10 +1,21 @@
 /* Golden admin — ajustes sobre AdminLTE 4. As cores vêm todas de golden-theme.css. */
 
-/* Sidebar: o menu é escuro nos dois temas, então fixa o par de cores em vez de herdar. */
-.app-sidebar .nav-link.active{background:linear-gradient(90deg,var(--glow-gold),transparent);color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+/* Sidebar: o menu é escuro nos dois temas, então fixa o par de cores em vez de herdar.
+   O dourado de "página aberta" entra pelos tokens de cor do próprio AdminLTE, e o seletor
+   precisa carregar o [data-bs-theme]: é assim que o tema escuro da sidebar define os dele,
+   e sem o atributo a regra do framework, mais específica, deixa o item ativo branco. */
+.app-sidebar[data-bs-theme]{--lte-sidebar-active-color:var(--gold);--lte-sidebar-menu-active-color:var(--gold);--lte-sidebar-submenu-active-color:var(--gold);--lte-sidebar-menu-active-bg:transparent;--lte-sidebar-submenu-active-bg:transparent}
+.app-sidebar .nav-link.active{background:linear-gradient(90deg,var(--glow-gold),transparent);box-shadow:inset 3px 0 0 var(--gold)}
 .app-sidebar .nav-link.active .nav-icon{color:var(--gold)}
-.app-sidebar .nav-header{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--t-neutral-fg);padding:14px 1rem 6px}
 .app-sidebar .badge-menu{border-radius:999px;font-size:.68rem;font-weight:700}
+
+/* Treeview da sidebar. A barra de "página aberta" é uma só — fica no filho ativo; o grupo
+   que o contém sinaliza com o texto dourado, sem caixa, para não haver duas marcas iguais
+   na mesma coluna (o AdminLTE pinta o link do grupo aberto com o fundo de hover). */
+.app-sidebar .sidebar-menu>.nav-item.menu-open>.nav-link{background:none;box-shadow:none}
+.app-sidebar .nav-treeview{padding:.1rem 0 .4rem .95rem;border-left:2px solid var(--glow-gold);margin-left:1.25rem}
+.app-sidebar .nav-treeview .nav-link{font-size:.92rem}
+.app-sidebar .nav-treeview .nav-link.active{box-shadow:inset 2px 0 0 var(--gold)}
 .btn-golden{background:linear-gradient(135deg,var(--brand-gold),var(--brand-gold-2));color:var(--brand-gold-ink);border:0;font-weight:600}
 .btn-golden:hover{color:var(--brand-gold-ink);filter:brightness(1.06)}
 .text-gold{color:var(--t-gold-fg)!important}
