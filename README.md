@@ -181,10 +181,13 @@ ser link direto.
 
 **Movimento e abertura.** Cada bloco da página entra com `pageIn` (340ms,
 `cubic-bezier(.22,.61,.36,1)` — a mesma curva do menu, da gaveta e da central de WhatsApp) e
-*stagger* nos primeiros blocos. O botão **voltar ao topo** (`#toTop`, à esquerda da bolha do
-WhatsApp) tem um **anel que enche com a rolagem e esvazia ao subir**: o `stroke-dashoffset` de
-um `<circle pathLength="100">` é atualizado pelo scroll (limitado a ~60Hz, sem forçar *layout*
-no caminho quente). No primeiro gesto sobre um link interno o navegador já faz
+*stagger* nos primeiros blocos. O botão **voltar ao topo** (`#toTop`) tem um **anel que enche
+com a rolagem e esvazia ao subir**: o `stroke-dashoffset` de um `<circle pathLength="100">` é
+atualizado pelo scroll (limitado a ~60Hz, sem forçar *layout* no caminho quente). É um
+**componente compartilhado** — `partials/to-top.blade.php` + `public/css/golden-to-top.css` +
+`public/js/golden-to-top.js` — incluído no site (à esquerda da bolha do WhatsApp) e no **painel
+administrativo** (canto inferior direito); cada tema só ajusta a posição e a cor por variáveis.
+No primeiro gesto sobre um link interno o navegador já faz
 `<link rel="prefetch">` da página de destino (`initPrefetch`), o que corta o tempo de abertura
 da próxima página; nada disso roda com `save-data` ou 2g, e `prefers-reduced-motion: reduce`
 desliga a animação de entrada, o *smooth scroll* e as transições.

@@ -3,6 +3,28 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.9.0] - 2026-10-23
+
+### Adicionado
+- **Botão "voltar ao topo" no painel administrativo**, com o mesmo anel que preenche ao descer e
+  esvazia ao subir. O painel rola pela própria janela, então o comportamento é idêntico ao do
+  site: aparece depois de 320px, o clique sobe suave (instantâneo com
+  `prefers-reduced-motion`), e o anel fica no canto inferior direito (`right:22px`), acima da
+  sidebar (`z-index:1050`).
+
+### Alterado
+- O botão deixou de ser código do site e virou **componente compartilhado**, para os dois lados
+  partirem da mesma implementação — sem segunda cópia da curva e da matemática do rolagem:
+  - `resources/views/partials/to-top.blade.php` — o markup, incluído por `layouts.site` e
+    `admin.layouts.app`.
+  - `public/css/golden-to-top.css` — geometria, anel, hover, foco, mobile e
+    `prefers-reduced-motion`, parametrizados por variáveis (`--to-top-size`,
+    `--to-top-accent`, `--to-top-track`, `--to-top-face`). Cada tema só ajusta a posição: o site
+    mantém `.to-top{right:92px}` para liberar a bolha do WhatsApp, o painel usa o padrão.
+  - `public/js/golden-to-top.js` — o `initToTop` que estava dentro de `golden-site.js`, agora
+    autoinicializado a partir do `#toTop` presente na página.
+  - `golden-site.css` perdeu as 13 linhas de geometria duplicadas e `golden-site.js`, a função.
+
 ## [2.8.1] - 2026-10-23
 
 ### Removido

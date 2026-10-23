@@ -17,6 +17,7 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
     @stack('styles')
 
@@ -128,13 +129,7 @@
 
 @include('site.partials.whatsapp-box')
 
-<button type="button" class="to-top" id="toTop" aria-label="Voltar ao topo" title="Voltar ao topo">
-    <svg viewBox="0 0 52 52" aria-hidden="true" focusable="false">
-        <circle class="to-top-track" cx="26" cy="26" r="24"></circle>
-        <circle class="to-top-bar" cx="26" cy="26" r="24" pathLength="100"></circle>
-    </svg>
-    <span class="to-top-face"><i class="fa-solid fa-arrow-up"></i></span>
-</button>
+@include('partials.to-top')
 
 <div class="cookie" id="cookieBar" role="dialog" aria-live="polite">
     <p><strong>Privacidade.</strong> Usamos cookies essenciais e, com o seu consentimento, cookies de medição para entender o desempenho das campanhas, conforme a <a href="{{ route('site.privacidade') }}" style="text-decoration:underline">Política de Privacidade</a> (LGPD).</p>
@@ -146,6 +141,7 @@
 
 <script>window.GOLDEN = { tracking: {{ $golden['tracking'] ? 'true' : 'false' }} };</script>
 <script src="{{ asset('js/golden-site.js') }}?v={{ filemtime(public_path('js/golden-site.js')) }}"></script>
+<script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
 @stack('scripts')
 </body>
 </html>

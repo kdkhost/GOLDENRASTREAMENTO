@@ -305,43 +305,6 @@
     });
   }
 
-  /* ---------- Voltar ao topo: o anel preenche com a rolagem e esvazia ao subir ---------- */
-  function initToTop() {
-    var btn = document.getElementById('toTop');
-    if (!btn) return;
-    var anel = btn.querySelector('.to-top-bar');
-    var limite = 0;
-    var ultimo = 0;
-
-    function medir() {
-      var p = limite > 0 ? Math.min(1, Math.max(0, window.scrollY / limite)) : 0;
-      anel.style.strokeDashoffset = 100 - p * 100;
-      btn.classList.toggle('show', window.scrollY > 320);
-    }
-
-    // scrollHeight força layout: só é lido no carregamento, no resize e de tempos em tempos.
-    function calcularLimite() {
-      limite = document.documentElement.scrollHeight - window.innerHeight;
-      ultimo = performance.now();
-      medir();
-    }
-
-    window.addEventListener('scroll', function () {
-      var agora = performance.now();
-      if (agora - ultimo < 16) return;
-      if (agora - ultimo > 500) { calcularLimite(); return; }
-      ultimo = agora;
-      medir();
-    }, { passive: true });
-    window.addEventListener('resize', calcularLimite, { passive: true });
-
-    btn.addEventListener('click', function () {
-      window.scrollTo({ top: 0, behavior: semMovimento ? 'auto' : 'smooth' });
-    });
-
-    calcularLimite();
-  }
-
   /* ---------- Abertura rápida: antecipa o HTML do destino no primeiro gesto ---------- */
   function initPrefetch() {
     var c = navigator.connection;
@@ -370,7 +333,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initToTop(); initPrefetch(); initCtas();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initPrefetch(); initCtas();
     track('page_view', { page: location.pathname });
   });
 })();

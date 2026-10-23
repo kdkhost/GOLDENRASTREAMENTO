@@ -310,19 +310,9 @@ main>section:nth-child(2){animation-delay:.05s}
 main>section:nth-child(3){animation-delay:.1s}
 main>section:nth-child(n+4){animation-delay:.14s}
 
-.to-top{position:fixed;right:92px;bottom:22px;z-index:70;width:52px;height:52px;padding:0;border:0;background:transparent;cursor:pointer;
-  opacity:0;transform:translateY(10px) scale(.85);pointer-events:none;
-  transition:opacity .28s cubic-bezier(.22,.61,.36,1),transform .28s cubic-bezier(.22,.61,.36,1)}
-.to-top.show{opacity:1;transform:none;pointer-events:auto}
-.to-top svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
-.to-top circle{fill:none;stroke-width:3}
-.to-top-track{stroke:rgba(255,255,255,.2)}
-.to-top-bar{stroke:var(--gold);stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .12s linear}
-.to-top-face{position:absolute;inset:6px;border-radius:50%;background:rgba(18,22,26,.9);backdrop-filter:blur(6px);
-  color:var(--gold);display:grid;place-items:center;font-size:1rem;box-shadow:0 10px 26px rgba(0,0,0,.32);
-  transition:background .2s ease,color .2s ease,transform .2s ease}
-.to-top:hover .to-top-face{background:var(--gold);color:#12161a;transform:scale(1.06)}
-.to-top:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+/* Voltar ao topo: geometria e anel em golden-to-top.css; aqui só o deslocamento que libera
+   a bolha do WhatsApp no canto direito. */
+.to-top{right:92px}
 
 /* Responsivo */
 @media(max-width:960px){
@@ -407,8 +397,7 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .foot-grid{grid-template-columns:1fr}
   .cookie{right:16px}
   .wa-float{width:52px;height:52px;font-size:1.5rem;right:16px;bottom:16px}
-  .to-top{right:80px;bottom:16px;width:46px;height:46px}
-  .to-top-face{inset:5px;font-size:.9rem}
+  .to-top{right:80px}
   .wa-tip{display:none}
   .wa-popup{right:16px;bottom:80px}
   .wa-body{max-height:min(46vh,360px)}

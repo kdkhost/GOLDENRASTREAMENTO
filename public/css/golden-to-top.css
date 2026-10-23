@@ -1,0 +1,30 @@
+/* Botão "voltar ao topo" com anel que preenche conforme a página desce e esvazia ao subir.
+   Compartilhado entre o site e o painel: cada tema só ajusta a posição e as cores por variáveis. */
+.to-top{
+  --to-top-size:52px;
+  --to-top-accent:var(--gold,#e0a33e);
+  --to-top-track:color-mix(in srgb, var(--to-top-accent) 22%, transparent);
+  --to-top-face:rgba(18,22,26,.9);
+  position:fixed;bottom:22px;right:22px;z-index:1050;
+  width:var(--to-top-size);height:var(--to-top-size);padding:0;border:0;background:transparent;cursor:pointer;
+  opacity:0;transform:translateY(10px) scale(.85);pointer-events:none;
+  transition:opacity .28s cubic-bezier(.22,.61,.36,1),transform .28s cubic-bezier(.22,.61,.36,1)}
+.to-top.show{opacity:1;transform:none;pointer-events:auto}
+.to-top svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.to-top circle{fill:none;stroke-width:3}
+.to-top-track{stroke:var(--to-top-track)}
+.to-top-bar{stroke:var(--to-top-accent);stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .12s linear}
+.to-top-face{position:absolute;inset:6px;border-radius:50%;background:var(--to-top-face);backdrop-filter:blur(6px);
+  color:var(--to-top-accent);display:grid;place-items:center;font-size:1rem;box-shadow:0 10px 26px rgba(0,0,0,.32);
+  transition:background .2s ease,color .2s ease,transform .2s ease}
+.to-top:hover .to-top-face{background:var(--to-top-accent);color:#12161a;transform:scale(1.06)}
+.to-top:focus-visible{outline:2px solid var(--to-top-accent);outline-offset:3px}
+
+@media(max-width:640px){
+  .to-top{--to-top-size:46px;bottom:16px}
+  .to-top-face{inset:5px;font-size:.9rem}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .to-top,.to-top-face{transition:none}
+}
