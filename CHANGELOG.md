@@ -3,6 +3,47 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.14.0] - 2026-10-23
+
+### Adicionado
+- **Home reconstruída sobre a referência visual aprovada, com fotografia real** — nove
+  imagens próprias em `public/img/home/` (central de monitoramento do herói, plataforma no
+  desktop, rastreador J16, estrada ao pôr do sol e uma foto por segmento), todas em JPEG
+  comprimido e com `width`/`height` + `loading="lazy"` (só o herói carrega primeiro).
+  `public/img/` tinha apenas o logo: sem as imagens a home entregue não chegava perto da
+  referência.
+- **Onze seções na ordem da referência** — herói com foto de fundo, faixa de confiança e a
+  marca no canto; "Por que escolher a Golden" (seis benefícios ao lado do título);
+  aplicativo e plataforma sobre fundo escuro; "Para quem é" em cinco cartões com foto e
+  texto sobreposto; kits com o card do meio destacado; equipamento J16 com a lista de
+  verificações; como funciona; depoimentos; dúvidas frequentes em duas colunas; e o CTA
+  final sobre a estrada com a marca no canto.
+- **Faixa do equipamento J16** — `config('golden.equipamento_info')` guarda título, texto,
+  imagem e as quatro verificações (homologação Anatel, 4G/2G multioperadora, kit com
+  rastreador/chip/relé/chicote, variedade de modelos). É a única fonte: `/` e `/solucoes`
+  leem do mesmo lugar.
+- **Utilitários de layout em `golden-site.css`** — `.split` / `.split-larga` / `.split-txt`
+  (título de um lado, conteúdo do outro), `.hero-foto` + `.hero-marca`, `.seg-foto`
+  (cartão com foto, brilho no hover e gradiente para leitura), `.ben-grid`, `.checks`,
+  `.destaque` e `.cta-final.cta-foto`. Nada de estilo inline: as faixas escuras empilham em
+  uma coluna abaixo de 960px e o `prefers-reduced-motion` desliga o zoom das fotos.
+
+### Alterado
+- **Faixa de confiança vive dentro do herói** — os quatro selos agora ficam sob o texto,
+  com o ícone acima da legenda, como na referência; o bloco `.trust` saiu do fundo cinza
+  próprio para a faixa do herói.
+- **Home sem a grade de atalhos** — cada seção da referência já leva à sua página dedicada
+  (plataforma → `/solucoes`, segmentos → `/para-quem`, kits → `/planos`, J16 → loja,
+  passos → `/como-funciona`, dúvidas → `/faq`), então a grade repetitiva saiu junto com o
+  CSS dos mockups de tela.
+- **`PageController::home()` entrega o conteúdo das seções** — benefícios, segmentos, kits,
+  passos, equipamento e as cinco primeiras dúvidas. Tudo de `config()` ou do cache de
+  conteúdo: o contrato de leveza continua em pé (14 consultas no máximo com cache frio,
+  zero com cache quente).
+- **Cartões de kit mostram o número sozinho** — `config('golden.kits')` ganhou a chave
+  `numero`, porque `/planos` montava `{{ $kit['titulo'] }} <small>veículos</small>` e
+  renderizava "5 veículos veículos". Agora é "5 / veículos" como na referência.
+
 ## [2.13.1] - 2026-10-23
 
 ### Adicionado

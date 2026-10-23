@@ -42,9 +42,9 @@
 <section class="sec-dark">
     <div class="wrap">
         <div class="cta-final" style="background:transparent;border:0;padding:20px 0">
-            <span class="eyebrow on-dark">Rastreador J16 4G/2G</span>
-            <h2>Equipamento confiável e homologado pela Anatel.</h2>
-            <p style="max-width:60ch;margin:0 auto">O J16 é uma solução completa para o seu veículo, com conectividade 4G e 2G, chip M2M e recursos avançados de segurança e gestão. Compatível com ampla variedade de modelos.</p>
+            <span class="eyebrow on-dark">{{ $equipamento['eyebrow'] }}</span>
+            <h2>{{ Str::before($equipamento['titulo'], $equipamento['destaque']) }}<span class="destaque">{{ $equipamento['destaque'] }}</span>.</h2>
+            <p style="max-width:60ch;margin:0 auto">{{ $equipamento['texto'] }}</p>
             <div class="cta-actions">
                 <a href="{{ route('site.planos') }}" class="btn btn-gold">Ver kits →</a>
                 <a href="{{ route('site.contato') }}" class="btn btn-outline">Solicitar proposta</a>

@@ -4,117 +4,165 @@
 @section('meta_description', 'Rastreamento e gestão veicular para frotas, motoristas e empresas. Kits com rastreador J16 4G/2G e chip M2M. Solicite sua proposta.')
 
 @section('content')
-{{-- HERO --}}
-<section class="hero">
+{{-- HERO com fotografia da central de monitoramento --}}
+<section class="hero hero-foto">
+    <img class="foto" src="{{ asset('img/home/hero-monitoramento.jpg') }}" alt="Central de monitoramento Golden com mapas de frota em três telas" width="1600" height="914" fetchpriority="high">
     <div class="wrap hero-grid">
         <div class="on-dark">
             <span class="eyebrow on-dark">Rastreamento e gestão veicular</span>
-            <h1>Mais controle para o seu veículo.<br><em>Mais resultados para o seu negócio.</em></h1>
+            <h1>Mais controle<br>para o seu veículo.<br><em>Mais resultados<br>para o seu negócio.</em></h1>
             <p>Soluções completas de rastreamento e gestão para frotas e motoristas profissionais. Tecnologia, presença em tempo real e informações para decisões mais seguras.</p>
             <div class="hero-actions">
                 <a href="{{ route('site.planos') }}" class="btn btn-gold" data-track="view_plans" data-cta="hero">Quero uma proposta →</a>
                 <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" data-track="whatsapp_click" data-cta="hero"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
             </div>
-            <div class="hero-checks">
-                <span><i class="fa-solid fa-shield-halved"></i> Rastreador homologado Anatel</span>
-                <span><i class="fa-solid fa-sim-card"></i> Chip M2M incluso</span>
-                <span><i class="fa-solid fa-mobile-screen"></i> Web e aplicativo</span>
+        </div>
+        <div class="hero-marca">
+            <img src="{{ asset('img/logo-golden.png') }}" alt="" width="54" height="54">
+            <span><b>GOLDEN</b><small>Rastreamento</small></span>
+        </div>
+    </div>
+    <div class="trust">
+        <div class="wrap trust-grid">
+            <div class="trust-item"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Rastreadores homologados Anatel</div>
+            <div class="trust-item"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i> Aplicativo web e mobile</div>
+            <div class="trust-item"><i class="fa-solid fa-headset" aria-hidden="true"></i> Atendimento especializado</div>
+            <div class="trust-item"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Planos para frotas e veículos</div>
+        </div>
+    </div>
+</section>
+
+{{-- POR QUE ESCOLHER --}}
+<section class="sec-light">
+    <div class="wrap split">
+        <div>
+            <span class="eyebrow">Por que escolher a Golden</span>
+            <h2>Tecnologia que gera tranquilidade e produtividade.</h2>
+            <p class="lead-sub">Acompanhe seus veículos em tempo real, reduza custos, organize sua operação e tome decisões com mais segurança.</p>
+            <p><a href="{{ route('site.contato') }}" class="btn btn-gold" data-track="contact" data-cta="home_beneficios">Falar com um especialista →</a></p>
+        </div>
+        <div class="ben-grid">
+            @foreach($beneficios as $b)
+            <article class="ben">
+                <i class="fa-solid {{ $b['icone'] }}" aria-hidden="true"></i>
+                <h4>{{ $b['titulo'] }}</h4>
+                <p>{{ $b['texto'] }}</p>
+            </article>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- APLICATIVO E PLATAFORMA --}}
+<section class="sec-dark">
+    <div class="wrap hero-grid">
+        <div class="on-dark">
+            <span class="eyebrow on-dark">Aplicativo e plataforma</span>
+            <h2>Tudo o que você precisa, na palma da sua mão.</h2>
+            <p>Acesse pelo celular ou computador, com uma plataforma completa e fácil de usar. Acompanhe o veículo, receba alertas, consulte relatórios e gerencie sua frota de onde estiver.</p>
+            <div class="hero-actions">
+                <a href="{{ route('site.solucoes') }}" class="btn btn-gold" data-track="internal_link" data-cta="home_plataforma">Conhecer a plataforma →</a>
+                <a href="{{ route('site.contato') }}" class="btn btn-outline" data-track="contact" data-cta="home_plataforma_demo">Solicitar demonstração</a>
             </div>
         </div>
         <div class="hero-visual">
-            <div class="mock">
-                <div class="mock-top"><span>●</span> ● ● &nbsp; Golden Gestão — prévia ilustrativa</div>
-                <div class="mock-body">
-                    <aside class="mock-side">
-                        <b>GOLDEN</b>
-                        <hr><span>Visão geral</span><span>Veículos</span><span>Mapa</span><span>Cercas</span><span>Relatórios</span>
-                    </aside>
-                    <div class="mock-map">
-                        <div class="mock-route"></div>
-                        <span class="mock-pin p1"><i class="fa-solid fa-location-dot"></i></span>
-                        <span class="mock-pin p2"><i class="fa-solid fa-truck"></i></span>
-                        <div class="mock-metrics">
-                            <span>Veículos <strong>10</strong></span>
-                            <span>Em rota <strong>6</strong></span>
-                            <span>Parados <strong>4</strong></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <img src="{{ asset('img/home/plataforma-monitor.jpg') }}" alt="Plataforma Golden de monitoramento aberta em um computador" width="1200" height="960" loading="lazy">
         </div>
     </div>
 </section>
 
-{{-- FAIXA DE CONFIANÇA --}}
-<div class="trust">
-    <div class="wrap trust-grid">
-        <div class="trust-item"><i class="fa-solid fa-shield-halved"></i> Homologado Anatel</div>
-        <div class="trust-item"><i class="fa-solid fa-tower-cell"></i> Rede 4G / 2G</div>
-        <div class="trust-item"><i class="fa-solid fa-headset"></i> Atendimento especializado</div>
-        <div class="trust-item"><i class="fa-solid fa-layer-group"></i> Planos para toda frota</div>
-    </div>
-</div>
-
-{{-- PLATAFORMA --}}
+{{-- PARA QUEM É --}}
 <section class="sec-alt">
-    <div class="wrap hero-grid">
-        <div>
-            <span class="eyebrow">Aplicativo e plataforma</span>
-            <h2>Tudo o que você precisa, na palma da sua mão.</h2>
-            <p class="lead-sub">Acesse pelo celular ou computador, com uma plataforma completa e fácil de usar. Acompanhe o veículo, receba alertas, consulte relatórios e gerencie sua frota de onde estiver.</p>
-            <ul style="list-style:none;padding:0;margin:18px 0 26px;display:grid;gap:12px">
-                @foreach(['Mapa e histórico de trajetos','Alertas de cerca e eventos','Manutenções e despesas','Aplicativo e acesso web'] as $li)
-                <li><i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> {{ $li }}</li>
-                @endforeach
-            </ul>
-            <a href="{{ route('site.solucoes') }}" class="btn btn-dark">Conhecer a plataforma →</a>
-        </div>
-        <div class="hero-visual" style="border-radius:22px">
-            <div class="mock">
-                <div class="mock-top"><span>●</span> ● ● &nbsp; App Golden</div>
-                <div class="mock-body" style="grid-template-columns:1fr">
-                    <div class="mock-map">
-                        <div class="mock-route"></div>
-                        <span class="mock-pin p1"><i class="fa-solid fa-location-dot"></i></span>
-                        <span class="mock-pin p2"><i class="fa-solid fa-truck"></i></span>
-                        <div class="mock-metrics"><span>Em rota <strong>6</strong></span><span>Cercas <strong>3</strong></span><span>Alertas <strong>2</strong></span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- ATALHOS PARA AS PÁGINAS DEDICADAS --}}
-<section class="sec-light">
     <div class="wrap">
-        <span class="eyebrow">Explore o site</span>
-        <h2>Tudo o que a Golden faz, página por página.</h2>
-        <p class="lead-sub">Cada assunto tem sua própria página, com o detalhe completo.</p>
-        <div class="atalhos">
-            @php
-                $atalhos = [
-                    ['rota' => 'site.solucoes', 'icone' => 'fa-layer-group', 'titulo' => 'Plataforma e funcionalidades', 'texto' => 'Mapa, cercas, alertas, relatórios e o app em detalhe.'],
-                    ['rota' => 'site.planos', 'icone' => 'fa-tags', 'titulo' => 'Planos e kits', 'texto' => 'Kits com rastreador e chip M2M por tamanho de frota.'],
-                    ['rota' => 'site.segmentos', 'icone' => 'fa-truck', 'titulo' => 'Para quem é', 'texto' => 'Motorista autônomo, carro de passeio, frota e pesados.'],
-                    ['rota' => 'site.como-funciona', 'icone' => 'fa-route', 'titulo' => 'Como funciona', 'texto' => 'Da escolha do kit ao acompanhamento diário.'],
-                    ['rota' => 'site.faq', 'icone' => 'fa-circle-question', 'titulo' => 'Dúvidas frequentes', 'texto' => 'Instalação, sinal, mensalidade, bloqueio e LGPD.'],
-                    ['rota' => 'site.contato', 'icone' => 'fa-headset', 'titulo' => 'Falar com especialista', 'texto' => 'Formulário de proposta e canais de atendimento.'],
-                ];
-            @endphp
-            @foreach($atalhos as $a)
-            <a href="{{ route($a['rota']) }}" class="atalho" data-track="internal_link" data-cta="atalho_{{ $a['rota'] }}">
-                <span class="atalho-ic"><i class="fa-solid {{ $a['icone'] }}" aria-hidden="true"></i></span>
-                <span class="atalho-txt"><b>{{ $a['titulo'] }}</b><small>{{ $a['texto'] }}</small></span>
-                <i class="fa-solid fa-arrow-right atalho-go" aria-hidden="true"></i>
+        <div class="split">
+            <div>
+                <span class="eyebrow">Para quem é a Golden</span>
+                <h2>Soluções para diferentes necessidades.</h2>
+            </div>
+            <p class="lead-sub">Atendemos desde motoristas que utilizam o próprio veículo até empresas com grandes frotas, sempre com soluções adequadas a cada tipo de operação.</p>
+        </div>
+        <div class="seg-grid">
+            @foreach($segmentos as $s)
+            <a href="{{ route('site.segmentos') }}" class="seg-foto" data-track="internal_link" data-cta="home_segmento">
+                <img class="foto" src="{{ asset($s['imagem']) }}" alt="{{ $s['titulo'] }}" width="720" height="540" loading="lazy">
+                <i class="fa-solid {{ $s['icone'] }}" aria-hidden="true"></i>
+                <h4>{{ $s['titulo'] }}</h4>
+                <p>{{ $s['texto'] }}</p>
             </a>
             @endforeach
         </div>
-        @if($golden['loja_ativa'])
-        <p class="center" style="margin-top:22px">
-            <a href="{{ route('site.loja.index') }}" class="btn btn-ghost" data-track="store_open" data-cta="atalhos"><i class="fa-solid fa-store"></i> Comprar rastreador e chip M2M na loja →</a>
-        </p>
-        @endif
+    </div>
+</section>
+
+{{-- KITS --}}
+<section class="sec-light">
+    <div class="wrap split split-larga">
+        <div class="split-txt">
+            <span class="eyebrow">Nossos kits</span>
+            <h2>Escolha a solução ideal para a sua frota.</h2>
+            <p class="lead-sub">Equipamentos com chip M2M, prontos para uso na plataforma Golden. Instalação realizada por profissional contratado pelo cliente.</p>
+            <p><a href="{{ route('site.planos') }}" class="btn btn-dark" data-track="view_plans" data-cta="home_kits">Ver todos os planos →</a></p>
+        </div>
+        <div class="kits">
+            @foreach($kits as $kit)
+            <article class="kit {{ $kit['destaque'] ? 'feature' : '' }}">
+                @if(!empty($kit['rotulo']))<span class="kit-tag">{{ $kit['rotulo'] }}</span>@endif
+                <span class="eyebrow">{{ $kit['eyebrow'] }}</span>
+                <div class="num">{{ $kit['numero'] }} <small>veículos</small></div>
+                <ul>
+                    @foreach($kit['itens'] as $item)
+                    <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ $item }}</li>
+                    @endforeach
+                </ul>
+                <a href="{{ route('site.contato') }}?kit={{ urlencode($kit['titulo']) }}" class="btn {{ $kit['destaque'] ? 'btn-gold' : 'btn-dark' }}" data-kit="{{ $kit['titulo'] }}">{{ $kit['botao'] }} →</a>
+            </article>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- EQUIPAMENTO J16 --}}
+<section class="sec-dark">
+    <div class="wrap split split-larga">
+        <div class="hero-visual">
+            <img src="{{ asset('img/home/rastreador-j16.jpg') }}" alt="Rastreador veicular J16 4G/2G com chicote de instalação" width="1000" height="750" loading="lazy">
+        </div>
+        <div class="on-dark">
+            <span class="eyebrow on-dark">{{ $equipamento['eyebrow'] }}</span>
+            <h2>{{ Str::before($equipamento['titulo'], $equipamento['destaque']) }}<span class="destaque">{{ $equipamento['destaque'] }}</span>.</h2>
+            <p>{{ $equipamento['texto'] }}</p>
+            <ul class="checks">
+                @foreach($equipamento['checks'] as $check)
+                <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i> {{ $check }}</li>
+                @endforeach
+            </ul>
+            <div class="hero-actions">
+                @if($golden['loja_ativa'])
+                <a href="{{ route('site.loja.index') }}" class="btn btn-gold" data-track="store_open" data-cta="home_equipamento"><i class="fa-solid fa-store" aria-hidden="true"></i> Comprar na loja</a>
+                @endif
+                <a href="{{ route('site.solucoes') }}" class="btn btn-outline" data-track="internal_link" data-cta="home_equipamento_detalhes">Conhecer o equipamento →</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{{-- COMO FUNCIONA --}}
+<section class="sec-alt">
+    <div class="wrap split split-larga">
+        <div class="split-txt">
+            <span class="eyebrow">Como funciona</span>
+            <h2>Da aquisição ao controle, de forma simples.</h2>
+            <p><a href="{{ route('site.como-funciona') }}" class="btn btn-dark" data-track="internal_link" data-cta="home_passos">Ver o passo a passo completo →</a></p>
+        </div>
+        <div class="steps">
+            @foreach($passos as $p)
+            <div class="step">
+                <div class="ic"><i class="fa-solid {{ $p['icone'] }}" aria-hidden="true"></i></div>
+                <h4>{{ $p['titulo'] }}</h4>
+                <p>{{ $p['texto'] }}</p>
+            </div>
+            @endforeach
+        </div>
     </div>
 </section>
 
@@ -158,39 +206,42 @@
 </section>
 @endif
 
+{{-- DÚVIDAS FREQUENTES --}}
+<section class="sec-alt">
+    <div class="wrap split">
+        <div>
+            <span class="eyebrow">Dúvidas frequentes</span>
+            <h2>Perguntas que mais recebemos.</h2>
+            <p class="lead-sub">Tire suas dúvidas sobre o funcionamento, instalação, planos e muito mais.</p>
+            <p><a href="{{ route('site.faq') }}" class="btn btn-gold" data-track="internal_link" data-cta="home_faq">Ver todas as perguntas →</a></p>
+        </div>
+        <div class="faq">
+            @foreach(array_slice($faq, 0, 5) as $f)
+            <details><summary>{{ $f['q'] }}</summary><p>{{ $f['a'] }}</p></details>
+            @endforeach
+        </div>
+    </div>
+</section>
+
 {{-- CTA FINAL --}}
-<section style="padding-top:0">
+<section class="sec-light">
     <div class="wrap">
-        <div class="cta-final">
-            <span class="eyebrow on-dark">Pronto para ter mais controle?</span>
-            <h2>Fale com um especialista e receba sua proposta.</h2>
-            <div class="cta-actions">
-                <a href="{{ route('site.contato') }}" class="btn btn-gold" data-track="contact" data-cta="footer">Quero uma proposta →</a>
-                <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" data-track="whatsapp_click" data-cta="footer"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
+        <div class="cta-final cta-foto">
+            <img class="foto" src="{{ asset('img/home/estrada-por-do-sol.jpg') }}" alt="Caminhão em estrada ao pôr do sol" width="1600" height="914" loading="lazy">
+            <div class="cta-final-inner">
+                <span class="eyebrow on-dark">Pronto para ter mais controle?</span>
+                <h2>Fale com um especialista e encontre <span class="destaque">a solução ideal</span> para você.</h2>
+                <p>Receba um atendimento personalizado e descubra como a Golden pode ajudar você ou sua empresa a ir mais longe.</p>
+                <div class="cta-actions">
+                    <a href="{{ route('site.contato') }}" class="btn btn-gold" data-track="contact" data-cta="footer">Quero uma proposta →</a>
+                    <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" data-track="whatsapp_click" data-cta="footer"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
+                </div>
+            </div>
+            <div class="cta-marca">
+                <img src="{{ asset('img/logo-golden.png') }}" alt="" width="44" height="44">
+                <span><b>GOLDEN</b><small>Rastreamento</small></span>
             </div>
         </div>
     </div>
 </section>
 @endsection
-
-@push('scripts')
-<style>
-.mock{background:linear-gradient(160deg,#1b2127,#0d1114);border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
-.mock-top{padding:12px 16px;font-size:.78rem;color:#8a97a4;border-bottom:1px solid rgba(255,255,255,.06)}
-.mock-top span{color:var(--gold)}
-.mock-body{display:grid;grid-template-columns:120px 1fr;min-height:280px}
-.mock-side{padding:16px 12px;border-right:1px solid rgba(255,255,255,.06);color:#9fb0bd;font-size:.82rem}
-.mock-side b{color:var(--gold);letter-spacing:.1em}
-.mock-side hr{border:0;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
-.mock-side span{display:block;padding:6px 0}
-.mock-map{position:relative;background:radial-gradient(400px 200px at 60% 40%,rgba(31,158,134,.18),transparent 60%),#12161a;overflow:hidden}
-.mock-route{position:absolute;inset:0;background:linear-gradient(115deg,transparent 46%,rgba(224,163,62,.5) 47%,rgba(224,163,62,.5) 48%,transparent 49%),linear-gradient(200deg,transparent 55%,rgba(31,158,134,.5) 56%,rgba(31,158,134,.5) 57%,transparent 58%)}
-.mock-pin{position:absolute;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.85rem;box-shadow:0 6px 16px rgba(0,0,0,.4)}
-.mock-pin.p1{background:var(--gold);top:30%;left:30%}
-.mock-pin.p2{background:var(--teal);top:55%;left:62%}
-.mock-metrics{position:absolute;left:14px;right:14px;bottom:14px;display:flex;gap:10px;flex-wrap:wrap}
-.mock-metrics span{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;font-size:.75rem;color:#9fb0bd}
-.mock-metrics strong{color:#fff;margin-left:6px}
-@media(max-width:960px){.mock-body{grid-template-columns:90px 1fr}}
-</style>
-@endpush

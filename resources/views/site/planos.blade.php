@@ -18,7 +18,7 @@
             <article class="kit {{ $kit['destaque'] ? 'feature' : '' }}">
                 @if(!empty($kit['rotulo']))<span class="kit-tag">{{ $kit['rotulo'] }}</span>@endif
                 <span class="eyebrow">{{ $kit['eyebrow'] }}</span>
-                <div class="num">{{ $kit['titulo'] }} <small>veículos</small></div>
+                <div class="num">{{ $kit['numero'] }} <small>veículos</small></div>
                 <ul>
                     @foreach($kit['itens'] as $item)
                     <li><i class="fa-solid fa-check"></i> {{ $item }}</li>

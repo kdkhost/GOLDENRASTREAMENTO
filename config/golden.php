@@ -70,17 +70,33 @@ return [
     ],
 
     'segmentos' => [
-        ['icone' => 'fa-taxi', 'titulo' => 'Motoristas de aplicativo', 'texto' => 'Mais segurança e controle no dia a dia.'],
-        ['icone' => 'fa-car', 'titulo' => 'Veículos particulares', 'texto' => 'Mais proteção para você e sua família.'],
-        ['icone' => 'fa-van-shuttle', 'titulo' => 'Frotas empresariais', 'texto' => 'Gestão completa e mais produtividade.'],
-        ['icone' => 'fa-key', 'titulo' => 'Locadoras de veículos', 'texto' => 'Controle, eficiência e redução de custos.'],
-        ['icone' => 'fa-tractor', 'titulo' => 'Operações rurais', 'texto' => 'Acompanhamento incluso em áreas remotas.'],
+        ['icone' => 'fa-taxi', 'titulo' => 'Motoristas de aplicativo', 'texto' => 'Mais segurança e controle no dia a dia.', 'imagem' => 'img/home/segmento-motorista.jpg'],
+        ['icone' => 'fa-car', 'titulo' => 'Veículos particulares', 'texto' => 'Mais proteção para você e sua família.', 'imagem' => 'img/home/segmento-particular.jpg'],
+        ['icone' => 'fa-van-shuttle', 'titulo' => 'Frotas empresariais', 'texto' => 'Gestão completa e mais produtividade.', 'imagem' => 'img/home/segmento-frota.jpg'],
+        ['icone' => 'fa-key', 'titulo' => 'Locadoras de veículos', 'texto' => 'Controle, eficiência e redução de custos.', 'imagem' => 'img/home/segmento-locadora.jpg'],
+        ['icone' => 'fa-tractor', 'titulo' => 'Operações rurais', 'texto' => 'Acompanhamento incluso em áreas remotas.', 'imagem' => 'img/home/segmento-rural.jpg'],
+    ],
+
+    // Bloco do equipamento J16: usado na home e em /solucoes a partir de uma única fonte.
+    'equipamento_info' => [
+        'eyebrow' => 'Rastreador J16 4G/2G',
+        'titulo' => 'Equipamento confiável e homologado pela Anatel.',
+        'destaque' => 'Anatel',
+        'texto' => 'O J16 é uma solução completa para o seu veículo, com conectividade 4G e 2G, chip M2M e recursos avançados de segurança e gestão. Compatível com ampla variedade de modelos.',
+        'imagem' => 'img/home/rastreador-j16.jpg',
+        'checks' => [
+            'Homologação Anatel',
+            'Conectividade 4G/2G (multioperadora)',
+            'Kit com rastreador, chip, relé e chicote',
+            'Compatível com ampla variedade de modelos',
+        ],
     ],
 
     'kits' => [
         [
             'id' => 'kit-5',
             'eyebrow' => 'Frota Essencial',
+            'numero' => '5',
             'titulo' => '5 veículos',
             'destaque' => false,
             'itens' => ['Kit com 5 rastreadores J16 4G/2G', 'Chips M2M inclusos', 'Acesso à plataforma web e app'],
@@ -89,6 +105,7 @@ return [
         [
             'id' => 'kit-10',
             'eyebrow' => 'Frota Profissional',
+            'numero' => '10',
             'titulo' => '10 veículos',
             'destaque' => true,
             'rotulo' => 'Mais escolhido',
@@ -98,6 +115,7 @@ return [
         [
             'id' => 'kit-10-plus',
             'eyebrow' => 'Frota Personalizada',
+            'numero' => '10+',
             'titulo' => '10+ veículos',
             'destaque' => false,
             'itens' => ['Quantidade sob consulta', 'Condições especiais', 'Proposta individualizada'],

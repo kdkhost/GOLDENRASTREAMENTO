@@ -13,6 +13,12 @@ class PageController extends Controller
     public function home(): View
     {
         return view('site.home', [
+            'beneficios' => config('golden.beneficios'),
+            'segmentos' => config('golden.segmentos'),
+            'kits' => config('golden.kits'),
+            'passos' => config('golden.passos'),
+            'equipamento' => config('golden.equipamento_info'),
+            'faq' => Faq::paraSite(),
             'depoimentos' => Testimonial::aprovadosParaSite(6),
         ]);
     }
@@ -21,6 +27,7 @@ class PageController extends Controller
     {
         return view('site.solucoes', [
             'beneficios' => config('golden.beneficios'),
+            'equipamento' => config('golden.equipamento_info'),
         ]);
     }
 
