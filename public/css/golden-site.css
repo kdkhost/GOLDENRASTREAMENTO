@@ -113,6 +113,18 @@ section{padding:84px 0}
 .seg h4{margin:0 0 6px;font-size:1rem}
 .seg p{color:var(--slate);font-size:.88rem;margin:0}
 
+/* Atalhos da home para as páginas dedicadas */
+.atalhos{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:40px}
+.atalho{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;transition:border-color .2s ease,box-shadow .3s cubic-bezier(.22,.61,.36,1),transform .3s cubic-bezier(.22,.61,.36,1)}
+.atalho:hover{transform:translateY(-3px);border-color:rgba(224,163,62,.45);box-shadow:var(--shadow)}
+.atalho-ic{flex:none;width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,rgba(224,163,62,.16),rgba(31,158,134,.16));color:var(--gold-2);display:grid;place-items:center;font-size:1.15rem}
+.atalho-txt{flex:1;min-width:0}
+.atalho-txt b{display:block;font-size:.98rem}
+.atalho-txt small{display:block;color:var(--slate);font-size:.85rem;line-height:1.45}
+.atalho-go{flex:none;color:var(--gold-2);transition:transform .3s cubic-bezier(.22,.61,.36,1)}
+.atalho:hover .atalho-go{transform:translateX(4px)}
+.atalho:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+
 /* Kits / planos */
 .kits{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:48px;align-items:stretch}
 .kit{position:relative;background:#fff;border:1px solid var(--line);border-radius:20px;padding:34px 30px;display:flex;flex-direction:column;transition:.2s}
@@ -355,7 +367,7 @@ body.nav-open .nav-toggle .icon-close{opacity:1;transform:none}
 }
 @media(max-width:600px){
   section{padding:60px 0}
-  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.row-2{grid-template-columns:1fr}
+  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.row-2,.atalhos{grid-template-columns:1fr}
   .foot-grid{grid-template-columns:1fr}
   .cookie{right:16px}
   .wa-float{width:52px;height:52px;font-size:1.5rem;right:16px;bottom:16px}
@@ -374,7 +386,7 @@ body.nav-open .nav-toggle .icon-close{opacity:1;transform:none}
   .wa-float::before{animation:none}
   .nav-drawer,.nav-drawer .nav-item,.nav-drawer .nav-sub,.nav-drawer .nav-caret,.nav-links .nav-sub,.nav-arrow,
   .nav-backdrop,.drawer-head,.drawer-cta,.drawer-foot,.nav-toggle i,.drawer-close,
-  .depo-nav,.depo .swiper-pagination-bullet,
+  .depo-nav,.depo .swiper-pagination-bullet,.atalho,.atalho-go,
   .wa-float,.wa-popup,.wa-channel,.wa-tip{
     transition-duration:.01ms!important;transition-delay:0s!important}
 }

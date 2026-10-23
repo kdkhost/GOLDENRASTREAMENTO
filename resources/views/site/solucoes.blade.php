@@ -32,17 +32,9 @@
     <div class="wrap">
         <div class="center">
             <span class="eyebrow">Como funciona</span>
-            <h2>Simples do início ao acompanhamento.</h2>
-        </div>
-        <div class="steps">
-            @foreach($passos as $p)
-            <div class="step">
-                <div class="n">{{ $p['n'] }}</div>
-                <div class="ic"><i class="fa-solid {{ $p['icone'] }}"></i></div>
-                <h4>{{ $p['titulo'] }}</h4>
-                <p>{{ $p['texto'] }}</p>
-            </div>
-            @endforeach
+            <h2>Da aquisição ao acompanhamento, em quatro passos.</h2>
+            <p class="lead-sub">O passo a passo completo — incluindo a regra de instalação — mora na página dedicada.</p>
+            <p style="margin-top:18px"><a href="{{ route('site.como-funciona') }}" class="btn btn-dark" data-track="internal_link" data-cta="solucoes_para_como_funciona">Ver como funciona →</a></p>
         </div>
     </div>
 </section>

@@ -34,11 +34,14 @@
 
 <section class="sec-alt">
     <div class="wrap">
-        <div class="center"><span class="eyebrow">Dúvidas sobre planos</span><h2>Perguntas frequentes</h2></div>
-        <div class="faq">
-            @foreach($faq as $f)
-            <details><summary>{{ $f['q'] }}</summary><p>{{ $f['a'] }}</p></details>
-            @endforeach
+        <div class="center">
+            <span class="eyebrow">Antes de fechar</span>
+            <h2>Ficou alguma dúvida sobre planos?</h2>
+            <p class="lead-sub">As perguntas que mais recebemos — instalação, mensalidade, sinal e bloqueio — têm página própria.</p>
+            <div style="margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                <a href="{{ route('site.faq') }}" class="btn btn-dark" data-track="internal_link" data-cta="planos_para_faq">Ver dúvidas frequentes →</a>
+                <a href="{{ route('site.contato') }}" class="btn btn-ghost" data-track="contact" data-cta="planos">Pedir uma proposta →</a>
+            </div>
         </div>
     </div>
 </section>

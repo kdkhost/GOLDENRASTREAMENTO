@@ -32,13 +32,15 @@
 
 <section class="sec-alt">
     <div class="wrap">
-        <div class="center"><span class="eyebrow">Ainda com dúvidas?</span><h2>Perguntas frequentes</h2></div>
-        <div class="faq">
-            @foreach($faq as $f)
-            <details><summary>{{ $f['q'] }}</summary><p>{{ $f['a'] }}</p></details>
-            @endforeach
+        <div class="center">
+            <span class="eyebrow">Ainda com dúvidas?</span>
+            <h2>Perguntas frequentes têm página própria.</h2>
+            <p class="lead-sub">Instalação, mensalidade, cobertura de sinal, bloqueio remoto e privacidade — tudo respondido.</p>
+            <div style="margin-top:22px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                <a href="{{ route('site.faq') }}" class="btn btn-dark" data-track="internal_link" data-cta="como_funciona_para_faq">Ver dúvidas frequentes →</a>
+                <a href="{{ route('site.contato') }}" class="btn btn-gold" data-track="contact" data-cta="como_funciona">Falar com um especialista →</a>
+            </div>
         </div>
-        <p class="center" style="margin-top:26px"><a href="{{ route('site.contato') }}" class="btn btn-gold">Falar com um especialista →</a></p>
     </div>
 </section>
 @endsection

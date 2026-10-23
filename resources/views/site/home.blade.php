@@ -12,7 +12,7 @@
             <h1>Mais controle para o seu veículo.<br><em>Mais resultados para o seu negócio.</em></h1>
             <p>Soluções completas de rastreamento e gestão para frotas e motoristas profissionais. Tecnologia, presença em tempo real e informações para decisões mais seguras.</p>
             <div class="hero-actions">
-                <a href="#planos" class="btn btn-gold" data-track="view_plans" data-cta="hero">Quero uma proposta →</a>
+                <a href="{{ route('site.planos') }}" class="btn btn-gold" data-track="view_plans" data-cta="hero">Quero uma proposta →</a>
                 <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" data-track="whatsapp_click" data-cta="hero"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
             </div>
             <div class="hero-checks">
@@ -55,24 +55,6 @@
     </div>
 </div>
 
-{{-- BENEFÍCIOS --}}
-<section class="sec-light" id="beneficios">
-    <div class="wrap">
-        <span class="eyebrow">Por que escolher a Golden</span>
-        <h2>Tecnologia que gera tranquilidade<br>e produtividade.</h2>
-        <p class="lead-sub">Acompanhe seus veículos em tempo real, reduza custos, organize a operação e tome decisões com mais segurança.</p>
-        <div class="grid-3">
-            @foreach($beneficios as $b)
-            <article class="card">
-                <div class="ic"><i class="fa-solid {{ $b['icone'] }}"></i></div>
-                <h3>{{ $b['titulo'] }}</h3>
-                <p>{{ $b['texto'] }}</p>
-            </article>
-            @endforeach
-        </div>
-    </div>
-</section>
-
 {{-- PLATAFORMA --}}
 <section class="sec-alt">
     <div class="wrap hero-grid">
@@ -103,68 +85,36 @@
     </div>
 </section>
 
-{{-- SEGMENTOS --}}
+{{-- ATALHOS PARA AS PÁGINAS DEDICADAS --}}
 <section class="sec-light">
     <div class="wrap">
-        <span class="eyebrow">Para quem é a Golden</span>
-        <h2>Soluções para diferentes necessidades.</h2>
-        <p class="lead-sub">Atendemos desde motoristas que utilizam o próprio veículo até empresas com grandes frotas.</p>
-        <div class="seg-grid">
-            @foreach($segmentos as $s)
-            <div class="seg">
-                <i class="fa-solid {{ $s['icone'] }}"></i>
-                <h4>{{ $s['titulo'] }}</h4>
-                <p>{{ $s['texto'] }}</p>
-            </div>
+        <span class="eyebrow">Explore o site</span>
+        <h2>Tudo o que a Golden faz, página por página.</h2>
+        <p class="lead-sub">Cada assunto tem sua própria página, com o detalhe completo.</p>
+        <div class="atalhos">
+            @php
+                $atalhos = [
+                    ['rota' => 'site.solucoes', 'icone' => 'fa-layer-group', 'titulo' => 'Plataforma e funcionalidades', 'texto' => 'Mapa, cercas, alertas, relatórios e o app em detalhe.'],
+                    ['rota' => 'site.planos', 'icone' => 'fa-tags', 'titulo' => 'Planos e kits', 'texto' => 'Kits com rastreador e chip M2M por tamanho de frota.'],
+                    ['rota' => 'site.segmentos', 'icone' => 'fa-truck', 'titulo' => 'Para quem é', 'texto' => 'Motorista autônomo, carro de passeio, frota e pesados.'],
+                    ['rota' => 'site.como-funciona', 'icone' => 'fa-route', 'titulo' => 'Como funciona', 'texto' => 'Da escolha do kit ao acompanhamento diário.'],
+                    ['rota' => 'site.faq', 'icone' => 'fa-circle-question', 'titulo' => 'Dúvidas frequentes', 'texto' => 'Instalação, sinal, mensalidade, bloqueio e LGPD.'],
+                    ['rota' => 'site.contato', 'icone' => 'fa-headset', 'titulo' => 'Falar com especialista', 'texto' => 'Formulário de proposta e canais de atendimento.'],
+                ];
+            @endphp
+            @foreach($atalhos as $a)
+            <a href="{{ route($a['rota']) }}" class="atalho" data-track="internal_link" data-cta="atalho_{{ $a['rota'] }}">
+                <span class="atalho-ic"><i class="fa-solid {{ $a['icone'] }}" aria-hidden="true"></i></span>
+                <span class="atalho-txt"><b>{{ $a['titulo'] }}</b><small>{{ $a['texto'] }}</small></span>
+                <i class="fa-solid fa-arrow-right atalho-go" aria-hidden="true"></i>
+            </a>
             @endforeach
         </div>
-    </div>
-</section>
-
-{{-- KITS --}}
-<section class="sec-alt" id="planos">
-    <div class="wrap">
-        <div class="center">
-            <span class="eyebrow">Kits com chip M2M</span>
-            <h2>Escolha a solução ideal para a sua frota.</h2>
-            <p class="lead-sub">Equipamentos prontos para uso na plataforma Golden. Instalação realizada por profissional contratado pelo cliente.</p>
-        </div>
-        <div class="kits">
-            @foreach($kits as $kit)
-            <article class="kit {{ $kit['destaque'] ? 'feature' : '' }}">
-                @if(!empty($kit['rotulo']))<span class="kit-tag">{{ $kit['rotulo'] }}</span>@endif
-                <span class="eyebrow">{{ $kit['eyebrow'] }}</span>
-                <div class="num">{{ $kit['titulo'] }} <small>veículos</small></div>
-                <ul>
-                    @foreach($kit['itens'] as $item)
-                    <li><i class="fa-solid fa-check"></i> {{ $item }}</li>
-                    @endforeach
-                </ul>
-                <a href="{{ route('site.contato') }}?kit={{ urlencode($kit['titulo']) }}" class="btn {{ $kit['destaque'] ? 'btn-gold' : 'btn-dark' }}" data-kit="{{ $kit['titulo'] }}" data-fleet="{{ $kit['id'] == 'kit-5' ? 5 : ($kit['id'] == 'kit-10' ? 10 : '10+') }}">{{ $kit['botao'] }} →</a>
-            </article>
-            @endforeach
-        </div>
-        <p class="fine center" style="margin-top:26px">A Golden não cobra instalação: o cliente contrata e remunera diretamente o instalador de sua confiança. Também atendemos unidade avulsa — fale com um especialista.</p>
-    </div>
-</section>
-
-{{-- COMO FUNCIONA --}}
-<section class="sec-dark">
-    <div class="wrap">
-        <div class="center on-dark">
-            <span class="eyebrow on-dark">Como funciona</span>
-            <h2>Da aquisição ao controle, de forma simples.</h2>
-        </div>
-        <div class="steps">
-            @foreach($passos as $p)
-            <div class="step">
-                <div class="n">{{ $p['n'] }}</div>
-                <div class="ic"><i class="fa-solid {{ $p['icone'] }}"></i></div>
-                <h4>{{ $p['titulo'] }}</h4>
-                <p>{{ $p['texto'] }}</p>
-            </div>
-            @endforeach
-        </div>
+        @if($golden['loja_ativa'])
+        <p class="center" style="margin-top:22px">
+            <a href="{{ route('site.loja.index') }}" class="btn btn-ghost" data-track="store_open" data-cta="atalhos"><i class="fa-solid fa-store"></i> Comprar rastreador e chip M2M na loja →</a>
+        </p>
+        @endif
     </div>
 </section>
 
@@ -207,25 +157,6 @@
     </div>
 </section>
 @endif
-
-{{-- FAQ --}}
-<section class="sec-alt">
-    <div class="wrap">
-        <div class="center">
-            <span class="eyebrow">Dúvidas frequentes</span>
-            <h2>Perguntas que mais recebemos.</h2>
-        </div>
-        <div class="faq">
-            @foreach(array_slice(\App\Models\Faq::paraSite(), 0, 5) as $f)
-            <details>
-                <summary>{{ $f['q'] }}</summary>
-                <p>{{ $f['a'] }}</p>
-            </details>
-            @endforeach
-        </div>
-        <p class="center" style="margin-top:22px"><a href="{{ route('site.faq') }}" class="btn btn-ghost btn-sm">Ver todas as perguntas →</a></p>
-    </div>
-</section>
 
 {{-- CTA FINAL --}}
 <section style="padding-top:0">

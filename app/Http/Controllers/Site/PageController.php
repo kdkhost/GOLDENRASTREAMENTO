@@ -13,10 +13,6 @@ class PageController extends Controller
     public function home(): View
     {
         return view('site.home', [
-            'beneficios' => config('golden.beneficios'),
-            'segmentos' => config('golden.segmentos'),
-            'kits' => config('golden.kits'),
-            'passos' => config('golden.passos'),
             'depoimentos' => Testimonial::aprovados()->limit(6)->get(),
         ]);
     }
@@ -25,7 +21,6 @@ class PageController extends Controller
     {
         return view('site.solucoes', [
             'beneficios' => config('golden.beneficios'),
-            'passos' => config('golden.passos'),
         ]);
     }
 
@@ -40,8 +35,6 @@ class PageController extends Controller
     {
         return view('site.planos', [
             'kits' => config('golden.kits'),
-            'faq' => Faq::paraSite(),
-            'depoimentos' => Testimonial::aprovados()->limit(3)->get(),
         ]);
     }
 
@@ -49,7 +42,6 @@ class PageController extends Controller
     {
         return view('site.como-funciona', [
             'passos' => config('golden.passos'),
-            'faq' => Faq::paraSite(),
         ]);
     }
 
@@ -65,7 +57,6 @@ class PageController extends Controller
         return view('site.contato', [
             'kits' => config('golden.kits'),
             'perfis' => config('golden.perfis'),
-            'depoimentos' => Testimonial::aprovados()->limit(3)->get(),
         ]);
     }
 
