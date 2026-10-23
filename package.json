@@ -1,5 +1,8 @@
 {
     "$schema": "https://www.schemastore.org/package.json",
+    "name": "kdkhost-golden-rastreamento",
+    "version": "2.1.0",
+    "description": "Golden Rastreamento — assets do site multipágina e do painel (CRM/CMS/ERP).",
     "private": true,
     "type": "module",
     "scripts": {

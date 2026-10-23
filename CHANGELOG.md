@@ -6,6 +6,12 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 ## [2.1.0] - 2026-10-22
 
 ### Adicionado
+- **Identidade do projeto no `composer.json`**: pacote renomeado de `laravel/laravel` para
+  `kdkhost/golden-rastreamento`, com `description` e `keywords` próprios (Golden
+  Rastreamento, CRM/CMS/ERP, loja virtual), `license: proprietary` e bloco `authors`
+  creditando **Marcelo (KDKHOST)** — contato@kdkhost.com.br / kdkhost.com.br — como
+  desenvolvedor do sistema. O `composer.lock` teve o *content-hash* atualizado.
+- Mesma identidade refletida no `package.json` (nome, versão e descrição dos assets).
 - **Menu deslizante do site (gaveta da esquerda)** em telas até 960px: painel fixo de
   `min(84vw, 330px)` que entra com `translateX(-102%) → 0` em **380ms** na curva
   `cubic-bezier(.22,.61,.36,1)`, com os links surgindo em cascata (60 ms entre itens),

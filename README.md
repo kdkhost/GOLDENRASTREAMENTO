@@ -7,9 +7,17 @@ campanhas de tráfego pago, e **CRM, CMS e ERP funcionando no mesmo sistema** �
 uma **loja virtual de rastreadores e chips M2M** que pode ser **desativada a qualquer
 momento pelo painel**.
 
-Construído em **Laravel 13** seguindo a mesma estrutura/padrão do repositório de referência
+Construído em **Laravel 13** seguindo a estrutura e os padrões do repositório de referência
 (`foco7`): AdminLTE 4 no painel, autenticação própria com perfis, migrations
-*driver-agnostic*, CMS de conteúdo e captura de leads com atribuição de campanha.
+*driver-agnostic*, CMS de conteúdo e captura de leads com atribuição de campanha. A
+*aparência* do painel ainda é o tema padrão do AdminLTE com ajustes dourados — portar o
+`admin-foco7.css` e o layout completo do modelo está pendente.
+
+| | |
+|---|---|
+| **Pacote** | `kdkhost/golden-rastreamento` |
+| **Sistema** | Golden Rastreamento |
+| **Desenvolvimento** | Marcelo (KDKHOST) — <https://kdkhost.com.br> · contato@kdkhost.com.br |
 
 ---
 

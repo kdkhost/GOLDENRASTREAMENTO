@@ -1,10 +1,18 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "kdkhost/golden-rastreamento",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
-    "license": "MIT",
+    "description": "Golden Rastreamento — sistema de rastreamento veicular com CRM, CMS, ERP e loja virtual integrados.",
+    "keywords": ["golden-rastreamento", "rastreamento-veicular", "crm", "cms", "erp", "loja-virtual", "laravel"],
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Marcelo (KDKHOST)",
+            "email": "contato@kdkhost.com.br",
+            "homepage": "https://kdkhost.com.br",
+            "role": "Desenvolvedor do sistema"
+        }
+    ],
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.17",
