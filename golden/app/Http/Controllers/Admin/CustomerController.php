@@ -1,0 +1,103 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Activity;
+use App\Models\Customer;
+use App\Models\Interaction;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class CustomerController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $clientes = Customer::withCount(['orders', 'interactions'])
+            ->with('owner')
+            ->when($request->filled('q'), function ($q) use ($request) {
+                $t = '%' . $request->q . '%';
+                $q->where(fn ($w) => $w->where('nome', 'like', $t)->orWhere('telefone', 'like', $t)->orWhere('email', 'like', $t));
+            })
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.customers.index', [
+            'clientes' => $clientes,
+            'totalAtivos' => Customer::where('status', 'ativo')->count(),
+        ]);
+    }
+
+    public function show(Customer $cliente): View
+    {
+        return view('admin.customers.show', [
+            'cliente' => $cliente->load(['owner', 'interactions.user', 'orders.items']),
+            'tipos' => Interaction::TIPOS,
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $this->validateData($request);
+        $c = Customer::create($data);
+        Activity::log('cliente_criado', "Cliente {$c->nome} cadastrado.", $c);
+
+        return redirect()->route('admin.clientes.show', $c)->with('success', 'Cliente cadastrado.');
+    }
+
+    public function update(Request $request, Customer $cliente): RedirectResponse
+    {
+        $cliente->update($this->validateData($request));
+        Activity::log('cliente_atualizado', "Cliente {$cliente->nome} atualizado.", $cliente);
+
+        return back()->with('success', 'Cliente atualizado.');
+    }
+
+    public function interaction(Request $request, Customer $cliente): RedirectResponse
+    {
+        $data = $request->validate([
+            'tipo' => ['required', 'in:' . implode(',', array_keys(Interaction::TIPOS))],
+            'assunto' => ['nullable', 'string', 'max:190'],
+            'descricao' => ['nullable', 'string', 'max:5000'],
+            'proxima_acao_em' => ['nullable', 'date'],
+        ]);
+        $data['user_id'] = $request->user()->id;
+        Interaction::create($data + ['customer_id' => $cliente->id]);
+        Activity::log('interacao_criada', "Interação registrada para {$cliente->nome}.", $cliente);
+
+        return back()->with('success', 'Interação registrada.');
+    }
+
+    public function destroy(Customer $cliente): RedirectResponse
+    {
+        $nome = $cliente->nome;
+        $cliente->delete();
+        Activity::log('cliente_excluido', "Cliente {$nome} removido.");
+
+        return redirect()->route('admin.clientes.index')->with('success', 'Cliente removido.');
+    }
+
+    private function validateData(Request $request): array
+    {
+        return $request->validate([
+            'nome' => ['required', 'string', 'max:190'],
+            'documento' => ['nullable', 'string', 'max:24'],
+            'tipo' => ['required', 'in:fisica,juridica'],
+            'telefone' => ['nullable', 'string', 'max:32'],
+            'email' => ['nullable', 'email', 'max:160'],
+            'endereco' => ['nullable', 'string', 'max:255'],
+            'cidade' => ['nullable', 'string', 'max:96'],
+            'uf' => ['nullable', 'string', 'max:4'],
+            'cep' => ['nullable', 'string', 'max:12'],
+            'segmento' => ['nullable', 'string', 'max:40'],
+            'frota_tamanho' => ['nullable', 'integer', 'min:0'],
+            'status' => ['required', 'in:' . implode(',', array_keys(Customer::STATUS))],
+            'owner_id' => ['nullable', 'integer'],
+            'valor_anual' => ['nullable', 'numeric', 'min:0'],
+            'observacoes' => ['nullable', 'string', 'max:5000'],
+        ]) + ['valor_anual_cents' => $request->filled('valor_anual') ? (int) round(((float) $request->valor_anual) * 100) : null];
+    }
+}

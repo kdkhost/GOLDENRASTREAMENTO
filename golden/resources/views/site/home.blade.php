@@ -169,25 +169,27 @@
 </section>
 
 {{-- DEPOIMENTOS --}}
+@if($depoimentos->isNotEmpty())
 <section class="sec-light">
     <div class="wrap">
         <span class="eyebrow">Depoimentos</span>
         <h2>Quem confia, recomenda.</h2>
-        <p class="lead-sub">Depoimentos ilustrativos — substitua por avaliações reais e autorizadas antes de publicar.</p>
+        <p class="lead-sub">Avaliações reais de clientes Golden Rastreamento.</p>
         <div class="depo">
+            @foreach($depoimentos as $d)
             <div class="depo-card">
-                <div class="stars">★★★★★</div>
-                <p>"Com a Golden consigo acompanhar todos os meus veículos e organizar melhor as manutenções. A plataforma é completa e fácil de usar."</p>
-                <div class="depo-who"><div class="avatar">CM</div><div><b>Carlos Mendes</b><small>Gestor de frota</small></div></div>
+                <div class="stars">{{ str_repeat('★', max(1, min(5, (int) $d->nota))) }}</div>
+                <p>"{{ $d->texto }}"</p>
+                <div class="depo-who">
+                    <div class="avatar">{{ strtoupper(substr($d->nome, 0, 1)) }}</div>
+                    <div><b>{{ $d->nome }}</b>@if($d->papel)<small>{{ $d->papel }}@if($d->cidade) · {{ $d->cidade }}@endif</small>@endif</div>
+                </div>
             </div>
-            <div class="depo-card">
-                <div class="stars">★★★★★</div>
-                <p>"Uso no meu carro e me sinto muito mais seguro. Ver onde estou em tempo real me dá mais tranquilidade no dia a dia."</p>
-                <div class="depo-who"><div class="avatar">MS</div><div><b>Mariana Silva</b><small>Motorista de aplicativo</small></div></div>
-            </div>
+            @endforeach
         </div>
     </div>
 </section>
+@endif
 
 {{-- FAQ --}}
 <section class="sec-alt">
@@ -197,7 +199,7 @@
             <h2>Perguntas que mais recebemos.</h2>
         </div>
         <div class="faq">
-            @foreach(array_slice(config('golden.faq'), 0, 5) as $f)
+            @foreach(array_slice(\App\Models\Faq::paraSite(), 0, 5) as $f)
             <details>
                 <summary>{{ $f['q'] }}</summary>
                 <p>{{ $f['a'] }}</p>

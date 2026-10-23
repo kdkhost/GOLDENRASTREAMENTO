@@ -3,12 +3,23 @@
 return [
     'marca' => [
         'nome' => 'Golden Rastreamento',
-        'slogan' => 'Rastreamento e gestão veicular',
+        'slogan' => 'Rastreamento e monitoramento veicular, sua segurança nossa prioridade',
         'cidade' => 'Três Pontas · Minas Gerais',
     ],
 
-    'whatsapp' => env('GOLDEN_WHATSAPP', '5535988880000'),
+    'contato' => [
+        'endereco' => 'R. Pref. Olinto Réis Campos, 104 - Centro',
+        'cidade_uf' => 'Três Pontas - MG',
+        'cep' => '37185-016',
+        'telefones' => ['(19) 99710-1483', '(19) 97139-5129'],
+    ],
+
+    'whatsapp' => env('GOLDEN_WHATSAPP', '5519997101483'),
     'email' => env('GOLDEN_EMAIL', 'comercial@goldenrastreamento.com.br'),
+
+    'parceiros_m2m' => ['Vivo', 'Claro', 'Algar', 'TIM'],
+    'pagamentos' => ['Cartão', 'Boleto bancário'],
+    'equipamento' => 'Rastreador J16 4G/2G',
 
     'beneficios' => [
         ['icone' => 'fa-location-crosshairs', 'titulo' => 'Localização em tempo real', 'texto' => 'Veja onde seu veículo está a qualquer momento.'],

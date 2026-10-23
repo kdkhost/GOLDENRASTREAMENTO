@@ -24,18 +24,24 @@ class Lead extends Model
         'name', 'phone', 'email', 'profile', 'fleet_size', 'kit', 'message',
         'campaign_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
         'gclid', 'fbclid', 'visitor_id', 'landing_page', 'referrer', 'ip_hash', 'user_agent',
-        'status', 'owner_id', 'consent_given', 'value', 'won_at', 'lost_at',
+        'status', 'owner_id', 'consent_given', 'value', 'won_at', 'lost_at', 'customer_id',
     ];
 
     protected $casts = [
         'consent_given' => 'boolean',
         'won_at' => 'datetime',
         'lost_at' => 'datetime',
+        'value' => 'integer',
     ];
 
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function owner(): BelongsTo

@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
+use App\Models\Customer;
 use App\Models\Lead;
+use App\Models\Order;
+use App\Models\Product;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -48,6 +51,20 @@ class DashboardController extends Controller
                 return $c;
             });
 
+        // Visão consolidada dos módulos integrados (CRM + ERP + CMS)
+        $modulos = [
+            'clientes' => Customer::count(),
+            'clientes_ativos' => Customer::where('status', 'ativo')->count(),
+            'produtos' => Product::where('ativo', true)->count(),
+            'estoque_baixo' => Product::where('ativo', true)->where('controle_estoque', true)->whereColumn('estoque', '<=', 'estoque_minimo')->count(),
+            'pedidos' => Order::count(),
+            'pedidos_abertos' => Order::whereIn('status', ['pendente', 'pago', 'em_andamento'])->count(),
+            'faturamento_loja' => (int) Order::whereNotIn('status', ['cancelado'])->sum('total_cents'),
+            'loja_ativa' => \App\Models\Setting::get('loja_ativa', '1') === '1',
+            'paginas' => \App\Models\Page::where('publicada', true)->count(),
+            'depoimentos' => \App\Models\Testimonial::where('aprovado', true)->count(),
+        ];
+
         return view('admin.dashboard', [
             'total' => $total,
             'novos' => (int) ($porStatus['novo'] ?? 0),
@@ -60,6 +77,7 @@ class DashboardController extends Controller
             'labels' => $labels,
             'serie' => $serie,
             'campanhas' => $campanhas,
+            'modulos' => $modulos,
             'recentes' => Lead::with('campaign')->latest()->limit(8)->get(),
         ]);
     }

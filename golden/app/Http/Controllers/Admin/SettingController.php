@@ -23,7 +23,11 @@ class SettingController extends Controller
         $data = $request->validate([
             'site_nome' => ['required', 'string', 'max:120'],
             'contato_whatsapp' => ['required', 'string', 'max:32'],
+            'contato_telefone' => ['nullable', 'string', 'max:60'],
             'contato_email' => ['nullable', 'email', 'max:160'],
+            'empresa_endereco' => ['nullable', 'string', 'max:255'],
+            'empresa_cidade' => ['nullable', 'string', 'max:120'],
+            'empresa_cep' => ['nullable', 'string', 'max:12'],
             'tracking_enabled' => ['nullable', 'boolean'],
             'ga_measurement_id' => ['nullable', 'string', 'max:60'],
             'meta_pixel_id' => ['nullable', 'string', 'max:60'],
@@ -40,5 +44,25 @@ class SettingController extends Controller
         Activity::log('configuracao_salva', 'Configurações do sistema atualizadas.');
 
         return back()->with('success', 'Configurações salvas.');
+    }
+
+    /** Liga/desliga a loja virtual imediatamente, sem recarregar o formulário. */
+    public function loja(Request $request): RedirectResponse
+    {
+        $ativa = $request->boolean('ativa') ? '1' : '0';
+        Setting::set('loja_ativa', $ativa);
+
+        // Os campos de frete só são aplicados quando vindos do formulário de configurações;
+        // o botão rápido da sidebar envia apenas 'ativa' e não deve sobrescrever os demais.
+        if ($request->has('loja_livre')) {
+            Setting::set('loja_livre', $request->boolean('loja_livre') ? '1' : '0');
+        }
+        if ($request->filled('loja_frete')) {
+            Setting::set('loja_frete_cents', (int) round(((float) $request->loja_frete) * 100));
+        }
+
+        Activity::log('loja_toggle', 'Loja virtual ' . ($ativa === '1' ? 'ativada' : 'desativada') . '.');
+
+        return back()->with('success', $ativa === '1' ? 'Loja ativada.' : 'Loja desativada.');
     }
 }

@@ -40,6 +40,12 @@
             <a href="{{ route('site.segmentos') }}" class="{{ request()->routeIs('site.segmentos') ? 'active' : '' }}">Para quem é</a>
             <a href="{{ route('site.planos') }}" class="{{ request()->routeIs('site.planos') ? 'active' : '' }}">Planos</a>
             <a href="{{ route('site.como-funciona') }}" class="{{ request()->routeIs('site.como-funciona') ? 'active' : '' }}">Como funciona</a>
+            @if($golden['loja_ativa'])
+            <a href="{{ route('site.loja.index') }}" class="{{ request()->routeIs('site.loja.*') ? 'active' : '' }}">Loja</a>
+            @endif
+            @foreach($golden['menu'] as $pg)
+            <a href="{{ route('site.pagina', $pg->slug) }}" class="{{ request()->routeIs('site.pagina') && request()->route('slug') === $pg->slug ? 'active' : '' }}">{{ $pg->titulo }}</a>
+            @endforeach
             <a href="{{ route('site.faq') }}" class="{{ request()->routeIs('site.faq') ? 'active' : '' }}">Dúvidas</a>
         </nav>
         <div class="nav-cta">
@@ -62,7 +68,8 @@
                     <b>GOLDEN</b>
                 </div>
                 <p style="max-width:34ch">{{ $golden['marca']['slogan'] }}. Tecnologia de autorrastreamento e gestão para quem faz o negócio acontecer.</p>
-                <p style="font-size:.85rem"><i class="fa-solid fa-location-dot" style="color:var(--gold)"></i> {{ $golden['marca']['cidade'] }}</p>
+                <p style="font-size:.85rem"><i class="fa-solid fa-location-dot" style="color:var(--gold)"></i> {{ $golden['endereco'] }} — {{ $golden['cidade_uf'] }} · CEP {{ $golden['cep'] }}</p>
+                <p style="font-size:.85rem"><i class="fa-solid fa-phone" style="color:var(--gold)"></i> {{ $golden['telefone'] }}</p>
             </div>
             <div>
                 <h5>Navegação</h5>
@@ -70,12 +77,16 @@
                 <a href="{{ route('site.segmentos') }}">Para quem é</a>
                 <a href="{{ route('site.planos') }}">Planos e kits</a>
                 <a href="{{ route('site.como-funciona') }}">Como funciona</a>
+                @if($golden['loja_ativa'])
+                <a href="{{ route('site.loja.index') }}">Loja (rastreadores e chips)</a>
+                @endif
             </div>
             <div>
                 <h5>Suporte</h5>
                 <a href="{{ route('site.faq') }}">Dúvidas frequentes</a>
                 <a href="{{ route('site.contato') }}">Fale conosco</a>
                 <a href="{{ route('site.privacidade') }}">Privacidade (LGPD)</a>
+                <p style="font-size:.8rem;margin-top:.6rem;color:var(--muted)">Chips M2M: {{ implode(', ', $golden['parceiros']) }}<br>Pagamento: {{ implode(' ou ', $golden['pagamentos']) }}</p>
             </div>
             <div>
                 <h5>Contato</h5>

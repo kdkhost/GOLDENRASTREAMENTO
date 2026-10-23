@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
+use App\Models\Faq;
+use App\Models\Page;
+use App\Models\Testimonial;
 use Illuminate\View\View;
 
 class PageController extends Controller
@@ -14,6 +17,7 @@ class PageController extends Controller
             'segmentos' => config('golden.segmentos'),
             'kits' => config('golden.kits'),
             'passos' => config('golden.passos'),
+            'depoimentos' => Testimonial::aprovados()->limit(6)->get(),
         ]);
     }
 
@@ -36,7 +40,8 @@ class PageController extends Controller
     {
         return view('site.planos', [
             'kits' => config('golden.kits'),
-            'faq' => config('golden.faq'),
+            'faq' => Faq::paraSite(),
+            'depoimentos' => Testimonial::aprovados()->limit(3)->get(),
         ]);
     }
 
@@ -44,14 +49,14 @@ class PageController extends Controller
     {
         return view('site.como-funciona', [
             'passos' => config('golden.passos'),
-            'faq' => config('golden.faq'),
+            'faq' => Faq::paraSite(),
         ]);
     }
 
     public function faq(): View
     {
         return view('site.faq', [
-            'faq' => config('golden.faq'),
+            'faq' => Faq::paraSite(),
         ]);
     }
 
@@ -60,11 +65,19 @@ class PageController extends Controller
         return view('site.contato', [
             'kits' => config('golden.kits'),
             'perfis' => config('golden.perfis'),
+            'depoimentos' => Testimonial::aprovados()->limit(3)->get(),
         ]);
     }
 
     public function privacidade(): View
     {
         return view('site.privacidade');
+    }
+
+    public function pagina(string $slug): View
+    {
+        $pagina = Page::where('slug', $slug)->where('publicada', true)->firstOrFail();
+
+        return view('site.pagina', ['pagina' => $pagina]);
     }
 }

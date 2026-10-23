@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\ControleAcesso::class,
+            'loja' => \App\Http\Middleware\LojaAtiva::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

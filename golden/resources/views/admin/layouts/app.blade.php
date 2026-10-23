@@ -53,7 +53,7 @@
     <form id="formLogout" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
 
     {{-- SIDEBAR --}}
-    @php $u = auth()->user(); $novos = \App\Models\Lead::where('status','novo')->count(); @endphp
+    @php $u = auth()->user(); $novos = \App\Models\Lead::where('status','novo')->count(); $pedidosAbertos = \App\Models\Order::whereIn('status',['pendente','pago','em_andamento'])->count(); \App\Models\Setting::all_values(); @endphp
     <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
         <div class="sidebar-brand d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary">
             <a href="{{ route('admin.dashboard') }}" class="brand-link text-decoration-none d-flex align-items-center gap-2">
@@ -68,9 +68,25 @@
                 <ul class="nav sidebar-menu flex-column" role="menu">
                     <li class="nav-item"><a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="nav-icon fas fa-tachometer-alt"></i><p>Dashboard</p></a></li>
 
-                    <li class="nav-header">Comercial</li>
-                    <li class="nav-item"><a href="{{ route('admin.leads.index') }}" class="nav-link {{ request()->routeIs('admin.leads.*') ? 'active' : '' }}"><i class="nav-icon fas fa-users"></i><p>Leads @if($novos>0)<span class="badge bg-warning text-dark ms-auto">{{ $novos }}</span>@endif</p></a></li>
+                    <li class="nav-header">Comercial (CRM)</li>
+                    <li class="nav-item"><a href="{{ route('admin.leads.index') }}" class="nav-link {{ request()->routeIs('admin.leads.*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-plus"></i><p>Leads @if($novos>0)<span class="badge bg-warning text-dark ms-auto">{{ $novos }}</span>@endif</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.clientes.index') }}" class="nav-link {{ request()->routeIs('admin.clientes.*') ? 'active' : '' }}"><i class="nav-icon fas fa-users"></i><p>Clientes</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.campanhas.index') }}" class="nav-link {{ request()->routeIs('admin.campanhas.*') ? 'active' : '' }}"><i class="nav-icon fas fa-bullhorn"></i><p>Campanhas</p></a></li>
+
+                    <li class="nav-header">Vendas (ERP)</li>
+                    <li class="nav-item"><a href="{{ route('admin.pedidos.index') }}" class="nav-link {{ request()->routeIs('admin.pedidos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-receipt"></i><p>Pedidos @if($pedidosAbertos>0)<span class="badge bg-info text-dark ms-auto">{{ $pedidosAbertos }}</span>@endif</p></a></li>
+                    @if($u->isAdmin())
+                    <li class="nav-item"><a href="{{ route('admin.catalogo.produtos.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.produtos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-boxes-stacked"></i><p>Produtos</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.catalogo.categorias.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.categorias.*') ? 'active' : '' }}"><i class="nav-icon fas fa-tags"></i><p>Categorias</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.catalogo.fornecedores.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.fornecedores.*') ? 'active' : '' }}"><i class="nav-icon fas fa-truck-field"></i><p>Fornecedores</p></a></li>
+                    @endif
+
+                    <li class="nav-header">Site (CMS)</li>
+                    @if($u->isAdmin())
+                    <li class="nav-item"><a href="{{ route('admin.conteudo.paginas.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.paginas.*') ? 'active' : '' }}"><i class="nav-icon fas fa-file-lines"></i><p>Páginas</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.conteudo.depoimentos.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.depoimentos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-quote-left"></i><p>Depoimentos</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.conteudo.faqs.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.faqs.*') ? 'active' : '' }}"><i class="nav-icon fas fa-circle-question"></i><p>FAQs</p></a></li>
+                    @endif
 
                     @if($u->isAdmin())
                     <li class="nav-header">Administração</li>
@@ -78,6 +94,18 @@
                     <li class="nav-item"><a href="{{ route('admin.usuarios.index') }}" class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-gear"></i><p>Usuários</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}"><i class="nav-icon fas fa-sliders-h"></i><p>Configurações</p></a></li>
                     @endif
+
+                    <li class="nav-header">Loja virtual</li>
+                    <li class="nav-item">
+                        <form method="POST" action="{{ route('admin.settings.loja') }}" class="px-2 py-1 m-0">
+                            @csrf
+                            <input type="hidden" name="ativa" value="{{ \App\Models\Setting::get('loja_ativa', '1') === '1' ? '0' : '1' }}">
+                            <button type="submit" class="btn btn-sm w-100 d-flex align-items-center justify-content-between {{ \App\Models\Setting::get('loja_ativa', '1') === '1' ? 'btn-outline-success' : 'btn-outline-danger' }}">
+                                <span><i class="fas fa-store me-1"></i> Loja {{ \App\Models\Setting::get('loja_ativa', '1') === '1' ? 'ON' : 'OFF' }}</span>
+                                <i class="fas fa-power-off"></i>
+                            </button>
+                        </form>
+                    </li>
                 </ul>
             </nav>
         </div>

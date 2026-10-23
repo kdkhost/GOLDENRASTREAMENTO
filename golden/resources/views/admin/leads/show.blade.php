@@ -5,6 +5,14 @@
 
 @section('page_actions')
 <a href="{{ route('admin.leads.index') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar</a>
+@if($lead->customer_id)
+<a href="{{ route('admin.clientes.show', $lead->customer_id) }}" class="btn btn-sm btn-outline-success"><i class="fas fa-user-check me-1"></i> Ver cliente no CRM</a>
+@else
+<form method="POST" action="{{ route('admin.leads.converter', $lead) }}" class="d-inline">
+    @csrf
+    <button class="btn btn-sm btn-success" title="Criar cliente no CRM a partir deste lead"><i class="fas fa-user-plus me-1"></i> Converter em cliente</button>
+</form>
+@endif
 <a href="https://wa.me/{{ preg_replace('/\D/','',$lead->phone) }}" target="_blank" rel="noopener" class="btn btn-sm btn-success"><i class="fab fa-whatsapp me-1"></i> WhatsApp</a>
 @endsection
 

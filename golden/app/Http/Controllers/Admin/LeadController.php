@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Campaign;
+use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadStatusHistory;
 use App\Models\User;
@@ -47,6 +48,15 @@ class LeadController extends Controller
         ]);
 
         app(\App\Services\LeadService::class)->atribuirStatus($lead, $data['status'], $data['note'] ?? null);
+        $lead->refresh();
+
+        if ($data['status'] === 'vendido' && !$lead->customer_id) {
+            $cliente = Customer::deLead($lead);
+            Activity::log('lead_convertido', "Lead {$lead->name} convertido em cliente ao fechar a venda.", $cliente);
+
+            return redirect()->route('admin.clientes.show', $cliente)
+                ->with('success', 'Venda registrada e lead convertido em cliente no CRM.');
+        }
 
         return back()->with('success', 'Funil atualizado.');
     }
@@ -95,6 +105,20 @@ class LeadController extends Controller
         Activity::log('lead_excluido', "Lead {$nome} excluído.");
 
         return redirect()->route('admin.leads.index')->with('success', 'Lead excluído.');
+    }
+
+    public function converter(Request $request, Lead $lead): RedirectResponse
+    {
+        if ($lead->customer_id && Customer::find($lead->customer_id)) {
+            return redirect()->route('admin.clientes.show', $lead->customer_id)
+                ->with('info', 'Este lead já possui um cliente vinculado.');
+        }
+
+        $cliente = Customer::deLead($lead);
+        Activity::log('lead_convertido', "Lead {$lead->name} convertido em cliente.", $cliente);
+
+        return redirect()->route('admin.clientes.show', $cliente)
+            ->with('success', 'Lead convertido em cliente do CRM.');
     }
 
     public function export(Request $request): StreamedResponse

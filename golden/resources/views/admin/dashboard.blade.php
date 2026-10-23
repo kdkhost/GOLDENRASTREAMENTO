@@ -39,6 +39,44 @@
     </div>
 </div>
 
+{{-- MÓDULOS INTEGRADOS (CRM + ERP + CMS) --}}
+<div class="row g-3 mb-4">
+    <div class="col-12"><h6 class="fw-bold text-secondary text-uppercase small mb-0"><i class="fas fa-cubes me-1 text-warning"></i> Módulos integrados</h6></div>
+    <div class="col-6 col-lg-3">
+        <a href="{{ route('admin.clientes.index') }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
+            <div class="icon" style="background:rgba(31,158,134,.14);color:#1f9e86"><i class="fas fa-users"></i></div>
+            <div><div class="value" style="font-size:1.5rem">{{ $modulos['clientes'] }}</div><div class="label">Clientes (CRM)</div></div>
+        </div></div></a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="{{ route('admin.catalogo.produtos.index') }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
+            <div class="icon" style="background:rgba(224,163,62,.16);color:#c9862a"><i class="fas fa-boxes-stacked"></i></div>
+            <div><div class="value" style="font-size:1.5rem">{{ $modulos['produtos'] }}</div><div class="label">Produtos @if($modulos['estoque_baixo']>0)<span class="badge bg-warning text-dark ms-1">{{ $modulos['estoque_baixo'] }} baixos</span>@endif</div></div>
+        </div></div></a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="{{ route('admin.pedidos.index') }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
+            <div class="icon" style="background:rgba(94,53,177,.12);color:#5e35b1"><i class="fas fa-receipt"></i></div>
+            <div><div class="value" style="font-size:1.5rem">{{ $fmt($modulos['faturamento_loja']) }}</div><div class="label">Vendas na loja ({{ $modulos['pedidos'] }} pedidos)</div></div>
+        </div></div></a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a href="{{ route('admin.conteudo.paginas.index') }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
+            <div class="icon" style="background:rgba(21,101,192,.12);color:#1565c0"><i class="fas fa-file-lines"></i></div>
+            <div><div class="value" style="font-size:1.5rem">{{ $modulos['paginas'] }}</div><div class="label">Páginas (CMS)</div></div>
+        </div></div></a>
+    </div>
+    <div class="col-12">
+        <div class="alert {{ $modulos['loja_ativa'] ? 'alert-success' : 'alert-secondary' }} d-flex justify-content-between align-items-center py-2 mb-0" style="border-radius:14px">
+            <span class="small mb-0"><i class="fas fa-store me-1"></i> Loja virtual <strong>{{ $modulos['loja_ativa'] ? 'ATIVA' : 'DESATIVADA' }}</strong> — vendas diretas de rastreadores, chips e acessórios.
+            @if($modulos['pedidos_abertos']>0) · {{ $modulos['pedidos_abertos'] }} pedido(s) aguardando.@endif</span>
+            @if(auth()->user()->isAdmin())
+            <a href="{{ route('admin.settings.index') }}" class="btn btn-sm btn-outline-dark">Gerenciar</a>
+            @endif
+        </div>
+    </div>
+</div>
+
 <div class="row g-3 mb-4">
     {{-- Funil --}}
     <div class="col-lg-5">

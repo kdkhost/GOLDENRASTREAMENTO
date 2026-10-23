@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('golden123'),
                 'role' => 'admin',
                 'status' => 'ativo',
-                'telefone' => '(35) 98888-0000',
+                'telefone' => '(19) 99710-1483',
             ]
         );
 
@@ -37,9 +37,15 @@ class DatabaseSeeder extends Seeder
         );
 
         Setting::set('site_nome', 'Golden Rastreamento');
-        Setting::set('contato_whatsapp', env('GOLDEN_WHATSAPP', '5535988880000'));
+        Setting::set('contato_whatsapp', env('GOLDEN_WHATSAPP', '5519997101483'));
+        Setting::set('contato_telefone', '(19) 99710-1483 · (19) 97139-5129');
         Setting::set('contato_email', env('GOLDEN_EMAIL', 'comercial@goldenrastreamento.com.br'));
+        Setting::set('empresa_endereco', 'R. Pref. Olinto Réis Campos, 104 - Centro');
+        Setting::set('empresa_cidade', 'Três Pontas - MG');
+        Setting::set('empresa_cep', '37185-016');
         Setting::set('tracking_enabled', env('GOLDEN_TRACKING_ENABLED', '0'));
+        Setting::set('loja_ativa', '1');
+        Setting::set('loja_livre', '1');
 
         $google = Campaign::firstOrCreate(
             ['name' => 'Google Ads — Frota', 'source' => 'google', 'medium' => 'cpc'],
@@ -108,6 +114,14 @@ class DatabaseSeeder extends Seeder
                 }
             }
         }
+
+        // Módulos integrados: ERP (catálogo), CMS, CRM e pedidos de demonstração
+        $this->call([
+            CatalogSeeder::class,
+            CmsSeeder::class,
+            CrmSeeder::class,
+            OrdersSeeder::class,
+        ]);
     }
 
     private function nome(): string
