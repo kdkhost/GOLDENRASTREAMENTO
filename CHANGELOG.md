@@ -3,6 +3,24 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.13.1] - 2026-10-23
+
+### Adicionado
+- **`php artisan app:define-senha`** — recupera o acesso ao painel pela SSH, sem depender
+  de memória nem do próprio painel: `app:define-senha admin@golden.com.br 'nova-senha'`,
+  com a senha digitada no prompt (sem eco) se o argumento for omitido e `--reativar` para
+  religar uma conta desligada. E-mail errado não derruba nada: o comando lista os e-mails
+  cadastrados. Senha menor que 8 caracteres é recusada antes de gravar, e a troca fica na
+  trilha de auditoria (`senha_redefinida`). Testes em `RecuperarSenhaDoPainelTest`.
+
+### Alterado
+- **A documentação diz onde a senha do servidor está e como trocar** — `README.md` e
+  `docs/INSTALACAO.md` deixam claro que `admin@golden.com.br` / `golden123` vale **só no
+  ambiente local**; em produção o instalador grava a senha forte em
+  `~/backups-golden/acesso-painel.txt` (600, fora do docroot) e a tela de `/login`, desde a
+  2.12.1, não mostra mais nenhuma credencial — por isso a tabela de diagnóstico do guia
+  ganhou a linha "a senha do painel 'não funciona' no servidor".
+
 ## [2.13.0] - 2026-10-23
 
 ### Adicionado

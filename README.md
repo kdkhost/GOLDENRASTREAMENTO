@@ -58,6 +58,12 @@ Acesse:
 | Administrador | `admin@golden.com.br`    | `golden123` |
 | Vendedor      | `vendedor@golden.com.br` | `golden123` |
 
+> **Estas credenciais valem só na sua máquina** (`APP_ENV=local`). No servidor instalado, a
+> senha do administrador é forte e fica guardada em `~/backups-golden/acesso-painel.txt`
+> (fora do git e do docroot). Sem o painel, pela SSH:
+> `php artisan app:define-senha admin@golden.com.br 'nova-senha'` — use `--reativar` se a
+> conta estiver desligada.
+
 > O `DatabaseSeeder` cria 42 leads em 3 campanhas e nos 5 status do funil e, em seguida,
 > roda os seeders de módulo: **CatalogSeeder** (4 categorias, 10 produtos, 4 fornecedores),
 > **CmsSeeder** (depoimentos, FAQs e páginas institucionais reais), **CrmSeeder** (converte
@@ -144,8 +150,9 @@ supervisor — é por ela que os e-mails de pedido saem sem atrasar a resposta a
 
 As **mesmas migrations** rodam em SQLite e MySQL — não há código específico de driver.
 Em produção o HTTPS é forçado automaticamente (`AppServiceProvider`). Os seeders criam o
-login com a senha `golden123`: o instalador troca por uma senha forte logo depois; na mão,
-troque no painel antes de divulgar o site.
+login com a senha `golden123`: o instalador troca por uma senha forte logo depois (o valor
+fica em `~/backups-golden/acesso-painel.txt`); na mão, troque no painel ou rode
+`php artisan app:define-senha` antes de divulgar o site.
 
 ---
 

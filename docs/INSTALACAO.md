@@ -508,6 +508,7 @@ ele, os dados criptografados e as sessões não voltam.
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/laravel.log`; depois configurar SMTP |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
+| A senha do painel "não funciona" no servidor | a senha instalada é forte, não é `golden123` | leia em `~/backups-golden/acesso-painel.txt` ou defina outra com `php artisan app:define-senha` |
 
 Os logs ficam em `storage/logs/laravel.log`; no cPanel também existe
 `public/error_log`, que o `.htaccess` bloqueia para visitantes, e o erro real
@@ -519,6 +520,15 @@ continua visível para você pelo painel ou SSH.
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
+- **Onde ela fica**: o instalador escreve login e senha em
+  `~/backups-golden/acesso-painel.txt` (permissão `600`, fora do docroot e do git).
+  A tela de `/login` só mostra a dica de demonstração com `APP_ENV=local` — em
+  produção a tela não entrega credencial nenhuma, e é assim que tem de ser.
+- **Perdeu a senha**: pela SSH, sem precisar do painel,
+  `php artisan app:define-senha admin@golden.com.br 'nova-senha'` (a senha também
+  pode ser digitada no prompt, sem eco). Use `--reativar` se a conta foi desligada.
+  O comando lista os e-mails cadastrados quando o e-mail está errado e grava o
+  evento na trilha de auditoria.
 - Repositório público: nenhuma credencial, chave SSH ou cópia de banco entra nele.
 - O `.htaccess` bloqueia código, segredos e logs; a entrega real é sempre pela
   pasta `public/`.
