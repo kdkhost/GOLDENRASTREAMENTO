@@ -43,3 +43,6 @@ Thumbs.db
 /index.html
 /script.js
 /style.css
+
+__pycache__/
+*.pyc
