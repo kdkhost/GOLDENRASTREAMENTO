@@ -6,6 +6,14 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 ## [2.12.1] - 2026-10-23
 
 ### Corrigido
+- **`deploy/atualiza-golden.sh` parava em "requires php ^8.3" mesmo com o 8.3 no
+  servidor** — o script escolhia o primeiro `php` que houvesse, e em hospedagem
+  compartilhada esse é a versão do seletor da conta (aqui, 8.2); o `composer` do plano
+  roda no mesmo `php` do PATH, então o `composer install` barrava antes das migrations.
+  A procura agora começa pelos binários versionados (`ea-php83`, `ea-php84`, `php8.3`,
+  caminhos do CloudLinux/cPanel) e aceita só quem tem 8.3 ou mais; o Composer é sempre
+  chamado **com o PHP escolhido** (`$PHP_BIN composer.phar`), e um `--php=` antigo demais
+  derruba o script com a mensagem dizendo qual versão foi encontrada e onde mudar.
 - **A tela de login não entrega mais a credencial de demonstração em produção** — o aviso
   "Ambiente de demonstração / admin@golden.com.br · senha: golden123" era impresso para
   qualquer visitante do `https://dominio/login`, mesmo no servidor de produção, onde o
