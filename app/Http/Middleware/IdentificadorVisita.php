@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -18,7 +19,7 @@ class IdentificadorVisita
         $response = $next($request);
 
         if (!$request->hasCookie('golden_visitor')) {
-            $response->cookie(
+            Cookie::queue(
                 'golden_visitor',
                 Str::random(24),
                 60 * 24 * 90, // 90 dias

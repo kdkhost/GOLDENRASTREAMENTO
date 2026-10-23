@@ -28,6 +28,11 @@ class OrderController extends Controller
 
         return view('admin.orders.index', [
             'pedidos' => $pedidos,
+            'kpis' => [
+                'total' => Order::count(),
+                'pendentes' => Order::where('status', 'pendente')->count(),
+                'entregues' => Order::where('status', 'entregue')->count(),
+            ],
             'faturamento' => Order::whereNotIn('status', ['cancelado', 'pendente'])->sum('total_cents'),
             'statuses' => Order::STATUS,
         ]);

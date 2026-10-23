@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Campaign extends Model
 {
+    public const CANAIS = ['pago' => 'Pago', 'organico' => 'Orgânico', 'direto' => 'Direto', 'referencia' => 'Indicação'];
+
     protected $fillable = ['name', 'source', 'medium', 'content', 'channel', 'ativa'];
 
     protected $casts = ['ativa' => 'boolean'];
@@ -20,5 +22,10 @@ class Campaign extends Model
     {
         $parts = array_filter([$this->name, $this->source, $this->medium]);
         return implode(' · ', $parts);
+    }
+
+    public function canalLabel(): string
+    {
+        return self::CANAIS[$this->channel] ?? $this->channel;
     }
 }

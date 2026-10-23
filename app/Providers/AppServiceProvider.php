@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Category;
+use App\Models\Lead;
+use App\Models\Order;
 use App\Models\Page;
 use App\Models\Setting;
 use App\Support\Carrinho;
@@ -14,6 +16,9 @@ class AppServiceProvider extends ServiceProvider
 {
     /** @var array<string, mixed>|null pacote do site já montado nesta requisição */
     private ?array $site = null;
+
+    /** @var array<string, int>|null contadores do menu do painel, nesta requisição */
+    private ?array $pendencias = null;
 
     public function register(): void
     {
@@ -29,6 +34,22 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['layouts.site', 'site.*', 'admin.layouts.app'], function ($view) {
             $view->with('golden', $this->dadosDoSite());
         });
+
+        View::composer('admin.layouts.app', function ($view) {
+            $view->with('pendencias', $this->pendenciasDoPainel());
+        });
+    }
+
+    /**
+     * Contadores que acendem as bolhas do menu. Fica fora da view para o layout não
+     * rodar consulta em cada partial incluído.
+     */
+    private function pendenciasDoPainel(): array
+    {
+        return $this->pendencias ??= [
+            'leads_novos' => Lead::where('status', 'novo')->count(),
+            'pedidos_abertos' => Order::whereIn('status', Order::ABERTOS)->count(),
+        ];
     }
 
     /**

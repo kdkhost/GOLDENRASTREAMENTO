@@ -20,6 +20,16 @@ class UserController extends Controller
         ]);
     }
 
+    public function create(): View
+    {
+        return view('admin.users.form', ['usuario' => new User(['role' => 'vendedor', 'status' => 'ativo'])]);
+    }
+
+    public function edit(User $user): View
+    {
+        return view('admin.users.form', ['usuario' => $user]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -36,7 +46,7 @@ class UserController extends Controller
 
         Activity::log('usuario_criado', "Usuário {$user->name} ({$user->role}) criado.", $user);
 
-        return back()->with('success', 'Usuário criado.');
+        return redirect()->route('admin.usuarios.index')->with('success', 'Usuário criado.');
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -65,7 +75,7 @@ class UserController extends Controller
         $user->update($data);
         Activity::log('usuario_editado', "Usuário {$user->name} atualizado.", $user);
 
-        return back()->with('success', 'Usuário atualizado.');
+        return redirect()->route('admin.usuarios.index')->with('success', 'Usuário atualizado.');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse

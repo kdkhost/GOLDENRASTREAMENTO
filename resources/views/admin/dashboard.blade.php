@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Dashboard')
 @section('page_title', 'Visão geral de leads')
-@section('page_description', 'Acompanhe contatos e conversões das campanhas de tráfego pago.')
+@section('page_description', 'Contatos captados, posição no funil e conversão das campanhas de tráfego pago.')
 
 @section('page_actions')
 <a href="{{ route('admin.leads.export', request()->query()) }}" class="btn btn-golden btn-sm"><i class="fas fa-file-csv me-1"></i> Exportar CSV</a>
@@ -9,137 +9,109 @@
 
 @section('content')
 @php
-    $fmt = fn($c)=> 'R$ '.number_format($c/100, 2, ',', '.');
+    $admin = auth()->user()->isAdmin();
+    $funilLider = max($total, 1);
 @endphp
-{{-- KPIs --}}
+
+{{-- Leads --}}
 <div class="row g-3 mb-4">
     <div class="col-6 col-xl-3">
-        <div class="card stat-card shadow-sm"><div class="card-body d-flex align-items-center gap-3">
-            <div class="icon" style="background:rgba(31,158,134,.14);color:#1f9e86"><i class="fas fa-users"></i></div>
-            <div><div class="value">{{ $total }}</div><div class="label">Leads totais</div></div>
-        </div></div>
+        <x-admin.stat label="Leads totais" :value="$total" icon="fa-users" tone="teal" :href="route('admin.leads.index')" />
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card stat-card shadow-sm"><div class="card-body d-flex align-items-center gap-3">
-            <div class="icon" style="background:rgba(224,163,62,.16);color:#c9862a"><i class="fas fa-envelope-circle-check"></i></div>
-            <div><div class="value">{{ $novos }}</div><div class="label">Novos / aguardando</div></div>
-        </div></div>
+        <x-admin.stat label="Novos / aguardando" :value="$novos" icon="fa-envelope-circle-check" tone="gold" :href="route('admin.leads.index', ['status' => 'novo'])" />
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card stat-card shadow-sm"><div class="card-body d-flex align-items-center gap-3">
-            <div class="icon" style="background:rgba(18,105,79,.14);color:#12694f"><i class="fas fa-trophy"></i></div>
-            <div><div class="value">{{ $conversao }}%</div><div class="label">Taxa de conversão</div></div>
-        </div></div>
+        <x-admin.stat label="Taxa de conversão" :value="$conversao.'%'" icon="fa-trophy" tone="violet" :href="route('admin.leads.index', ['status' => 'vendido'])" />
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card stat-card shadow-sm"><div class="card-body d-flex align-items-center gap-3">
-            <div class="icon" style="background:rgba(94,53,177,.12);color:#5e35b1"><i class="fas fa-sack-dollar"></i></div>
-            <div><div class="value" style="font-size:1.4rem">{{ $fmt($receita) }}</div><div class="label">Receita fechada</div></div>
-        </div></div>
+        <x-admin.stat label="Receita fechada" :value="brl($receita)" icon="fa-sack-dollar" tone="blue" pequeno :href="route('admin.leads.index', ['status' => 'vendido'])" />
     </div>
 </div>
 
-{{-- MÓDULOS INTEGRADOS (CRM + ERP + CMS) --}}
-<div class="row g-3 mb-4">
-    <div class="col-12"><h6 class="fw-bold text-secondary text-uppercase small mb-0"><i class="fas fa-cubes me-1 text-warning"></i> Módulos integrados</h6></div>
-    <div class="col-6 col-lg-3">
-        <a href="{{ route('admin.clientes.index') }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
-            <div class="icon" style="background:rgba(31,158,134,.14);color:#1f9e86"><i class="fas fa-users"></i></div>
-            <div><div class="value" style="font-size:1.5rem">{{ $modulos['clientes'] }}</div><div class="label">Clientes (CRM)</div></div>
-        </div></div></a>
-    </div>
-    <div class="col-6 col-lg-3">
-        <a href="{{ route('admin.catalogo.produtos.index') }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
-            <div class="icon" style="background:rgba(224,163,62,.16);color:#c9862a"><i class="fas fa-boxes-stacked"></i></div>
-            <div><div class="value" style="font-size:1.5rem">{{ $modulos['produtos'] }}</div><div class="label">Produtos @if($modulos['estoque_baixo']>0)<span class="badge bg-warning text-dark ms-1">{{ $modulos['estoque_baixo'] }} baixos</span>@endif</div></div>
-        </div></div></a>
-    </div>
-    <div class="col-6 col-lg-3">
-        <a href="{{ route('admin.pedidos.index') }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
-            <div class="icon" style="background:rgba(94,53,177,.12);color:#5e35b1"><i class="fas fa-receipt"></i></div>
-            <div><div class="value" style="font-size:1.5rem">{{ $fmt($modulos['faturamento_loja']) }}</div><div class="label">Vendas na loja ({{ $modulos['pedidos'] }} pedidos)</div></div>
-        </div></div></a>
-    </div>
-    <div class="col-6 col-lg-3">
-        <a href="{{ route('admin.conteudo.paginas.index') }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body d-flex align-items-center gap-3">
-            <div class="icon" style="background:rgba(21,101,192,.12);color:#1565c0"><i class="fas fa-file-lines"></i></div>
-            <div><div class="value" style="font-size:1.5rem">{{ $modulos['paginas'] }}</div><div class="label">Páginas (CMS)</div></div>
-        </div></div></a>
-    </div>
-    <div class="col-12">
-        <div class="alert {{ $modulos['loja_ativa'] ? 'alert-success' : 'alert-secondary' }} d-flex justify-content-between align-items-center py-2 mb-0" style="border-radius:14px">
-            <span class="small mb-0"><i class="fas fa-store me-1"></i> Loja virtual <strong>{{ $modulos['loja_ativa'] ? 'ATIVA' : 'DESATIVADA' }}</strong> — vendas diretas de rastreadores, chips e acessórios.
-            @if($modulos['pedidos_abertos']>0) · {{ $modulos['pedidos_abertos'] }} pedido(s) aguardando.@endif</span>
-            @if(auth()->user()->isAdmin())
-            <a href="{{ route('admin.settings.index') }}" class="btn btn-sm btn-outline-dark">Gerenciar</a>
-            @endif
+@if($admin)
+    {{-- Módulos integrados --}}
+    <div class="row g-3 mb-4">
+        <div class="col-12"><h6 class="fw-bold text-secondary text-uppercase small mb-0"><i class="fas fa-cubes text-gold me-1"></i> Módulos integrados</h6></div>
+        <div class="col-6 col-lg-3">
+            <x-admin.stat label="Clientes (CRM)" :value="$modulos['clientes']" :hint="$modulos['clientes_ativos'].' ativos na base'" icon="fa-user-check" tone="teal" pequeno :href="route('admin.clientes.index')" />
+        </div>
+        <div class="col-6 col-lg-3">
+            <x-admin.stat label="Produtos ativos" :value="$modulos['produtos']" :hint="$modulos['estoque_baixo'] > 0 ? $modulos['estoque_baixo'].' com estoque baixo' : 'estoque em dia'" icon="fa-boxes-stacked" tone="gold" pequeno :href="route('admin.catalogo.produtos.index', $modulos['estoque_baixo'] > 0 ? ['estoque' => 'baixo'] : [])" />
+        </div>
+        <div class="col-6 col-lg-3">
+            <x-admin.stat :label="'Vendas na loja ('.$modulos['pedidos'].' pedidos)'" :value="brl($modulos['faturamento_loja'])" icon="fa-receipt" tone="violet" pequeno :href="route('admin.pedidos.index')" />
+        </div>
+        <div class="col-6 col-lg-3">
+            <x-admin.stat label="Páginas publicadas" :value="$modulos['paginas']" :hint="$modulos['depoimentos'].' depoimentos aprovados'" icon="fa-file-lines" tone="blue" pequeno :href="route('admin.conteudo.paginas.index')" />
+        </div>
+        <div class="col-12">
+            <div class="alert {{ $modulos['loja_ativa'] ? 'alert-success' : 'alert-secondary' }} d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 mb-0">
+                <span class="small mb-0">
+                    <i class="fas fa-store me-1"></i> Loja virtual <strong>{{ $modulos['loja_ativa'] ? 'ativa' : 'desativada' }}</strong> — vendas diretas de rastreadores, chips e acessórios.
+                    @if($modulos['pedidos_abertos'] > 0) · {{ $modulos['pedidos_abertos'] }} pedido(s) aguardando.@endif
+                </span>
+                <a href="{{ route('admin.settings.index') }}" class="btn btn-sm btn-outline-dark">Gerenciar</a>
+            </div>
         </div>
     </div>
-</div>
+@endif
 
 <div class="row g-3 mb-4">
-    {{-- Funil --}}
     <div class="col-lg-5">
-        <div class="card shadow-sm" style="border-radius:16px"><div class="card-body">
-            <h5 class="card-title fw-bold"><i class="fas fa-filter text-warning me-1"></i> Funil de conversão</h5>
-            @php $max = max($total,1);
-                 $funnel = ['novo'=>$novos,'contatado'=>$contatado,'proposta'=>$proposta,'vendido'=>$vendid,'perdido'=>$perdido]; @endphp
-            <div class="funnel mt-3">
-                @foreach(['novo'=>'#1c5d99','contatado'=>'#e0a33e','proposta'=>'#5e35b1','vendido'=>'#1f9e86','perdido'=>'#c0392b'] as $st=>$cor)
-                @php $c = $funnel[$st]; $w = round($c/$max*100); @endphp
-                <div class="funnel-row">
-                    <div style="width:96px;font-size:.85rem;color:var(--bs-secondary-color)">{{ \App\Models\Lead::label($st) }}</div>
-                    <div class="funnel-bar" style="width:{{ max($w,8) }}%;background:{{ $cor }}">{{ $c }}</div>
-                </div>
+        <x-admin.card title="Funil de conversão" icon="fa-filter">
+            <div class="funnel mt-2">
+                @foreach(['novo' => $novos, 'contatado' => $contatado, 'proposta' => $proposta, 'vendido' => $vendid, 'perdido' => $perdido] as $status => $quantidade)
+                    @php $largura = round($quantidade / $funilLider * 100); @endphp
+                    <div class="funnel-row">
+                        <div class="funnel-label">{{ \App\Models\Lead::label($status) }}</div>
+                        <a href="{{ route('admin.leads.index', ['status' => $status]) }}" class="text-decoration-none">
+                            <div class="funnel-bar fb-{{ $status }}" style="width:{{ max($largura, 8) }}%">{{ $quantidade }}</div>
+                        </a>
+                    </div>
                 @endforeach
             </div>
-        </div></div>
+        </x-admin.card>
     </div>
-    {{-- Gráfico --}}
+
     <div class="col-lg-7">
-        <div class="card shadow-sm" style="border-radius:16px"><div class="card-body">
-            <h5 class="card-title fw-bold"><i class="fas fa-chart-line text-warning me-1"></i> Leads nos últimos 30 dias</h5>
-            <canvas id="chartLeads" height="150"></canvas>
-        </div></div>
+        <x-admin.card title="Leads nos últimos 30 dias" icon="fa-chart-line">
+            <canvas id="chartLeads" height="150" role="img" aria-label="Gráfico de leads por dia nos últimos 30 dias"></canvas>
+        </x-admin.card>
     </div>
 </div>
 
 <div class="row g-3">
-    {{-- Conversão por campanha --}}
     <div class="col-lg-7">
-        <div class="card shadow-sm" style="border-radius:16px"><div class="card-body">
-            <h5 class="card-title fw-bold"><i class="fas fa-bullhorn text-warning me-1"></i> Conversão por campanha</h5>
-            <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                    <thead><tr class="text-secondary small"><th>Campanha</th><th>Canal</th><th class="text-center">Leads</th><th class="text-center">Vendidos</th><th class="text-center">Conversão</th></tr></thead>
-                    <tbody>
-                    @forelse($campanhas as $c)
-                        <tr>
-                            <td><a href="{{ route('admin.leads.index', ['campanha'=>$c->id]) }}" class="fw-semibold text-decoration-none">{{ $c->name }}</a></td>
-                            <td><span class="badge bg-body-secondary text-body">{{ $c->channel }}</span></td>
-                            <td class="text-center">{{ $c->leads_count }}</td>
-                            <td class="text-center">{{ $c->leads_vendidos }}</td>
-                            <td class="text-center"><span class="badge-status {{ $c->taxo_conversao>0?'st-vendido':'st-novo' }}">{{ $c->taxo_conversao }}%</span></td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="5" class="text-center text-secondary py-4">Nenhuma campanha com leads ainda.</td></tr>
-                    @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div></div>
-    </div>
-    {{-- Recentes --}}
-    <div class="col-lg-5">
-        <div class="card shadow-sm" style="border-radius:16px"><div class="card-body">
-            <h5 class="card-title fw-bold"><i class="fas fa-clock text-warning me-1"></i> Leads recentes</h5>
-            @foreach($recentes as $l)
-            <a href="{{ route('admin.leads.show',$l) }}" class="d-flex justify-content-between align-items-center text-decoration-none py-2 border-bottom">
-                <div><span class="fw-semibold text-body">{{ $l->name }}</span><br><small class="text-secondary">{{ $l->campaign?->name ?? 'Sem campanha' }} · {{ $l->created_at->diffForHumans() }}</small></div>
-                <span class="badge-status st-{{ $l->status }}">{{ \App\Models\Lead::label($l->status) }}</span>
-            </a>
+        <x-admin.table :headers="['Campanha', 'Canal', 'center:Leads', 'center:Vendidos', 'center:Conversão']" empty="Nenhuma campanha com leads ainda.">
+            @foreach($campanhas as $c)
+                <tr>
+                    <td>
+                        <a href="{{ route('admin.leads.index', ['campanha' => $c->id]) }}" class="fw-semibold text-decoration-none">{{ $c->name }}</a>
+                    </td>
+                    <td><span class="badge bg-body-secondary text-body">{{ $c->canalLabel() }}</span></td>
+                    <td class="text-center">{{ $c->leads_count }}</td>
+                    <td class="text-center">{{ $c->leads_vendidos }}</td>
+                    <td class="text-center"><span class="badge-status {{ $c->taxo_conversao > 0 ? 'st-vendido' : 'st-novo' }}">{{ $c->taxo_conversao }}%</span></td>
+                </tr>
             @endforeach
-        </div></div>
+        </x-admin.table>
+    </div>
+
+    <div class="col-lg-5">
+        <x-admin.card title="Leads recentes" icon="fa-clock">
+            @forelse($recentes as $l)
+                <a href="{{ route('admin.leads.show', $l) }}" class="d-flex justify-content-between align-items-center gap-2 text-decoration-none py-2 border-bottom">
+                    <span class="overflow-hidden">
+                        <span class="fw-semibold">{{ $l->name }}</span>
+                        <span class="d-block small text-secondary">{{ $l->campaign?->name ?? 'Sem campanha' }} · {{ $l->created_at->diffForHumans() }}</span>
+                    </span>
+                    <span class="badge-status st-{{ $l->status }}">{{ \App\Models\Lead::label($l->status) }}</span>
+                </a>
+            @empty
+                <p class="small text-secondary mb-0">Nenhum lead recebido ainda.</p>
+            @endforelse
+        </x-admin.card>
     </div>
 </div>
 @endsection
@@ -147,10 +119,16 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
-new Chart(document.getElementById('chartLeads'),{
-  type:'line',
-  data:{labels:@json($labels),datasets:[{label:'Leads',data:@json($serie),borderColor:'#c9862a',backgroundColor:'rgba(224,163,62,.12)',fill:true,tension:.35,pointRadius:0,borderWidth:2}]},
-  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false},ticks:{maxTicksLimit:8}}}}
+new Chart(document.getElementById('chartLeads'), {
+    type: 'line',
+    data: {
+        labels: @js($labels),
+        datasets: [{ label: 'Leads', data: @js($serie), borderColor: '#c9862a', backgroundColor: 'rgba(224,163,62,.12)', fill: true, tension: .35, pointRadius: 0, borderWidth: 2 }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } }
+    }
 });
 </script>
 @endpush

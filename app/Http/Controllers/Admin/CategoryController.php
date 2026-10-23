@@ -18,6 +18,18 @@ class CategoryController extends Controller
         ]);
     }
 
+    public function create(): View
+    {
+        return view('admin.categories.form', [
+            'categoria' => new Category(['ativa' => true, 'ordem' => 0]),
+        ]);
+    }
+
+    public function edit(Category $category): View
+    {
+        return view('admin.categories.form', ['categoria' => $category]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -31,7 +43,7 @@ class CategoryController extends Controller
         $c = Category::create($data);
         Activity::log('categoria_criada', "Categoria {$c->nome} criada.", $c);
 
-        return back()->with('success', 'Categoria criada.');
+        return redirect()->route('admin.catalogo.categorias.index')->with('success', 'Categoria criada.');
     }
 
     public function update(Request $request, Category $category): RedirectResponse
@@ -46,7 +58,7 @@ class CategoryController extends Controller
         $category->update($data);
         Activity::log('categoria_atualizada', "Categoria {$category->nome} atualizada.", $category);
 
-        return back()->with('success', 'Categoria atualizada.');
+        return redirect()->route('admin.catalogo.categorias.index')->with('success', 'Categoria atualizada.');
     }
 
     public function destroy(Category $category): RedirectResponse

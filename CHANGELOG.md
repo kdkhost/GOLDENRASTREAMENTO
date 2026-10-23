@@ -3,6 +3,65 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.13.0] - 2026-10-23
+
+### Adicionado
+- **Componentes de tela do painel** (`resources/views/components/admin/`): `field`, `switch`,
+  `card`, `table`, `filters` + `filter`, `stat` e `delete`. São a única fonte do padrão visual
+  de formulário do painel — todo `<input>` sai com `.form-label` acima, `id="f-<nome>"`,
+  `invalid-feedback` do Bootstrap e o mesmo `maxlength` da regra de validação do controller.
+- **Uma página de cadastro por módulo**: `campanhas/form`, `clientes/form`, `categories/form`,
+  `suppliers/form`, `faqs/form`, `testimonials/form`, `users/form` e `products/estoque`
+  (movimentação de estoque com saldo, mínimo e histórico). As rotas `create`/`edit` e
+  `admin.clientes.edit` / `admin.campanhas.edit` existem agora de verdade; nenhum outro lugar
+  repete o formulário — quem precisa cadastrar um cliente a partir de um pedido recebe um link
+  com os dados já preenchidos pela query string.
+- **`PaginasDoPainelTest`**: percorre toda rota `admin.*` de GET, loga como administrador e
+  exige 200 em cada uma (36+ páginas), confere os filtros das listas e o recorte do vendedor
+  (5 páginas liberadas, 5 proibidas). É o teste que pega nome de rota errado em view, prop
+  desconhecida em componente ou variável que esquecemos no controller — nada disso aparece no
+  `view:cache`.
+
+### Corrigido
+- **Exportar leads (`/admin/leads/exportar`) dava 500** — o middleware
+  `IdentificadorVisita` gravava o cookie de atribuição chamando `$response->cookie()`, método
+  que só existe na resposta do Laravel; a resposta do `streamDownload` (CSV) é uma
+  `StreamedResponse` do Symfony e não tem esse método. O cookie agora entra por
+  `Cookie::queue()`, que é anexado ao download por estar num middleware externo — qualquer
+  arquivo baixado (CSV, planilha, nota) passa a sobreviver à barreira de consentimento.
+- **Campos do checkout fora do padrão da plataforma** — `/loja/checkout` tinha `<label>`
+  embrulhando o `<input>`, sem `for`/`id`, sem `type`/`inputmode`, sem limite de caracteres e
+  com estilos em linha (`h1 style="font-size:1.7rem"`). Agora cada campo é um `.field` com
+  rótulo próprio (`coNome`, `coTelefone`, `coDocumento`, `coEntrega-*`…), `type` e `inputmode`
+  certos (telefone, e-mail, CEP numérico), `maxlength` espelhando a validação, mensagem de
+  erro sob o campo e o formulário inteiro sem `style=""` — o dourado dos ícones, o aviso de
+  não-cobrança e a dica de frete grátis saíram do atributo e viraram regras CSS
+  (`.retira-note i`, `.pix-key i`, `.sum-hint i`, `.checkout-aviso`), e `golden-site.css`
+  ganhou `.field-title`, `.form-err` e o dimensionamento de rádio/checkbox dentro de `.field`.
+
+### Alterado
+- **As 27 telas do painel migraram para os componentes**: nada de
+  `style="border-radius:16px"`, card montado à mão, `<table>` cru ou modal por linha. As listas
+  usam `x-admin.table` (com linha vazia automática e cabeçalho `center:`/`end:`), os filtros
+  usam `x-admin.filters` num formulário GET com botão limpar, e os indicadores usam
+  `x-admin.stat` com link. As colunas do funil ganharam rótulos e cores próprias
+  (`.funnel-label`, `.fb-novo`…`.fb-perdido`) em `admin-golden.css`.
+- **Menu reorganizado por área de trabalho**: Visão geral (Dashboard) · Comercial (Leads,
+  Clientes, Campanhas) · Vendas (Pedidos, Produtos e estoque, Categorias, Fornecedores, link
+  "Loja no site") · Conteúdo do site (Páginas, Depoimentos, FAQs) · Sistema (Configurações,
+  Usuários, Auditoria). O interruptor ON/OFF da loja, que estava duplicado na sidebar e em
+  Configurações, ficou só em Configurações; os contadores de pendência saíram de dentro do
+  layout (dois `count()` + `Setting::all_values()` a cada requisição) para um composer de view
+  com memoização por requisição (`$pendencias`), e o rodapé do painel mostra a versão do PHP e
+  o driver do banco em vez de texto fixo.
+- **Consultas fora das views**: `Lead::where(...)->count()` e afins deram lugar a variáveis do
+  controller; os rótulos de canal de campanha viraram uma única fonte em
+  `Campaign::CANAIS` / `canalLabel()`; o rótulo de status de lead já vinha de
+  `Lead::STATUS_LABELS`.
+- **`x-admin.table` aceita atributos** (`$attributes->merge`), então `class="mt-3"` e
+  `mb-3` funcionam; ícones do FontAwesome Pro que desenhavam caixa vazia
+  (`fa-truck-field`, `fa-external-link-alt`) foram trocados pelos equivalentes livres.
+
 ## [2.12.1] - 2026-10-23
 
 ### Corrigido

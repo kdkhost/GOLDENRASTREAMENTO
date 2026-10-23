@@ -112,7 +112,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     Route::prefix('campanhas')->name('campanhas.')->middleware('role:admin,vendedor')->group(function () {
         Route::get('/', [CampaignController::class, 'index'])->name('index');
+        Route::get('/nova', [CampaignController::class, 'create'])->name('create');
         Route::post('/', [CampaignController::class, 'store'])->name('store');
+        Route::get('/{campaign}/editar', [CampaignController::class, 'edit'])->name('edit');
+        Route::post('/{campaign}', [CampaignController::class, 'update'])->name('update');
         Route::post('/{campaign}/toggle', [CampaignController::class, 'toggle'])->name('toggle');
         Route::delete('/{campaign}', [CampaignController::class, 'destroy'])->name('destroy')->middleware('role:admin');
     });
@@ -120,8 +123,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     // CRM: Clientes
     Route::prefix('clientes')->name('clientes.')->middleware('role:admin,vendedor')->group(function () {
         Route::get('/', [CustomerController::class, 'index'])->name('index');
+        Route::get('/novo', [CustomerController::class, 'create'])->name('create');
         Route::post('/', [CustomerController::class, 'store'])->name('store');
         Route::get('/{cliente}', [CustomerController::class, 'show'])->name('show');
+        Route::get('/{cliente}/editar', [CustomerController::class, 'edit'])->name('edit');
         Route::post('/{cliente}', [CustomerController::class, 'update'])->name('update');
         Route::post('/{cliente}/interacao', [CustomerController::class, 'interaction'])->name('interacao');
         Route::delete('/{cliente}', [CustomerController::class, 'destroy'])->name('destroy')->middleware('role:admin');
@@ -131,7 +136,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::prefix('catalogo')->name('catalogo.')->middleware('role:admin')->group(function () {
         Route::prefix('categorias')->name('categorias.')->group(function () {
             Route::get('/', [CategoryController::class, 'index'])->name('index');
+            Route::get('/nova', [CategoryController::class, 'create'])->name('create');
             Route::post('/', [CategoryController::class, 'store'])->name('store');
+            Route::get('/{category}/editar', [CategoryController::class, 'edit'])->name('edit');
             Route::post('/{category}', [CategoryController::class, 'update'])->name('update');
             Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('destroy');
         });
@@ -141,12 +148,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
             Route::post('/', [ProductController::class, 'store'])->name('store');
             Route::get('/{produto}/editar', [ProductController::class, 'edit'])->name('edit');
             Route::post('/{produto}', [ProductController::class, 'update'])->name('update');
+            Route::get('/{produto}/estoque', [ProductController::class, 'estoqueForm'])->name('estoque.show');
             Route::post('/{produto}/estoque', [ProductController::class, 'estoque'])->name('estoque');
             Route::delete('/{produto}', [ProductController::class, 'destroy'])->name('destroy');
         });
         Route::prefix('fornecedores')->name('fornecedores.')->group(function () {
             Route::get('/', [SupplierController::class, 'index'])->name('index');
+            Route::get('/novo', [SupplierController::class, 'create'])->name('create');
             Route::post('/', [SupplierController::class, 'store'])->name('store');
+            Route::get('/{fornecedor}/editar', [SupplierController::class, 'edit'])->name('edit');
             Route::post('/{fornecedor}', [SupplierController::class, 'update'])->name('update');
             Route::delete('/{fornecedor}', [SupplierController::class, 'destroy'])->name('destroy');
         });
@@ -173,13 +183,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         });
         Route::prefix('depoimentos')->name('depoimentos.')->group(function () {
             Route::get('/', [TestimonialController::class, 'index'])->name('index');
+            Route::get('/novo', [TestimonialController::class, 'create'])->name('create');
             Route::post('/', [TestimonialController::class, 'store'])->name('store');
+            Route::get('/{depoimento}/editar', [TestimonialController::class, 'edit'])->name('edit');
             Route::post('/{depoimento}', [TestimonialController::class, 'update'])->name('update');
             Route::delete('/{depoimento}', [TestimonialController::class, 'destroy'])->name('destroy');
         });
         Route::prefix('faqs')->name('faqs.')->group(function () {
             Route::get('/', [FaqController::class, 'index'])->name('index');
+            Route::get('/novo', [FaqController::class, 'create'])->name('create');
             Route::post('/', [FaqController::class, 'store'])->name('store');
+            Route::get('/{faq}/editar', [FaqController::class, 'edit'])->name('edit');
             Route::post('/{faq}', [FaqController::class, 'update'])->name('update');
             Route::delete('/{faq}', [FaqController::class, 'destroy'])->name('destroy');
         });
@@ -190,7 +204,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     Route::prefix('usuarios')->name('usuarios.')->middleware('role:admin')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/novo', [UserController::class, 'create'])->name('create');
         Route::post('/', [UserController::class, 'store'])->name('store');
+        Route::get('/{user}/editar', [UserController::class, 'edit'])->name('edit');
         Route::post('/{user}', [UserController::class, 'update'])->name('update');
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });

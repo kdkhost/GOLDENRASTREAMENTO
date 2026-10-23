@@ -23,9 +23,14 @@ class ProductController extends Controller
         $produtos = Product::with('category')
             ->when($request->filled('q'), fn ($q) => $q->where('nome', 'like', '%' . $request->q . '%'))
             ->when($request->filled('categoria'), fn ($q) => $q->where('category_id', $request->categoria))
+            ->when($request->query('estoque') === 'baixo', function ($q) {
+                $q->where('controle_estoque', true)
+                    ->where(fn ($w) => $w->whereColumn('estoque', '<=', 'estoque_minimo')->orWhere('estoque', '<=', 0));
+            })
             ->orderBy('ordem')
             ->orderBy('nome')
-            ->get();
+            ->paginate(30)
+            ->withQueryString();
 
         return view('admin.products.index', [
             'produtos' => $produtos,
@@ -99,6 +104,14 @@ class ProductController extends Controller
         Activity::log('produto_excluido', "Produto {$nome} excluído.");
 
         return back()->with('success', 'Produto excluído.');
+    }
+
+    public function estoqueForm(Product $produto): View
+    {
+        return view('admin.products.estoque', [
+            'produto' => $produto,
+            'movimentos' => $produto->movements()->latest()->limit(50)->get(),
+        ]);
     }
 
     public function estoque(Request $request, Product $produto): RedirectResponse

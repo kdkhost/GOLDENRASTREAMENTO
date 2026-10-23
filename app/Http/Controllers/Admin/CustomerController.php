@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Interaction;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,16 +28,65 @@ class CustomerController extends Controller
 
         return view('admin.customers.index', [
             'clientes' => $clientes,
-            'totalAtivos' => Customer::where('status', 'ativo')->count(),
+            'kpis' => [
+                'ativos' => Customer::where('status', 'ativo')->count(),
+                'prospectos' => Customer::where('status', 'prospecto')->count(),
+                'base' => Customer::count(),
+                'comPedidos' => Customer::has('orders')->count(),
+            ],
+            'responsaveis' => $this->responsaveis(),
+        ]);
+    }
+
+    /**
+     * Cadastro avulso. Aceita pré-preenchimento pela query string: é assim que as
+     * outras páginas (pedido, lead) oferecem "criar cliente" sem duplicar o formulário.
+     */
+    public function create(Request $request): View
+    {
+        $cliente = new Customer(
+            $request->only([
+                'nome', 'telefone', 'email', 'documento', 'tipo',
+                'endereco', 'cidade', 'uf', 'cep', 'segmento', 'status',
+            ]) + ['tipo' => 'fisica', 'status' => 'prospecto']
+        );
+
+        if ($request->filled('valor_anual')) {
+            $cliente->valor_anual_cents = (int) round((float) $request->valor_anual * 100);
+        }
+
+        return $this->form($cliente);
+    }
+
+    public function edit(Customer $cliente): View
+    {
+        return $this->form($cliente);
+    }
+
+    private function form(Customer $cliente): View
+    {
+        return view('admin.customers.form', [
+            'cliente' => $cliente,
+            'responsaveis' => $this->responsaveis(),
         ]);
     }
 
     public function show(Customer $cliente): View
     {
         return view('admin.customers.show', [
-            'cliente' => $cliente->load(['owner', 'interactions.user', 'orders.items']),
+            'cliente' => $cliente->load(['owner', 'lead', 'interactions.user', 'orders']),
             'tipos' => Interaction::TIPOS,
         ]);
+    }
+
+    private function responsaveis(): array
+    {
+        return User::query()
+            ->whereIn('role', ['admin', 'vendedor'])
+            ->where('status', 'ativo')
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
     }
 
     public function store(Request $request): RedirectResponse
@@ -53,7 +103,7 @@ class CustomerController extends Controller
         $cliente->update($this->validateData($request));
         Activity::log('cliente_atualizado', "Cliente {$cliente->nome} atualizado.", $cliente);
 
-        return back()->with('success', 'Cliente atualizado.');
+        return redirect()->route('admin.clientes.show', $cliente)->with('success', 'Cliente atualizado.');
     }
 
     public function interaction(Request $request, Customer $cliente): RedirectResponse

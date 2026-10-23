@@ -10,100 +10,145 @@
 @endphp
 <section class="sec-light">
     <div class="wrap checkout">
-        <form method="POST" action="{{ route('site.loja.pedido.registrar') }}" id="checkoutForm" data-frete="{{ $frete }}" data-frete-retira="0">
+        <form class="checkout-form" method="POST" action="{{ route('site.loja.pedido.registrar') }}" id="checkoutForm" data-frete="{{ $frete }}" data-frete-retira="0" novalidate>
             @csrf
-            <div class="field-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
-
-            <h1 style="font-size:1.7rem;margin:0 0 4px">Finalizar pedido</h1>
+            <h1 class="checkout-titulo">Finalizar pedido</h1>
             <p class="lead-sub">Confirme seus dados abaixo. Depois de registrar você recebe o link do pedido por e-mail e pode acompanhar cada etapa.</p>
 
             <fieldset>
                 <legend>Quem compra</legend>
-                <div class="grid-2">
-                    <label>Nome completo<input name="nome" required value="{{ old('nome') }}" autocomplete="name">
+                <div class="row-2">
+                    <div class="field">
+                        <label for="coNome">Nome completo</label>
+                        <input id="coNome" name="nome" type="text" maxlength="160" required value="{{ old('nome') }}" autocomplete="name" placeholder="Como podemos chamar você?">
                         @error('nome')<span class="form-err">{{ $message }}</span>@enderror
-                    </label>
-                    <label>WhatsApp / Telefone<input name="telefone" required value="{{ old('telefone') }}" autocomplete="tel" placeholder="(00) 90000-0000">
-                        @error('telefone')<span class="form-err">{{ $message }}</span>@enderror
-                    </label>
-                </div>
-                <label>E-mail (usado para a confirmação e o link do pedido)<input type="email" name="email" required value="{{ old('email') }}" autocomplete="email">
-                    @error('email')<span class="form-err">{{ $message }}</span>@enderror
-                </label>
-                <div class="grid-2">
-                    <div class="radio-row">
-                        <label class="radio"><input type="radio" name="tipo_pessoa" value="fisica" @checked(old('tipo_pessoa', 'fisica') === 'fisica') required> Pessoa física (CPF)</label>
-                        <label class="radio"><input type="radio" name="tipo_pessoa" value="juridica" @checked(old('tipo_pessoa') === 'juridica')> Pessoa jurídica (CNPJ)</label>
                     </div>
-                    <label>CPF / CNPJ (só números)<input name="documento" required inputmode="numeric" value="{{ old('documento') }}" placeholder="000.000.000-00">
+                    <div class="field">
+                        <label for="coTelefone">WhatsApp com DDD</label>
+                        <input id="coTelefone" name="telefone" type="tel" inputmode="tel" maxlength="32" required value="{{ old('telefone') }}" autocomplete="tel" placeholder="(00) 00000-0000">
+                        @error('telefone')<span class="form-err">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="coEmail">E-mail <span class="fine">(recebe a confirmação e o link do pedido)</span></label>
+                    <input id="coEmail" name="email" type="email" maxlength="160" required value="{{ old('email') }}" autocomplete="email" placeholder="voce@email.com">
+                    @error('email')<span class="form-err">{{ $message }}</span>@enderror
+                </div>
+                <div class="row-2">
+                    <div class="field">
+                        <label class="field-title">Tipo de pessoa</label>
+                        <div class="radio-row">
+                            <label class="radio" for="coTipoFisica">
+                                <input id="coTipoFisica" type="radio" name="tipo_pessoa" value="fisica" @checked(old('tipo_pessoa', 'fisica') === 'fisica') required>
+                                <span>Pessoa física (CPF)</span>
+                            </label>
+                            <label class="radio" for="coTipoJuridica">
+                                <input id="coTipoJuridica" type="radio" name="tipo_pessoa" value="juridica" @checked(old('tipo_pessoa') === 'juridica')>
+                                <span>Pessoa jurídica (CNPJ)</span>
+                            </label>
+                        </div>
+                        @error('tipo_pessoa')<span class="form-err">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="field">
+                        <label for="coDocumento">CPF / CNPJ <span class="fine">(só números)</span></label>
+                        <input id="coDocumento" name="documento" type="text" inputmode="numeric" maxlength="20" required value="{{ old('documento') }}" placeholder="000.000.000-00">
                         @error('documento')<span class="form-err">{{ $message }}</span>@enderror
-                    </label>
+                    </div>
                 </div>
             </fieldset>
 
             <fieldset>
                 <legend>Entrega</legend>
-                <div class="radio-row">
-                    @foreach($entregas as $valor => $rotulo)
-                    <label class="radio card-radio">
-                        <input type="radio" name="entrega" value="{{ $valor }}" data-entrega="{{ $valor }}" @checked($entregaAtual === $valor) required>
-                        <span>{{ $rotulo }}</span>
-                    </label>
-                    @endforeach
+                <div class="field">
+                    <label class="field-title">Como você quer receber</label>
+                    <div class="radio-row">
+                        @foreach($entregas as $valor => $rotulo)
+                        <label class="radio card-radio" for="coEntrega-{{ $valor }}">
+                            <input id="coEntrega-{{ $valor }}" type="radio" name="entrega" value="{{ $valor }}" data-entrega="{{ $valor }}" @checked($entregaAtual === $valor) required>
+                            <span>{{ $rotulo }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                    @error('entrega')<span class="form-err">{{ $message }}</span>@enderror
                 </div>
-                @error('entrega')<span class="form-err">{{ $message }}</span>@enderror
 
                 <div class="endereco" @if(! $mostrarEndereco) hidden @endif>
-                    <div class="grid-2">
-                        <label>CEP<input name="cep" id="cep" value="{{ old('cep') }}" inputmode="numeric" maxlength="9" placeholder="00000-000" autocomplete="postal-code">
+                    <div class="row-2">
+                        <div class="field">
+                            <label for="coCep">CEP</label>
+                            <input id="coCep" name="cep" type="text" inputmode="numeric" maxlength="9" value="{{ old('cep') }}" autocomplete="postal-code" placeholder="00000-000">
                             @error('cep')<span class="form-err">{{ $message }}</span>@enderror
-                        </label>
-                        <label><span class="cep-hint" id="cepHint"><i class="fa-solid fa-location-crosshairs"></i> Digite o CEP e preenchemos o endereço.</span></label>
+                        </div>
+                        <div class="field">
+                            <label class="field-title">&nbsp;</label>
+                            <p class="cep-hint" id="cepHint"><i class="fa-solid fa-location-crosshairs"></i> Digite o CEP e preenchemos o endereço.</p>
+                        </div>
                     </div>
-                    <label>Rua / avenida e número<input name="endereco" value="{{ old('endereco') }}" autocomplete="street-address" placeholder="Av. Brasil, 1200">
+                    <div class="field">
+                        <label for="coEndereco">Rua / avenida e número</label>
+                        <input id="coEndereco" name="endereco" type="text" maxlength="160" value="{{ old('endereco') }}" autocomplete="street-address" placeholder="Av. Brasil, 1200">
                         @error('endereco')<span class="form-err">{{ $message }}</span>@enderror
-                    </label>
-                    <div class="grid-2">
-                        <label>Bairro<input name="bairro" value="{{ old('bairro') }}">
-                            @error('bairro')<span class="form-err">{{ $message }}</span>@enderror
-                        </label>
-                        <label>Complemento<input name="complemento" value="{{ old('complemento') }}" placeholder="Galpão, sala, referência">
-                            @error('complemento')<span class="form-err">{{ $message }}</span>@enderror
-                        </label>
                     </div>
-                    <div class="grid-2">
-                        <label>Cidade<input name="cidade" value="{{ old('cidade') }}" autocomplete="address-level2">
+                    <div class="row-2">
+                        <div class="field">
+                            <label for="coBairro">Bairro</label>
+                            <input id="coBairro" name="bairro" type="text" maxlength="96" value="{{ old('bairro') }}">
+                            @error('bairro')<span class="form-err">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="field">
+                            <label for="coComplemento">Complemento <span class="fine">(opcional)</span></label>
+                            <input id="coComplemento" name="complemento" type="text" maxlength="120" value="{{ old('complemento') }}" placeholder="Galpão, sala, referência">
+                            @error('complemento')<span class="form-err">{{ $message }}</span>@enderror
+                        </div>
+                    </div>
+                    <div class="row-2">
+                        <div class="field">
+                            <label for="coCidade">Cidade</label>
+                            <input id="coCidade" name="cidade" type="text" maxlength="96" value="{{ old('cidade') }}" autocomplete="address-level2">
                             @error('cidade')<span class="form-err">{{ $message }}</span>@enderror
-                        </label>
-                        <label>UF<input name="uf" maxlength="2" value="{{ old('uf') }}" placeholder="MG">
+                        </div>
+                        <div class="field">
+                            <label for="coUf">UF</label>
+                            <input id="coUf" name="uf" type="text" maxlength="2" value="{{ old('uf') }}" placeholder="MG">
                             @error('uf')<span class="form-err">{{ $message }}</span>@enderror
-                        </label>
+                        </div>
                     </div>
                 </div>
-                <p class="retira-note" @if($mostrarEndereco) hidden @endif><i class="fa-solid fa-store" style="color:var(--gold)"></i> Retirada em {{ $golden['endereco'] }} — {{ $golden['cidade_uf'] }}. Combinamos o horário pelo WhatsApp.</p>
+                <p class="retira-note" @if($mostrarEndereco) hidden @endif><i class="fa-solid fa-store"></i> Retirada em {{ $golden['endereco'] }} — {{ $golden['cidade_uf'] }}. Combinamos o horário pelo WhatsApp.</p>
             </fieldset>
 
             <fieldset>
                 <legend>Pagamento</legend>
-                <div class="radio-row">
-                    @foreach($pagamentos as $valor => $rotulo)
-                    <label class="radio card-radio" data-pag-entrega="{{ $valor === 'retirada' ? 'retira' : 'qualquer' }}">
-                        <input type="radio" name="pagamento" value="{{ $valor }}" @checked(old('pagamento', 'pix') === $valor)>
-                        <span>{{ $rotulo }}</span>
-                    </label>
-                    @endforeach
+                <div class="field">
+                    <label class="field-title">Forma de pagamento</label>
+                    <div class="radio-row">
+                        @foreach($pagamentos as $valor => $rotulo)
+                        <label class="radio card-radio" for="coPagamento-{{ $valor }}" data-pag-entrega="{{ $valor === 'retirada' ? 'retira' : 'qualquer' }}">
+                            <input id="coPagamento-{{ $valor }}" type="radio" name="pagamento" value="{{ $valor }}" @checked(old('pagamento', 'pix') === $valor)>
+                            <span>{{ $rotulo }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                    @error('pagamento')<span class="form-err">{{ $message }}</span>@enderror
                 </div>
-                @error('pagamento')<span class="form-err">{{ $message }}</span>@enderror
                 @if($pixChave)
-                <p class="pix-key" id="pixKey"><i class="fa-brands fa-pix" style="color:var(--teal)"></i> Chave Pix: <b>{{ $pixChave }}</b> — enviamos o QR Code pelo WhatsApp após confirmar o pedido.</p>
+                <p class="pix-key" id="pixKey"><i class="fa-brands fa-pix"></i> Chave Pix: <b>{{ $pixChave }}</b> — enviamos o QR Code pelo WhatsApp após confirmar o pedido.</p>
                 @endif
             </fieldset>
 
             <fieldset>
                 <legend>Observações</legend>
-                <label>Alguma informação para a equipe? (modelo do veículo, placa, preferência de instalação)<textarea name="notas" rows="3" placeholder="Ex.: 3 caminhões VW, instalação na matriz">{{ old('notas') }}</textarea></label>
-                @error('notas')<span class="form-err">{{ $message }}</span>@enderror
+                <div class="field">
+                    <label for="coNotas">Alguma informação para a equipe? <span class="fine">(opcional)</span></label>
+                    <textarea id="coNotas" name="notas" rows="3" maxlength="2000" placeholder="Ex.: 3 caminhões VW, instalação na matriz">{{ old('notas') }}</textarea>
+                    @error('notas')<span class="form-err">{{ $message }}</span>@enderror
+                </div>
             </fieldset>
+
+            {{-- Honeypot anti-spam --}}
+            <div class="hp" aria-hidden="true">
+                <label>Não preencha <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
 
             <label class="consent">
                 <input type="checkbox" name="consent" value="1" @checked(old('consent')) required>
@@ -112,8 +157,8 @@
             @error('consent')<span class="form-err">{{ $message }}</span>@enderror
             @error('carrinho')<p class="form-err block">{{ $message }}</p>@enderror
 
-            <button type="submit" class="btn btn-gold submit" data-track="generate_lead" data-cta="checkout">Registrar pedido →</button>
-            <p class="fine"><i class="fa-solid fa-lock" style="color:var(--teal)"></i> Nada é cobrado agora: confirmamos o pagamento e a entrega antes de emitir qualquer cobrança.</p>
+            <button type="submit" class="btn btn-gold btn-block" data-track="generate_lead" data-cta="checkout">Registrar pedido →</button>
+            <p class="fine checkout-aviso"><i class="fa-solid fa-lock"></i> Nada é cobrado agora: confirmamos o pagamento e a entrega antes de emitir qualquer cobrança.</p>
         </form>
 
         <aside class="checkout-summary">
@@ -126,7 +171,7 @@
             <div class="sum-line"><span>Subtotal</span><b>{{ brl($subtotal) }}</b></div>
             <div class="sum-line"><span>Frete</span><b id="sumFrete">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
             @if($freteGratisEm > 0)
-            <p class="sum-hint"><i class="fa-solid fa-gift" style="color:var(--gold)"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
+            <p class="sum-hint"><i class="fa-solid fa-gift"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
             @endif
             <div class="sum-line total"><span>Total</span><b id="sumTotal">{{ brl($subtotal + $frete) }}</b></div>
             <a href="{{ route('site.loja.carrinho') }}" class="sum-edit">Editar carrinho</a>
@@ -138,23 +183,20 @@
 @push('scripts')
 <style>
 .checkout{display:grid;grid-template-columns:1.4fr .8fr;gap:34px;align-items:start}
-.checkout form{max-width:720px}
-fieldset{border:1px solid rgba(0,0,0,.09);border-radius:16px;padding:16px 18px 18px;margin:0 0 18px;background:#fff}
+.checkout-form{max-width:720px}
+.checkout-titulo{font-size:1.7rem;margin:0 0 4px}
+fieldset{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px 18px;margin:0 0 18px;background:#fff}
 legend{font-family:"Poppins",sans-serif;font-size:.95rem;font-weight:700;padding:0 8px;color:var(--gold)}
 .radio-row{display:flex;gap:10px;flex-wrap:wrap}
-.radio{display:flex;align-items:center;gap:8px;font-size:.9rem;cursor:pointer}
-.card-radio{border:1px solid rgba(0,0,0,.12);border-radius:12px;padding:10px 14px;flex:1;min-width:200px;transition:border-color .18s ease,background .18s ease}
+.radio{display:flex;align-items:center;gap:8px;font-size:.9rem;cursor:pointer;font-weight:500}
+.card-radio{border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;flex:1;min-width:200px;transition:border-color .18s ease,background .18s ease}
 .card-radio:has(input:checked){border-color:var(--gold);background:rgba(224,163,62,.08)}
-.endereco{margin-top:14px}
-.retira-note{margin-top:14px;font-size:.88rem;color:var(--muted)}
-.pix-key{margin:12px 0 0;font-size:.86rem;color:var(--muted)}
+.card-radio:has(input:focus-visible){outline:2px solid var(--gold);outline-offset:2px}
+.endereco{margin-top:2px}
+.retira-note{margin:0;font-size:.88rem;color:var(--slate)}
+.pix-key{margin:0;font-size:.86rem;color:var(--slate)}
 .pix-key b{color:var(--ink)}
-.consent{display:flex;gap:10px;align-items:flex-start;font-size:.85rem;color:var(--muted);margin:6px 0 14px}
-.consent input{margin-top:3px}
-.submit{width:100%;margin-top:6px}
-.form-err{display:block;color:#d06a5f;font-size:.8rem;margin-top:3px}
-.form-err.block{margin:0 0 10px;font-size:.9rem}
-.cep-hint{font-size:.78rem;color:var(--muted);display:block;padding-top:1.4em}
+.cep-hint{font-size:.8rem;color:var(--slate);margin:0;padding-top:2.1em}
 .checkout-summary{background:#12161a;color:#fff;border-radius:18px;padding:20px 22px;position:sticky;top:96px}
 .checkout-summary h2{font-size:1.05rem;margin:0 0 12px;color:var(--gold)}
 .checkout-summary ul{list-style:none;margin:0 0 12px;padding:0}
@@ -164,8 +206,14 @@ legend{font-family:"Poppins",sans-serif;font-size:.95rem;font-weight:700;padding
 .sum-line.total{font-size:1.15rem;border-top:1px solid rgba(255,255,255,.3);margin-top:6px;padding-top:12px}
 .sum-line.total b{color:var(--gold)}
 .sum-hint{font-size:.8rem;color:#c4ccd4;margin:8px 0 0}
+.sum-hint i{color:var(--gold)}
+.retira-note i{color:var(--gold)}
+.pix-key i{color:var(--teal)}
+.checkout-aviso{text-align:center;margin-top:12px}
+.checkout-aviso i{color:var(--teal)}
 .sum-edit{display:inline-block;margin-top:12px;font-size:.82rem;color:var(--gold)}
 @media(max-width:900px){.checkout{grid-template-columns:1fr}.checkout-summary{position:static}}
+@media(max-width:560px){.checkout .row-2{grid-template-columns:1fr}}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
@@ -194,7 +242,7 @@ document.addEventListener('DOMContentLoaded',function(){
   aplicarEntrega((form.querySelector('input[name="entrega"]:checked')||{value:'entrega'}).value);
 
   // ViaCEP: preenchimento do endereço a partir do CEP (requisição externa, não ao banco).
-  var cep=document.getElementById('cep');
+  var cep=document.getElementById('coCep');
   if(cep){
     cep.addEventListener('blur',function(){
       var d=(cep.value||'').replace(/\D/g,'');
@@ -213,12 +261,12 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   // Máscaras leves: telefone, CEP e documento, sem biblioteca.
-  var tel=form.querySelector('[name="telefone"]');
+  var tel=document.getElementById('coTelefone');
   if(tel)tel.addEventListener('input',function(){
     var d=tel.value.replace(/\D/g,'').slice(0,11);
     tel.value=d.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d)/,'$1-$2');
   });
-  var doc=form.querySelector('[name="documento"]');
+  var doc=document.getElementById('coDocumento');
   var tipo=form.querySelectorAll('input[name="tipo_pessoa"]');
   function mascaraDoc(){
     var d=(doc.value||'').replace(/\D/g,'');

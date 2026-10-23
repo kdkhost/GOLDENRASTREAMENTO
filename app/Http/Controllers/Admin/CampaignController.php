@@ -23,20 +23,46 @@ class CampaignController extends Controller
         return view('admin.campaigns.index', ['campanhas' => $campanhas]);
     }
 
+    public function create(): View
+    {
+        return view('admin.campaigns.form', ['campanha' => new Campaign(['channel' => 'pago'])]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
+        $data = $this->validar($request);
+        $data['ativa'] = $request->boolean('ativa');
+
+        $c = Campaign::create($data);
+        Activity::log('campanha_criada', "Campanha {$c->name} criada.", $c);
+
+        return redirect()->route('admin.campanhas.index')->with('success', 'Campanha criada.');
+    }
+
+    public function edit(Campaign $campaign): View
+    {
+        return view('admin.campaigns.form', ['campanha' => $campaign]);
+    }
+
+    public function update(Request $request, Campaign $campaign): RedirectResponse
+    {
+        $campaign->fill($this->validar($request));
+        $campaign->ativa = $request->boolean('ativa');
+        $campaign->save();
+        Activity::log('campanha_atualizada', "Campanha {$campaign->name} atualizada.", $campaign);
+
+        return redirect()->route('admin.campanhas.index')->with('success', 'Campanha atualizada.');
+    }
+
+    private function validar(Request $request): array
+    {
+        return $request->validate([
             'name' => ['required', 'string', 'max:190'],
             'source' => ['nullable', 'string', 'max:120'],
             'medium' => ['nullable', 'string', 'max:120'],
             'content' => ['nullable', 'string', 'max:190'],
             'channel' => ['required', 'in:pago,organico,direto,referencia'],
         ]);
-
-        $c = Campaign::create($data);
-        Activity::log('campanha_criada', "Campanha {$c->name} criada.", $c);
-
-        return back()->with('success', 'Campanha criada.');
     }
 
     public function toggle(Campaign $campaign): RedirectResponse

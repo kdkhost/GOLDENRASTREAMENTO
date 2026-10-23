@@ -206,6 +206,10 @@ section{padding:84px 0}
 .field input,.field select,.field textarea{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:11px;font:inherit;color:var(--ink);background:#fff;transition:.15s}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px rgba(224,163,62,.14)}
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field-title{display:block;font-weight:600;font-size:.88rem;margin-bottom:7px;color:var(--ink)}
+.field input[type=radio],.field input[type=checkbox]{width:auto;flex:none;accent-color:var(--gold)}
+.form-err{display:block;color:#d06a5f;font-size:.8rem;margin-top:6px}
+.form-err.block{margin:0 0 12px;font-size:.9rem}
 .consent{display:flex;gap:10px;align-items:flex-start;font-size:.84rem;color:var(--slate);margin:6px 0 18px}
 .consent input{width:auto;margin-top:3px}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}

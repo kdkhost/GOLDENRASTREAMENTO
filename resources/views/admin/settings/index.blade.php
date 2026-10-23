@@ -7,144 +7,123 @@
     $lojaAtiva = ($settings['loja_ativa'] ?? '1') === '1';
     $livre = ($settings['loja_livre'] ?? '0') === '1';
     $retirada = ($settings['loja_retirada'] ?? '0') === '1';
+    $boxAtivo = ($settings['whatsapp_box_ativo'] ?? '1') === '1';
     $paraExibir = fn ($cents) => ((int) $cents) > 0 ? number_format(((int) $cents) / 100, 2, '.', '') : '';
-    $frete = $paraExibir($settings['loja_frete_cents'] ?? 0);
-    $gratisAcima = $paraExibir($settings['loja_frete_gratis_acima_cents'] ?? 0);
+    $numeroPadrao = $settings['contato_whatsapp'] ?? config('golden.whatsapp');
 @endphp
+
+@section('page_actions')
+@if($lojaAtiva)
+    <a href="{{ route('site.loja.index') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="fas fa-up-right-from-square me-1"></i> Ver a loja no site</a>
+@endif
+<a href="{{ route('site.home') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="fas fa-globe me-1"></i> Ver o site</a>
+@endsection
 
 @section('content')
 <div class="row g-3">
+    {{-- Identidade, contato, endereço e medição: um único endpoint, um único formulário --}}
     <div class="col-lg-7">
-        <div class="card shadow-sm" style="border-radius:16px"><div class="card-body">
-            <form method="POST" action="{{ route('admin.settings.update') }}">
-                @csrf
-                <h5 class="fw-bold mb-3"><i class="fas fa-id-card text-warning me-1"></i> Contato oficial</h5>
-                <div class="mb-2"><label class="form-label small">Nome do site</label><input name="site_nome" class="form-control form-control-sm" value="{{ $settings['site_nome'] ?? 'Golden Rastreamento' }}" required></div>
-                <div class="row g-2">
-                    <div class="col-md-6"><label class="form-label small">WhatsApp (DDI+DDD+número, só dígitos)</label><input name="contato_whatsapp" class="form-control form-control-sm" value="{{ $settings['contato_whatsapp'] ?? '' }}" required placeholder="5519997101483"></div>
-                    <div class="col-md-6"><label class="form-label small">Telefones fixos / extras</label><input name="contato_telefone" class="form-control form-control-sm" value="{{ $settings['contato_telefone'] ?? '' }}" placeholder="(19) 99710-1483 · (19) 97139-5129"></div>
+        <form method="POST" action="{{ route('admin.settings.update') }}">
+            @csrf
+            <x-admin.card title="Contato oficial" icon="fa-id-card" descricao="É o que aparece no rodapé, no formulário do site e nos e-mails.">
+                <div class="row g-3">
+                    <x-admin.field name="site_nome" label="Nome do site" :value="$settings['site_nome'] ?? 'Golden Rastreamento'" col="col-12 col-md-6" :required="true" maxlength="120" />
+                    <x-admin.field name="contato_whatsapp" label="WhatsApp oficial" :value="$settings['contato_whatsapp'] ?? ''" col="col-12 col-md-6" :required="true" maxlength="32" placeholder="5519997101483" hint="DDI + DDD + número, só dígitos." />
+                    <x-admin.field name="contato_telefone" label="Telefones extras" :value="$settings['contato_telefone'] ?? ''" maxlength="60" :opcional="true" placeholder="(19) 99710-1483 · (19) 97139-5129" />
+                    <x-admin.field name="contato_email" type="email" label="E-mail comercial" :value="$settings['contato_email'] ?? ''" maxlength="160" :opcional="true" autocomplete="off" />
                 </div>
-                <div class="mt-2"><label class="form-label small">E-mail comercial</label><input type="email" name="contato_email" class="form-control form-control-sm" value="{{ $settings['contato_email'] ?? '' }}"></div>
+            </x-admin.card>
 
-                <hr class="my-4">
-                <h5 class="fw-bold mb-3"><i class="fas fa-location-dot text-warning me-1"></i> Endereço da empresa</h5>
-                <div class="mb-2"><label class="form-label small">Endereço</label><input name="empresa_endereco" class="form-control form-control-sm" value="{{ $settings['empresa_endereco'] ?? '' }}" placeholder="R. Pref. Olinto Réis Campos, 104 - Centro"></div>
-                <div class="row g-2">
-                    <div class="col-md-6"><label class="form-label small">Cidade / UF</label><input name="empresa_cidade" class="form-control form-control-sm" value="{{ $settings['empresa_cidade'] ?? '' }}" placeholder="Três Pontas - MG"></div>
-                    <div class="col-md-6"><label class="form-label small">CEP</label><input name="empresa_cep" class="form-control form-control-sm" value="{{ $settings['empresa_cep'] ?? '' }}" placeholder="37185-016"></div>
+            <x-admin.card title="Endereço da empresa" icon="fa-location-dot" class="mt-3">
+                <div class="row g-3">
+                    <x-admin.field name="empresa_endereco" label="Endereço" :value="$settings['empresa_endereco'] ?? ''" maxlength="255" :opcional="true" placeholder="R. Pref. Olinto Réis Campos, 104 - Centro" />
+                    <x-admin.field name="empresa_cidade" label="Cidade / UF" :value="$settings['empresa_cidade'] ?? ''" col="col-8" maxlength="120" :opcional="true" placeholder="Três Pontas - MG" />
+                    <x-admin.field name="empresa_cep" label="CEP" :value="$settings['empresa_cep'] ?? ''" col="col-4" maxlength="12" :opcional="true" placeholder="37185-016" />
                 </div>
+            </x-admin.card>
 
-                <hr class="my-4">
-                <h5 class="fw-bold mb-1"><i class="fas fa-chart-area text-warning me-1"></i> Medição e consentimento</h5>
-                <div class="form-check form-switch mb-3 mt-2">
-                    <input class="form-check-input" type="checkbox" name="tracking_enabled" value="1" id="trk" @checked(($settings['tracking_enabled'] ?? '0')==='1')>
-                    <label class="form-check-label small" for="trk">Ativar coleta de eventos (GA4 / Meta Pixel / GTM). Só habilite após publicar a Política de Privacidade e o banner de consentimento.</label>
+            <x-admin.card title="Medição e consentimento" icon="fa-chart-area" class="mt-3"
+                descricao="Só habilite a coleta depois de publicar a Política de Privacidade e o banner de consentimento.">
+                <div class="row g-3">
+                    <x-admin.switch name="tracking_enabled" label="Ativar coleta de eventos (GA4, Meta Pixel, GTM)" :checked="($settings['tracking_enabled'] ?? '0') === '1'" />
+                    <x-admin.field name="ga_measurement_id" label="GA4 Measurement ID" :value="$settings['ga_measurement_id'] ?? ''" col="col-12 col-md-4" maxlength="60" :opcional="true" placeholder="G-XXXXXXX" />
+                    <x-admin.field name="meta_pixel_id" label="Meta Pixel ID" :value="$settings['meta_pixel_id'] ?? ''" col="col-12 col-md-4" maxlength="60" :opcional="true" />
+                    <x-admin.field name="gtm_id" label="GTM ID" :value="$settings['gtm_id'] ?? ''" col="col-12 col-md-4" maxlength="60" :opcional="true" placeholder="GTM-XXXX" />
                 </div>
-                <div class="row g-2">
-                    <div class="col-md-4"><label class="form-label small">GA4 Measurement ID</label><input name="ga_measurement_id" class="form-control form-control-sm" value="{{ $settings['ga_measurement_id'] ?? '' }}" placeholder="G-XXXXXXX"></div>
-                    <div class="col-md-4"><label class="form-label small">Meta Pixel ID</label><input name="meta_pixel_id" class="form-control form-control-sm" value="{{ $settings['meta_pixel_id'] ?? '' }}"></div>
-                    <div class="col-md-4"><label class="form-label small">GTM ID</label><input name="gtm_id" class="form-control form-control-sm" value="{{ $settings['gtm_id'] ?? '' }}" placeholder="GTM-XXXX"></div>
-                </div>
+            </x-admin.card>
 
-                <button class="btn btn-golden btn-sm mt-4"><i class="fas fa-save me-1"></i> Salvar configurações</button>
-            </form>
-        </div></div>
+            <button class="btn btn-golden mt-3"><i class="fas fa-save me-1"></i> Salvar configurações gerais</button>
+        </form>
     </div>
 
     <div class="col-lg-5">
-        {{-- Loja virtual --}}
-        <div class="card shadow-sm" style="border-radius:16px">
-            <div class="card-header bg-body d-flex justify-content-between align-items-center">
-                <span class="fw-bold"><i class="fas fa-store text-warning me-1"></i> Loja virtual</span>
-                <span class="badge {{ $lojaAtiva ? 'bg-success':'bg-secondary' }}">{{ $lojaAtiva ? 'Ativa':'Desativada' }}</span>
-            </div>
-            <div class="card-body">
-                <p class="small text-secondary">A loja vende rastreadores, chips e acessórios cadastrados no ERP. Desligue a qualquer momento — as páginas <code>/loja</code> saem do ar na hora e somem do menu do site.</p>
-                <form method="POST" action="{{ route('admin.settings.loja-regras') }}" class="mt-2">
-                    @csrf
-                    <div class="d-flex flex-column gap-2 mb-3">
-                        <div class="d-flex gap-2 align-items-center">
-                            <input type="checkbox" name="loja_livre" value="1" id="livre" class="form-check-input mt-0" @checked($livre)>
-                            <label for="livre" class="small flex-grow-1">Frete grátis / combinar entrega (não cobra valor fixo)</label>
-                        </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            <input type="checkbox" name="loja_retirada" value="1" id="retira" class="form-check-input mt-0" @checked($retirada)>
-                            <label for="retira" class="small flex-grow-1">Permitir retirada na loja (sem frete)</label>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6"><label class="form-label small">Frete fixo (R$)</label><input type="number" step="0.01" min="0" name="loja_frete" class="form-control form-control-sm" value="{{ $frete ?: '' }}" placeholder="0,00" @disabled($livre)></div>
-                        <div class="col-6"><label class="form-label small">Frete grátis acima de (R$)</label><input type="number" step="0.01" min="0" name="loja_frete_gratis_acima" class="form-control form-control-sm" value="{{ $gratisAcima ?: '' }}" placeholder="ex.: 997,00" @disabled($livre)></div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-12"><label class="form-label small">Chave Pix exibida no checkout</label><input name="loja_pix_chave" class="form-control form-control-sm" value="{{ $settings['loja_pix_chave'] ?? '' }}" placeholder="CPF, CNPJ, e-mail ou aleatória"></div>
-                        <div class="col-12"><label class="form-label small">E-mail da equipe (alerta de venda nova)</label><input type="email" name="loja_email_equipe" class="form-control form-control-sm" value="{{ $settings['loja_email_equipe'] ?? '' }}" placeholder="vendas@suadominio.com.br"></div>
-                    </div>
-                    <button class="btn btn-sm btn-golden w-100"><i class="fas fa-save me-1"></i> Salvar regras da loja</button>
-                </form>
-                <form method="POST" action="{{ route('admin.settings.loja') }}">
-                    @csrf
-                    <input type="hidden" name="ativa" value="{{ $lojaAtiva ? '0' : '1' }}">
-                    <button class="btn w-100 {{ $lojaAtiva ? 'btn-outline-danger':'btn-success' }}">
-                        <i class="fas fa-power-off me-1"></i> {{ $lojaAtiva ? 'Desativar loja agora' : 'Ativar loja agora' }}
-                    </button>
-                </form>
-                @if($lojaAtiva)
-                <a href="{{ route('site.loja.index') }}" target="_blank" class="btn btn-sm btn-outline-secondary w-100 mt-2"><i class="fas fa-external-link-alt me-1"></i> Ver a loja no site</a>
-                @endif
-            </div>
-        </div>
+        <x-admin.card title="Loja virtual" icon="fa-store" :descricao="$lojaAtiva ? 'Ativa — as páginas /loja estão no ar e no menu do site.' : 'Desativada — /loja sai do ar e some do menu.'">
+            <x-slot:actions>
+                <span class="badge {{ $lojaAtiva ? 'bg-success' : 'bg-secondary' }}">{{ $lojaAtiva ? 'Ativa' : 'Desativada' }}</span>
+            </x-slot:actions>
+            <form method="POST" action="{{ route('admin.settings.loja') }}" class="mb-3">
+                @csrf
+                <input type="hidden" name="ativa" value="{{ $lojaAtiva ? '0' : '1' }}">
+                <button class="btn w-100 {{ $lojaAtiva ? 'btn-outline-danger' : 'btn-success' }}">
+                    <i class="fas fa-power-off me-1"></i> {{ $lojaAtiva ? 'Desativar loja agora' : 'Ativar loja agora' }}
+                </button>
+            </form>
 
-        {{-- Caixa de WhatsApp do site --}}
-        @php $boxAtivo = ($settings['whatsapp_box_ativo'] ?? '1') === '1'; @endphp
-        <div class="card shadow-sm mt-3" style="border-radius:16px">
-            <div class="card-header bg-body d-flex justify-content-between align-items-center">
-                <span class="fw-bold"><i class="fab fa-whatsapp text-success me-1"></i> Botão do WhatsApp no site</span>
+            <form method="POST" action="{{ route('admin.settings.loja-regras') }}" class="row g-3">
+                @csrf
+                <x-admin.switch name="loja_livre" label="Frete combinado (não cobra valor fixo)" :checked="$livre" />
+                <x-admin.switch name="loja_retirada" label="Permitir retirada na loja" :checked="$retirada" />
+                <x-admin.field name="loja_frete" type="number" label="Frete fixo (R$)" :value="$paraExibir($settings['loja_frete_cents'] ?? 0)" col="col-6" step="0.01" min="0" max="99999" placeholder="0,00" :disabled="$livre" />
+                <x-admin.field name="loja_frete_gratis_acima" type="number" label="Frete grátis acima de (R$)" :value="$paraExibir($settings['loja_frete_gratis_acima_cents'] ?? 0)" col="col-6" step="0.01" min="0" max="99999" placeholder="ex.: 997,00" :disabled="$livre" />
+                <x-admin.field name="loja_pix_chave" label="Chave Pix exibida no checkout" :value="$settings['loja_pix_chave'] ?? ''" maxlength="120" :opcional="true" placeholder="CPF, CNPJ, e-mail ou aleatória" />
+                <x-admin.field name="loja_email_equipe" type="email" label="E-mail da equipe" :value="$settings['loja_email_equipe'] ?? ''" maxlength="160" :opcional="true" hint="Recebe o alerta de cada venda nova." placeholder="vendas@seudominio.com.br" />
+                <div class="col-12">
+                    <button class="btn btn-golden btn-sm w-100"><i class="fas fa-save me-1"></i> Salvar regras da loja</button>
+                </div>
+            </form>
+        </x-admin.card>
+
+        <x-admin.card title="Botão do WhatsApp no site" icon="fa-brands fa-whatsapp" class="mt-3"
+            :descricao="$boxAtivo ? 'Abre a central de canais com a mensagem pronta por segmento.' : 'Link direto para o número principal.'">
+            <x-slot:actions>
                 <span class="badge {{ $boxAtivo ? 'bg-success' : 'bg-secondary' }}">{{ $boxAtivo ? 'Caixa multicanal' : 'Link direto' }}</span>
-            </div>
-            <div class="card-body">
-                <p class="small text-secondary">No padrão da sistema de referência: o botão flutuante abre a <strong>central de canais</strong> e cada canal já chega ao WhatsApp com a mensagem pronta. Desligando a caixa, o botão volta a ser link direto para o número principal.</p>
-                <form method="POST" action="{{ route('admin.settings.whatsapp') }}">
-                    @csrf
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" name="whatsapp_box_ativo" value="1" id="waBox" @checked($boxAtivo)>
-                        <label class="form-check-label small" for="waBox">Mostrar a caixa multicanal no site</label>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6"><label class="form-label small">Título da caixa</label><input name="whatsapp_box_titulo" class="form-control form-control-sm" value="{{ $settings['whatsapp_box_titulo'] ?? config('golden.whatsapp_box.titulo') }}" placeholder="{{ config('golden.whatsapp_box.titulo') }}"></div>
-                        <div class="col-md-6"><label class="form-label small">Subtítulo</label><input name="whatsapp_box_subtitulo" class="form-control form-control-sm" value="{{ $settings['whatsapp_box_subtitulo'] ?? config('golden.whatsapp_box.subtitulo') }}" placeholder="{{ config('golden.whatsapp_box.subtitulo') }}"></div>
-                    </div>
+            </x-slot:actions>
+            <form method="POST" action="{{ route('admin.settings.whatsapp') }}" class="row g-3">
+                @csrf
+                <x-admin.switch name="whatsapp_box_ativo" label="Mostrar a caixa multicanal" :checked="$boxAtivo" />
+                <x-admin.field name="whatsapp_box_titulo" label="Título da caixa" :value="$settings['whatsapp_box_titulo'] ?? config('golden.whatsapp_box.titulo')" col="col-6" maxlength="120" :opcional="true" />
+                <x-admin.field name="whatsapp_box_subtitulo" label="Subtítulo" :value="$settings['whatsapp_box_subtitulo'] ?? config('golden.whatsapp_box.subtitulo')" col="col-6" maxlength="180" :opcional="true" />
 
-                    <label class="form-label small text-uppercase fw-bold" style="font-size:.7rem">Canais · número extra (vazio = {{ $settings['contato_whatsapp'] ?? config('golden.whatsapp') }})</label>
+                <div class="col-12 pt-2">
+                    <span class="form-label">Canais</span>
+                    <div class="form-hint d-block mb-2">O número do canal é opcional: vazio, usa o WhatsApp principal ({{ $numeroPadrao }}).</div>
                     @foreach(config('golden.whatsapp_box.canais') as $canal)
-                        @php $chave = 'whatsapp_canal_' . $canal['id']; @endphp
-                        <div class="row g-2 align-items-center mb-2">
-                            <div class="col-1"><input class="form-check-input" type="checkbox" name="{{ $chave }}_ativo" value="1" id="{{ $chave }}" @checked(($settings[$chave . '_ativo'] ?? '1') === '1')></div>
-                            <div class="col-6"><label for="{{ $chave }}" class="small d-block mb-0"><i class="fas {{ $canal['icone'] }} text-warning me-1"></i> {{ $canal['nome'] }}</label><span class="d-block text-secondary" style="font-size:.68rem">{{ $canal['msg'] }}</span></div>
-                            <div class="col-5"><input name="{{ $chave }}_numero" class="form-control form-control-sm" value="{{ $settings[$chave . '_numero'] ?? '' }}" placeholder="só dígitos"></div>
+                        @php $chave = 'whatsapp_canal_'.$canal['id']; @endphp
+                        <div class="canal-linha d-flex align-items-center gap-2 mb-2">
+                            <input class="form-check-input mt-0" type="checkbox" name="{{ $chave }}_ativo" value="1" id="{{ $chave }}-ativo"
+                                @checked(($settings[$chave.'_ativo'] ?? '1') === '1')>
+                            <label for="{{ $chave }}-ativo" class="small flex-grow-1 mb-0">
+                                <i class="fas {{ $canal['icone'] }} text-gold me-1" aria-hidden="true"></i>{{ $canal['nome'] }}
+                                <span class="d-block text-secondary">{{ $canal['msg'] }}</span>
+                            </label>
+                            <input name="{{ $chave }}_numero" class="form-control form-control-sm"
+                                value="{{ $settings[$chave.'_numero'] ?? '' }}" placeholder="só dígitos" aria-label="Número do canal {{ $canal['nome'] }}">
                         </div>
                     @endforeach
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-golden btn-sm w-100"><i class="fas fa-save me-1"></i> Salvar WhatsApp</button>
+                </div>
+            </form>
+        </x-admin.card>
 
-                    <button class="btn btn-golden btn-sm mt-2"><i class="fas fa-save me-1"></i> Salvar WhatsApp</button>
-                </form>
-            </div>
-        </div>
-
-        {{-- Banco --}}
-        <div class="card shadow-sm mt-3" style="border-radius:16px"><div class="card-body">
-            <h5 class="fw-bold mb-3"><i class="fas fa-circle-info text-warning me-1"></i> Banco de dados</h5>
-            <p class="small text-secondary mb-2">Conexão ativa: <span class="badge bg-body-secondary text-body">{{ config('database.default') }}</span></p>
-            <p class="small text-secondary">Em desenvolvimento o sistema usa <strong>SQLite</strong> (<code>database/database.sqlite</code>). Para produção, defina <code>DB_CONNECTION=mysql</code> no <code>.env</code> e rode <code>php artisan migrate --force</code>. As migrations são compatíveis com ambos.</p>
-        </div></div>
-
-        <div class="card shadow-sm mt-3" style="border-radius:16px"><div class="card-body">
-            <h6 class="fw-bold">Sistema integrado</h6>
-            <ul class="small text-secondary mb-0" style="line-height:1.9">
-                <li><strong>CRM</strong> — leads, clientes e interações</li>
-                <li><strong>CMS</strong> — páginas, depoimentos e FAQs editáveis</li>
-                <li><strong>ERP</strong> — produtos, estoque, fornecedores e pedidos</li>
-            </ul>
-        </div></div>
+        <x-admin.card title="Ambiente" icon="fa-circle-info" class="mt-3">
+            <dl class="defs mb-0">
+                <dt>Banco ativo</dt><dd>{{ config('database.default') }}@if(config('database.default') === 'sqlite') <span class="form-hint">(<code>database/database.sqlite</code>)</span>@endif</dd>
+                <dt>Módulos</dt><dd>CRM (leads, clientes, interações) · CMS (páginas, depoimentos, FAQs) · ERP (produtos, estoque, fornecedores, pedidos)</dd>
+            </dl>
+            <p class="small text-secondary mb-0 mt-2">Para produção, defina <code>DB_CONNECTION=mysql</code> no <code>.env</code> e rode <code>php artisan migrate --force</code>. As migrations são compatíveis com os dois bancos.</p>
+        </x-admin.card>
     </div>
 </div>
 @endsection
