@@ -17,10 +17,6 @@
                 <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" data-track="whatsapp_click" data-cta="hero"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
             </div>
         </div>
-        <div class="hero-marca">
-            <x-site.img imagem="marca_logo" alt="" :largura="54" :altura="54" :lazy="false" />
-            <span><b>GOLDEN</b><small>Rastreamento</small></span>
-        </div>
     </div>
     <div class="trust">
         <div class="wrap trust-grid">
@@ -53,8 +49,9 @@
     </div>
 </section>
 
-{{-- APLICATIVO E PLATAFORMA --}}
-<section class="sec-dark">
+{{-- APLICATIVO E PLATAFORMA — fotografia em largura total, texto sobre o lado escuro --}}
+<section class="sec-dark sec-foto sec-foto-esq">
+    <x-site.img imagem="home_plataforma" class="foto" />
     <div class="wrap hero-grid">
         <div class="on-dark">
             <span class="eyebrow on-dark">Aplicativo e plataforma</span>
@@ -64,9 +61,6 @@
                 <a href="{{ route('site.solucoes') }}" class="btn btn-gold" data-track="internal_link" data-cta="home_plataforma">Conhecer a plataforma →</a>
                 <a href="{{ route('site.contato') }}" class="btn btn-outline" data-track="contact" data-cta="home_plataforma_demo">Solicitar demonstração</a>
             </div>
-        </div>
-        <div class="hero-visual">
-            <x-site.img imagem="home_plataforma" />
         </div>
     </div>
 </section>
@@ -121,13 +115,11 @@
     </div>
 </section>
 
-{{-- EQUIPAMENTO J16 --}}
-<section class="sec-dark">
-    <div class="wrap split split-larga">
-        <div class="hero-visual">
-            <x-site.img imagem="home_equipamento" />
-        </div>
-        <div class="on-dark">
+{{-- EQUIPAMENTO J16 — fotografia em largura total, texto sobre o lado escuro --}}
+<section class="sec-dark sec-foto sec-foto-dir">
+    <x-site.img imagem="home_equipamento" class="foto" />
+    <div class="wrap hero-grid">
+        <div class="on-dark col-dir">
             <span class="eyebrow on-dark">{{ $equipamento['eyebrow'] }}</span>
             <h2>{{ Str::before($equipamento['titulo'], $equipamento['destaque']) }}<span class="destaque">{{ $equipamento['destaque'] }}</span>.</h2>
             <p>{{ $equipamento['texto'] }}</p>

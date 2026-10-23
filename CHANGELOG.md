@@ -3,6 +3,41 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.19.1] - 2026-10-23
+
+### Corrigido
+- **A home agora é a referência aprovada, seção por seção.** Duas faixas — *Aplicativo e
+  plataforma* e *Rastreador J16 4G/2G* — eram um fundo escuro liso com a foto dentro de um
+  quadro arredondado ao lado do texto. Na referência a fotografia **é** o fundo: ela cobre a
+  largura inteira da seção e o texto fica sobre o lado escurecido. As duas viraram faixas de
+  fotografia em largura total, com o novo par de classes `.sec-foto` + `.sec-foto-esq` /
+  `.sec-foto-dir` em `public/css/golden-site.css` — o mesmo desenho que já valia para
+  `.hero-foto` e `.cta-foto`, agora com o gradiente espelhado (texto à esquerda na
+  plataforma, texto à direita no J16, onde o equipamento aparece à esquerda).
+- **A foto do herói era outra.** `img/home/hero-monitoramento.jpg` mostrava um analista de
+  madrugada diante de três telas de mapa escuro; a referência é o escritório aquecido, o
+  analista de camisa preta Golden visto de costas, dois monitores com o mapa claro e o
+  letreiro GOLDEN na parede à direita. A foto do pacote foi refeita nesse enquadramento.
+- **As fotos da plataforma e do equipamento também.** `plataforma-monitor.jpg` e
+  `rastreador-j16.jpg` foram regeneradas no enquadramento da referência (o iMac com o mapa
+  claro sobre a mesa de madeira, planta à esquerda e livros à direita; o J16 com o chicote
+  aberto sobre a mesa, à esquerda), agora em 16:9 (`1600 × 914`) para cobrir a faixa inteira
+  sem cortar o assunto. O registro de slots em `config/golden.php` acompanhou: novas
+  dimensões, novas medidas de texto alternativo e `dica` de composição, e cada slot passou a
+  se agrupar na própria seção da tela *Imagens do site* (`Home · Aplicativo e plataforma`,
+  `Home · Rastreador J16`).
+- **A placa de marca duplicada no herói.** `<div class="hero-marca">` (logo + GOLDEN /
+  Rastreamento) flutuava sobre os monitores, exatamente onde a nova fotografia já traz o
+  letreiro da parede. Removido do Blade e do CSS, junto da regra que o escondia no
+  responsivo. A marca continua no menu, no rodapé e na chamada final.
+
+### Detalhes
+- No responsivo (≤960px) as duas faixas perdem as colunas e o gradiente passa a cobrir a
+  seção inteira de cima a baixo; o `object-position` de cada uma aponta para o próprio
+  assunto, porque na coluna estreita o recorte da foto é lateral.
+- `php artisan test`: 173 testes, 1.287 asserções verdes. Render verificado a 1440px e a
+  500px com captura direta do navegador.
+
 ## [2.19.0] - 2026-10-23
 
 ### Adicionado

@@ -6,7 +6,7 @@ atribuição de tráfego e loja virtual opcional. Tudo em Laravel, com um único
 instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.19.0
+- **Versão:** 2.19.1
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`

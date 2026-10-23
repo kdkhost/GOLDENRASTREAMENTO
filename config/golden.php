@@ -45,21 +45,21 @@ return [
 
         'home_hero' => [
             'pagina' => 'Home', 'titulo' => 'Foto de fundo do herói', 'padrao' => 'img/home/hero-monitoramento.jpg',
-            'alt' => 'Central de monitoramento Golden com mapas de frota em três telas',
+            'alt' => 'Analista da Golden acompanhando os veículos no mapa em dois monitores',
             'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
             'dica' => 'Abre o site: a central de monitoramento. Escurecida por cima, use foto clara no centro.',
         ],
         'home_plataforma' => [
-            'pagina' => 'Home', 'titulo' => 'Tela da plataforma', 'padrao' => 'img/home/plataforma-monitor.jpg',
-            'alt' => 'Plataforma Golden de monitoramento aberta em um computador',
-            'largura' => 1200, 'altura' => 960, 'dimensao' => '1200 × 960 px', 'proporcao' => '5:4',
-            'dica' => 'Print do monitoramento em um computador, na seção escuro.',
+            'pagina' => 'Home · Aplicativo e plataforma', 'titulo' => 'Foto de fundo da plataforma', 'padrao' => 'img/home/plataforma-monitor.jpg',
+            'alt' => 'Plataforma Golden de monitoramento aberta em um computador sobre uma mesa de madeira',
+            'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
+            'dica' => 'Faixa em largura total: o computador fica à direita e o texto, sobre o lado esquerdo escuro.',
         ],
         'home_equipamento' => [
-            'pagina' => 'Home', 'titulo' => 'Rastreador J16', 'padrao' => 'img/home/rastreador-j16.jpg',
-            'alt' => 'Rastreador veicular J16 4G/2G com chicote de instalação',
-            'largura' => 1000, 'altura' => 750, 'dimensao' => '1000 × 750 px', 'proporcao' => '4:3',
-            'dica' => 'Foto do equipamento com o chicote. Também aparece em /solucoes.',
+            'pagina' => 'Home · Rastreador J16', 'titulo' => 'Foto de fundo do rastreador', 'padrao' => 'img/home/rastreador-j16.jpg',
+            'alt' => 'Rastreador veicular J16 4G/2G com chicote de instalação sobre uma mesa de madeira',
+            'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
+            'dica' => 'Faixa em largura total: o equipamento fica à esquerda e o texto, sobre o lado direito escuro.',
         ],
         'home_cta' => [
             'pagina' => 'Home', 'titulo' => 'Foto da chamada final', 'padrao' => 'img/home/estrada-por-do-sol.jpg',

@@ -111,13 +111,26 @@ section{padding:84px 0}
 
 /* Hero com fotografia de fundo (home — referência aprovada) */
 .hero-foto{padding-bottom:0}
-.hero-foto>.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:74% 38%;opacity:.48;z-index:0}
-.hero-foto::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(96deg,rgba(13,17,20,.97) 0%,rgba(13,17,20,.9) 38%,rgba(13,17,20,.34) 74%,rgba(13,17,20,.62) 100%)}
+.hero-foto>.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:76% 42%;opacity:.86;z-index:0}
+.hero-foto::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(96deg,rgba(13,17,20,.97) 0%,rgba(13,17,20,.9) 34%,rgba(13,17,20,.24) 66%,rgba(13,17,20,.5) 100%)}
 .hero-foto>.wrap,.hero-foto>.trust{position:relative;z-index:2}
-.hero-marca{display:flex;align-items:center;gap:12px;justify-content:flex-end}
-.hero-marca img{width:54px;height:54px;border-radius:13px}
-.hero-marca b{font-family:"Poppins";font-size:1.2rem;letter-spacing:.04em;color:#fff;display:block;line-height:1}
-.hero-marca small{display:block;font-size:.6rem;letter-spacing:.24em;color:var(--gold);text-transform:uppercase;margin-top:5px}
+
+/* Faixas da home com fotografia de fundo em largura total (referência aprovada):
+   a foto cobre a seção inteira e o gradente abre o lado do texto. */
+.sec-foto{position:relative;overflow:hidden}
+.sec-foto>.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.sec-foto::before{content:"";position:absolute;inset:0;z-index:1}
+.sec-foto>.wrap{position:relative;z-index:2;padding-top:clamp(48px,4.6vw,66px);padding-bottom:clamp(48px,4.6vw,66px)}
+/* A faixa fica mais baixa que a foto (21:9): assim o recorte come o topo e a base
+   da mesa em vez de abrir as laterais, e o monitor / o equipamento inteiro aparecem. */
+.sec-foto .hero-grid{min-height:clamp(300px,25vw,370px)}
+/* Texto à esquerda: a foto aparece na direita */
+.sec-foto-esq::before{background:linear-gradient(96deg,rgba(13,17,20,.97) 0%,rgba(13,17,20,.93) 30%,rgba(13,17,20,.4) 60%,rgba(13,17,20,.24) 100%)}
+.sec-foto-esq>.foto{object-position:64% 40%}
+/* Texto à direita: a foto aparece na esquerda */
+.sec-foto-dir::before{background:linear-gradient(264deg,rgba(13,17,20,.97) 0%,rgba(13,17,20,.93) 32%,rgba(13,17,20,.38) 64%,rgba(13,17,20,.2) 100%)}
+.sec-foto-dir>.foto{object-position:24% 52%}
+.sec-foto .col-dir{grid-column:2}
 
 /* Faixa de confiança */
 .trust{border-top:1px solid rgba(255,255,255,.12);margin-top:64px;padding:28px 0 34px}
@@ -397,7 +410,14 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .hero-grid,.lead-panel,.split,.split-larga{grid-template-columns:1fr;gap:34px}
   .grid-3,.kits,.steps,.trust-grid,.seg-grid{grid-template-columns:repeat(2,1fr)}
   .ben-grid{grid-template-columns:repeat(2,1fr)}
-  .hero-marca,.cta-final.cta-foto .cta-marca{display:none}
+  .cta-final.cta-foto .cta-marca{display:none}
+  /* Sem as duas colunas, o texto volta a ocupar a linha e a foto vira só pano de fundo. */
+  .sec-foto .col-dir{grid-column:auto}
+  .sec-foto-esq::before,.sec-foto-dir::before{background:linear-gradient(180deg,rgba(13,17,20,.94),rgba(13,17,20,.86))}
+  /* Na coluna estreita a faixa fica mais alta que a foto, então o recorte é lateral:
+     cada lado aponta para o próprio assunto (o monitor / o equipamento). */
+  .sec-foto-esq>.foto{object-position:70% 34%}
+  .sec-foto-dir>.foto{object-position:16% 58%}
   .foot-grid{grid-template-columns:1fr 1fr}
   .nav-cta .btn:not(.nav-toggle){display:none}
   .nav-links{display:none}
