@@ -178,7 +178,10 @@ fica em `~/backups-golden/acesso-painel.txt`); na mão, troque no painel ou rode
 
 Conteúdo de marketing (benefícios, segmentos, kits, passos, FAQ) fica centralizado em
 `config/golden.php` — fácil de editar sem tocar nas views. Depoimentos, FAQs e páginas
-também podem vir do banco (painel), com *fallback* para o config.
+também podem vir do banco (painel), com *fallback* para o config. **As fotos do site e a
+abertura das páginas fixas seguem a mesma regra**: `config/golden.php` registra os 19 slots de
+imagem e o texto padrão de cada página, o painel guarda a sobrescrita em `settings`, e o que
+não foi enviado continua vindo do arquivo do pacote (`App\Support\ConteudoSite`).
 
 **Regra de conteúdo:** o que tem página dedicada não se repete na home nem em outra página.
 A home mostra um cartão de atalho (`.atalhos`) para Soluções, Planos, Para quem é, Como
@@ -267,11 +270,26 @@ Com `prefers-reduced-motion: reduce` a auto-rotação desliga e o deslocamento f
   pelo campo de documentos (até 12 arquivos por pedido).
 - **Faturamento** da loja no dashboard e alerta de **estoque baixo**.
 
-### CMS (`/admin/paginas`)
-- **Páginas** com título, slug único, eyebrow, introdução, corpo em HTML rico, meta
-  título/descrição, ordem no menu e *switches* "exibir no menu" / "publicada".
+### CMS (`/admin/conteudo`)
+- **Páginas** (`/admin/conteudo/paginas`) com título, slug único, eyebrow, introdução, corpo em
+  HTML rico, **foto de capa** com texto alternativo, meta título/descrição, ordem no menu e
+  *switches* "exibir no menu" / "publicada". A capa entra no herói de `/p/{slug}` e no
+  `og:image` daquela página.
 - O HTML do corpo é **sanitizado** na gravação (remove `<script>`, `<iframe>`, `<form>`,
   manipuladores `on*` e URLs `javascript:`) contra XSS armazenado.
+- **Imagens do site** (`/admin/conteudo/imagens`) — as 19 fotografias expostas no site,
+  agrupadas pela página onde aparecem. Cada slot mostra a imagem que está no ar, o selo
+  `foto do pacote` / `enviada pelo painel` / `sem foto no ar`, a dimensão e a proporção
+  pedidas, o campo de arrastar-e-soltar e o texto alternativo. Enviar guarda o arquivo em
+  `storage/site/`; marcar **Voltar à foto original** apaga o envio, apaga o arquivo e devolve
+  a foto **e** a descrição do pacote.
+- **Textos das páginas** (`/admin/conteudo/textos`) — a abertura das sete páginas fixas
+  (rótulo do caminho, linha de destaque, título e subtítulo). A home fica de fora de propósito:
+  a abertura dela é o layout aprovado, e nela o que se troca pelo painel são as fotos.
+- As duas telas seguem a mesma precedência: o valor em `settings` vence e o padrão registrado
+  em `config/golden.php` fica por baixo, então **campo em branco = texto/foto original de
+  volta**, sem republicar nada. Nenhuma chave é aceita do formulário — a lista vem do config,
+  o que barra escrita arbitrária em `settings`.
 - **Depoimentos** e **FAQs** editáveis, publicados no site sem tocar em código.
 
 ### Loja virtual com *switch* no painel

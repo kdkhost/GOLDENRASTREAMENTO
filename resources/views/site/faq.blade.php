@@ -3,13 +3,7 @@
 @section('meta_description', 'Respostas sobre funcionamento do rastreador, instalação, mensalidade, bloqueio remoto, cobertura do chip M2M e acesso pelo celular.')
 
 @section('content')
-<section class="page-hero">
-    <div class="wrap">
-        <div class="breadcrumb"><a href="{{ route('site.home') }}">Início</a> · Dúvidas</div>
-        <h1>Perguntas que mais recebemos</h1>
-        <p>Tire suas dúvidas sobre funcionamento, instalação, planos e muito mais.</p>
-    </div>
-</section>
+@include('site.partials.page-hero', ['chave' => 'faq'])
 
 <section class="sec-light">
     <div class="wrap">

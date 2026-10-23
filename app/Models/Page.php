@@ -13,7 +13,7 @@ class Page extends Model
     protected array $cacheKeys = ['golden.paginas_publicadas'];
 
     protected $fillable = [
-        'titulo', 'slug', 'eyebrow', 'intro', 'corpo',
+        'titulo', 'slug', 'eyebrow', 'intro', 'corpo', 'imagem', 'imagem_alt',
         'meta_title', 'meta_description', 'exibir_menu', 'ordem_menu', 'publicada',
     ];
 

@@ -3,13 +3,7 @@
 @section('meta_description', 'Veja como funciona: escolha o kit, receba os equipamentos, providencie a instalação com profissional de sua confiança e comece a acompanhar pela plataforma.')
 
 @section('content')
-<section class="page-hero">
-    <div class="wrap">
-        <div class="breadcrumb"><a href="{{ route('site.home') }}">Início</a> · Como funciona</div>
-        <h1>Da aquisição ao controle, de forma simples</h1>
-        <p>Quatro passos para colocar sua frota ou veículo na plataforma Golden.</p>
-    </div>
-</section>
+@include('site.partials.page-hero', ['chave' => 'como_funciona'])
 
 <section class="sec-light">
     <div class="wrap">

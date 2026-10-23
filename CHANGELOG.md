@@ -3,6 +3,75 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.16.0] - 2026-10-23
+
+### Adicionado
+- **Registro de imagens em `config/golden.php` — a única fonte das fotos do site** — 19 slots
+  (`marca_logo`, `favicon`, `site_compartilhar`, as quatro fotos da home, os cinco segmentos e
+  o cartaz de cada uma das sete páginas fixas), cada um com `pagina`, `titulo`, `padrao`, `alt`,
+  `dimensao` e `proporcao`. Nenhuma view cita arquivo de imagem direto; quem precisa de uma foto
+  pede pelo nome.
+- **`config/golden.php` → `paginas_site`** — a copy de abertura das sete páginas fixas (rótulo do
+  caminho, linha de destaque, título e subtítulo) passou a ter padrão registrado, editável
+  do painel. A home fica de fora de propósito: a abertura dela é o layout aprovado, com `<em>`
+  e quebras de linha, e o que se troca nela são as fotos.
+- **`app/Support/ConteudoSite.php`** — resolve o que está no ar: o valor salvo em `settings`
+  vence, o arquivo do pacote fica por baixo, e em branco significa "volta ao original". Também
+  faz o atalho `hero_<pagina>` entre o nome da página e o slot do cartaz.
+- **`site_img()`, `site_img_alt()`, `site_img_enviada()` e `site_pagina()`** em
+  `app/Support/helpers.php` — as views leram tudo por essas quatro funções.
+- **`Admin\SiteContentController` com duas telas novas** — *Conteúdo → Imagens do site*
+  (`/admin/conteudo/imagens`) e *Conteúdo → Textos das páginas* (`/admin/conteudo/textos`).
+  Na de imagens cada slot é um cartão com a foto que está no ar, o selo
+  `foto do pacote` / `enviada pelo painel` / `sem foto no ar`, a dimensão pedida, o campo de
+  arrastar-e-soltar e o texto alternativo; marcar **Voltar à foto original** apaga o envio e o
+  arquivo do disco. Nenhuma chave é aceita do formulário — a lista vem do config.
+- **Campo `site_imagem` em `config/envios.php`** — uma única regra de envio para os 19 slots
+  (formatos, 6 MB e a pasta `site`); a dimensão recomendada, que muda de slot para slot, é
+  mostrada pela tela, então a regra nunca diverge do que o servidor aceita.
+- **`<x-site.img>`** — component de imagem do site: não renderiza nada se o slot não tem
+  arquivo, e resolve `largura`/`altura` a partir do registro (`true` = valores do registro,
+  número = valor explícito, `false` = omite).
+- **`resources/views/site/partials/page-hero.blade.php`** — as sete páginas fixas tinham sete
+  heróis escritos à mão; agora é um partial só, com o cartaz atrás do título.
+- **Capa própria em cada página do CMS** — migration
+  `2026_10_23_000005_da_capa_as_paginas_do_cms` cria `pages.imagem` e `pages.imagem_alt`;
+  o formulário de página ganhou o campo de arrastar-e-soltar, a capa aparece no herói de
+  `/p/{slug}` e vira o `og:image` daquela página.
+- **`Setting::forget()`** — apaga a chave e derruba o cache e a memória estática; sem isso o
+  "voltar ao original" só valia no próximo request.
+- **`tests/Feature/ImagensDoSitePeloCmsTest.php`** — onze travas: nenhuma view cita
+  `asset('img/`, todo slot tem o que a tela mostra, o envio vence o pacote (foto e alt), o
+  cartaz só existe depois do envio, trocar apaga o arquivo anterior, voltar ao padrão devolve a
+  foto **e** o texto do pacote, caminho de outro campo é recusado, os textos são editáveis e
+  revertíveis, e a capa da página do CMS funciona de ponta a ponta.
+
+### Corrigido
+- **O título das sete páginas fixas estava invisível** — `h1,h2,h3,h4` pinta `color:var(--ink)`,
+  que é quase preto, e `.page-hero` só definia a cor no `<section>`; como regra direta vence
+  herança, "Escolha o tamanho da sua frota" e os outros seis títulos saíam escuros sobre o
+  fundo escuro. O defeito era anterior a esta versão — a unificação dos heróis em um partial só
+  foi o que o expôs. Agora `.page-hero h1{color:#fff}` resolve para as duas origens do herói.
+- **O cartaz saía no fluxo em vez de ficar atrás do título** — a regra
+  `.page-hero.com-foto>.foto` vale só para filho direto da `<section>`, e a `<img>` estava
+  dentro de `.wrap`; na tela isso aparecia como um bloco de foto empurrando a página inteira
+  para baixo. As duas chamadas do herói passaram a pôr a foto como filho direto, e o teste
+  agora verifica essa posição.
+- **Voltar à foto original deixava para trás o texto do envio** — o alt pertence à foto: ao
+  reverter, a descrição digitada vai junto e volta o `alt` registrado para o pacote.
+- **Callout das duas telas novas abria buracos no texto** — `.callout` é
+  `display:flex; justify-content:space-between`, então a prosa solta virava vários itens de
+  flex; agora o texto vai em um `<span>`, como no callout do dashboard.
+- **Miniatura do slot recortava logo e favicon** — `object-fit:cover` num cartão largo cortava
+  o miolo das artes quadradas; passou a `contain`, que mostra a peça inteira.
+
+### Alterado
+- **Todo o site público passou a tirar as fotos do CMS** — `layouts/site`, `home`, as sete
+  páginas fixas, `site/pagina`, o login e o painel (logo e favicon) leem `site_img()`; os
+  `asset('img/...')` que sobraram são pega por teste.
+- `public/css/golden-site.css` recebeu o `.page-hero`, o `.page-cms` e o `.cms-body` que
+  estavam escritos dentro de `@push('styles')` nas views.
+
 ## [2.15.0] - 2026-10-23
 
 ### Adicionado

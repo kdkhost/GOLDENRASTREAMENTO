@@ -14,7 +14,7 @@
 <body>
     <div class="box">
         <div class="brand">
-            <img src="{{ asset('img/logo-golden.png') }}" alt="Golden">
+            <x-site.img imagem="marca_logo" alt="Golden" :largura="false" :altura="false" :lazy="false" />
             <span><b>GOLDEN</b><small>Painel de Leads</small></span>
         </div>
         <h1>Acessar o painel administrativo</h1>

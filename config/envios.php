@@ -45,4 +45,20 @@ return [
         'dimensao' => null,
         'proporcao' => null,
     ],
+
+    /*
+    | As fotos do site (Admin → Conteúdo → Imagens e textos) entram todas por
+    | este campo: a dimensão recomendada muda de slot para slot e é a tela do
+    | painel que a mostra, não a regra. O destino no disco é sempre `site`.
+    */
+    'site_imagem' => [
+        'tipo' => 'imagem',
+        'pasta' => 'site',
+        'titulo' => 'Foto do site',
+        'chamada' => 'Arraste a foto aqui ou clique para escolher',
+        'formatos' => ['jpg', 'jpeg', 'png', 'webp'],
+        'max_mb' => 6,
+        'dimensao' => null,
+        'proporcao' => null,
+    ],
 ];

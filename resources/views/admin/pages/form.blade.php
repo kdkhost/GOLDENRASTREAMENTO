@@ -26,6 +26,20 @@
                         class="font-monospace" hint="HTML simples é permitido: títulos, parágrafos, listas, links e imagens." />
                 </div>
             </x-admin.card>
+
+            <x-admin.card title="Foto de capa" icon="fa-photo-film" class="mt-3"
+                descricao="Abre a página no site. Sem envio, ela continua com o fundo padrão do tema.">
+                @include('partials.upload', [
+                    'campo' => 'site_imagem',
+                    'name' => 'imagem',
+                    'valor' => old('imagem', $pagina->imagem),
+                    'titulo' => 'Foto de capa da página',
+                    'dica' => 'Ideal 1600 × 720 px (20:9), paisagem: ela fica atrás do título, escurecida.',
+                ])
+                <x-admin.field name="imagem_alt" label="Texto alternativo da capa" type="textarea" rows="2"
+                    :value="$pagina->imagem_alt" :opcional="true" maxlength="190"
+                    hint="Descreve a foto para quem usa leitor de tela e para o Google." />
+            </x-admin.card>
         </div>
 
         <div class="col-lg-4">

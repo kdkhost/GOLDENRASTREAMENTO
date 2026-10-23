@@ -3,13 +3,7 @@
 @section('meta_description', 'Kits de rastreamento com chip M2M para 5 veículos, 10 veículos e frotas maiores. Equipamento e mensalidade informados na proposta.')
 
 @section('content')
-<section class="page-hero">
-    <div class="wrap">
-        <div class="breadcrumb"><a href="{{ route('site.home') }}">Início</a> · Planos</div>
-        <h1>Escolha o tamanho da sua frota</h1>
-        <p>Equipamentos e mensalidade informados separadamente na proposta comercial. A instalação é por conta do cliente.</p>
-    </div>
-</section>
+@include('site.partials.page-hero', ['chave' => 'planos'])
 
 <section class="sec-light">
     <div class="wrap">

@@ -10,7 +10,7 @@
     <meta property="og:title" content="@yield('title', $golden['marca']['nome'])">
     <meta property="og:description" content="@yield('meta_description', 'Rastreamento e gestão veicular.')">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="{{ asset('img/logo-golden.png') }}">
+    <meta property="og:image" content="@yield('og_image', site_img('site_compartilhar'))">
     @include('partials.favicon')
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,7 +36,7 @@
 <header class="site-header">
     <div class="wrap nav">
         <a class="brand" href="{{ route('site.home') }}">
-            <img src="{{ asset('img/logo-golden.png') }}" alt="{{ $golden['marca']['nome'] }}">
+            <x-site.img imagem="marca_logo" :largura="false" :altura="false" :lazy="false" />
             <span><b>GOLDEN</b><small>Rastreamento · Gestão</small></span>
         </a>
         <nav class="nav-links" aria-label="Menu principal">
@@ -62,7 +62,7 @@
 <nav class="nav-drawer" id="navDrawer" aria-label="Menu principal">
     <div class="drawer-head">
         <span>
-            <img src="{{ asset('img/logo-golden.png') }}" alt="">
+            <x-site.img imagem="marca_logo" alt="" :largura="false" :altura="false" />
             GOLDEN
         </span>
         <button type="button" class="drawer-close" data-nav-close aria-label="Fechar menu"><i class="fa-solid fa-xmark"></i></button>
@@ -91,7 +91,7 @@
         <div class="foot-grid">
             <div>
                 <div class="foot-brand">
-                    <img src="{{ asset('img/logo-golden.png') }}" alt="{{ $golden['marca']['nome'] }}">
+                    <x-site.img imagem="marca_logo" :largura="false" :altura="false" />
                     <b>GOLDEN</b>
                 </div>
                 <p style="max-width:34ch">{{ $golden['marca']['slogan'] }}. Tecnologia de autorrastreamento e gestão para quem faz o negócio acontecer.</p>

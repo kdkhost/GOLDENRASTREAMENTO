@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\UploadController;
@@ -171,7 +172,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::delete('/{pedido}', [OrderController::class, 'destroy'])->name('destroy')->middleware('role:admin');
     });
 
-    // CMS: Páginas / Depoimentos / FAQs
+    // CMS: Páginas / Imagens e textos do site / Depoimentos / FAQs
     Route::prefix('conteudo')->name('conteudo.')->middleware('role:admin')->group(function () {
         Route::prefix('paginas')->name('paginas.')->group(function () {
             Route::get('/', [AdminPageController::class, 'index'])->name('index');
@@ -181,6 +182,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
             Route::post('/{pagina}', [AdminPageController::class, 'update'])->name('update');
             Route::delete('/{pagina}', [AdminPageController::class, 'destroy'])->name('destroy');
         });
+
+        // Cada fotografia exposta no site, organizada pela página onde aparece.
+        Route::prefix('imagens')->name('imagens.')->group(function () {
+            Route::get('/', [SiteContentController::class, 'imagens'])->name('index');
+            Route::post('/', [SiteContentController::class, 'salvarImagens'])->name('update');
+        });
+
+        // Abertura (rótulo, eyebrow, título, subtítulo) das páginas fixas do site.
+        Route::prefix('textos')->name('textos.')->group(function () {
+            Route::get('/', [SiteContentController::class, 'textos'])->name('index');
+            Route::post('/', [SiteContentController::class, 'salvarTextos'])->name('update');
+        });
+
         Route::prefix('depoimentos')->name('depoimentos.')->group(function () {
             Route::get('/', [TestimonialController::class, 'index'])->name('index');
             Route::get('/novo', [TestimonialController::class, 'create'])->name('create');

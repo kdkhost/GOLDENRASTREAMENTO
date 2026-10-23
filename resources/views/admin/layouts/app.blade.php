@@ -57,7 +57,7 @@
     <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
         <div class="sidebar-brand d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary">
             <a href="{{ route('admin.dashboard') }}" class="brand-link text-decoration-none d-flex align-items-center gap-2">
-                <img src="{{ asset('img/logo-golden.png') }}" alt="Golden" height="34" class="brand-image">
+                <x-site.img imagem="marca_logo" alt="Golden" :largura="false" :altura="34" class="brand-image" :lazy="false" />
                 <span class="fw-bold text-white">GOLDEN</span>
                 <span class="badge badge-menu tone-gold ms-1 small">{{ strtoupper($u->role) }}</span>
             </a>
@@ -86,6 +86,8 @@
                     <li class="nav-header">Conteúdo do site</li>
                     @if($u->isAdmin())
                     <li class="nav-item"><a href="{{ route('admin.conteudo.paginas.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.paginas.*') ? 'active' : '' }}"><i class="nav-icon fas fa-file-lines"></i><p>Páginas</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.conteudo.imagens.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.imagens.*') ? 'active' : '' }}"><i class="nav-icon fas fa-image"></i><p>Imagens do site</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.conteudo.textos.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.textos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-heading"></i><p>Textos das páginas</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.conteudo.depoimentos.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.depoimentos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-quote-left"></i><p>Depoimentos</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.conteudo.faqs.index') }}" class="nav-link {{ request()->routeIs('admin.conteudo.faqs.*') ? 'active' : '' }}"><i class="nav-icon fas fa-circle-question"></i><p>FAQs</p></a></li>
 

@@ -3,14 +3,7 @@
 @section('meta_description', 'Funcionalidades da plataforma Golden: localização em tempo real, histórico, cercas virtuais, alertas, relatórios, bloqueio remoto e gestão de manutenções.')
 
 @section('content')
-<section class="page-hero">
-    <div class="wrap">
-        <div class="breadcrumb"><a href="{{ route('site.home') }}">Início</a> · Soluções</div>
-        <span class="eyebrow on-dark" style="justify-content:center">Funcionalidades</span>
-        <h1>Tudo o que a sua operação precisa</h1>
-        <p>Autorrastreamento e gestão em um só lugar. Você acompanha os veículos e utiliza as ferramentas disponível na plataforma.</p>
-    </div>
-</section>
+@include('site.partials.page-hero', ['chave' => 'solucoes'])
 
 <section class="sec-light">
     <div class="wrap">

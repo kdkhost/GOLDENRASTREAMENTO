@@ -62,11 +62,14 @@ class HomeDaReferenciaTest extends TestCase
 
     public function test_os_cinco_segmentos_tem_fotografia_propria(): void
     {
+        $slots = config('golden.imagens');
+
         foreach (config('golden.segmentos') as $s) {
-            $this->assertArrayHasKey('imagem', $s, "O segmento '{$s['titulo']}' está sem imagem.");
-            $this->assertFileExists(public_path($s['imagem']), "A foto {$s['imagem']} do segmento não existe.");
+            $this->assertArrayHasKey('slot', $s, "O segmento '{$s['titulo']}' está sem slot de imagem.");
+            $this->assertArrayHasKey($s['slot'], $slots, "O slot '{$s['slot']}' do segmento '{$s['titulo']}' não está registrado.");
+            $this->assertFileExists(public_path($slots[$s['slot']]['padrao']), "A foto do segmento '{$s['titulo']}' não existe.");
         }
 
-        $this->assertFileExists(public_path(config('golden.equipamento_info.imagem')));
+        $this->assertFileExists(public_path($slots[config('golden.equipamento_info.slot')]['padrao']));
     }
 }

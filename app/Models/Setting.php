@@ -48,4 +48,18 @@ class Setting extends Model
     {
         static::updateOrCreate(['key' => $key], ['value' => $value]);
     }
+
+    /**
+     * Apaga a chave: o que o painel definiu some e o padrão de config() volta a valer.
+     * É assim que "voltar à foto original" funciona sem regravar nada.
+     */
+    public static function forget(string $key): void
+    {
+        static::where('key', $key)->delete();
+
+        // Delete pela consulta não dispara o evento saved/deleted: a invalidação
+        // precisa acontecer aqui, senão a cópia em memória continua com a chave.
+        Cache::forget('golden_settings');
+        static::$memoria = null;
+    }
 }

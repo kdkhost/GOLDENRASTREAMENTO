@@ -5,6 +5,8 @@
       $name     nome do input no formulário (ex.: imagem)
       $valor    caminho já armazenado, ou lista de caminhos quando $multiplo
       $multiplo true para acumular vários arquivos
+      $titulo   rótulo do campo, quando o registro tem mais de um (ex.: uma
+                foto por slot do site); sem ele vale o título da regra
       $dica     orientação extra exibida abaixo da linha de regras
     O arquivo sobe pelo endpoint JSON assim que é solto: o campo mostra o
     progresso, o tempo decorrido e, no fim, o tamanho e as dimensões reais.
@@ -14,6 +16,7 @@
     $multiplo ??= false;
     $dica ??= null;
     $regra = \App\Support\Envio::regra($campo);
+    $titulo ??= $regra['titulo'];
     $id = 'envio-'.substr(md5($campo.'|'.$name), 0, 8);
     $icone = ['imagem' => 'fa-image', 'video' => 'fa-film', 'documento' => 'fa-file-arrow-up'][$regra['tipo']] ?? 'fa-arrow-up-right-from-square';
     $guardados = array_map(
@@ -39,7 +42,7 @@
     <button type="button" class="upload-alvo" data-upload-alvo>
         <span class="upload-miniatura" data-upload-miniatura hidden></span>
         <span class="upload-copy">
-            <strong>{{ $regra['titulo'] }}</strong>
+            <strong>{{ $titulo }}</strong>
             <span data-upload-chamada>{{ $regra['chamada'] }}</span>
             <small>{{ \App\Support\Envio::dica($campo) }}@if($dica)<br>{{ $dica }}@endif</small>
         </span>

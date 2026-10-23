@@ -3,13 +3,7 @@
 @section('meta_description', 'Política de Privacidade da Golden Rastreamento conforme a LGPD: coleta de dados, finalidades, bases legais, cookies e direitos do titular.')
 
 @section('content')
-<section class="page-hero">
-    <div class="wrap">
-        <div class="breadcrumb"><a href="{{ route('site.home') }}">Início</a> · Privacidade</div>
-        <h1>Política de Privacidade</h1>
-        <p>Compromisso com a proteção dos seus dados pessoais, conforme a LGPD (Lei nº 13.709/2018).</p>
-    </div>
-</section>
+@include('site.partials.page-hero', ['chave' => 'privacidade'])
 
 <section class="sec-light">
     <div class="wrap" style="max-width:860px">

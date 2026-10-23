@@ -6,7 +6,7 @@
 @section('content')
 {{-- HERO com fotografia da central de monitoramento --}}
 <section class="hero hero-foto">
-    <img class="foto" src="{{ asset('img/home/hero-monitoramento.jpg') }}" alt="Central de monitoramento Golden com mapas de frota em três telas" width="1600" height="914" fetchpriority="high">
+    <x-site.img imagem="home_hero" class="foto" :lazy="false" :prioridade="true" />
     <div class="wrap hero-grid">
         <div class="on-dark">
             <span class="eyebrow on-dark">Rastreamento e gestão veicular</span>
@@ -18,7 +18,7 @@
             </div>
         </div>
         <div class="hero-marca">
-            <img src="{{ asset('img/logo-golden.png') }}" alt="" width="54" height="54">
+            <x-site.img imagem="marca_logo" alt="" :largura="54" :altura="54" :lazy="false" />
             <span><b>GOLDEN</b><small>Rastreamento</small></span>
         </div>
     </div>
@@ -66,7 +66,7 @@
             </div>
         </div>
         <div class="hero-visual">
-            <img src="{{ asset('img/home/plataforma-monitor.jpg') }}" alt="Plataforma Golden de monitoramento aberta em um computador" width="1200" height="960" loading="lazy">
+            <x-site.img imagem="home_plataforma" />
         </div>
     </div>
 </section>
@@ -84,7 +84,7 @@
         <div class="seg-grid">
             @foreach($segmentos as $s)
             <a href="{{ route('site.segmentos') }}" class="seg-foto" data-track="internal_link" data-cta="home_segmento">
-                <img class="foto" src="{{ asset($s['imagem']) }}" alt="{{ $s['titulo'] }}" width="720" height="540" loading="lazy">
+                <x-site.img :imagem="$s['slot']" class="foto" />
                 <i class="fa-solid {{ $s['icone'] }}" aria-hidden="true"></i>
                 <h4>{{ $s['titulo'] }}</h4>
                 <p>{{ $s['texto'] }}</p>
@@ -125,7 +125,7 @@
 <section class="sec-dark">
     <div class="wrap split split-larga">
         <div class="hero-visual">
-            <img src="{{ asset('img/home/rastreador-j16.jpg') }}" alt="Rastreador veicular J16 4G/2G com chicote de instalação" width="1000" height="750" loading="lazy">
+            <x-site.img imagem="home_equipamento" />
         </div>
         <div class="on-dark">
             <span class="eyebrow on-dark">{{ $equipamento['eyebrow'] }}</span>
@@ -227,7 +227,7 @@
 <section class="sec-light">
     <div class="wrap">
         <div class="cta-final cta-foto">
-            <img class="foto" src="{{ asset('img/home/estrada-por-do-sol.jpg') }}" alt="Caminhão em estrada ao pôr do sol" width="1600" height="914" loading="lazy">
+            <x-site.img imagem="home_cta" class="foto" />
             <div class="cta-final-inner">
                 <span class="eyebrow on-dark">Pronto para ter mais controle?</span>
                 <h2>Fale com um especialista e encontre <span class="destaque">a solução ideal</span> para você.</h2>
@@ -238,7 +238,7 @@
                 </div>
             </div>
             <div class="cta-marca">
-                <img src="{{ asset('img/logo-golden.png') }}" alt="" width="44" height="44">
+                <x-site.img imagem="marca_logo" alt="" :largura="44" :altura="44" />
                 <span><b>GOLDEN</b><small>Rastreamento</small></span>
             </div>
         </div>

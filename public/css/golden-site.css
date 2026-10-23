@@ -348,9 +348,31 @@ section{padding:84px 0}
 
 /* Page hero interno */
 .page-hero{background:linear-gradient(180deg,var(--dark),var(--dark-2));color:#fff;padding:78px 0 58px;text-align:center}
+.page-hero h1{color:#fff}
 .page-hero p{color:#c4ccd4;max-width:60ch;margin:0 auto}
+.page-hero .eyebrow{justify-content:center}
 .breadcrumb{font-size:.85rem;color:#8a97a4;margin-bottom:14px}
 .breadcrumb a:hover{color:var(--gold)}
+
+/* Cartaz enviado pelo CMS (Admin → Conteúdo → Imagens do site / Páginas): a foto
+   entra atrás do título, escurecida pelo mesmo degradê do herói da home. */
+.page-hero{position:relative;overflow:hidden}
+.page-hero>.wrap{position:relative;z-index:2}
+.page-hero.com-foto>.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%;opacity:.55;z-index:0}
+.page-hero.com-foto::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(13,17,20,.6),rgba(13,17,20,.9))}
+
+/* Página do CMS: corpo editado no painel + chamada final. */
+.page-cms{max-width:820px}
+.cms-body{line-height:1.7}
+.cms-body h2{font-size:1.4rem;margin:1.4rem 0 .5rem}
+.cms-body h3{font-size:1.15rem;margin:1.2rem 0 .4rem}
+.cms-body p{margin:.7rem 0;color:var(--slate)}
+.cms-body ul,.cms-body ol{padding-left:1.2rem;color:var(--slate)}
+.cms-body li{margin:.3rem 0}
+.cms-body img{max-width:100%;height:auto;border-radius:14px}
+.cms-body a{color:var(--gold-2);font-weight:600;text-decoration:underline}
+.cms-vazio{color:var(--slate)}
+.cms-ctas{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
 
 /* ===== Menu deslizante (gaveta da esquerda, só em telas menores) ===== */
 .nav-toggle i{grid-area:1/1;transition:transform .3s cubic-bezier(.22,.61,.36,1),opacity .2s ease}

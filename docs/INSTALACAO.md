@@ -293,6 +293,11 @@ ln -s ../storage public/storage
 Permissões: pastas `755`, arquivos `644`, e `storage/` + `bootstrap/cache/`
 precisam ser graváveis pelo usuário do webserver.
 
+Sem esse link, **as fotos enviadas do painel não aparecem** — nem no site
+(`storage/site/…`, administrado em *Conteúdo → Imagens do site*), nem na loja e nos
+pedidos. O que não foi enviado pelo painel continua servindo de `public/img/`, então o
+site abre e só as fotos trocadas ficam quebradas: é o sintoma de `storage:link` faltando.
+
 ### 4.7 Entrega pelo docroot
 
 Quando o domínio aponta para a **raiz do projeto** (caso típico do cPanel,
@@ -552,6 +557,8 @@ continua visível para você pelo painel ou SSH.
 - [ ] Arquivo enviado pelo painel abre pela URL de `/storage/...` (200, não 403)
 - [ ] Teste de barreira: `.env`, `app/` e `storage/logs/laravel.log` respondem 403
 - [ ] Configurações do painel com WhatsApp, telefone, e-mail e endereço corretos
+- [ ] *Conteúdo → Imagens do site* lista as 19 fotos, e *Conteúdo → Textos das páginas* lista
+      as sete páginas — trocar uma foto e salvar muda a página pública na hora
 - [ ] SMTP preenchido (ou `log`, assumido de propósito)
 - [ ] Crons: `php artisan schedule:run` a cada minuto, se usar lembretes
 - [ ] Backup automático de banco e `storage/app/public`

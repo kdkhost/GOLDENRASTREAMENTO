@@ -7,6 +7,189 @@ return [
         'cidade' => 'Três Pontas · Minas Gerais',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Imagens do site (CMS)
+    |--------------------------------------------------------------------------
+    | Cada fotografia exposta no site é um "slot" daqui, organizado por página.
+    | 'padrao' é o arquivo empacotado no repositório; quando o painel envia uma
+    | imagem nova (Admin → Conteúdo → Imagens do site), ela passa a valer e o
+    | arquivo do pacote vira apenas o fallback. As views nunca citam caminho de
+    | imagem: chamam site_img('slot'), que decide entre o enviado e o padrão.
+    |
+    | largura/altura alimentam os atributos do <img> (evitam o pulo de layout);
+    | dimensao/proporcao são a orientação que o campo de envio repete; alt é a
+    | descrição alternativa que vai no <img>, também editável no painel.
+    | 'padrao' null é a foto que ainda não existe: a seção só aparece no ar
+    | depois que o painel envia um arquivo (é o caso dos cartazes de página).
+    */
+    'imagens' => [
+        'marca_logo' => [
+            'pagina' => 'Todo o site', 'titulo' => 'Logo', 'padrao' => 'img/logo-golden.png',
+            'alt' => 'Golden Rastreamento',
+            'largura' => 512, 'altura' => 512, 'dimensao' => '512 × 512 px', 'proporcao' => '1:1',
+            'dica' => 'Aparece no topo, no rodapé, no menu do painel e no compartilhamento.',
+        ],
+        'favicon' => [
+            'pagina' => 'Todo o site', 'titulo' => 'Favicon', 'padrao' => 'img/favicon.png',
+            'alt' => 'Símbolo da Golden Rastreamento',
+            'largura' => 64, 'altura' => 64, 'dimensao' => '64 × 64 px', 'proporcao' => '1:1',
+            'dica' => 'A mesma nos dois lugares: site público, painel e tela de acesso.',
+        ],
+        'site_compartilhar' => [
+            'pagina' => 'Todo o site', 'titulo' => 'Cartão de compartilhamento', 'padrao' => 'img/logo-golden.png',
+            'alt' => 'Golden Rastreamento',
+            'largura' => 1200, 'altura' => 630, 'dimensao' => '1200 × 630 px', 'proporcao' => '1,91:1',
+            'dica' => 'A imagem que o WhatsApp e as redes mostram ao compartilhar um link.',
+        ],
+
+        'home_hero' => [
+            'pagina' => 'Home', 'titulo' => 'Foto de fundo do herói', 'padrao' => 'img/home/hero-monitoramento.jpg',
+            'alt' => 'Central de monitoramento Golden com mapas de frota em três telas',
+            'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
+            'dica' => 'Abre o site: a central de monitoramento. Escurecida por cima, use foto clara no centro.',
+        ],
+        'home_plataforma' => [
+            'pagina' => 'Home', 'titulo' => 'Tela da plataforma', 'padrao' => 'img/home/plataforma-monitor.jpg',
+            'alt' => 'Plataforma Golden de monitoramento aberta em um computador',
+            'largura' => 1200, 'altura' => 960, 'dimensao' => '1200 × 960 px', 'proporcao' => '5:4',
+            'dica' => 'Print do monitoramento em um computador, na seção escuro.',
+        ],
+        'home_equipamento' => [
+            'pagina' => 'Home', 'titulo' => 'Rastreador J16', 'padrao' => 'img/home/rastreador-j16.jpg',
+            'alt' => 'Rastreador veicular J16 4G/2G com chicote de instalação',
+            'largura' => 1000, 'altura' => 750, 'dimensao' => '1000 × 750 px', 'proporcao' => '4:3',
+            'dica' => 'Foto do equipamento com o chicote. Também aparece em /solucoes.',
+        ],
+        'home_cta' => [
+            'pagina' => 'Home', 'titulo' => 'Foto da chamada final', 'padrao' => 'img/home/estrada-por-do-sol.jpg',
+            'alt' => 'Caminhão em estrada ao pôr do sol',
+            'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
+            'dica' => 'Última faixa do site, sob o texto de contato.',
+        ],
+
+        'segmento_motorista' => [
+            'pagina' => 'Home · Para quem é', 'titulo' => 'Motoristas de aplicativo', 'padrao' => 'img/home/segmento-motorista.jpg',
+            'alt' => 'Motorista de aplicativo no carro com o celular no suporte',
+            'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
+        ],
+        'segmento_particular' => [
+            'pagina' => 'Home · Para quem é', 'titulo' => 'Veículos particulares', 'padrao' => 'img/home/segmento-particular.jpg',
+            'alt' => 'Carro particular estacionado em frente a uma casa',
+            'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
+        ],
+        'segmento_frota' => [
+            'pagina' => 'Home · Para quem é', 'titulo' => 'Frotas empresariais', 'padrao' => 'img/home/segmento-frota.jpg',
+            'alt' => 'Frota de veículos utilitários da empresa em pátio',
+            'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
+        ],
+        'segmento_locadora' => [
+            'pagina' => 'Home · Para quem é', 'titulo' => 'Locadoras de veículos', 'padrao' => 'img/home/segmento-locadora.jpg',
+            'alt' => 'Fileira de carros de locadora prontos para retirada',
+            'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
+        ],
+        'segmento_rural' => [
+            'pagina' => 'Home · Para quem é', 'titulo' => 'Operações rurais', 'padrao' => 'img/home/segmento-rural.jpg',
+            'alt' => 'Trator e caminhão em lavoura na zona rural',
+            'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
+        ],
+
+        // Cartaz de cada página fixa: não existe arquivo no pacote, então o fundo
+        // fotográfico só entra no site quando o painel envia a foto da página.
+        'hero_solucoes' => [
+            'pagina' => 'Soluções', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
+            'alt' => 'Veículo monitorado pela plataforma Golden',
+            'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
+            'dica' => 'Fica atrás do título da página, escurecido. Sem envio, o fundo é o degradê padrão.',
+        ],
+        'hero_segmentos' => [
+            'pagina' => 'Para quem é', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
+            'alt' => 'Motoristas e gestores de frota em seus veículos',
+            'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
+        ],
+        'hero_planos' => [
+            'pagina' => 'Planos e kits', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
+            'alt' => 'Kits de rastreadores J16 prontos para envio',
+            'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
+        ],
+        'hero_como_funciona' => [
+            'pagina' => 'Como funciona', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
+            'alt' => 'Instalador posicionando o rastreador sob o painel do veículo',
+            'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
+        ],
+        'hero_contato' => [
+            'pagina' => 'Contato', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
+            'alt' => 'Equipe comercial da Golden atendendo pelo WhatsApp',
+            'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
+        ],
+        'hero_faq' => [
+            'pagina' => 'Dúvidas frequentes', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
+            'alt' => 'Atendente da Golden respondendo dúvidas de clientes',
+            'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
+        ],
+        'hero_privacidade' => [
+            'pagina' => 'Política de Privacidade', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
+            'alt' => 'Escudo de proteção sobre dados do veículo',
+            'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Páginas fixas do site
+    |--------------------------------------------------------------------------
+    | A abertura (cartaz) de cada página do site, editável em
+    | Admin → Conteúdo → Textos das páginas: o padrão mora aqui e a edição do
+    | painel entra por cima, na chave paginas_site.<chave>.<campo>. Deixar um
+    | campo em branco no painel é o mesmo que apagar a chave — volta o padrão.
+    | A home fica fora: a copy dela é composta no layout aprovado (com <em> e
+    | quebras), e o que se gerencia dela são as fotos.
+    */
+    'paginas_site' => [
+        'solucoes' => [
+            'rota' => 'site.solucoes', 'nome' => 'Soluções', 'rotulo' => 'Soluções',
+            'eyebrow' => 'Funcionalidades',
+            'titulo' => 'Tudo o que a sua operação precisa',
+            'subtitulo' => 'Autorrastreamento e gestão em um só lugar. Você acompanha os veículos e utiliza as ferramentas disponível na plataforma.',
+        ],
+        'segmentos' => [
+            'rota' => 'site.segmentos', 'nome' => 'Para quem é', 'rotulo' => 'Para quem é',
+            'eyebrow' => null,
+            'titulo' => 'Soluções para quem faz o negócio acontecer',
+            'subtitulo' => 'Atendemos desde motoristas que utilizam o próprio veículo até empresas com grandes frotas, sempre com soluções adequadas a cada tipo de operação.',
+        ],
+        'planos' => [
+            'rota' => 'site.planos', 'nome' => 'Planos e kits', 'rotulo' => 'Planos',
+            'eyebrow' => null,
+            'titulo' => 'Escolha o tamanho da sua frota',
+            'subtitulo' => 'Equipamentos e mensalidade informados separadamente na proposta comercial. A instalação é por conta do cliente.',
+        ],
+        'como_funciona' => [
+            'rota' => 'site.como-funciona', 'nome' => 'Como funciona', 'rotulo' => 'Como funciona',
+            'eyebrow' => null,
+            'titulo' => 'Da aquisição ao controle, de forma simples',
+            'subtitulo' => 'Quatro passos para colocar sua frota ou veículo na plataforma Golden.',
+        ],
+        'faq' => [
+            'rota' => 'site.faq', 'nome' => 'Dúvidas frequentes', 'rotulo' => 'Dúvidas',
+            'eyebrow' => null,
+            'titulo' => 'Perguntas que mais recebemos',
+            'subtitulo' => 'Tire suas dúvidas sobre funcionamento, instalação, planos e muito mais.',
+        ],
+        'contato' => [
+            'rota' => 'site.contato', 'nome' => 'Contato', 'rotulo' => 'Contato',
+            'eyebrow' => null,
+            'titulo' => 'Vamos encontrar a solução para seus veículos?',
+            'subtitulo' => 'Solicite uma proposta para sua frota ou fale com nossa equipe. Retornamos rapidamente.',
+        ],
+        'privacidade' => [
+            'rota' => 'site.privacidade', 'nome' => 'Política de Privacidade', 'rotulo' => 'Privacidade',
+            'eyebrow' => null,
+            'titulo' => 'Política de Privacidade',
+            'subtitulo' => 'Compromisso com a proteção dos seus dados pessoais, conforme a LGPD (Lei nº 13.709/2018).',
+        ],
+    ],
+
     'contato' => [
         'endereco' => 'R. Pref. Olinto Réis Campos, 104 - Centro',
         'cidade_uf' => 'Três Pontas - MG',
@@ -70,11 +253,11 @@ return [
     ],
 
     'segmentos' => [
-        ['icone' => 'fa-taxi', 'titulo' => 'Motoristas de aplicativo', 'texto' => 'Mais segurança e controle no dia a dia.', 'imagem' => 'img/home/segmento-motorista.jpg'],
-        ['icone' => 'fa-car', 'titulo' => 'Veículos particulares', 'texto' => 'Mais proteção para você e sua família.', 'imagem' => 'img/home/segmento-particular.jpg'],
-        ['icone' => 'fa-van-shuttle', 'titulo' => 'Frotas empresariais', 'texto' => 'Gestão completa e mais produtividade.', 'imagem' => 'img/home/segmento-frota.jpg'],
-        ['icone' => 'fa-key', 'titulo' => 'Locadoras de veículos', 'texto' => 'Controle, eficiência e redução de custos.', 'imagem' => 'img/home/segmento-locadora.jpg'],
-        ['icone' => 'fa-tractor', 'titulo' => 'Operações rurais', 'texto' => 'Acompanhamento incluso em áreas remotas.', 'imagem' => 'img/home/segmento-rural.jpg'],
+        ['icone' => 'fa-taxi', 'titulo' => 'Motoristas de aplicativo', 'texto' => 'Mais segurança e controle no dia a dia.', 'slot' => 'segmento_motorista'],
+        ['icone' => 'fa-car', 'titulo' => 'Veículos particulares', 'texto' => 'Mais proteção para você e sua família.', 'slot' => 'segmento_particular'],
+        ['icone' => 'fa-van-shuttle', 'titulo' => 'Frotas empresariais', 'texto' => 'Gestão completa e mais produtividade.', 'slot' => 'segmento_frota'],
+        ['icone' => 'fa-key', 'titulo' => 'Locadoras de veículos', 'texto' => 'Controle, eficiência e redução de custos.', 'slot' => 'segmento_locadora'],
+        ['icone' => 'fa-tractor', 'titulo' => 'Operações rurais', 'texto' => 'Acompanhamento incluso em áreas remotas.', 'slot' => 'segmento_rural'],
     ],
 
     // Bloco do equipamento J16: usado na home e em /solucoes a partir de uma única fonte.
@@ -83,7 +266,7 @@ return [
         'titulo' => 'Equipamento confiável e homologado pela Anatel.',
         'destaque' => 'Anatel',
         'texto' => 'O J16 é uma solução completa para o seu veículo, com conectividade 4G e 2G, chip M2M e recursos avançados de segurança e gestão. Compatível com ampla variedade de modelos.',
-        'imagem' => 'img/home/rastreador-j16.jpg',
+        'slot' => 'home_equipamento',
         'checks' => [
             'Homologação Anatel',
             'Conectividade 4G/2G (multioperadora)',

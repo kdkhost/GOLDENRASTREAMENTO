@@ -3,13 +3,7 @@
 @section('meta_description', 'Solicite uma proposta de rastreamento e gestão veicular. Preencha o formulário ou fale com nossa equipe pelo WhatsApp.')
 
 @section('content')
-<section class="page-hero">
-    <div class="wrap">
-        <div class="breadcrumb"><a href="{{ route('site.home') }}">Início</a> · Contato</div>
-        <h1>Vamos encontrar a solução para seus veículos?</h1>
-        <p>Solicite uma proposta para sua frota ou fale com nossa equipe. Retornamos rapidamente.</p>
-    </div>
-</section>
+@include('site.partials.page-hero', ['chave' => 'contato'])
 
 <section class="sec-light">
     <div class="wrap lead-panel">

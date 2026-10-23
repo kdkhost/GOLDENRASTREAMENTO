@@ -3,13 +3,7 @@
 @section('meta_description', 'A Golden atende motoristas de aplicativo, veículos particulares, frotas empresariais, locadoras e operações rurais.')
 
 @section('content')
-<section class="page-hero">
-    <div class="wrap">
-        <div class="breadcrumb"><a href="{{ route('site.home') }}">Início</a> · Para quem é</div>
-        <h1>Soluções para quem faz o negócio acontecer</h1>
-        <p>Atendemos desde motoristas que utilizam o próprio veículo até empresas com grandes frotas, sempre com soluções adequadas a cada tipo de operação.</p>
-    </div>
-</section>
+@include('site.partials.page-hero', ['chave' => 'segmentos'])
 
 <section class="sec-light">
     <div class="wrap">
