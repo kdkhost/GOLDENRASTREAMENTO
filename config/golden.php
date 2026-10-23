@@ -73,6 +73,21 @@ return [
         ['n' => '04', 'icone' => 'fa-chart-line', 'titulo' => 'Comece a usar', 'texto' => 'Ative e acompanhe tudo pela plataforma.'],
     ],
 
+    // Menu do site (header + gaveta mobile). Itens com 'grupo' recebem filhos
+    // montados pelo AppServiceProvider: 'loja' usa as categorias do catálogo e
+    // 'institucional' usa as páginas publicadas no CMS.
+    'nav' => [
+        ['titulo' => 'Soluções', 'rota' => 'site.solucoes', 'grupo' => 'solucoes', 'filhos' => [
+            ['titulo' => 'Funcionalidades da plataforma', 'rota' => 'site.solucoes'],
+            ['titulo' => 'Para quem é', 'rota' => 'site.segmentos'],
+            ['titulo' => 'Como funciona', 'rota' => 'site.como-funciona'],
+        ]],
+        ['titulo' => 'Planos e kits', 'rota' => 'site.planos'],
+        ['titulo' => 'Loja', 'rota' => 'site.loja.index', 'grupo' => 'loja'],
+        ['titulo' => 'Institucional', 'grupo' => 'institucional'],
+        ['titulo' => 'Contato', 'rota' => 'site.contato'],
+    ],
+
     'faq' => [
         ['q' => 'O rastreador funciona em qualquer veículo?', 'a' => 'O J16 4G/2G é compatível com a maioria dos veículos leves, motos e linha pesada. Confirme a compatibilidade no atendimento.'],
         ['q' => 'A instalação é feita pela Golden?', 'a' => 'Não. A instalação é contratada e paga pelo cliente diretamente ao profissional de sua confiança.'],

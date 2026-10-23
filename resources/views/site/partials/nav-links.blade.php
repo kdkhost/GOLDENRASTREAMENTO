@@ -1,12 +1,22 @@
-{{-- Links do menu — fonte única usada pelo header (desktop) e pela gaveta (mobile) --}}
-<a href="{{ route('site.solucoes') }}" class="{{ request()->routeIs('site.solucoes') ? 'active' : '' }}">Soluções</a>
-<a href="{{ route('site.segmentos') }}" class="{{ request()->routeIs('site.segmentos') ? 'active' : '' }}">Para quem é</a>
-<a href="{{ route('site.planos') }}" class="{{ request()->routeIs('site.planos') ? 'active' : '' }}">Planos</a>
-<a href="{{ route('site.como-funciona') }}" class="{{ request()->routeIs('site.como-funciona') ? 'active' : '' }}">Como funciona</a>
-@if($golden['loja_ativa'])
-<a href="{{ route('site.loja.index') }}" class="{{ request()->routeIs('site.loja.*') ? 'active' : '' }}">Loja</a>
-@endif
-@foreach($golden['menu'] as $pg)
-<a href="{{ route('site.pagina', $pg->slug) }}" class="{{ request()->routeIs('site.pagina') && request()->route('slug') === $pg->slug ? 'active' : '' }}">{{ $pg->titulo }}</a>
+{{-- Menu em dois níveis — fonte única usada pelo header (dropdown) e pela gaveta (acordeão) --}}
+@php $escopo = $escopo ?? 'nav'; @endphp
+@foreach($golden['nav'] as $nv)
+  @php $temFilhos = !empty($nv['filhos']); $sub = 'sub-' . $escopo . '-' . $loop->index; @endphp
+  <div class="nav-item{{ $temFilhos ? ' has-sub' : '' }}{{ $nv['ativo'] ? ' current' : '' }}">
+    @if($nv['url'])
+      <a href="{{ $nv['url'] }}" class="nav-link">{{ $nv['titulo'] }}@if($temFilhos) <i class="nav-arrow fa-solid fa-chevron-down" aria-hidden="true"></i>@endif</a>
+    @else
+      <button type="button" class="nav-link nav-group" data-sub-toggle aria-expanded="false" aria-controls="{{ $sub }}">{{ $nv['titulo'] }} <i class="nav-arrow fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+    @endif
+    @if($temFilhos)
+      @if($nv['url'])
+        <button type="button" class="nav-caret" data-sub-toggle aria-expanded="false" aria-controls="{{ $sub }}" aria-label="Abrir os itens de {{ $nv['titulo'] }}"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+      @endif
+      <div class="nav-sub" id="{{ $sub }}">
+        @foreach($nv['filhos'] as $f)
+          <a href="{{ $f['url'] }}" class="{{ $f['ativo'] ? 'active' : '' }}">{{ $f['titulo'] }}</a>
+        @endforeach
+      </div>
+    @endif
+  </div>
 @endforeach
-<a href="{{ route('site.faq') }}" class="{{ request()->routeIs('site.faq') ? 'active' : '' }}">Dúvidas</a>

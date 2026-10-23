@@ -36,7 +36,7 @@
             <span><b>GOLDEN</b><small>Rastreamento · Gestão</small></span>
         </a>
         <nav class="nav-links" aria-label="Menu principal">
-            @include('site.partials.nav-links')
+            @include('site.partials.nav-links', ['escopo' => 'topo'])
         </nav>
         <div class="nav-cta">
             <a href="{{ route('site.contato') }}" class="btn btn-gold btn-sm" data-track="contact" data-cta="header">Falar com especialista</a>
@@ -57,7 +57,7 @@
         </span>
         <button type="button" class="drawer-close" data-nav-close aria-label="Fechar menu"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    @include('site.partials.nav-links')
+    @include('site.partials.nav-links', ['escopo' => 'gaveta'])
     <a href="{{ route('site.contato') }}" class="btn btn-gold btn-sm drawer-cta" data-track="contact" data-cta="menu">Falar com especialista</a>
     <div class="drawer-foot">
         <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:var(--gold)"></i> {{ $golden['telefone'] }}</a><br>

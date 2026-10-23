@@ -131,9 +131,15 @@ Conteúdo de marketing (benefícios, segmentos, kits, passos, FAQ) fica centrali
 também podem vir do banco (painel), com *fallback* para o config.
 
 Em telas até 960px o menu vira uma **gaveta deslizante da esquerda** (abertura/fechamento
-suaves com *stagger* nos itens, backdrop, fecha por fora/`Esc`/link). A lista de links mora
-em `resources/views/site/partials/nav-links.blade.php` e é compartilhada pelo header e pela
-gaveta — ao adicionar uma página no CMS, ela entra nos dois automaticamente.
+suaves com *stagger* nos itens, backdrop, fecha por fora/`Esc`/link). O menu tem **dois
+níveis**: a árvore mora em `config('golden.nav')` (Soluções, Planos e kits, Loja,
+Institucional, Contato) e `AppServiceProvider::montarMenu()` completa os grupos dinâmicos —
+categorias do catálogo em **Loja** e páginas publicadas em **Institucional** — resolvendo
+também o item ativo (rota + slug/categoria da página). O render fica em
+`resources/views/site/partials/nav-links.blade.php` e é compartilhado pelo header (dropdown
+no hover) e pela gaveta (acordeão), com `white-space:nowrap` + reticências para nenhum
+rótulo quebrar em duas linhas. Ao adicionar uma página no CMS, ela entra nos dois
+automaticamente; desligar a loja remove o grupo inteiro da árvore.
 
 ### CRM (`/admin/clientes`)
 - **Clientes** com dados de empresa (documento, tipo física/jurídica, endereço, cidade/UF,

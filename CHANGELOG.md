@@ -3,6 +3,50 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.2.0] - 2026-10-22
+
+### Adicionado
+- **Menu do site em dois níveis (submenus)**, montado a partir de `config('golden.nav')` e
+  resolvido por `AppServiceProvider::montarMenu()`, que compartilha a mesma árvore com o
+  header e com a gaveta mobile:
+  - **Soluções** ▸ Funcionalidades da plataforma · Para quem é · Como funciona
+  - **Planos e kits**
+  - **Loja** ▸ Todos os produtos + uma entrada por categoria ativa do catálogo
+    (`/loja?categoria=…`)
+  - **Institucional** ▸ páginas publicadas com "exibir no menu" no CMS · Dúvidas
+    frequentes · Política de privacidade
+  - **Contato**
+  Com 10+ links soltos virando 5 itens, o menu do header deixa de apertar/espremer as
+  opções em telas menores.
+- **Dropdown no desktop** (painel centralizado sob o item, 236px mínimos, 260ms na mesma
+  curva `cubic-bezier(.22,.61,.36,1)` da gaveta, com ponte invisível de 16px para o mouse
+  não perder o hover) e **acordeão na gaveta** (o submenu expande via `max-height`, com a
+  setinha do botão girando 180° e o submenu filho marcado com barra dourada à esquerda).
+- Botão de acionamento dedicado por grupo (`.nav-caret`, alvo de toque de 30px) e
+  `aria-expanded`/`aria-controls` por submenu; no mobile a setinha inline do rótulo some
+  (`.nav-drawer .nav-arrow{display:none}`) para não aparecer seta duplicada.
+
+### Alterado
+- **Nenhum rótulo quebra em duas linhas**: `white-space:nowrap` +
+  `overflow:hidden;text-overflow:ellipsis` em `.nav-link` e nos itens de submenu (com
+  `max-width:220px`), então títulos longos do CMS ("Sobre a Golden Rastreamento",
+  "Funcionalidades da plataforma") cortam com reticências em vez de quebrar o layout.
+- Itens do menu agora são `.nav-item > .nav-link` (+ `.nav-sub`) em vez de `<a>` soltos;
+  a cascata de entrada da gaveta passou a ser por `.nav-item` (5 itens, 40ms entre eles) e
+  as linhas ficaram todas com a mesma altura (52px) — o botão de grupo não herdava o
+  `line-height` dos links, o que aparecia como uma linha mais baixa no meio do menu.
+- Item ativo calculado de verdade: página do CMS bate pelo **slug**, categoria da loja bate
+  pelo **filtro da query string** e o pai acende por prefixo de rota (ex.: em
+  `/loja/rastreador-j16-4g` só "Loja" fica destacado). Antes, todos os filhos do grupo
+  acendiam juntos.
+- Grupo **Loja** sai completamente da árvore quando a loja é desativada no painel
+  (`->reject()`), em vez de sumir só no HTML.
+- Submenu sempre abre fechado: `abrir()`/`fechar()` da gaveta resetam os itens abertos, então
+  reabrir a gaveta nunca vem com um acordeão pendurado; `Esc` fecha o submenu no desktop e
+  a gaveta no mobile, sem deixar estado para trás.
+- Removido o `$golden['menu']` (lista flat) do *view composer* — só existia para montar o
+  menu; agora é `$golden['nav']`.
+
 ## [2.1.0] - 2026-10-22
 
 ### Adicionado
