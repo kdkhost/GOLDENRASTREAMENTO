@@ -3,6 +3,45 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.12.0] - 2026-10-23
+
+### Corrigido
+- **Arquivo enviado pelo painel devolvia 403** — o `.htaccess` de proteção gerado na
+  instalação bloqueava o caminho `storage` junto com as pastas de código-fonte, e é por
+  esse caminho que o link `public/storage` serve imagem, vídeo e documento. A regra de
+  bloqueio agora alcança só `app`, `bootstrap`, `config`, `database`, `resources`,
+  `routes` e `tests`; o que precisa ficar fechado continua fechado, porque todo pedido é
+  reescrito para dentro de `public/` (o vínculo público aponta para `storage/app/public`,
+  então `storage/logs`, `storage/framework` e `storage/app/private` não têm como ser
+  alcançados) e a regra de `.log` segue valendo. Conferido em produção: upload pelo
+  painel → URL `https://…/storage/produtos/…png` respondeu `200` com `image/png`, e
+  `.env`, `app/Kernel.php` e `storage/logs/laravel.log` seguiram em `403`.
+
+### Adicionado
+- **`--php-web=ea-php83` no instalador** — resolve o caso do PHP da web ser outro que o do
+  SSH (o erro 500 `Your Composer dependencies require a PHP version ">= 8.3.0"`), que em
+  hospedagem CloudLinux/LiteSpeed não se corrigia pelo `.htaccess` até aqui. A opção grava
+  `AddType application/x-httpd-<versão> .php` no `.htaccess` da raiz, escolhe o handler
+  `.php` do servidor e assume sobre o seletor da conta. Foi assim que a instalação em
+  `public_html` saiu de PHP 8.1 para **8.3.35 (litespeed)** sem depender do painel: o
+  seletor da conta parava no 8.2 (`cloudlinux-selector get --interpreter php
+  --get-supported-versions`), mas o `ea-php83` estava instalado e o handler funcionou.
+- **Checagem final do instalador** — depois de tudo, ele abre o próprio `--url` com
+  `curl`, e se a resposta for o erro de plataforma avisa na tela que o PHP da web é outro e
+  mostra a linha `--php-web=` que resolve; resposta 200 vira ✔ e qualquer outra coisa
+  aponta o log do Laravel.
+- **Documentação do PHP da web em `docs/INSTALACAO.md`** — a seção 2 explica os dois PHPs
+  do servidor, receita o handler do `.htaccess` com o teste do arquivo temporário, e traz o
+  comando `cloudlinux-selector set … --extensions '{"fileinfo":"enabled",…}'` para acender
+  `fileinfo`/`intl` (o estado é `enabled`/`disabled`, e a lista substitui a anterior —
+  informe tudo de uma vez). As seções 4.7 e 12 explicam por que `storage` não vai para a
+  lista de bloqueio e como testar o arquivo enviado.
+
+### Alterado
+- A mensagem de erro do instalador para PHP antigo não diz mais "mudar o `.htaccess` não
+  resolve"; `README.md` traz o `--php-web=` no exemplo de instalação, e os nomes de conta
+  fictícios voltaram aos exemplos.
+
 ## [2.11.0] - 2026-10-23
 
 ### Adicionado

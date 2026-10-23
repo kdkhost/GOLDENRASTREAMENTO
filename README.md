@@ -75,7 +75,8 @@ liga `public/storage`, escreve o `.htaccess` de proteção da raiz e ativa os ca
 GOLDEN_DB_PASSWORD='senha-do-banco' GOLDEN_ADMIN_PASSWORD='senha-do-painel' \
   bash deploy/instalador-golden.sh \
     --url=https://seudominio.com.br \
-    --nome=seuusuario_cms --usuario=seuusuario_cms
+    --php-web=ea-php83 \
+    --nome=nome-do-banco --usuario=nome-do-usuario
 
 # atualização, depois da primeira instalação
 bash deploy/atualiza-golden.sh
@@ -84,6 +85,11 @@ bash deploy/atualiza-golden.sh
 Nenhuma credencial fica no script nem no repositório: as senhas entram por variável de
 ambiente (ou são pedidas na tela, sem aparecer) e vão só para o `.env`. A opção
 `--sem-demo` pula os dados de demonstração; `--help` traz a lista completa.
+
+`--php-web=` resolve o problema mais comum em hospedagem compartilhada: o `php` do SSH é
+8.3 e o PHP que serve o navegador é outro, e o site fica em erro 500. A linha grava o
+handler no `.htaccess` (`AddType application/x-httpd-ea-php83 .php`), que é o que manda em
+servidores CloudLinux/LiteSpeed onde o seletor da conta para no 8.2.
 
 O guia **`docs/INSTALACAO.md`** (e o PDF `docs/Golden-Rastreamento-Instalacao.pdf`, gerado
 por `python docs/gerar-pdf.py`) cobre o passo a passo manual, o PHP 8.3 no MultiPHP do

@@ -24,9 +24,11 @@ e loja virtual opcional. Tudo em Laravel, com um único instalador.
    — ou só o catálogo base, com `--sem-demo`.
 6. Define o login do painel.
 7. Cria o link `public/storage` para as imagens, vídeos e documentos enviados.
-8. Escreve um `.htaccess` na raiz que bloqueia código-fonte, `.env`, logs e
-   pasta `storage`, e faz todo pedido entrar pela pasta `public`.
+8. Escreve um `.htaccess` na raiz que bloqueia código-fonte, `.env` e logs, faz
+   todo pedido entrar pela pasta `public` e, com `--php-web=`, escolhe o PHP que
+   serve a web.
 9. Liga os caches de configuração, rotas e views.
+10. Abre o próprio `--url` no final e avisa se o PHP da web for outro.
 
 Nada de credencial fica no repositório: o instalador perguntou na tela ou leu de
 uma variável de ambiente e gravou apenas no `.env`, que está no `.gitignore`.
@@ -55,24 +57,59 @@ O `composer.json` pede `php: ^8.3` (Laravel 13). Se o servidor responder com
 
 `Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34.`
 
-o site inteiro fica em erro 500, mesmo com banco e arquivos corretos. Isso se
-resolve **no painel de hospedagem**, não no `.htaccess`:
+o site inteiro fica em erro 500, mesmo com banco e arquivos corretos. O ponto é
+que existem **dois PHPs no servidor**: o do comando `php` (linha de comando) e o
+que atende o navegador. Mudar um não muda o outro, e é o segundo que quebra o
+site.
 
 - **cPanel:** *Software → MultiPHP Manager* → marque o domínio → *PHP Version*
   → escolha 8.3 (ou 8.4) → *Apply*. Depois confira em
   *MultiPHP INI Editor* os limites de `upload_max_filesize` e `post_max_size`.
-- **cPanel com CloudLinux:** *Software → Select PHP Version* (`ea-php83`). Se o
-  seletor da conta parar no 8.2, peça ao suporte a liberação do 8.3 para a
-  conta — é configuração do servidor, não do script.
+- **cPanel com CloudLinux + LiteSpeed (o caso mais chato):** o *Select PHP
+  Version* da conta é um seletor próprio e pode parar no 8.2 mesmo com o 8.3
+  instalado no servidor. Nesse caso o `.htaccess` resolve, sim, desde que use o
+  handler certo. Acrescente esta linha ao `.htaccess` da raiz do projeto (ou do
+  `public/`, se o docroot for ele):
+
+  ```apache
+  AddType application/x-httpd-ea-php83 .php
+  ```
+
+  Foi exatamente assim que o 8.1 virou 8.3 num servidor cPanel + CloudLinux +
+  LiteSpeed: o seletor da conta não oferecia 8.3 (`cloudlinux-selector get
+  --interpreter php --get-supported-versions` parava em 8.2), mas o
+  `ea-php83` estava instalado e o handler assumiu os arquivos `.php`. O
+  instalador faz isso sozinho com `--php-web=ea-php83`.
+
+  Confira depois com um arquivo temporário dentro de `public/`:
+
+  ```php
+  <?php echo PHP_VERSION . ' | ' . PHP_SAPI;   // salve como public/_chk.php
+  ```
+
+  Abra `https://seudominio/_chk.php`, confirme `8.3.x | litespeed` e **apague o
+  arquivo** em seguida. Se aparecer `apachectl/lsapi` diferente ou a versão
+  antiga, o handler escolhido não existe no servidor — liste os disponíveis com
+  `ls -d /opt/cpanel/ea-php*`.
+
+- **Extensões que costumam faltar no PHP da web:** `fileinfo` (upload de
+  imagem, vídeo e documento) e `intl`. No seletor do CloudLinux elas se acendem
+  pela linha de comando, com o nome de estado por extensão — e a lista
+  **substitui** a anterior, então informe tudo de uma vez:
+
+  ```sh
+  cloudlinux-selector set --json --interpreter php --version 8.3 --user SEU_USUARIO \
+    --extensions '{"fileinfo":"enabled","intl":"enabled","gd":"enabled","zip":"enabled","pdo_mysql":"enabled","mbstring":"enabled","bcmath":"enabled","dom":"enabled"}'
+  ```
+
 - **Plesk:** *PHP Versions / Settings* → PHP 8.3.
 - **VPS (Ubuntu):** `apt install php8.3-fpm php8.3-mysql php8.3-gd php8.3-intl php8.3-zip`
   e aponte o `fastcgi_pass` do nginx para o 8.3.
 
 O instalador detecta a versão do binário que você passou (`--php=`) e **para
-antes** de instalar qualquer coisa se ela for menor que 8.3. Ele também avisa
-quando o PHP da linha de comando é 8.3 mas o PHP **da web** ainda é antigo —
-nesse caso o banco e os arquivos ficam prontos, e só a versão da web fica
-pendente.
+antes** de instalar qualquer coisa se ela for menor que 8.3. No final ele ainda
+abre o `--url` informado: se a home responder o erro de plataforma, ele avisa
+na tela que o PHP **da web** é outro e mostra a linha `--php-web=` que resolve.
 
 ---
 
@@ -111,6 +148,7 @@ digitado.
 | `--sem-htaccess` | não escreve o `.htaccess` de proteção da raiz |
 | `--sem-cache` | não gera cache de configuração, rotas e views |
 | `--php=`, `--composer=` | força o binário quando há mais de uma versão no servidor |
+| `--php-web=ea-php83` | grava no `.htaccess` o handler do PHP que serve a web (CloudLinux/LiteSpeed) |
 | `--help` | tela de ajuda completa |
 
 ### Exemplos prontos
@@ -121,7 +159,7 @@ digitado.
 GOLDEN_DB_PASSWORD='...' GOLDEN_ADMIN_PASSWORD='...' \
   bash deploy/instalador-golden.sh \
     --url=https://seudominio.com.br \
-    --php=/usr/local/bin/ea-php83 \
+    --php=/usr/local/bin/ea-php83 --php-web=ea-php83 \
     --nome=usuario_do_banco --usuario=usuario_do_banco \
     --limpar-banco
 ```
@@ -265,17 +303,30 @@ Quando o domínio aponta para a **raiz do projeto** (caso típico do cPanel,
 - bloqueia `.env`, `.env.*`, `.git*`, `artisan`, `composer.*`, `package.json`,
   `vite.config.js`, `phpunit.xml`, `error_log` e qualquer `.log`;
 - bloqueia as pastas `app`, `bootstrap`, `config`, `database`, `resources`,
-  `routes`, `tests` e `storage`;
+  `routes` e `tests`;
 - reescreve todo pedido para dentro de `public/`.
+
+`storage` **não** entra na lista de bloqueio: o que o público alcança é o link
+`public/storage`, por onde saem as imagens, vídeos e documentos enviados pelo
+painel. Bloquear o caminho `/storage` na raiz devolve 403 em todo arquivo
+enviado, e o site fica com as imagens quebradas. A privateidade do `storage/`
+de verdade vem da reescrita (nada alcança `storage/logs`, `storage/framework`
+ou `storage/app/private`) e do bloqueio de `.log`.
 
 O teste de barreira, já com o site no ar:
 
 ```bash
 curl -I https://seudominio.com.br/.env          # 403
 curl -I https://seudominio.com.br/app/          # 403
+curl -I https://seudominio.com.br/storage/logs/laravel.log   # 403
 curl -I https://seudominio.com.br/              # 200
 curl -I https://seudominio.com.br/loja          # 200
 ```
+
+E o teste do que o painel envia, que é o que costuma sobrar depois de mexer no
+`.htaccess`: envie uma imagem pelo painel e abra a URL devolvida no JSON de
+`/admin/uploads`. Tem de ser `200` com o `Content-Type` do arquivo — se der
+403, a regra de bloqueio está alcançando `public/storage`.
 
 Quando o docroot é a pasta `public/` (VPS com nginx, ou subdomínio apontando
 para `public`), o `.htaccess` da raiz nem é lido — e a proteção já existe por
@@ -303,7 +354,10 @@ rode os três de novo (ou `php artisan optimize:clear` e recarregue).
 
 ## 5. Instalação no cPanel, em detalhe
 
-1. *MultiPHP Manager* → PHP **8.3** para o domínio.
+1. *MultiPHP Manager* → PHP **8.3** para o domínio. Se o plano usar CloudLinux,
+   confira também o *Select PHP Version* da conta; quando ele não chega no 8.3,
+   pule essa etapa e deixe o `.htaccess` escolher o handler (`--php-web=ea-php83`,
+   seção 2).
 2. *MySQL® Databases* → banco + usuário + privilégios (seção 4.2).
 3. *Git™ Version Control* (se houver): *Clone Repository* com a URL pública do
    repositório e o branch `main`, caminho `public_html`. Não use credencial na
@@ -316,7 +370,7 @@ rode os três de novo (ou `php artisan optimize:clear` e recarregue).
    GOLDEN_DB_PASSWORD='...' GOLDEN_ADMIN_PASSWORD='...' \
      bash deploy/instalador-golden.sh \
        --url=https://seudominio.com.br \
-       --php="$(command -v ea-php83)" \
+       --php="$(command -v ea-php83)" --php-web=ea-php83 \
        --nome=usuario_mysql --usuario=usuario_mysql --limpar-banco
    ```
 
@@ -441,11 +495,13 @@ ele, os dados criptografados e as sessões não voltam.
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
-| Erro 500 com `Your Composer dependencies require a PHP version ">= 8.3.0"` | o PHP **da web** é antigo | MultiPHP Manager → 8.3 (seção 2) |
+| Erro 500 com `Your Composer dependencies require a PHP version ">= 8.3.0"` | o PHP **da web** é antigo, mesmo com o `php -v` do SSH mostrando 8.3 | MultiPHP Manager → 8.3; se o seletor da conta não chegar lá, `--php-web=ea-php83` / a linha `AddType` no `.htaccess` (seção 2) |
 | Site mostra a lista de arquivos e pastas | docroot na raiz sem `.htaccess`, e `Options Indexes` ligado | rode o instalador (ou copie o `.htaccess` da seção 4.7) |
 | `Route [admin.xxx] not defined` ao salvar | cache de rotas velho | `php artisan route:clear && php artisan route:cache` |
 | Página quebra depois de editar um `.php` em `config/` | cache de configuração | `php artisan config:cache` |
 | Imagem enviada não aparece | `public/storage` inexistente | `php artisan storage:link` |
+| Imagem enviada existe no servidor e a URL devolve **403** | o `.htaccess` da raiz bloqueia o caminho `/storage` | tire `storage` da regra de pastas de código-fonte (seção 4.7) |
+| Upload falha com erro em `getimagesize`/`finfo` | `fileinfo` desligada no PHP da web | ative a extensão no seletor de PHP (seção 2) |
 | Upload falha no meio com "passou do limite do servidor" | `post_max_size` menor que o campo | ajuste no painel de PHP (40 MB para vídeo + margem) |
 | `could not find driver` | `pdo_mysql` desligado | ative a extensão no painel de PHP |
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
@@ -478,11 +534,13 @@ continua visível para você pelo painel ou SSH.
 ## 12. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
+- [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
 - [ ] `/loja` lista produtos; página de produto mostra imagem e vídeo
 - [ ] Checkout registra pedido e ele aparece no painel
 - [ ] `/admin` abre com o login criado na instalação
 - [ ] Campo de envio: arrastar imagem, vídeo e documento mostra preview e progresso
-- [ ] Teste de barreira: `.env`, `app/`, `storage/` respondem 403
+- [ ] Arquivo enviado pelo painel abre pela URL de `/storage/...` (200, não 403)
+- [ ] Teste de barreira: `.env`, `app/` e `storage/logs/laravel.log` respondem 403
 - [ ] Configurações do painel com WhatsApp, telefone, e-mail e endereço corretos
 - [ ] SMTP preenchido (ou `log`, assumido de propósito)
 - [ ] Crons: `php artisan schedule:run` a cada minuto, se usar lembretes

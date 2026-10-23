@@ -15,7 +15,7 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$RAIZ"
 
-VERSAO="2.11.0"
+VERSAO="2.12.0"
 
 URL=""
 PHP_BIN="${PHP_BIN:-}"
@@ -37,6 +37,7 @@ DEBUG=false
 HTACCESS=1
 SEM_CACHE=0
 BACKUP=1
+PHP_WEB="${GOLDEN_PHP_WEB:-}"
 
 if [ -t 1 ]; then
   C_INICIO=$'\033[1m'; C_OK=$'\033[32m'; C_AVISO=$'\033[33m'; C_ERRO=$'\033[31m'; C_FIM=$'\033[0m'
@@ -99,6 +100,11 @@ Comportamento
   --sem-htaccess            não escreve o .htaccess de proteção na raiz.
   --sem-cache               não gera cache de config/rotas/views.
   --sem-backup              não tirar cópia do banco antes de limpar as tabelas.
+  --php-web=ea-php83        grava no .htaccess a versão de PHP que serve a web.
+                            Em hospedagem CloudLinux/LiteSpeed o seletor da conta
+                            costuma ficar atrás do PHP exigido pelo Laravel; esta
+                            linha escolhe o handler .php do servidor. Use o nome
+                            exato da versão instalada (ea-php83, ea-php84...).
   --php=/caminho            força o binário do PHP (ex.: /usr/bin/ea-php83).
   --composer=/caminho       força o binário do Composer.
   --help                    esta tela.
@@ -108,7 +114,7 @@ Exemplos
   GOLDEN_DB_PASSWORD='...' GOLDEN_ADMIN_PASSWORD='...' \
     bash deploy/instalador-golden.sh \
       --url=https://seudominio.com.br \
-      --php=/usr/bin/ea-php83 \
+      --php=/usr/bin/ea-php83 --php-web=ea-php83 \
       --nome=usuario_do_banco --usuario=usuario_do_banco --limpar-banco
 
   # VPS limpa, criando o banco
@@ -150,6 +156,7 @@ while [ $# -gt 0 ]; do
     --sem-cache) SEM_CACHE=1; shift ;;
     --sem-backup) BACKUP=0; shift ;;
     --php=*) PHP_BIN="${1#*=}"; shift ;;
+    --php-web=*) PHP_WEB="${1#*=}"; shift ;;
     --composer=*) COMPOSER_BIN="${1#*=}"; shift ;;
     --help|-h) ajuda; exit 0 ;;
     *) erro "Opção desconhecida: $1 (veja --help)" ;;
@@ -182,8 +189,13 @@ fi
 
 VERSAO_PHP="$("$PHP_BIN" -r 'echo PHP_VERSION;')"
 "$PHP_BIN" -r 'exit(version_compare(PHP_VERSION, "8.3.0", ">=") ? 0 : 1);' \
-  || erro "PHP $VERSAO_PHP encontrado, mas o sistema exige 8.3 ou superior. No cPanel isso se muda em MultiPHP Manager (mudar o .htaccess não resolve)."
+  || erro "PHP $VERSAO_PHP encontrado, mas o sistema exige 8.3 ou superior. Escolha a versão no seletor de PHP da hospedagem (no cPanel: MultiPHP Manager / PHP Selector) e rode de novo; se o servidor tiver mais de um binário, passe --php=/usr/bin/ea-php83. Para o PHP que serve a WEB, use --php-web=ea-php83."
 ok "PHP $VERSAO_PHP ($PHP_BIN)"
+
+if [ -n "$PHP_WEB" ]; then
+  printf '%s' "$PHP_WEB" | grep -Eq '^[A-Za-z0-9._-]+$' \
+    || erro "--php-web inválido ('$PHP_WEB'). Use só o nome do handler, ex.: ea-php83."
+fi
 
 FALTANDO=""
 for ext in pdo mbstring openssl tokenizer xml fileinfo curl json; do
@@ -440,8 +452,9 @@ Options -Indexes -MultiViews
   RewriteRule ^(\.env|\.env\.*|\.git|\.gitattributes|\.npmrc|artisan|composer\.(json|lock)|phpunit\.xml|package\.json|vite\.config\.js) - [F,L]
   RewriteRule (^|/)(error_log|.*\.log)$ - [F,L]
 
-  # Pastas de código-fonte
-  RewriteRule ^(app|bootstrap|config|database|resources|routes|tests|storage)(/|$) - [F,L]
+  # Pastas de código-fonte. O storage não entra aqui: o que o público alcança é o
+  # link public/storage, e todo pedido já é reescrito para dentro de public/.
+  RewriteRule ^(app|bootstrap|config|database|resources|routes|tests)(/|$) - [F,L]
 
   # Toda requisição entra pela pasta public, que tem o front controller
   RewriteCond %{REQUEST_URI} !^/public/
@@ -449,6 +462,17 @@ Options -Indexes -MultiViews
 </IfModule>
 PROTECAO
   ok ".htaccess: -Indexes, bloqueio de .env/.git/logs e reescrita para public/"
+
+  if [ -n "$PHP_WEB" ]; then
+    cat >> .htaccess <<PHPDAWEB
+
+# Versão do PHP que serve este site. Em hospedagem com CloudLinux/LiteSpeed o
+# seletor da conta decide a versão e costuma ficar atrás do PHP que o Laravel
+# exige; esta linha escolhe o handler dos arquivos .php diretamente.
+AddType application/x-httpd-$PHP_WEB .php
+PHPDAWEB
+    ok ".htaccess: PHP da web fixado em $PHP_WEB"
+  fi
 fi
 
 if [ "$SEM_CACHE" -eq 0 ]; then
@@ -459,6 +483,26 @@ if [ "$SEM_CACHE" -eq 0 ]; then
   rodar "$PHP_BIN" artisan route:cache
   rodar "$PHP_BIN" artisan view:cache
   ok "Cache de configuração, rotas e views gerado"
+fi
+
+# ---------------------------------------------------------------------------
+# Conferência: o PHP que serve a web pode não ser o mesmo do comando php
+# ---------------------------------------------------------------------------
+if command -v curl >/dev/null 2>&1; then
+  passo "Conferindo o site pelo endereço público"
+  ARQUIVO_CHECAGEM="$RAIZ/storage/logs/checagem-http.$$.html"
+  CODIGO="$(curl -ksL -m 25 -o "$ARQUIVO_CHECAGEM" -w '%{http_code}' "$URL/" 2>/dev/null || echo 000)"
+  if [ "$CODIGO" = "200" ]; then
+    ok "$URL respondeu 200"
+  elif grep -qi "detected issues in your platform" "$ARQUIVO_CHECAGEM" 2>/dev/null; then
+    aviso "$URL respondeu $CODIGO: o PHP da WEB é mais antigo que o do comando php ($VERSAO_PHP)."
+    aviso "Se a hospedagem usa CloudLinux/LiteSpeed, instale a linha do PHP da web:"
+    aviso "  --php-web=ea-php83   (ou acrescente ao .htaccess: AddType application/x-httpd-ea-php83 .php)"
+    aviso "Se não resolver, mude a versão no seletor de PHP do painel da hospedagem."
+  else
+    aviso "$URL respondeu $CODIGO. Veja as últimas linhas do log do Laravel em storage/logs/laravel.log."
+  fi
+  rm -f "$ARQUIVO_CHECAGEM"
 fi
 
 # ---------------------------------------------------------------------------
