@@ -29,16 +29,36 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$PHP_BIN" ]; then
-  for candidato in php ea-php83 ea-php84 php8.3 /opt/alt/php83/usr/bin/php; do
-    if command -v "$candidato" >/dev/null 2>&1; then PHP_BIN="$(command -v "$candidato")"; break; fi
+  # O `php` do PATH em hospedagem compartilhada é a versão do seletor da conta, que
+  # costuma ser mais velha que a exigida aqui; por isso os nomes versionados vêm
+  # primeiro e o escolhido precisa ter ao menos 8.3.
+  for candidato in ea-php83 ea-php84 php8.3 /usr/local/bin/ea-php83 /usr/bin/ea-php83 \
+                   /opt/cpanel/ea-php83/root/usr/bin/php /opt/alt/php83/usr/bin/php php; do
+    if command -v "$candidato" >/dev/null 2>&1 && \
+       "$(command -v "$candidato")" -r 'exit(version_compare(PHP_VERSION, "8.3.0", ">=") ? 0 : 1);' 2>/dev/null; then
+      PHP_BIN="$(command -v "$candidato")"
+      break
+    fi
   done
 fi
 [ -n "$PHP_BIN" ] || { echo "PHP não encontrado (use --php=/caminho)."; exit 1; }
 
+if ! "$PHP_BIN" -r 'exit(version_compare(PHP_VERSION, "8.3.0", ">=") ? 0 : 1);' 2>/dev/null; then
+  VERSAO_ESCOLHIDA="$("$PHP_BIN" -r 'echo PHP_VERSION;')"
+  echo "O PHP escolhido ($PHP_BIN) é $VERSAO_ESCOLHIDA e o sistema exige 8.3+."
+  echo "Passe --php=/caminho/para/o/php8.3 ou mude a versão na hospedagem (seção 2 de docs/INSTALACAO.md)."
+  exit 1
+fi
+
+# Composer sempre pelo mesmo PHP escolhido: o binário `composer` do servidor roda no
+# `php` do PATH, que pode ser outro, e aí o install falha por causa da versão.
 if [ -z "$COMPOSER_BIN" ]; then
-  if command -v composer >/dev/null 2>&1; then COMPOSER_BIN="composer"
-  elif [ -f "$HOME/bin/composer.phar" ]; then COMPOSER_BIN="$PHP_BIN $HOME/bin/composer.phar"
+  if [ -f "$HOME/bin/composer.phar" ]; then COMPOSER_BIN="$PHP_BIN $HOME/bin/composer.phar"
+  elif [ -f composer.phar ]; then COMPOSER_BIN="$PHP_BIN $RAIZ/composer.phar"
+  elif command -v composer >/dev/null 2>&1; then COMPOSER_BIN="$PHP_BIN $(command -v composer)"
   else echo "Composer não encontrado."; exit 1; fi
+elif [ "${COMPOSER_BIN##*.}" = "phar" ]; then
+  COMPOSER_BIN="$PHP_BIN $COMPOSER_BIN"
 fi
 
 echo
