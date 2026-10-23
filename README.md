@@ -122,6 +122,11 @@ Conteúdo de marketing (benefícios, segmentos, kits, passos, FAQ) fica centrali
 `config/golden.php` — fácil de editar sem tocar nas views. Depoimentos, FAQs e páginas
 também podem vir do banco (painel), com *fallback* para o config.
 
+Em telas até 960px o menu vira uma **gaveta deslizante da esquerda** (abertura/fechamento
+suaves com *stagger* nos itens, backdrop, fecha por fora/`Esc`/link). A lista de links mora
+em `resources/views/site/partials/nav-links.blade.php` e é compartilhada pelo header e pela
+gaveta — ao adicionar uma página no CMS, ela entra nos dois automaticamente.
+
 ### CRM (`/admin/clientes`)
 - **Clientes** com dados de empresa (documento, tipo física/jurídica, endereço, cidade/UF,
   segmento, tamanho da frota, valor anual) e status `prospecto` / `ativo` / `inativo`.

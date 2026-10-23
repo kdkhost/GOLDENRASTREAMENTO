@@ -142,11 +142,41 @@
     });
   }
 
-  /* ---------- Navegação mobile ---------- */
+  /* ---------- Menu deslizante (gaveta da esquerda) ---------- */
   function initNav() {
     var toggle = document.getElementById('navToggle');
-    var links = document.getElementById('navLinks');
-    if (toggle && links) toggle.addEventListener('click', function () { links.classList.toggle('open'); });
+    var drawer = document.getElementById('navDrawer');
+    var backdrop = document.getElementById('navBackdrop');
+    if (!toggle || !drawer) return;
+
+    var estreita = window.matchMedia('(max-width: 960px)');
+    var ultimoFoco = null;
+
+    function aberto() { return document.body.classList.contains('nav-open'); }
+
+    function abrir() {
+      if (aberto() || !estreita.matches) return;
+      ultimoFoco = document.activeElement;
+      document.body.classList.add('nav-open');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'Fechar menu');
+    }
+
+    function fechar() {
+      if (!aberto()) return;
+      document.body.classList.remove('nav-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Abrir menu');
+      if (ultimoFoco && typeof ultimoFoco.focus === 'function') ultimoFoco.focus();
+      ultimoFoco = null;
+    }
+
+    toggle.addEventListener('click', function () { aberto() ? fechar() : abrir(); });
+    if (backdrop) backdrop.addEventListener('click', fechar);
+    drawer.querySelectorAll('[data-nav-close]').forEach(function (b) { b.addEventListener('click', fechar); });
+    drawer.addEventListener('click', function (e) { if (e.target.closest('a')) fechar(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
+    estreita.addEventListener('change', function (e) { if (!e.matches) fechar(); });
   }
 
   /* ---------- CTAs com rastreamento ---------- */

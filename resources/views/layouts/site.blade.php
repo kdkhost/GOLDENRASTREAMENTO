@@ -35,25 +35,36 @@
             <img src="{{ asset('img/logo-golden.png') }}" alt="{{ $golden['marca']['nome'] }}">
             <span><b>GOLDEN</b><small>Rastreamento · Gestão</small></span>
         </a>
-        <nav class="nav-links" id="navLinks">
-            <a href="{{ route('site.solucoes') }}" class="{{ request()->routeIs('site.solucoes') ? 'active' : '' }}">Soluções</a>
-            <a href="{{ route('site.segmentos') }}" class="{{ request()->routeIs('site.segmentos') ? 'active' : '' }}">Para quem é</a>
-            <a href="{{ route('site.planos') }}" class="{{ request()->routeIs('site.planos') ? 'active' : '' }}">Planos</a>
-            <a href="{{ route('site.como-funciona') }}" class="{{ request()->routeIs('site.como-funciona') ? 'active' : '' }}">Como funciona</a>
-            @if($golden['loja_ativa'])
-            <a href="{{ route('site.loja.index') }}" class="{{ request()->routeIs('site.loja.*') ? 'active' : '' }}">Loja</a>
-            @endif
-            @foreach($golden['menu'] as $pg)
-            <a href="{{ route('site.pagina', $pg->slug) }}" class="{{ request()->routeIs('site.pagina') && request()->route('slug') === $pg->slug ? 'active' : '' }}">{{ $pg->titulo }}</a>
-            @endforeach
-            <a href="{{ route('site.faq') }}" class="{{ request()->routeIs('site.faq') ? 'active' : '' }}">Dúvidas</a>
+        <nav class="nav-links" aria-label="Menu principal">
+            @include('site.partials.nav-links')
         </nav>
         <div class="nav-cta">
             <a href="{{ route('site.contato') }}" class="btn btn-gold btn-sm" data-track="contact" data-cta="header">Falar com especialista</a>
-            <button class="nav-toggle" id="navToggle" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+            <button class="nav-toggle" id="navToggle" type="button" aria-label="Abrir menu" aria-controls="navDrawer" aria-expanded="false">
+                <i class="fa-solid fa-bars icon-open"></i>
+                <i class="fa-solid fa-xmark icon-close"></i>
+            </button>
         </div>
     </div>
 </header>
+
+{{-- Gaveta lateral (aparece só em telas menores) --}}
+<nav class="nav-drawer" id="navDrawer" aria-label="Menu principal">
+    <div class="drawer-head">
+        <span>
+            <img src="{{ asset('img/logo-golden.png') }}" alt="">
+            GOLDEN
+        </span>
+        <button type="button" class="drawer-close" data-nav-close aria-label="Fechar menu"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    @include('site.partials.nav-links')
+    <a href="{{ route('site.contato') }}" class="btn btn-gold btn-sm drawer-cta" data-track="contact" data-cta="menu">Falar com especialista</a>
+    <div class="drawer-foot">
+        <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:var(--gold)"></i> {{ $golden['telefone'] }}</a><br>
+        <a href="mailto:{{ $golden['email'] }}"><i class="fa-solid fa-envelope" style="color:var(--gold)"></i> {{ $golden['email'] }}</a>
+    </div>
+</nav>
+<button type="button" class="nav-backdrop" id="navBackdrop" tabindex="-1" aria-label="Fechar menu"></button>
 
 <main>
 @yield('content')

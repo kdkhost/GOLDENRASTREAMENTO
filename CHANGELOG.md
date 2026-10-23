@@ -3,6 +3,32 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.1.0] - 2026-10-22
+
+### Adicionado
+- **Menu deslizante do site (gaveta da esquerda)** em telas até 960px: painel fixo de
+  `min(84vw, 330px)` que entra com `translateX(-102%) → 0` em **380ms** na curva
+  `cubic-bezier(.22,.61,.36,1)`, com os links surgindo em cascata (60 ms entre itens),
+  cabeçalho próprio (logo + botão fechar que gira 90°), CTA "Falar com especialista" e
+  rodapé com WhatsApp/telefone/e-mail.
+- **Backdrop** com desfoque que escurece a página, e o ícone do botão troca de hambúrguer
+  para X com rotação — o mesmo tempo e a mesma curva nas duas direções, então abrir e
+  fechar são coerentes entre si.
+- Parcial `site/partials/nav-links.blade.php`: a lista de links (incluindo Loja e as
+  páginas do CMS) agora é **fonte única** consumida pelo menu do header e pela gaveta —
+  nada de marcar item desatualizado em um dos dois.
+
+### Alterado
+- A gaveta saiu de dentro do `<header>`: o `backdrop-filter` do cabeçalho criava um
+  *containing block* e a gaveta ficava presa nos 74px do header, sem cobrir a tela toda.
+- Fechar por todos os caminhos: X do botão, botão fechar da gaveta, clique no fundo,
+  `Esc` e ao escolher um link. Trava o scroll da página (`body.nav-open`), esconde o botão
+  flutuante do WhatsApp enquanto aberta, devolve o foco ao botão e mantém
+  `aria-expanded`/`aria-label` corretos.
+- `prefers-reduced-motion` respeitado (transições reduzidas a ~0 ms).
+- Em desktop o menu continua exatamente como era (fileira no header); a gaveta é
+  `display:none` acima de 960px.
+
 ## [2.0.0] - 2026-10-22
 
 ### Adicionado
