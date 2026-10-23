@@ -22,6 +22,9 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   imagem e as quatro verificações (homologação Anatel, 4G/2G multioperadora, kit com
   rastreador/chip/relé/chicote, variedade de modelos). É a única fonte: `/` e `/solucoes`
   leem do mesmo lugar.
+- **`tests/Feature/HomeDaReferenciaTest.php`** — trava a entrega que falhou antes: percorre
+  a home e exige os marcadores das seções da referência, que toda imagem referenciada no
+  HTML exista em `public/` e que os cinco segmentos tenham fotografia própria.
 - **Utilitários de layout em `golden-site.css`** — `.split` / `.split-larga` / `.split-txt`
   (título de um lado, conteúdo do outro), `.hero-foto` + `.hero-marca`, `.seg-foto`
   (cartão com foto, brilho no hover e gradiente para leitura), `.ben-grid`, `.checks`,
