@@ -3,6 +3,44 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.3.0] - 2026-10-22
+
+### Adicionado
+- **Botão flutuante do WhatsApp no padrão do sistema de referência (`foco7`)**: ele deixou
+  de ser um `<a>` solto para o `wa.me` e passou a abrir uma **central de canais**.
+  - Parcial `site/partials/whatsapp-box.blade.php` com o botão (`#waFloat`) e o box
+    multicanal (`#waPopup`): cabeçalho com selo **Online agora**, título/subtítulo, botão
+    fechar e um **card por canal** (ícone + nome + descrição + seta), cada um apontando
+    para o `wa.me` **já com a mensagem pré-preenchida** (`?text=`).
+  - Quatro canais de fábrica em `config('golden.whatsapp_box.canais')`: **Emergência &
+    Central 24h**, **Comercial & Novos Planos**, **Suporte Técnico & Aplicativo** e
+    **Faturamento & Mensalidade** — cada um com a frase de abertura própria.
+  - Helper global **`wa_url($msg, $numero)`** (`app/Support/helpers.php`): limpa o número
+    (só dígitos), usa o `contato_whatsapp` do painel por padrão e monta o `?text=` com
+    `urlencode`. Todos os links do widget saem dele.
+  - **Editável no painel** (Admin → Configurações → "Botão do WhatsApp no site", rota
+    `POST /admin/configuracoes/whatsapp`): liga/desliga a caixa, troca título e subtítulo,
+    desliga canais individualmente e aponta cada canal para um **número próprio**
+    (ex.: suporte na segunda linha `(19) 97139-5129`) — vazio herda o número principal.
+  - Estados com `aria-expanded`/`aria-controls`/`aria-label`, `role="dialog"` e
+    `data-track="whatsapp_click"` + `data-cta="canal_<id>"` em cada card, para separar por
+    canal na medição de campanhas.
+
+### Alterado
+- CSS do widget portado na paleta dourada (`.wa-float` com **badge dourado de online** e
+  **anel pulsante** `wa-ring`, `.wa-popup`, `.wa-head`, `.wa-channel`): mesma curva
+  `cubic-bezier(.22,.61,.36,1)` do resto do site, entrada com escala + deslocamento e
+  saída simétrica. O botão fica dourado com o anel parado enquanto o box está aberto.
+- Fechamento por todos os caminhos: botão X do cabeçalho, clique fora, `Esc` e ao escolher
+  um canal; a gaveta mobile esconde botão e box (`body.nav-open`) para não competirem.
+- Nomes e descrições dos canais com `white-space:nowrap` + reticências (mesma regra
+  antiquebra aplicada ao menu) e corpo do box com rolagem própria (`max-height:min(42vh,
+  380px)`), além de teto de altura no popup (`calc(100vh - 124px)`) para nunca estourar o
+  topo da tela em janelas baixas.
+- Em telas pequenas o botão encolhe (52px) e o rótulo de ajuda (`Falar no WhatsApp`) some.
+- `$golden['whatsapp_url']` agora é gerado pelo `wa_url()`, então o mesmo número tratado
+  no painel vale para o widget, a gaveta e o rodapé.
+
 ## [2.2.0] - 2026-10-22
 
 ### Adicionado

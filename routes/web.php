@@ -178,5 +178,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/', [SettingController::class, 'index'])->name('index');
         Route::post('/', [SettingController::class, 'update'])->name('update');
         Route::post('/loja', [SettingController::class, 'loja'])->name('loja');
+        Route::post('/whatsapp', [SettingController::class, 'whatsapp'])->name('whatsapp');
     });
 });

@@ -78,6 +78,41 @@
             </div>
         </div>
 
+        {{-- Caixa de WhatsApp do site --}}
+        @php $boxAtivo = ($settings['whatsapp_box_ativo'] ?? '1') === '1'; @endphp
+        <div class="card shadow-sm mt-3" style="border-radius:16px">
+            <div class="card-header bg-body d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="fab fa-whatsapp text-success me-1"></i> Botão do WhatsApp no site</span>
+                <span class="badge {{ $boxAtivo ? 'bg-success' : 'bg-secondary' }}">{{ $boxAtivo ? 'Caixa multicanal' : 'Link direto' }}</span>
+            </div>
+            <div class="card-body">
+                <p class="small text-secondary">No padrão da sistema de referência: o botão flutuante abre a <strong>central de canais</strong> e cada canal já chega ao WhatsApp com a mensagem pronta. Desligando a caixa, o botão volta a ser link direto para o número principal.</p>
+                <form method="POST" action="{{ route('admin.settings.whatsapp') }}">
+                    @csrf
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="whatsapp_box_ativo" value="1" id="waBox" @checked($boxAtivo)>
+                        <label class="form-check-label small" for="waBox">Mostrar a caixa multicanal no site</label>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6"><label class="form-label small">Título da caixa</label><input name="whatsapp_box_titulo" class="form-control form-control-sm" value="{{ $settings['whatsapp_box_titulo'] ?? config('golden.whatsapp_box.titulo') }}" placeholder="{{ config('golden.whatsapp_box.titulo') }}"></div>
+                        <div class="col-md-6"><label class="form-label small">Subtítulo</label><input name="whatsapp_box_subtitulo" class="form-control form-control-sm" value="{{ $settings['whatsapp_box_subtitulo'] ?? config('golden.whatsapp_box.subtitulo') }}" placeholder="{{ config('golden.whatsapp_box.subtitulo') }}"></div>
+                    </div>
+
+                    <label class="form-label small text-uppercase fw-bold" style="font-size:.7rem">Canais · número extra (vazio = {{ $settings['contato_whatsapp'] ?? config('golden.whatsapp') }})</label>
+                    @foreach(config('golden.whatsapp_box.canais') as $canal)
+                        @php $chave = 'whatsapp_canal_' . $canal['id']; @endphp
+                        <div class="row g-2 align-items-center mb-2">
+                            <div class="col-1"><input class="form-check-input" type="checkbox" name="{{ $chave }}_ativo" value="1" id="{{ $chave }}" @checked(($settings[$chave . '_ativo'] ?? '1') === '1')></div>
+                            <div class="col-6"><label for="{{ $chave }}" class="small d-block mb-0"><i class="fas {{ $canal['icone'] }} text-warning me-1"></i> {{ $canal['nome'] }}</label><span class="d-block text-secondary" style="font-size:.68rem">{{ $canal['msg'] }}</span></div>
+                            <div class="col-5"><input name="{{ $chave }}_numero" class="form-control form-control-sm" value="{{ $settings[$chave . '_numero'] ?? '' }}" placeholder="só dígitos"></div>
+                        </div>
+                    @endforeach
+
+                    <button class="btn btn-golden btn-sm mt-2"><i class="fas fa-save me-1"></i> Salvar WhatsApp</button>
+                </form>
+            </div>
+        </div>
+
         {{-- Banco --}}
         <div class="card shadow-sm mt-3" style="border-radius:16px"><div class="card-body">
             <h5 class="fw-bold mb-3"><i class="fas fa-circle-info text-warning me-1"></i> Banco de dados</h5>

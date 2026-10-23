@@ -21,6 +21,45 @@ return [
     'pagamentos' => ['Cartão', 'Boleto bancário'],
     'equipamento' => 'Rastreador J16 4G/2G',
 
+    // Caixa multicanal de WhatsApp do site (botão flutuante). Cada canal abre o
+    // wa.me já com a mensagem pronta; 'numero' vazio usa o número principal do
+    // painel. Tudo pode ser sobrescrito em Admin → Configurações.
+    'whatsapp_box' => [
+        'titulo' => 'Central de Atendimento Golden',
+        'subtitulo' => 'Atendimento humano · escolha o canal',
+        'abertura' => 'Olá, Golden! Vim pelo site e preciso de atendimento.',
+        'canais' => [
+            [
+                'id' => 'emergencia',
+                'icone' => 'fa-shield-halved',
+                'nome' => 'Emergência & Central 24h',
+                'desc' => 'Roubo, furto, sinistro ou bloqueio imediato',
+                'msg' => 'Olá, Golden! É uma EMERGÊNCIA com meu veículo e preciso da Central 24h.',
+            ],
+            [
+                'id' => 'comercial',
+                'icone' => 'fa-tags',
+                'nome' => 'Comercial & Novos Planos',
+                'desc' => 'Cotação de kit e mensalidade para carro, moto ou frota',
+                'msg' => 'Olá, Golden! Quero uma cotação de rastreamento para meu veículo.',
+            ],
+            [
+                'id' => 'suporte',
+                'icone' => 'fa-headset',
+                'nome' => 'Suporte Técnico & Aplicativo',
+                'desc' => 'Dúvidas no app, instalação, sinal GPS ou bloqueio remoto',
+                'msg' => 'Olá, Golden! Preciso de suporte técnico do rastreador ou do aplicativo.',
+            ],
+            [
+                'id' => 'financeiro',
+                'icone' => 'fa-file-invoice-dollar',
+                'nome' => 'Faturamento & Mensalidade',
+                'desc' => 'Boleto, segunda via e atualização cadastral',
+                'msg' => 'Olá, Golden! Preciso de auxílio com minha mensalidade ou fatura.',
+            ],
+        ],
+    ],
+
     'beneficios' => [
         ['icone' => 'fa-location-crosshairs', 'titulo' => 'Localização em tempo real', 'texto' => 'Veja onde seu veículo está a qualquer momento.'],
         ['icone' => 'fa-route', 'titulo' => 'Histórico de trajetos', 'texto' => 'Consulte percursos, paradas e quilometragem.'],

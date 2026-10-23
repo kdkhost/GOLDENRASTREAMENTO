@@ -46,6 +46,32 @@ class SettingController extends Controller
         return back()->with('success', 'Configurações salvas.');
     }
 
+    /**
+     * Caixa multicanal de WhatsApp do site (botão flutuante). Cada canal pode apontar
+     * para outro número; número vazio herda o principal da seção de contato.
+     */
+    public function whatsapp(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'whatsapp_box_titulo' => ['nullable', 'string', 'max:120'],
+            'whatsapp_box_subtitulo' => ['nullable', 'string', 'max:180'],
+        ]);
+
+        Setting::set('whatsapp_box_ativo', $request->boolean('whatsapp_box_ativo') ? '1' : '0');
+        Setting::set('whatsapp_box_titulo', $data['whatsapp_box_titulo'] ?? '');
+        Setting::set('whatsapp_box_subtitulo', $data['whatsapp_box_subtitulo'] ?? '');
+
+        foreach (config('golden.whatsapp_box.canais') as $canal) {
+            $chave = 'whatsapp_canal_' . $canal['id'];
+            Setting::set($chave . '_ativo', $request->boolean($chave . '_ativo') ? '1' : '0');
+            Setting::set($chave . '_numero', preg_replace('/\D/', '', (string) $request->input($chave . '_numero')));
+        }
+
+        Activity::log('configuracao_salva', 'Caixa de WhatsApp do site atualizada.');
+
+        return back()->with('success', 'Botão de WhatsApp atualizado.');
+    }
+
     /** Liga/desliga a loja virtual imediatamente, sem recarregar o formulário. */
     public function loja(Request $request): RedirectResponse
     {

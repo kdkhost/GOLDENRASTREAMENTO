@@ -141,6 +141,14 @@ no hover) e pela gaveta (acordeão), com `white-space:nowrap` + reticências par
 rótulo quebrar em duas linhas. Ao adicionar uma página no CMS, ela entra nos dois
 automaticamente; desligar a loja remove o grupo inteiro da árvore.
 
+O **botão flutuante do WhatsApp** segue o padrão do sistema de referência: em vez de ir
+direto ao `wa.me`, ele abre uma **central de canais** (`site/partials/whatsapp-box.blade.php`)
+com um card por atendimento — Emergência 24h, Comercial & Novos Planos, Suporte Técnico &
+Aplicativo e Faturamento & Mensalidade — e cada canal já leva a **mensagem pré-preenchida**
+(`wa_url($msg, $numero)`). Canais, textos e número de cada canal são editáveis em
+**Admin → Configurações → Botão do WhatsApp no site**; desligando a caixa, o botão volta a
+ser link direto.
+
 ### CRM (`/admin/clientes`)
 - **Clientes** com dados de empresa (documento, tipo física/jurídica, endereço, cidade/UF,
   segmento, tamanho da frota, valor anual) e status `prospecto` / `ativo` / `inativo`.

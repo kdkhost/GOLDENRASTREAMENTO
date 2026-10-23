@@ -230,6 +230,44 @@
     fecharSubmenus = fecharTodos;
   }
 
+  /* ---------- Caixa multicanal do WhatsApp (padrão foco7) ---------- */
+  function initWhatsBox() {
+    var btn = document.getElementById('waFloat');
+    var popup = document.getElementById('waPopup');
+    if (!btn || !popup) return;
+
+    function abrir() {
+      popup.classList.add('show');
+      btn.setAttribute('aria-expanded', 'true');
+    }
+
+    function fechar() {
+      popup.classList.remove('show');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      popup.classList.contains('show') ? fechar() : abrir();
+    });
+
+    popup.querySelectorAll('[data-wa-close]').forEach(function (b) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); fechar(); });
+    });
+
+    popup.addEventListener('click', function (e) {
+      if (e.target instanceof Element && e.target.closest('a')) fechar();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (e.target instanceof Element && !e.target.closest('#waPopup, #waFloat')) fechar();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') fechar();
+    });
+  }
+
   /* ---------- CTAs com rastreamento ---------- */
   function initCtas() {
     document.querySelectorAll('[data-track]').forEach(function (el) {
@@ -240,7 +278,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initCtas();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initCtas();
     track('page_view', { page: location.pathname });
   });
 })();

@@ -24,10 +24,18 @@ class AppServiceProvider extends ServiceProvider
             $whatsapp = preg_replace('/\D/', '', Setting::get('contato_whatsapp', config('golden.whatsapp')));
             $paginas = \App\Models\Page::menu()->get(['titulo', 'slug']);
             $lojaAtiva = Setting::get('loja_ativa', '1') === '1';
+            $box = config('golden.whatsapp_box');
             $view->with('golden', [
                 'marca' => config('golden.marca'),
                 'whatsapp' => $whatsapp,
-                'whatsapp_url' => 'https://wa.me/' . $whatsapp,
+                'whatsapp_url' => wa_url(),
+                'whatsapp_box' => [
+                    'ativo' => Setting::get('whatsapp_box_ativo', '1') === '1',
+                    'titulo' => Setting::get('whatsapp_box_titulo', $box['titulo']),
+                    'subtitulo' => Setting::get('whatsapp_box_subtitulo', $box['subtitulo']),
+                    'abertura' => Setting::get('whatsapp_box_abertura', $box['abertura']),
+                ],
+                'canais' => $this->montarCanais(),
                 'email' => Setting::get('contato_email', config('golden.email')),
                 'telefone' => Setting::get('contato_telefone', implode(' · ', config('golden.contato.telefones'))),
                 'endereco' => Setting::get('empresa_endereco', config('golden.contato.endereco')),
@@ -125,5 +133,33 @@ class AppServiceProvider extends ServiceProvider
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * Canais da caixa de WhatsApp: o roteiro vem de config('golden.whatsapp_box') e o
+     * painel pode desligar a caixa, trocar título/subtítulo e apontar um canal para
+     * outro número (whatsapp_canal_<id>_numero).
+     */
+    private function montarCanais(): array
+    {
+        $canais = [];
+
+        foreach (config('golden.whatsapp_box.canais') as $canal) {
+            $id = $canal['id'];
+
+            if (Setting::get('whatsapp_canal_' . $id . '_ativo', '1') !== '1') {
+                continue;
+            }
+
+            $canais[] = [
+                'id' => $id,
+                'icone' => $canal['icone'],
+                'nome' => Setting::get('whatsapp_canal_' . $id . '_nome', $canal['nome']),
+                'desc' => Setting::get('whatsapp_canal_' . $id . '_desc', $canal['desc']),
+                'url' => wa_url($canal['msg'], Setting::get('whatsapp_canal_' . $id . '_numero')),
+            ];
+        }
+
+        return $canais;
     }
 }

@@ -112,7 +112,7 @@
     </div>
 </footer>
 
-<a class="wa-float" href="{{ $golden['whatsapp_url'] }}?text={{ urlencode('Olá, Golden! Quero saber mais sobre rastreamento.') }}" target="_blank" rel="noopener" aria-label="Falar no WhatsApp" data-track="whatsapp_click" data-cta="float"><i class="fa-brands fa-whatsapp"></i></a>
+@include('site.partials.whatsapp-box')
 
 <div class="cookie" id="cookieBar" role="dialog" aria-live="polite">
     <p><strong>Privacidade.</strong> Usamos cookies essenciais e, com o seu consentimento, cookies de medição para entender o desempenho das campanhas, conforme a <a href="{{ route('site.privacidade') }}" style="text-decoration:underline">Política de Privacidade</a> (LGPD).</p>
