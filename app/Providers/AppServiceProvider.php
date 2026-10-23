@@ -42,16 +42,13 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('admin.layouts.app', function ($view) {
-            $dados = $this->dadosDoSite();
-
-            $view->with('pendencias', $this->pendenciasDoPainel())
-                ->with('menu_painel', $this->menuDoPainel($dados['loja_ativa']));
+            $view->with('menu_painel', $this->menuDoPainel($this->dadosDoSite()['loja_ativa']));
         });
 
         // As memórias acima valem para UMA requisição: o provider sobrevive entre duas
         // requisições do mesmo teste (e entre requisições em servidor embutido com
-        // keep-alive), e o menu/contadores da página anterior chegariam prontos na
-        // próxima. Cada rota casada limpa o estado.
+        // keep-alive), e o menu da página anterior chegaria pronto na próxima. Cada
+        // rota casada limpa o estado.
         Event::listen(RouteMatched::class, function () {
             $this->site = null;
             $this->pendencias = null;
