@@ -3,6 +3,55 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.11.0] - 2026-10-23
+
+### Adicionado
+- **`deploy/instalador-golden.sh`** — a instalação do sistema em qualquer domínio
+  (cPanel, VPS ou container) passa a ser um comando só. Ele confere PHP 8.3+ e as
+  extensões, instala o Composer se faltar, gera o `.env` de produção (com `chmod 600`
+  e `key:generate`), roda `composer install --no-dev`, prepara o banco, grava o login
+  do painel, liga `public/storage`, escreve o `.htaccess` de proteção da raiz e ativa os
+  caches de config/rotas/views. Nada de credencial fica no script: senha entra por
+  variável de ambiente (`GOLDEN_DB_PASSWORD`, `GOLDEN_ADMIN_PASSWORD`) ou é pedida na
+  tela sem aparecer. `--help` traz as opções: `--url`, `--banco=mysql|sqlite`, `--host`,
+  `--porta`, `--nome`, `--usuario`, `--senha`, `--criar-banco`, `--admin-email`,
+  `--admin-nome`, `--admin-senha`, `--sem-demo`, `--limpar-banco`, `--sem-backup`,
+  `--dev`, `--sem-htaccess`, `--sem-cache`, `--php=`, `--composer=`.
+  - Antes de apagar tabelas de um banco que já tem outro sistema, o instalador tira
+    `mysqldump` `.gz` para a pasta **acima** do projeto — fora do que o navegador serve —
+    com permissão `600`, e só então roda `migrate:fresh`. Sem terminal ele exige a flag
+    explícita `--limpar-banco`; com terminal, pede para digitar `SIM`.
+  - Cada comando é gravado em `storage/logs/instalador-<data>.log`. Quando algo falha, o
+    instalador para, mostra o comando e as últimas 25 linhas do log em vez de morrer em
+    silêncio — foi assim que o bug de status abaixo apareceu na primeira corrida real.
+- **`deploy/atualiza-golden.sh`** versionado — `git pull --ff-only`, `composer install
+  --no-dev`, `migrate --force`, `storage:link` e os caches, com `--ramo`, `--php=` e
+  `--sem-git` para o caso de publicar por upload.
+- **`docs/INSTALACAO.md`** — documentação completa em português: requisitos, o PHP 8.3 no
+  MultiPHP do cPanel (e por que `.htaccess` não resolve), instalação pelo script,
+  instalação manual passo a passo, criação de banco no painel, `.htaccess` de entrega,
+  referência de todas as chaves do `.env`, loja e campos de envio, backup e restauração,
+  tabela de problemas comuns, segurança e checklist de saída.
+- **`docs/Golden-Rastreamento-Instalacao.pdf`** — o mesmo conteúdo numa PDF de identidade
+  do projeto (capa escura e dourada, tabelas e blocos de código no tema), gerado por
+  **`docs/gerar-pdf.py`**, que imprime o Markdown com Edge/Chrome em modo sem interface.
+  Fonte única: mexeu no `docs/INSTALACAO.md`, roda o script e o PDF acompanha.
+
+### Corrigido
+- **Status do pedido maior que a coluna quebrava o MySQL.** `orders.status` e
+  `order_histories.status` paravam em `varchar(16)` e `aguardando_pagamento` tem 20
+  caracteres: no SQLite nada acontece, no MySQL o seed morria em `Data too long for
+  column` e o checkout morreria no mesmo ponto. A migration
+  `2026_10_23_000004_alarga_status_dos_pedidos.php` leva as duas colunas para 32, e
+  `test_todo_status_do_pedido_sobrevive_ida_e_volta_no_banco` grava e lê cada status do
+  fluxo (85 testes no total).
+
+### Alterado
+- `README.md` — a seção de servidor passa a começar pelo instalador, com o guia
+  `docs/INSTALACAO.md` por trás; a lista de estrutura cita `deploy/` e `docs/`.
+- Exemplos de instalação deixaram de citar conta de hospedagem, banco e domínio reais: o
+  repositório é público e dado de servidor não entra nele.
+
 ## [2.10.0] - 2026-10-23
 
 ### Adicionado

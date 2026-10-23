@@ -66,7 +66,31 @@ Acesse:
 
 ## 3. Subir para o servidor (MySQL)
 
-No `.env` de produção:
+O caminho recomendado é o instalador: ele confere PHP 8.3+/extensões/Composer, gera o
+`.env` (com permissão `600`), instala as dependências sem as de desenvolvimento, copia o
+banco antigo antes de encostar nele, aplica migrations e seeds, define o login do painel,
+liga `public/storage`, escreve o `.htaccess` de proteção da raiz e ativa os caches.
+
+```bash
+GOLDEN_DB_PASSWORD='senha-do-banco' GOLDEN_ADMIN_PASSWORD='senha-do-painel' \
+  bash deploy/instalador-golden.sh \
+    --url=https://seudominio.com.br \
+    --nome=seuusuario_cms --usuario=seuusuario_cms
+
+# atualização, depois da primeira instalação
+bash deploy/atualiza-golden.sh
+```
+
+Nenhuma credencial fica no script nem no repositório: as senhas entram por variável de
+ambiente (ou são pedidas na tela, sem aparecer) e vão só para o `.env`. A opção
+`--sem-demo` pula os dados de demonstração; `--help` traz a lista completa.
+
+O guia **`docs/INSTALACAO.md`** (e o PDF `docs/Golden-Rastreamento-Instalacao.pdf`, gerado
+por `python docs/gerar-pdf.py`) cobre o passo a passo manual, o PHP 8.3 no MultiPHP do
+cPanel, a referência de todas as chaves do `.env`, backup/restore e a tabela de problemas
+comuns.
+
+O que o instalador escreve, em resumo, no `.env` de produção:
 
 ```env
 APP_ENV=production
@@ -76,12 +100,13 @@ APP_URL=https://seudominio.com.br
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=golden_sistema
-DB_USERNAME=golden_user
+DB_DATABASE=seuusuario_cms
+DB_USERNAME=seuusuario_cms
 DB_PASSWORD=***
 
 SESSION_DRIVER=file
 CACHE_STORE=file
+QUEUE_CONNECTION=database
 
 GOLDEN_WHATSAPP=5519997101483
 GOLDEN_EMAIL=comercial@goldenrastreamento.com.br
@@ -96,12 +121,14 @@ MAIL_PASSWORD=***
 MAIL_ENCRYPTION=tls
 ```
 
-Depois:
+Feito à mão, os mesmos passos são:
 
 ```bash
 composer install --no-dev --optimize-autoloader
-composer deploy                      # migrate --force + config:cache + route:cache + view:cache
-php artisan storage:link             # serve as imagens de produtos
+php artisan key:generate
+php artisan migrate --force --seed   # ou migrate:fresh --seed num banco zerado
+php artisan storage:link
+composer deploy                      # config:cache + route:cache + view:cache
 ```
 
 Deixe `SESSION_DRIVER=file` e `CACHE_STORE=file` (ou `redis`) em produção: com driver
@@ -110,8 +137,9 @@ Deixe `SESSION_DRIVER=file` e `CACHE_STORE=file` (ou `redis`) em produção: com
 supervisor — é por ela que os e-mails de pedido saem sem atrasar a resposta ao cliente.
 
 As **mesmas migrations** rodam em SQLite e MySQL — não há código específico de driver.
-Em produção o HTTPS é forçado automaticamente (`AppServiceProvider`). Nunca rode os
-seeders de demonstração em produção (`--seed`); eles criam a senha `golden123`.
+Em produção o HTTPS é forçado automaticamente (`AppServiceProvider`). Os seeders criam o
+login com a senha `golden123`: o instalador troca por uma senha forte logo depois; na mão,
+troque no painel antes de divulgar o site.
 
 ---
 
@@ -362,6 +390,9 @@ config/golden.php                        # conteúdo do site + contatos reais
 config/envios.php                        # formatos, limite, pasta e dimensão de cada campo de envio
 database/migrations/                     # leads/campanhas + CRM + ERP + CMS
 database/seeders/                        # Database, Catalog, Cms, Crm, Orders
+deploy/instalador-golden.sh              # instalação em qualquer domínio (--help)
+deploy/atualiza-golden.sh                # git pull + composer + migrate + caches
+docs/INSTALACAO.md                       # guia completo em português (PDF: docs/gerar-pdf.py)
 resources/views/{layouts,site,site/store,mail,auth,admin}
 public/{css,js,img}                      # tema do site e do painel; golden-upload.* e golden-to-top.*
 tests/Feature/FluxoDaLojaTest.php        # vitrine -> sacola -> checkout -> pedido -> painel
@@ -371,7 +402,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (84 testes).
+`php artisan test` roda tudo contra SQLite em memória (85 testes).
 
 ## 6. Pendências para produção (do briefing)
 
