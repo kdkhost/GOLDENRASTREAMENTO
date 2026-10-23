@@ -103,6 +103,22 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 .defs dt{color:var(--bs-secondary-color);font-weight:500}
 .defs dd{margin:0;font-weight:600;overflow-wrap:anywhere}
 
+/* Barra de proporção das tabelas de origem (atribuição): largura vem de --w, cor vem
+   do tom do selo da linha — nenhum valor novo, então claro e escuro se ajustam sozinhos. */
+/* Nome da origem em uma linha só: quebrar no meio faria a tabela caber onde não deveria
+   e empilharia as letras. Longo demais corta com reticências (o title traz o inteiro) e
+   o .table-responsive da card assume o resto. */
+.origem-nome{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38ch}
+.mini-bar{height:5px;width:var(--w,0%);min-width:3px;max-width:100%;border-radius:999px;margin-top:6px;opacity:.85}
+.mini-bar.tone-gold{background:var(--t-gold-fg)}
+.mini-bar.tone-teal{background:var(--t-teal-fg)}
+.mini-bar.tone-blue{background:var(--t-blue-fg)}
+.mini-bar.tone-violet{background:var(--t-violet-fg)}
+.mini-bar.tone-green{background:var(--t-green-fg)}
+.mini-bar.tone-amber{background:var(--t-amber-fg)}
+.mini-bar.tone-red{background:var(--t-red-fg)}
+.mini-bar.tone-neutral{background:var(--t-neutral-fg)}
+
 /* miúdos que aparecem em mais de uma página */
 .avatar-letter{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--t-gold-bg);color:var(--t-gold-fg)}
 .canal-linha{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.35rem .75rem;padding:.4rem 0;border-top:1px solid var(--bs-border-color-translucent)}

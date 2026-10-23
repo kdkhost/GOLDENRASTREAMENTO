@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Testimonial;
 use App\Models\User;
+use App\Models\Visit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -40,7 +41,12 @@ class PaginasDoPainelTest extends TestCase
         $produtos = Product::orderBy('id')->limit(2)->get();
         $umProduto = $produtos->first();
 
+        // A jornada nasce de uma visita real: o site registra o acesso exatamente como
+        // faria no navegador de um visitante vindo de uma conversa com a IA.
+        $this->get('/?utm_source=chatgpt.com&utm_medium=ai-search&utm_campaign=teste')->assertOk();
+
         $parametros = [
+            'admin.atribuicao.show' => ['visita' => Visit::latest('id')->firstOrFail()],
             'admin.campanhas.edit' => ['campaign' => Campaign::firstOrFail()],
             'admin.catalogo.categorias.edit' => ['category' => Category::firstOrFail()],
             'admin.catalogo.fornecedores.edit' => ['fornecedor' => Supplier::firstOrFail()],

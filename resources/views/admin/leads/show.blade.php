@@ -63,7 +63,67 @@
     </div>
 
     <div class="col-lg-5">
-        <x-admin.card title="Atribuição de campanha" icon="fa-bullseye">
+        <x-admin.card title="De onde este lead veio" icon="fa-diagram-project">
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <x-admin.status :rotulo="$lead->canalRotulo()" :tom="$lead->tomCanal()" />
+                @if($lead->rede)
+                    <x-admin.status :rotulo="$lead->redeRotulo()" tom="neutral" />
+                @endif
+                @if($lead->pago)
+                    <x-admin.status rotulo="tráfego pago" tom="red" />
+                @endif
+                @if($lead->dispositivo)
+                    <x-admin.status :rotulo="\App\Models\Visit::rotuloDispositivo($lead->dispositivo)" tom="neutral" />
+                @endif
+            </div>
+            <dl class="defs">
+                <dt>Primeiro toque</dt>
+                <dd>
+                    {{ \App\Services\Atribuidor::rotuloCanal($lead->canal_primeiro) }}
+                    @if($lead->rede_primeiro && $lead->rede_primeiro !== $lead->rede)<span class="text-secondary">· {{ \App\Services\Atribuidor::rotuloRede($lead->rede_primeiro) }}</span>@endif
+                    @if($lead->primeiro_toque_em)<div class="small text-secondary">{{ $lead->primeiro_toque_em->format('d/m/Y H:i') }}</div>@endif
+                </dd>
+                <dt>Último toque</dt><dd>{{ $lead->canalRotulo() }}@if($lead->rede)<span class="text-secondary"> · {{ $lead->redeRotulo() }}</span>@endif</dd>
+                <dt>Visitas até cadastrar</dt><dd>{{ $lead->toques ?: '—' }}</dd>
+                <dt>Pousou em</dt><dd><code>{{ $lead->landing_page ?: '—' }}</code></dd>
+                <dt>Veio de</dt><dd>{{ $lead->referrer ?: '—' }}</dd>
+                @if($lead->visit)
+                    <dt>O sistema decidiu por</dt><dd><code>{{ $lead->visit->motivo ?: '—' }}</code></dd>
+                @endif
+            </dl>
+            @if($lead->visit)
+                <a href="{{ route('admin.atribuicao.show', $lead->visit) }}" class="btn btn-sm btn-outline-secondary mt-2">
+                    <i class="fas fa-route me-1" aria-hidden="true"></i> Ver a jornada completa desta visita
+                </a>
+            @endif
+        </x-admin.card>
+
+        @if($lead->jornada->count() > 1)
+            <x-admin.card title="A trilha antes do cadastro" icon="fa-layer-group" class="mt-3"
+                :descricao="$lead->jornada->count().' acessos deste visitante, da primeira tela ao último clique.'">
+                <ul class="timeline">
+                    @foreach($lead->jornada as $v)
+                        <li class="{{ $v->id === $lead->visit_id ? 'atual' : '' }}">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span class="fw-semibold small">
+                                    <i class="fas {{ $v->iconeCanal() }} me-1 text-gold" aria-hidden="true"></i>
+                                    {{ $v->canalRotulo() }} · {{ $v->landing_path ?: '/' }}
+                                </span>
+                                <small class="text-secondary text-nowrap">{{ $v->aberta_em?->format('d/m H:i') }}</small>
+                            </div>
+                            <div class="small text-secondary">
+                                {{ $v->origemDetalhada() }} · {{ $v->visualizacoes }} tela(s) · {{ $v->eventos }} clique(s)
+                                @if($v->id)
+                                    · <a href="{{ route('admin.atribuicao.show', $v) }}">abrir</a>
+                                @endif
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </x-admin.card>
+        @endif
+
+        <x-admin.card title="Marcações de campanha" icon="fa-bullseye" class="mt-3">
             <dl class="defs">
                 <dt>Campanha</dt><dd>{{ $lead->campaign?->name ?? 'Sem campanha' }}</dd>
                 <dt>utm_source</dt><dd>{{ $lead->utm_source ?: '—' }}</dd>
@@ -72,8 +132,7 @@
                 <dt>utm_content</dt><dd>{{ $lead->utm_content ?: '—' }}</dd>
                 <dt>gclid</dt><dd>{{ $lead->gclid ?: '—' }}</dd>
                 <dt>fbclid</dt><dd>{{ $lead->fbclid ?: '—' }}</dd>
-                <dt>Visita</dt><dd><code>{{ Str::limit($lead->visitor_id, 12, '') ?: '—' }}</code></dd>
-                <dt>Origem</dt><dd>{{ $lead->referrer ?: '—' }}</dd>
+                <dt>Visitante</dt><dd><code>{{ Str::limit($lead->visitor_id, 12, '') ?: '—' }}</code> <span class="text-secondary small">(cookie anônimo)</span></dd>
                 <dt>Consentimento LGPD</dt><dd class="{{ $lead->consent_given ? 'text-success' : 'text-danger' }}">{{ $lead->consent_given ? 'Autorizado' : 'Não autorizado' }}</dd>
                 <dt>IP (pseudonimizado)</dt><dd><code>{{ Str::limit($lead->ip_hash, 12, '') ?: '—' }}</code></dd>
             </dl>

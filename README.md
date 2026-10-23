@@ -390,8 +390,47 @@ a dimensão ideal.
 - Validação no servidor + **rate limit** (`throttle:8,1`) + **honeypot** anti-spam.
 - Preserva **UTMs, `gclid`/`fbclid`**, página de origem e um **ID de visita** anônimo
   (cookie `golden_visitor`, 90 dias).
+- Cada cadastro sai **atribuído**: canal, rede, se era pago, primeiro e último toque,
+  landing page e o `visit_id` da jornada (ver *Atribuição de tráfego*). Sem visita prévia
+  (API, aba anônima, formulário sem cookie), a classificação usa as marcações que o próprio
+  POST carrega — o lead nunca fica sem origem.
 - IP **pseudonimizado** (hash) e registro de **consentimento LGPD**.
 - Nunca expõe dados pessoais no front; o painel lê exclusivamente do backend.
+
+### Atribuição de tráfego (`/admin/atribuicao`) — "de onde veio cada clique"
+- **Toda a jornada fica registrada**: `visits` (uma linha por visita, com a origem decidida)
+  e `visit_events` (cada tela vista e cada clique medido). O visitante é anônimo
+  (cookie `golden_visitor`, 90 dias) e o IP só entra como hash.
+- **Classificador** em `App\Services\Atribuidor`, na ordem da prova mais forte:
+  identificador de clique → `utm_medium` → `utm_source` → referer → direto.
+  Todo o vocabulário mora em `config/golden.php` (`canais`, `meios_*`, `ids_clique`,
+  `redes_sociais`, `buscadores`, `ia_humanos`, `ia_usuarios`, `indexadores`) — nenhuma
+  regra de origem escrita solta em controller.
+- **Canais reconhecidos**: `anuncio` (por rede: google, facebook, tiktok, bing, linkedin,
+  yahoo — pelo `gclid`/`fbclid`/`ttclid`/`msclkid`/`li_fat_id`/`yclid`), `rede_social`,
+  `busca_organica`, **`busca_ia`** (ChatGPT, Perplexity, Gemini, Copilot, Claude, Grok,
+  Mistral…), `indicacao`, `email`, `parceiro`, `direto` e `indexador` (robôs, **fora dos
+  números**).
+- **Robô ≠ pessoa**: `GPTBot`, `ClaudeBot`, `Meta-ExternalAgent`, o crawler do Google etc.
+  entram no registro marcados como `bot` e ficam fora de toda KPI; já o **navegador
+  embutido** do WhatsApp/Instagram/Facebook/TikTok — onde o clique humano realmente
+  aconteceu — é tratado como gente.
+- **Dispositivo, navegador e sistema** vêm do user-agent (`celular`/`tablet`/`computador`,
+  `instagram`, `samsung-internet`, `ios`/`android`…), então a ficha diz se o clique veio do
+  app do Instagram ou do navegador.
+- **Primeiro e último toque** no lead: `canal`/`rede` (fechou) e `canal_primeiro`/
+  `rede_primeiro` (conheceu), com `toques` e `primeiro_toque_em`. Rede social apresentou +
+  anúncio fechou é exatamente o que a ficha mostra.
+- **Farol próprio, sem Google**: `POST /rastreio/evento` (`throttle:120,1`) recebe os cliques
+  do `public/js/golden-site.js` (CTA, telefone, WhatsApp, e-mail, link externo, início de
+  formulário, kit, sacola, checkout, pedido) com `fetch(..., credentials:'same-origin')`.
+  Nada de terceiro na frente do cadastro.
+- **Retenção**: `php artisan rastreio:podar` (agendado semanalmente em
+  `bootstrap/app.php`) apaga o que passou de `golden.rastreio.dias_retencao`, junto com os
+  eventos — sem depender do *cascade* do banco.
+- **Trava de tamanho**: toda coluna recebe `Str::limit` no serviço, porque o SQLite ignora
+  comprimento de `varchar` e o MySQL devolve *Data too long* no tráfego real.
+- Testes: `tests/Feature/AtribuicaoDeOrigemTest.php` (20).
 
 ### Medição
 Eventos já instrumentados em `public/js/golden-site.js`: `page_view`, `view_plans`,
@@ -416,11 +455,16 @@ app/
   Http/Middleware/ControleAcesso.php     # role:admin,vendedor,...
   Http/Middleware/LojaAtiva.php          # alias `loja` -> 404 quando a loja está off
   Http/Middleware/IdentificadorVisita.php
+  Http/Middleware/RegistrarRastreio.php  # toda tela do site vira visita/evento
   Models/  Lead, Campaign, LeadStatusHistory, Activity, Setting, User,
            Customer, Interaction, Product, Category, Supplier,
-           StockMovement, Order, OrderItem, OrderHistory, Page, Testimonial, Faq
+           StockMovement, Order, OrderItem, OrderHistory, Page, Testimonial, Faq,
+           Visit, VisitEvent
   Mail/    PedidoRecebido, PedidoNovoEquipe
   Services/LeadService.php               # atribuição + criação + funil
+  Services/Atribuidor.php                # decide a origem (canal/rede/pago/motivo)
+  Services/Rastreio.php                  # grava visita, evento e a atribuição do lead
+  Console/Commands/PodarRastreio.php     # rastreio:podar, a retenção do registro
   Support/Carrinho.php                   # sacola em sessão, sobre o catálogo em cache
   Support/Envio.php                      # regras e gravação dos campos de arrastar-e-soltar
   Support/helpers.php                    # brl(), loja_ativa(), slugify_pt()
@@ -433,6 +477,7 @@ deploy/atualiza-golden.sh                # git pull + composer + migrate + cache
 docs/INSTALACAO.md                       # guia completo em português (PDF: docs/gerar-pdf.py)
 resources/views/{layouts,site,site/store,mail,auth,admin}
 public/{css,js,img}                      # tema do site e do painel; golden-upload.* e golden-to-top.*
+tests/Feature/AtribuicaoDeOrigemTest.php # origem de cada clique, jornada, farol e poda
 tests/Feature/FluxoDaLojaTest.php        # vitrine -> sacola -> checkout -> pedido -> painel
 tests/Feature/CamposDeEnvioTest.php      # regras de upload, preview gravado, caminhos forjados
 tests/Feature/LevezaDasPaginasTest.php   # zero consultas com cache quente
@@ -440,7 +485,9 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (85 testes).
+`php artisan test` roda tudo contra SQLite em memória (173 testes, 1.287 asserções). Os
+comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
+conferida no servidor antes de virar entrega.
 
 ## 6. Pendências para produção (do briefing)
 

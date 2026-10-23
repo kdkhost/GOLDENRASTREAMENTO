@@ -22,6 +22,9 @@ class LevezaDasPaginasTest extends TestCase
     /** Consultas aceitas em uma requisição com cache frio. */
     private const LIMITE_CACHE_FRIO = 14;
 
+    /** Consultas que o rastreio de origem pode custar em uma única view de página. */
+    private const LIMITE_RASTREIO = 4;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -120,11 +123,47 @@ class LevezaDasPaginasTest extends TestCase
         $this->get('/loja')->assertOk()->assertSee('renamed');
     }
 
+    /** Cada view de página pode custar no máximo uma visita e um evento gravados. */
+    public function test_o_rastreio_custa_pouco_por_pagina(): void
+    {
+        foreach (['/', '/planos', '/loja'] as $url) {
+            $consultas = $this->consultasDeRastreio('GET', $url);
+            $this->assertNotEmpty($consultas, "{$url} não registrou a visita.");
+            $this->assertLessThanOrEqual(
+                self::LIMITE_RASTREIO,
+                count($consultas),
+                "{$url} gastou ".count($consultas).' consultas no rastreio: '.implode(' | ', $consultas)
+            );
+        }
+    }
+
     /**
      * Roda a requisição e devolve as consultas feitas por ela, ignorando o que o próprio
      * teste executa fora do ciclo HTTP.
+     *
+     * O rastreio de origem é a única escrita aceita aqui: ele grava no máximo uma visita
+     * e um evento por view de página, custo constante que não depende do tamanho do banco.
+     * A promessa que este teste protege é a de leitura — nada de consultar catálogo,
+     * menu ou conteúdo fora do cache.
      */
     private function consultasDaRequisicao(string $metodo, string $url): array
+    {
+        return array_values(array_filter(
+            $this->todasAsConsultas($metodo, $url),
+            fn (string $q) => ! $this->ehDoRastreio($q),
+        ));
+    }
+
+    /** As consultas do rastreio na mesma requisição — para o custo dele não crescer sozinho. */
+    private function consultasDeRastreio(string $metodo, string $url): array
+    {
+        return array_values(array_filter(
+            $this->todasAsConsultas($metodo, $url),
+            fn (string $q) => $this->ehDoRastreio($q),
+        ));
+    }
+
+    private function todasAsConsultas(string $metodo, string $url): array
     {
         DB::flushQueryLog();
         DB::enableQueryLog();
@@ -135,5 +174,10 @@ class LevezaDasPaginasTest extends TestCase
         DB::disableQueryLog();
 
         return $consultas;
+    }
+
+    private function ehDoRastreio(string $consulta): bool
+    {
+        return str_contains($consulta, '"visits"') || str_contains($consulta, '"visit_events"');
     }
 }

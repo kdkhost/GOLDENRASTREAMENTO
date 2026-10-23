@@ -8,6 +8,7 @@ use App\Models\Campaign;
 use App\Models\Lead;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CampaignController extends Controller
@@ -33,7 +34,7 @@ class CampaignController extends Controller
             ->withCount(['leads as leads_novos' => fn ($q) => $q->where('status', 'novo')])
             ->withSum(['leads as leads_receita' => fn ($q) => $q->where('status', 'vendido')], 'value')
             ->when($request->filled('busca'), function ($q) use ($request) {
-                $t = '%' . $request->busca . '%';
+                $t = '%'.$request->busca.'%';
                 $q->where(fn ($w) => $w->where('name', 'like', $t)
                     ->orWhere('source', 'like', $t)
                     ->orWhere('medium', 'like', $t)
@@ -46,7 +47,7 @@ class CampaignController extends Controller
 
     public function create(): View
     {
-        return view('admin.campaigns.form', ['campanha' => new Campaign(['channel' => 'pago'])]);
+        return view('admin.campaigns.form', ['campanha' => new Campaign(['channel' => 'anuncio'])]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -82,14 +83,14 @@ class CampaignController extends Controller
             'source' => ['nullable', 'string', 'max:120'],
             'medium' => ['nullable', 'string', 'max:120'],
             'content' => ['nullable', 'string', 'max:190'],
-            'channel' => ['required', 'in:pago,organico,direto,referencia'],
+            'channel' => ['required', 'string', Rule::in(array_keys(Campaign::canais()))],
         ]);
     }
 
     public function toggle(Campaign $campaign): RedirectResponse
     {
-        $campaign->update(['ativa' => !$campaign->ativa]);
-        Activity::log('campanha_toggle', "Campanha {$campaign->name} " . ($campaign->ativa ? 'reativada' : 'pausada') . '.', $campaign);
+        $campaign->update(['ativa' => ! $campaign->ativa]);
+        Activity::log('campanha_toggle', "Campanha {$campaign->name} ".($campaign->ativa ? 'reativada' : 'pausada').'.', $campaign);
 
         return back()->with('success', 'Status da campanha atualizado.');
     }

@@ -12,9 +12,10 @@
     <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-3" placeholder="Nome, telefone ou e-mail..." />
     <x-admin.filter name="status" type="select" label="Status" col="col-6 col-md-2" :options="\App\Models\Lead::STATUS_LABELS" empty="Todos" />
     <x-admin.filter name="campanha" type="select" label="Campanha" col="col-6 col-md-2" :options="$campanhas->mapWithKeys(fn ($nome, $id) => [$id => Str::limit($nome, 22)])" empty="Todas" />
+    <x-admin.filter name="canal" type="select" label="Origem" col="col-6 col-md-2" :options="\App\Models\Campaign::canais()" empty="Todos os canais" />
     <x-admin.filter name="responsavel" type="select" label="Responsável" col="col-6 col-md-2" :options="$responsaveis" empty="Qualquer" />
-    <x-admin.filter name="inicio" type="date" label="De" col="col-6 col-md-1" />
-    <x-admin.filter name="fim" type="date" label="Até" col="col-6 col-md-1" />
+    <x-admin.filter name="inicio" type="date" label="De" col="col-6 col-md-2" />
+    <x-admin.filter name="fim" type="date" label="Até" col="col-6 col-md-2" />
     <x-slot:extra>
         <div class="ms-auto d-flex flex-wrap gap-1">
             @foreach(\App\Models\Lead::STATUS_LABELS as $s => $rotulo)
@@ -37,7 +38,10 @@
             <td class="small">{{ $l->kit ?: '—' }}<div class="text-secondary">{{ $l->fleet_size ? $l->fleet_size.' veículo(s)' : '' }}</div></td>
             <td class="small">
                 {{ $l->campaign?->name ?? 'Sem campanha' }}
-                <div class="text-secondary">{{ $l->utm_source ?: ($l->gclid ? 'google' : ($l->fbclid ? 'facebook' : 'direto')) }}</div>
+                <div class="mt-1 d-flex align-items-center gap-1 flex-wrap">
+                    <x-admin.status :rotulo="$l->canalRotulo()" :tom="$l->tomCanal()" />
+                    @if($l->rede)<span class="text-secondary">{{ $l->redeRotulo() }}</span>@endif
+                </div>
             </td>
             <td><x-admin.status :rotulo="\App\Models\Lead::label($l->status)" :tom="tom_por_status('funil', $l->status)" /></td>
             <td class="small">{{ $l->owner?->name ?? '—' }}</td>

@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Middleware\ControleAcesso;
+use App\Http\Middleware\IdentificadorVisita;
+use App\Http\Middleware\LojaAtiva;
+use App\Http\Middleware\RegistrarRastreio;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,14 +16,20 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withSchedule(function (Schedule $schedule): void {
+        // O registro de tráfego cresce com cada visita; sem a poda semanal a tabela
+        // visits/visit_events incha para sempre. A retenção é o dias_retencao do config.
+        $schedule->command('rastreio:podar')->weeklyOn(2, '03:30')->withoutOverlapping();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\IdentificadorVisita::class,
+            IdentificadorVisita::class,
+            RegistrarRastreio::class,
         ]);
 
         $middleware->alias([
-            'role' => \App\Http\Middleware\ControleAcesso::class,
-            'loja' => \App\Http\Middleware\LojaAtiva::class,
+            'role' => ControleAcesso::class,
+            'loja' => LojaAtiva::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -54,7 +54,7 @@
             @if($freteGratisEm > 0)
             <p class="sum-hint"><i class="fa-solid fa-gift" style="color:var(--gold)"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
             @endif
-            <a href="{{ route('site.loja.checkout') }}" class="btn btn-gold" style="width:100%;margin-top:14px">Finalizar pedido →</a>
+            <a href="{{ route('site.loja.checkout') }}" class="btn btn-gold" data-farol="checkout" style="width:100%;margin-top:14px">Finalizar pedido →</a>
             <p class="fine">Pagamento na etapa seguinte: Pix, cartão ou boleto. Retirada na loja quando disponível.</p>
         </aside>
         @endif

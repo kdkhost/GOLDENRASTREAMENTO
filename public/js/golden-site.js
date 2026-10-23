@@ -17,9 +17,10 @@
   function saveAttribution() {
     var q = readQuery();
     if (Object.keys(q).length) {
-      var stored = {};
-      try { stored = JSON.parse(sessionStorage.getItem('golden_attr') || '{}'); } catch (e) {}
-      sessionStorage.setItem('golden_attr', JSON.stringify(Object.assign(stored, q)));
+      // Chegada marcada nova = toque novo: substitui, não mistura. Guardar o bloco antigo
+      // junto faria um clique do Google herdar o utm_medium do Reels e a campanha sairia
+      // com duas origens costuradas — o servidor já abre visita nova pelo mesmo motivo.
+      sessionStorage.setItem('golden_attr', JSON.stringify(q));
     }
   }
   function getAttribution() {
@@ -39,6 +40,67 @@
     }
   }
   window.goldenTrack = track;
+
+  /* ---------- Farol próprio (primeira mão, sem third party) ---------- */
+  // O mesmo gesto que já alimenta gtag/fbq alimenta a jornada que o painel mostra.
+  // Os nomes aqui são os tipos declarados em config/golden.php > rastreio.eventos.
+  var FAROL_DE_EVENTO = {
+    contact: 'cta',
+    view_plans: 'cta',
+    store_open: 'cta',
+    internal_link: 'cta',
+    whatsapp_click: 'whatsapp',
+    select_plan: 'kit'
+  };
+
+  /**
+   * Manda um passo da jornada para o servidor. fetch com keepalive (e não sendBeacon)
+   * porque a rota é POST e precisa do token CSRF; keepalive entrega mesmo quando o
+   * clique leva o visitante para fora da página.
+   */
+  function farol(tipo, destino, detalhe) {
+    if (!G.farol || !tipo) return;
+    var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+    try {
+      fetch(G.farol, {
+        method: 'POST',
+        keepalive: true,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': token },
+        body: JSON.stringify({ tipo: tipo, path: location.pathname, destino: destino || null, detalhe: detalhe || null })
+      });
+    } catch (e) { /* medição nunca bloqueia o visitante */ }
+  }
+
+  /**
+   * Telefones, e-mails e saídas do site: a origem do clique só aparece aqui.
+   * Um elemento pode declarar o próprio passo da jornada com data-farol="tipo"
+   * (a loja usa isso na sacola e no checkout); o resto é deduzido do href.
+   */
+  function initFarol() {
+    document.addEventListener('click', function (e) {
+      var alvo = e.target instanceof Element ? e.target.closest('a[href], button, form[data-farol]') : null;
+      if (!alvo) return;
+
+      // O passo declarado no próprio elemento vence o do formulário; assim "Comprar agora"
+      // conta checkout e "Adicionar" conta sacola na mesma form.
+      var caixa = alvo.closest('[data-farol]');
+      var tipo = alvo.getAttribute('data-farol') || (alvo.tagName === 'BUTTON' && caixa !== alvo ? caixa.getAttribute('data-farol') : null);
+
+      if (tipo) {
+        farol(tipo, location.pathname, alvo.getAttribute('data-detalhe') || caixa.getAttribute('data-detalhe') || null);
+        return;
+      }
+
+      if (alvo.tagName !== 'A' || alvo.hasAttribute('data-track')) return; // já medido pelo initCtas
+
+      var href = alvo.getAttribute('href') || '';
+      if (href.indexOf('tel:') === 0) farol('telefone', href.slice(4));
+      else if (href.indexOf('mailto:') === 0) farol('email', href.slice(7));
+      else if (/^(https?:)?\/\/wa\.me|whatsapp\.com\//i.test(href)) farol('whatsapp', href);
+      else if (/^https?:\/\//i.test(href) && alvo.hostname !== location.hostname) farol('link_externo', alvo.href);
+    }, { passive: true, capture: true });
+  }
 
   /* ---------- Máscara de telefone ---------- */
   function maskPhone(v) {
@@ -66,6 +128,15 @@
     document.querySelectorAll('form[data-lead-form]').forEach(function (form) {
       var phone = form.querySelector('[name="phone"]');
       if (phone) phone.addEventListener('input', function () { this.value = maskPhone(this.value); });
+
+      // O primeiro toque no formulário vale tanto quanto o envio: é aqui que o painel
+      // consegue mostrar "começou e não terminou".
+      var iniciado = false;
+      form.addEventListener('input', function () {
+        if (iniciado) return;
+        iniciado = true;
+        farol('form_inicio', location.pathname, (this.querySelector('[name="kit"]') || {}).value || null);
+      }, { passive: true });
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -139,6 +210,7 @@
         if (sel) sel.value = kit;
         if (fleet) fleet.value = this.getAttribute('data-fleet') || '';
         track('select_plan', { plan: kit });
+        farol('kit', this.getAttribute('href'), kit);
       });
     });
   }
@@ -300,7 +372,12 @@
   function initCtas() {
     document.querySelectorAll('[data-track]').forEach(function (el) {
       el.addEventListener('click', function () {
-        track(this.getAttribute('data-track'), { cta: this.getAttribute('data-cta') || '' });
+        var evento = this.getAttribute('data-track');
+        var cta = this.getAttribute('data-cta') || '';
+        track(evento, { cta: cta });
+        // Só o que o painel entende vai para o farol; generate_lead é o servidor que
+        // registra (lead/pedido), para não contar duas vezes o mesmo cadastro.
+        if (FAROL_DE_EVENTO[evento]) farol(FAROL_DE_EVENTO[evento], this.getAttribute('href'), cta);
       });
     });
   }
@@ -333,7 +410,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initPrefetch(); initCtas();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initPrefetch(); initCtas(); initFarol();
     track('page_view', { page: location.pathname });
   });
 })();

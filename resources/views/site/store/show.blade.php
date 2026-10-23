@@ -60,7 +60,7 @@
                 </div>
 
                 @if($produto['disponivel'])
-                <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}" class="buy-form" data-unit="{{ $produto['preco'] }}">
+                <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}" class="buy-form" data-unit="{{ $produto['preco'] }}" data-farol="sacola" data-detalhe="{{ $produto['slug'] }}">
                     @csrf
                     <input type="hidden" name="produto" value="{{ $produto['id'] }}">
                     <div class="quantity-row">
@@ -74,7 +74,7 @@
                     </div>
                     <div class="buy-actions">
                         <button type="submit" name="ir" value="carrinho" class="btn btn-outline">Adicionar ao carrinho</button>
-                        <button type="submit" name="ir" value="checkout" class="btn btn-gold" data-track="generate_lead" data-cta="buy">Comprar agora →</button>
+                        <button type="submit" name="ir" value="checkout" class="btn btn-gold" data-track="generate_lead" data-cta="buy" data-farol="checkout">Comprar agora →</button>
                     </div>
                 </form>
                 @else

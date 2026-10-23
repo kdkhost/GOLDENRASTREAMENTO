@@ -3,6 +3,92 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.19.0] - 2026-10-23
+
+### Adicionado
+- **Atribuição de tráfego de primeira mão** — o sistema agora responde, sozinho e sem
+  Google Analytics, *de onde veio cada clique, cada tela e cada cadastro*. `config/golden.php`
+  ganhou `canais` (anúncio, rede social, busca orgânica, **busca por IA**, indicação, e-mail,
+  parceiro, direto, indexador, desconhecido — cada um com rótulo, ícone, `pago` e `valido`),
+  `meios_pagos|sociais|ia|busca|email|indicacao`, `ids_clique` (`gclid`, `fbclid`, `ttclid`,
+  `msclkid`, `li_fat_id`, `yclid`), `redes_sociais`, `buscadores`, `ia_humanos`, `ia_usuarios`,
+  `indexadores`, `redes_rotulos`, `tons_status.canal` e a chave `rastreio` (janela de sessão,
+  retenção, teto de eventos e o vocabulário dos eventos). Trocar ou acrescentar uma rede é
+  editar config; nenhuma regra de origem fica escrita solta em controller.
+- **`App\Services\Atribuidor`** — o classificador. Decide na ordem da prova mais forte:
+  identificador de clique → `utm_medium` → `utm_source` → referer → direto (o marco do
+  gestor de tráfego vence o referer cru). Guarda também o **motivo** da decisão, para a
+  atribuição ser auditável, e resolve `dispositivo`/`navegador`/`sistema` do user-agent —
+  inclusive os **navegadores embutidos** (Instagram, Facebook, WhatsApp, TikTok, LinkedIn,
+  X, Snapchat, Telegram), que é onde o clique social realmente acontece no celular.
+  Reconhece **busca por IA** dos dois lados: o acesso humano que veio de ChatGPT,
+  Perplexity, Gemini, Copilot, Claude, Grok ou Mistral, e o robô que só varre o índice.
+- **Registro da jornada**: migrations `visits` + `visit_events` e os models `Visit` /
+  `VisitEvent`. Toda tela do site vira visita (`App\Http\Middleware\RegistrarRastreio`, só
+  GET `site.*` com 200 e HTML) e o cookie anônimo `golden_visitor` (90 dias) emenda as
+  telas na mesma janela de 30 minutos; clique de outra origem abre visita nova. IP nunca
+  entra em claro (`ip_hash`), robôs entram marcados (`bot`) e ficam **fora** de todo número
+  (`Visit::pessoas()`).
+- **Farol próprio**: `POST /rastreio/evento` (`Site\RastreioController`, `throttle:120,1`)
+  alimentado por `initFarol()` em `public/js/golden-site.js` com `fetch(...,
+  credentials:'same-origin', keepalive:true)` — CTA, telefone, WhatsApp, e-mail, link
+  externo, início de formulário, kit, sacola, checkout e pedido. O controller valida o
+  vocabulário do config e teto de 2000 caracteres por campo; a cota de `max_eventos` é dos
+  cliques medidos (a tela que passou já tem contador próprio).
+- **Atribuição no lead**: migration `add_atribuicao_to_leads_table` (`visit_id`, `canal`,
+  `rede`, `pago`, `canal_primeiro`, `rede_primeiro`, `primeiro_toque_em`, `toques`,
+  `dispositivo`, `navegador`). O vendedor vê o **último toque** e a ficha mostra o
+  **primeiro** — rede social apresentou e anúncio fechou é exatamente o que aparece
+  ("Rede social → Anúncio pago"). Sem visita prévia (API, aba anônima, POST sem cookie),
+  `Rastreio::atribuicaoParaLead()` classifica das marcações que o próprio lead carrega, então
+  nenhum cadastro fica cego.
+- **Painel `/admin/atribuicao`** (`Admin\AttributionController` + `resources/views/admin/
+  attribution/`): KPIs do período, tabelas de origem por **canal, rede, IA, página e site de
+  origem** no mesmo molde de oito colunas (visitas, views, cliques, cadastros, vendas,
+  conversão, receita) com barra de peso por linha, filtros de período/canal, "Robôs à parte"
+  e a ficha `/admin/atribuicao/{visita}` com a linha do tempo completa. Componentes novos:
+  `x-admin.tabela-origem` e `x-admin.link-copiar`.
+- **`php artisan rastreio:podar`** (`App\Console\Commands\PodarRastreio`) com agendamento
+  semanal (terça 03:30) em `bootstrap/app.php` — apaga o que passou de
+  `golden.rastreio.dias_retencao` e os eventos junto, na mão, sem depender do *cascade* do
+  banco. Deixa trilha na auditoria.
+- **`campaigns.channel` no vocabulário real** (`padroniza_canais_de_campanhas`): `pago` →
+  `anuncio`, `organico` → `busca_organica`, `referencia` → `indicacao`, e o que não
+  pertence à lista vira `desconhecido`. A campaign criada por UTM passa a carregar o canal
+  que o classificador decidiu, não um rótulo inventado.
+- **`tests/Feature/AtribuicaoDeOrigemTest.php`** — 20 travas: o clique de cada plataforma,
+  a ordem dos sinais, IA humana × robô, o app social no registro, visita que continua ×
+  visita que reabre, referer da própria casa, farol (aceita/clique medido), robô fora dos
+  números, primeiro e último toque no lead, canal da campanha, cadastro sem visita, painel,
+  ficha, link rastreado, limites de tamanho do banco, teto de eventos e a poda.
+
+### Alterado
+- **Robô ≠ pessoa, com critério**: a regra de índice só roda quando houve user-agent de
+  verdade, e o navegador embutido vence o robô do mesmo nome — o WhatsApp dá azar de nomear
+  as duas coisas, e perder um clique humano custaria mais que tolerar uma prévia a mais.
+  `Telegram` virou `Telegram/` para o `TelegramBot` continuar sendo robô.
+- **Referer interno não é origem** — navegar do `/planos` para o `/contato` não "veio de"
+  lugar nenhum. `Rastreio::atribuicaoParaLead()` e o novo `LeadService::veioDeFora()` só
+  gravam referer quando o host aponta para fora da casa; a ficha do lead parou de mostrar a
+  Golden como origem dela mesma.
+- **`eventos` da visita é cota de clique medido** — antes somava as telas também e o número
+  que o painel anuncia como "Cliques medidos" (`SUM(eventos)`) inflava em todo pageview.
+- **`golden-site.js`: última chegada de UTM substitui, não mistura** — guardar o bloco antigo
+  junto fazia um clique do Google herdar o `utm_medium=reels` do Reels e a campanha sair com
+  duas origens costuradas; o servidor já abre visita nova pelo mesmo motivo.
+- **Comprimentos garantidos na fonte** (`Atribuidor::resultado()` limita `rede`/`motivo` a
+  40, `sinais()` limita `origem_host` a 120) e `leads.toques` deixou de ser `tinyInteger`:
+  SQLite ignora comprimento de `varchar` e int pequeno, MySQL devolve *Data too long* /
+  *Out of range* no tráfego real — exatamente a classe de bug que já matou o seed uma vez.
+- **Nome da origem em uma linha só** (`.origem-nome` com `nowrap` + reticências e `title`):
+  quebrar no meio empilhava letras na coluna e a tabela cabia onde não deveria.
+- **`bootstrap/app.php`** passou a registrar o agendador; `IdentificadorVisita` e
+  `RegistrarRastreio` completam o *middleware* `web`.
+- **Docs**: README ganhou a seção *Atribuição de tráfego* e a lista de arquivos novos;
+  `docs/INSTALACAO.md` ganhou a **seção 9 — Tráfego e atribuição** (cookie, o que é robô,
+  `rastreio:podar` e a linha de cron do agendador), com as seções seguintes renumeradas e o
+  checklist atualizado. PDF regenerado (`docs/gerar-pdf.py`).
+
 ## [2.18.0] - 2026-10-23
 
 ### Adicionado

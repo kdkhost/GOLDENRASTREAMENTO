@@ -6,10 +6,12 @@
     'empty' => null,
     'col' => 'col-6 col-md-3',
     'placeholder' => null,
+    'value' => null,
 ])
 @php
     $id = 'flt-'.preg_replace('/[^a-z0-9]+/i', '-', $name);
-    $atual = (string) request()->query($name, '');
+    // O value é o padrão da tela (um período, por exemplo); o query string da URL vence.
+    $atual = (string) request()->query($name, (string) $value);
 @endphp
 <div class="{{ $col }}">
     <label class="form-label" for="{{ $id }}">{{ $label }}</label>

@@ -140,7 +140,7 @@
     </div>
 </div>
 
-<script>window.GOLDEN = { tracking: {{ $golden['tracking'] ? 'true' : 'false' }} };</script>
+<script>window.GOLDEN = { tracking: {{ $golden['tracking'] ? 'true' : 'false' }}, farol: @json(route('site.rastreio.evento')) };</script>
 <script src="{{ asset('js/golden-site.js') }}?v={{ filemtime(public_path('js/golden-site.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
 @stack('scripts')

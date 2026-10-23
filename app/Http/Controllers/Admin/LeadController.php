@@ -9,10 +9,11 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadStatusHistory;
 use App\Models\User;
+use App\Services\LeadService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LeadController extends Controller
 {
@@ -31,7 +32,7 @@ class LeadController extends Controller
 
     public function show(Lead $lead): View
     {
-        $lead->load(['campaign', 'owner', 'histories.user']);
+        $lead->load(['campaign', 'owner', 'histories.user', 'visit', 'jornada']);
 
         return view('admin.leads.show', [
             'lead' => $lead,
@@ -43,14 +44,14 @@ class LeadController extends Controller
     public function atualizarStatus(Request $request, Lead $lead): RedirectResponse
     {
         $data = $request->validate([
-            'status' => ['required', 'in:' . implode(',', Lead::STATUSES)],
+            'status' => ['required', 'in:'.implode(',', Lead::STATUSES)],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
-        app(\App\Services\LeadService::class)->atribuirStatus($lead, $data['status'], $data['note'] ?? null);
+        app(LeadService::class)->atribuirStatus($lead, $data['status'], $data['note'] ?? null);
         $lead->refresh();
 
-        if ($data['status'] === 'vendido' && !$lead->customer_id) {
+        if ($data['status'] === 'vendido' && ! $lead->customer_id) {
             $cliente = Customer::deLead($lead);
             Activity::log('lead_convertido', "Lead {$lead->name} convertido em cliente ao fechar a venda.", $cliente);
 
@@ -125,9 +126,9 @@ class LeadController extends Controller
     {
         $leads = $this->query($request)->with('campaign')->get();
 
-        Activity::log('lead_exportado', 'Exportação de leads (' . $leads->count() . ' registros).', null, $request->only(['status', 'campanha', 'inicio', 'fim']));
+        Activity::log('lead_exportado', 'Exportação de leads ('.$leads->count().' registros).', null, $request->only(['status', 'campanha', 'inicio', 'fim']));
 
-        $filename = 'golden-leads-' . now()->format('Ymd-His') . '.csv';
+        $filename = 'golden-leads-'.now()->format('Ymd-His').'.csv';
 
         return response()->streamDownload(function () use ($leads) {
             $out = fopen('php://output', 'w');
@@ -151,11 +152,12 @@ class LeadController extends Controller
             ->with(['campaign', 'owner'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('campanha'), fn ($q) => $q->where('campaign_id', $request->campanha))
+            ->when($request->filled('canal'), fn ($q) => $q->where('canal', $request->canal))
             ->when($request->filled('responsavel'), fn ($q) => $q->where('owner_id', $request->responsavel))
             ->when($request->filled('inicio'), fn ($q) => $q->whereDate('created_at', '>=', $request->inicio))
             ->when($request->filled('fim'), fn ($q) => $q->whereDate('created_at', '<=', $request->fim))
             ->when($request->filled('busca'), function ($q) use ($request) {
-                $t = '%' . $request->busca . '%';
+                $t = '%'.$request->busca.'%';
                 $q->where(fn ($w) => $w->where('name', 'like', $t)->orWhere('phone', 'like', $t)->orWhere('email', 'like', $t));
             })
             ->latest();

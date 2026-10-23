@@ -63,7 +63,7 @@
                 <div class="prod-actions">
                     <a href="{{ route('site.loja.produto', $p['slug']) }}" class="btn btn-ghost">Detalhes</a>
                     @if($p['disponivel'])
-                    <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}">
+                    <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}" data-farol="sacola" data-detalhe="{{ $p['slug'] }}">
                         @csrf
                         <input type="hidden" name="produto" value="{{ $p['id'] }}">
                         <input type="hidden" name="quantidade" value="1">

@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Services\Atribuidor;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lead extends Model
 {
-    use \Illuminate\Database\Eloquent\Factories\HasFactory;
+    use HasFactory;
 
     public const STATUSES = ['novo', 'contatado', 'proposta', 'vendido', 'perdido'];
 
@@ -24,6 +26,8 @@ class Lead extends Model
         'name', 'phone', 'email', 'profile', 'fleet_size', 'kit', 'message',
         'campaign_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
         'gclid', 'fbclid', 'visitor_id', 'landing_page', 'referrer', 'ip_hash', 'user_agent',
+        'visit_id', 'canal', 'rede', 'pago', 'canal_primeiro', 'rede_primeiro',
+        'primeiro_toque_em', 'toques', 'dispositivo', 'navegador',
         'status', 'owner_id', 'consent_given', 'value', 'won_at', 'lost_at', 'customer_id',
     ];
 
@@ -31,12 +35,27 @@ class Lead extends Model
         'consent_given' => 'boolean',
         'won_at' => 'datetime',
         'lost_at' => 'datetime',
+        'primeiro_toque_em' => 'datetime',
+        'pago' => 'boolean',
         'value' => 'integer',
+        'toques' => 'integer',
     ];
 
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
+    }
+
+    /** A última visita antes do cadastro — a jornada completa está nela e nos eventos dela. */
+    public function visit(): BelongsTo
+    {
+        return $this->belongsTo(Visit::class);
+    }
+
+    /** Todas as visitas deste mesmo visitante, da primeira ao cadastro. */
+    public function jornada(): HasMany
+    {
+        return $this->hasMany(Visit::class, 'visitor_id', 'visitor_id')->orderBy('aberta_em');
     }
 
     public function customer(): BelongsTo
@@ -57,6 +76,43 @@ class Lead extends Model
     public static function label(string $status): string
     {
         return self::STATUS_LABELS[$status] ?? ucfirst($status);
+    }
+
+    public function canalRotulo(): string
+    {
+        return Atribuidor::rotuloCanal($this->canal);
+    }
+
+    public function redeRotulo(): string
+    {
+        return Atribuidor::rotuloRede($this->rede);
+    }
+
+    public function iconeCanal(): string
+    {
+        return Atribuidor::iconeCanal($this->canal);
+    }
+
+    /** O tom do selo de origem, na mesma régua do painel de atribuição. */
+    public function tomCanal(): string
+    {
+        return tom_por_status('canal', $this->canal);
+    }
+
+    /**
+     * "Conheceu no Instagram, fechou pelo anúncio": primeiro e último toque quando
+     * eles diferem. Iguais, é uma origem única e a frase não precisa se repetir.
+     */
+    public function origemResumida(): string
+    {
+        $ultimo = $this->canalRotulo();
+        $primeiro = Atribuidor::rotuloCanal($this->canal_primeiro);
+
+        if (! $this->canal_primeiro || $this->canal_primeiro === $this->canal) {
+            return $ultimo;
+        }
+
+        return $primeiro.' → '.$ultimo;
     }
 
     public function scopeFunil($query)

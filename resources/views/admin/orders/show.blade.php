@@ -86,11 +86,7 @@
                 @endif
             </dl>
 
-            <label class="form-label" for="publicLink">Link público do pedido <span class="form-hint">(é por aqui que o cliente acompanha)</span></label>
-            <div class="input-group input-group-sm">
-                <input id="publicLink" type="text" class="form-control font-monospace" readonly value="{{ $pedido->registroUrl() }}">
-                <button class="btn btn-outline-secondary" type="button" data-copiar="#publicLink"><i class="fas fa-copy" aria-hidden="true"></i> Copiar</button>
-            </div>
+            <x-admin.link-copiar :valor="$pedido->registroUrl()" label="Link público do pedido" hint="é por aqui que o cliente acompanha" />
         </x-admin.card>
 
         <x-admin.card title="Linha do tempo do cliente" icon="fa-timeline" class="mt-3">
@@ -131,16 +127,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-document.querySelectorAll('[data-copiar]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-        var campo = document.querySelector(btn.dataset.copiar);
-        campo.select();
-        navigator.clipboard?.writeText(campo.value);
-        btn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Copiado';
-    });
-});
-</script>
-@endpush

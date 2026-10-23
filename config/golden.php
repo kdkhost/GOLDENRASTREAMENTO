@@ -225,7 +225,176 @@ return [
         'movimento' => ['entrada' => 'green', 'saida' => 'red', 'ajuste' => 'gold'],
         // Selo de cada fotografia do site (SiteContentController::imagens): qual arquivo está no ar.
         'slot_imagem' => ['enviada' => 'gold', 'pacote' => 'neutral', 'ausente' => 'neutral'],
+        // Origem da visita/lead, resolvida por Atribuidor::classificar() a partir das chaves
+        // de 'canais' logo abaixo. O tom é o mesmo no cartão de atribuição e na ficha do lead.
+        'canal' => [
+            'anuncio' => 'red', 'rede_social' => 'blue', 'busca_organica' => 'green', 'busca_ia' => 'gold',
+            'indicacao' => 'violet', 'email' => 'teal', 'parceiro' => 'teal',
+            'direto' => 'neutral', 'indexador' => 'neutral', 'desconhecido' => 'neutral',
+        ],
         'fallback' => 'neutral',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Atribuição de tráfego (de onde veio cada clique, view e cadastro)
+    |--------------------------------------------------------------------------
+    | Uma régua só para o classificador (App\Services\Atribuidor), o painel
+    | /admin/atribuicao e os selos do lead. Nada de rede social ou buscador fica
+    | escrito dentro de um controller: entra por aqui.
+    */
+
+    // Os canais que o sistema sabe identificar. 'pago' separa tráfego comprado de
+    // tráfego gratuito na hora de somar; 'convencional' é o que entra nos KPIs de
+    // crescimento — robô de indexador visita o site, mas não é um cliente.
+    'canais' => [
+        'anuncio' => ['rotulo' => 'Anúncio pago', 'icone' => 'fa-bullhorn', 'pago' => true, 'valido' => true],
+        'rede_social' => ['rotulo' => 'Rede social', 'icone' => 'fa-share-nodes', 'pago' => false, 'valido' => true],
+        'busca_organica' => ['rotulo' => 'Busca orgânica', 'icone' => 'fa-magnifying-glass', 'pago' => false, 'valido' => true],
+        'busca_ia' => ['rotulo' => 'Busca por IA', 'icone' => 'fa-robot', 'pago' => false, 'valido' => true],
+        'indicacao' => ['rotulo' => 'Indicação', 'icone' => 'fa-handshake-angle', 'pago' => false, 'valido' => true],
+        'email' => ['rotulo' => 'E-mail', 'icone' => 'fa-envelope', 'pago' => false, 'valido' => true],
+        'parceiro' => ['rotulo' => 'Site parceiro', 'icone' => 'fa-link', 'pago' => false, 'valido' => true],
+        'direto' => ['rotulo' => 'Direto', 'icone' => 'fa-location-crosshairs', 'pago' => false, 'valido' => true],
+        'indexador' => ['rotulo' => 'Robô indexador', 'icone' => 'fa-robot', 'pago' => false, 'valido' => false],
+        'desconhecido' => ['rotulo' => 'Não identificado', 'icone' => 'fa-circle-question', 'pago' => false, 'valido' => true],
+    ],
+
+    // utm_medium que provam tráfego comprado (e a rede quando o utm_source não diz).
+    'meios_pagos' => [
+        'cpc' => 'google', 'ppc' => 'google', 'paid' => null, 'paidsearch' => null, 'paid-search' => null,
+        'paidsocial' => null, 'paid_social' => null, 'paid-social' => null, 'paidmedia' => null,
+        'display' => null, 'banner' => null, 'ads' => null, 'ad' => null, 'video_ads' => null,
+        'shopping' => 'google', 'mlm' => null, 'paid_video' => null, 'paidorganic' => null,
+    ],
+
+    // utm_medium de rede social não paga. O que tiver 'paid' no meio vira anúncio da mesma rede.
+    'meios_sociais' => [
+        'social' => null, 'organic-social' => null, 'organic_social' => null, 'social-network' => null,
+        'socialnet' => null, 'reels' => 'instagram', 'shorts' => 'youtube', 'stories' => 'instagram',
+        'post' => null, 'status' => 'whatsapp', 'whatsapp-status' => 'whatsapp', 'pin' => 'pinterest',
+        'tweet' => 'x', 'newsletter_social' => null, 'groups' => 'facebook',
+    ],
+
+    // utm_medium de busca gratuita e de indicação.
+    'meios_busca' => ['organic', 'organic-search', 'organic_search', 'seo', 'search', 'natural', 'web-search'],
+    'meios_ia' => ['ai-search', 'ai_search', 'ai', 'llm', 'chatbot', 'answer-engine', 'answer_engine', 'geo', 'gen-ai', 'genai'],
+    'meios_email' => ['email', 'e-mail', 'newsletter', 'ml', 'mailing-list', 'mailing_list', 'crm'],
+    'meios_indicacao' => ['referral', 'refer', 'referencia', 'indicacao', 'indicated', 'word-of-mouth', 'wom', 'influencer', 'creator', 'ambassador'],
+
+    // Identificadores de clique que as plataformas de anúncio colocam na URL. Ter um
+    // destes na landing é a prova mais forte de que o clique veio de um anúncio pago.
+    'ids_clique' => [
+        'gclid' => 'google', 'gbraid' => 'google', 'wbraid' => 'google', 'dclid' => 'google', 'gaplid' => 'google',
+        'msclkid' => 'bing', 'ttclid' => 'tiktok', 'twclid' => 'x', 'yclid' => 'yahoo',
+        'li_fat_id' => 'linkedin', 'igsh' => 'instagram', 'igshid' => 'instagram', 'fbclid' => 'facebook',
+        'epik' => 'pinterest', 'sccid' => 'snapchat', 'arc_cid' => null, 'oemcid' => 'google',
+    ],
+
+    // Redes sociais por trecho de host do referer / do utm_source.
+    'redes_sociais' => [
+        'facebook' => 'facebook', 'fb.com' => 'facebook', 'fb.me' => 'facebook', 'messenger' => 'messenger',
+        'instagram' => 'instagram', 'tiktok' => 'tiktok', 'linkedin' => 'linkedin',
+        'twitter' => 'x', 'x.com' => 'x', 't.co' => 'x', 'threads' => 'threads',
+        'youtube' => 'youtube', 'youtu.be' => 'youtube', 'pinterest' => 'pinterest',
+        'whatsapp' => 'whatsapp', 'wa.me' => 'whatsapp', 'telegram' => 'telegram', 't.me' => 'telegram',
+        'reddit' => 'reddit', 'snapchat' => 'snapchat', 'discord' => 'discord', 'kwai' => 'kwai',
+        'snap' => 'snapchat', 'vk.com' => 'vk',
+    ],
+
+    // Buscadores clássicos — orgânicos enquanto não houver utm_medium pago.
+    'buscadores' => [
+        'google' => 'google', 'bing' => 'bing', 'duckduckgo' => 'duckduckgo', 'ecosia' => 'ecosia',
+        'brave' => 'brave', 'yandex' => 'yandex', 'sogou' => 'sogou', 'baidu' => 'baidu',
+        'startpage' => 'startpage', 'searx' => 'searx', 'mojeek' => 'mojeek', 'qwant' => 'qwant',
+        'ask' => 'ask', 'aol' => 'aol', 'naver' => 'naver', 'seznam' => 'seznam',
+    ],
+
+    // Assistentes de IA de onde o usuário pode ter clicado num link (tráfego humano,
+    // hoje um canal que anúncios nenhum cobre).
+    'ia_humanos' => [
+        'chatgpt' => 'chatgpt', 'chat.openai' => 'chatgpt', 'openai.com' => 'chatgpt',
+        'perplexity' => 'perplexity', 'pplx' => 'perplexity',
+        'gemini' => 'gemini', 'bard' => 'gemini', 'ai.google' => 'gemini',
+        'copilot' => 'copilot',
+        'claude' => 'claude', 'anthropic' => 'claude',
+        'meta.ai' => 'meta_ai', 'llama' => 'meta_ai',
+        'grok' => 'grok', 'deepseek' => 'deepseek', 'lechat' => 'mistral', 'mistral' => 'mistral',
+        'poe.com' => 'poe', 'huggingface' => 'huggingchat', 'cohere' => 'cohere',
+        'you.com' => 'you', 'andisearch' => 'andi', 'kagi.com' => 'kagi', 'character.ai' => 'character',
+        'genspark' => 'genspark', 'manus.im' => 'manus', 'devin.ai' => 'devin',
+    ],
+
+    // Robôs que leem o site. Separados em dois grupos porque o comportamento é diferente:
+    // 'ia_usuarios' é a IA acessando um link que um humano pediu (conta como busca por IA);
+    // 'indexadores' varrem a web sozinhos (não são gente, ficam fora dos KPIs).
+    'ia_usuarios' => ['ChatGPT-User', 'Claude-User', 'Claude-Web', 'Perplexity-User'],
+    'indexadores' => [
+        'GPTBot', 'OAIBot', 'OAI-SearchBot', 'ChatGPT-Bot', 'ClaudeBot', 'anthropic-ai', 'PerplexityBot',
+        'Googlebot', 'Google-Other', 'Google-Extended', 'Bingbot', 'adidxbot', 'DuckAssistBot',
+        'Baiduspider', 'YandexBot', 'Sogou', 'Exabot', 'facebot', 'facebookexternalhit', 'Twitterbot', 'LinkedInBot', 'Slackbot',
+        'Discordbot', 'WhatsApp', 'TelegramBot', 'Applebot', 'Pinterestbot', 'Snapbot', 'Amazonbot',
+        'Bytespider', 'PetalBot', 'AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot', 'DataForSeoBot',
+        'ImagesBot', 'BLEXBot', 'serpstatbot', 'CCBot', 'YouBot', 'Mojilebot', 'AwarioBot',
+        // 'WhatsApp' aparece aqui e mesmo assim o clique dentro do app conta: o Atribuidor
+        // reconhece o navegador embutido (Mozilla + WhatsApp) como gente antes de olhar esta lista.
+        'Scrapy', 'curl', 'wget', 'python-requests', 'python-urllib', 'Go-http-client', 'java/', 'okhttp',
+        'node-fetch', 'axios', 'PostmanRuntime', 'HTTPie', 'headless', 'PhantomJS', 'Zabbix', 'UptimeRobot',
+        'PRTG', 'Pingdom', 'StatusCake', 'Hyperuptime', 'site24x7',
+    ],
+
+    // Janela de sessão, retenção e limites do registro de tráfego + os eventos que a
+    // gente sabe medir. O beacon do site e o painel lêem esta mesma lista.
+    'rastreio' => [
+        'sessao_minutos' => 30,      // sem atividade por esse tempo = visita nova
+        'dias_retencao' => 365,      // podado por php artisan rastreio:podar
+        'max_eventos' => 200,        // teto por visita; um pageview infinito não incha a tabela
+        'cookie' => 'golden_visitor',
+        'eventos' => [
+            'view' => ['rotulo' => 'Viu a página', 'icone' => 'fa-eye'],
+            'cta' => ['rotulo' => 'Clicou em uma chamada', 'icone' => 'fa-hand-pointer'],
+            'telefone' => ['rotulo' => 'Ligou', 'icone' => 'fa-phone'],
+            'whatsapp' => ['rotulo' => 'Abriu o WhatsApp', 'icone' => 'fa-brands fa-whatsapp'],
+            'email' => ['rotulo' => 'Escreveu para', 'icone' => 'fa-envelope'],
+            'link_externo' => ['rotulo' => 'Saiu para um link externo', 'icone' => 'fa-arrow-up-right-from-square'],
+            'form_inicio' => ['rotulo' => 'Começou o formulário', 'icone' => 'fa-keyboard'],
+            'lead' => ['rotulo' => 'Cadastro enviado', 'icone' => 'fa-user-plus'],
+            'kit' => ['rotulo' => 'Escolheu um kit', 'icone' => 'fa-boxes-stacked'],
+            'sacola' => ['rotulo' => 'Adicionou à sacola', 'icone' => 'fa-basket-shopping'],
+            'checkout' => ['rotulo' => 'Foi ao checkout', 'icone' => 'fa-credit-card'],
+            'pedido' => ['rotulo' => 'Pedido criado', 'icone' => 'fa-circle-check'],
+        ],
+    ],
+
+    // Como cada rede identificada aparece na tela. O slug vem do Atribuidor; sem esta
+    // linha o painel mostraria "meta_ai" para o cliente.
+    'redes_rotulos' => [
+        'google' => 'Google', 'google-ads' => 'Google Ads', 'bing' => 'Bing / Microsoft',
+        'duckduckgo' => 'DuckDuckGo', 'ecosia' => 'Ecosia', 'brave' => 'Brave', 'yandex' => 'Yandex',
+        'sogou' => 'Sogou', 'baidu' => 'Baidu', 'startpage' => 'Startpage', 'searx' => 'Searx',
+        'mojeek' => 'Mojeek', 'qwant' => 'Qwant', 'ask' => 'Ask', 'aol' => 'AOL', 'naver' => 'Naver',
+        'seznam' => 'Seznam', 'yahoo' => 'Yahoo',
+        'chatgpt' => 'ChatGPT', 'gemini' => 'Gemini', 'perplexity' => 'Perplexity',
+        'copilot' => 'Copilot', 'claude' => 'Claude', 'meta_ai' => 'Meta AI', 'grok' => 'Grok',
+        'deepseek' => 'DeepSeek', 'mistral' => 'Le Chat (Mistral)', 'poe' => 'Poe',
+        'huggingchat' => 'HuggingChat', 'cohere' => 'Cohere', 'you' => 'You.com',
+        'andi' => 'Andi Search', 'kagi' => 'Kagi', 'character' => 'Character.AI',
+        'genspark' => 'Genspark', 'manus' => 'Manus', 'devin' => 'Devin',
+        'facebook' => 'Facebook', 'instagram' => 'Instagram', 'whatsapp' => 'WhatsApp',
+        'messenger' => 'Messenger', 'tiktok' => 'TikTok', 'linkedin' => 'LinkedIn', 'x' => 'X (Twitter)',
+        'threads' => 'Threads', 'youtube' => 'YouTube', 'pinterest' => 'Pinterest',
+        'telegram' => 'Telegram', 'reddit' => 'Reddit', 'snapchat' => 'Snapchat',
+        'discord' => 'Discord', 'kwai' => 'Kwai', 'vk' => 'VK', 'meta' => 'Meta (Facebook + Instagram)',
+        'msn' => 'MSN', 'apple' => 'Apple', 'tiktok-ads' => 'TikTok Ads',
+    ],
+
+    // Dispositivo (Visit::dispositivo) — rótulo e ícone para o painel.
+    'dispositivos' => [
+        'celular' => ['rotulo' => 'Celular', 'icone' => 'fa-mobile-screen'],
+        'tablet' => ['rotulo' => 'Tablet', 'icone' => 'fa-tablet-screen-button'],
+        'computador' => ['rotulo' => 'Computador', 'icone' => 'fa-desktop'],
+        'robô' => ['rotulo' => 'Robô', 'icone' => 'fa-robot'],
+        'desconhecido' => ['rotulo' => 'Não informado', 'icone' => 'fa-circle-question'],
     ],
 
     'parceiros_m2m' => ['Vivo', 'Claro', 'Algar', 'TIM'],
@@ -369,6 +538,7 @@ return [
             ['titulo' => 'Leads', 'rota' => 'admin.leads.index', 'prefixo' => 'admin.leads.', 'icone' => 'fa-user-plus', 'bolha' => 'leads_novos', 'tom' => 'gold'],
             ['titulo' => 'Clientes', 'rota' => 'admin.clientes.index', 'prefixo' => 'admin.clientes.', 'icone' => 'fa-users'],
             ['titulo' => 'Campanhas', 'rota' => 'admin.campanhas.index', 'prefixo' => 'admin.campanhas.', 'icone' => 'fa-bullhorn'],
+            ['titulo' => 'Atribuição de tráfego', 'rota' => 'admin.atribuicao.index', 'prefixo' => 'admin.atribuicao.', 'icone' => 'fa-diagram-project'],
         ]],
 
         ['titulo' => 'Vendas', 'icone' => 'fa-cart-shopping', 'filhos' => [

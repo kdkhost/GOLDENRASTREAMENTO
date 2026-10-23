@@ -17,7 +17,7 @@
 
 <x-admin.filters :reset="route('admin.campanhas.index')">
     <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-5" placeholder="Nome, source, medium ou conteúdo..." />
-    <x-admin.filter name="canal" type="select" label="Canal" col="col-6 col-md-3" :options="\App\Models\Campaign::CANAIS" empty="Todos os canais" />
+    <x-admin.filter name="canal" type="select" label="Canal" col="col-6 col-md-3" :options="\App\Models\Campaign::canais()" empty="Todos os canais" />
     <x-admin.filter name="situacao" type="select" label="Situação" col="col-6 col-md-4" :options="['ativa' => 'No ar', 'pausada' => 'Pausada']" empty="Todas" />
 </x-admin.filters>
 
@@ -33,7 +33,7 @@
                     @unless($c->ativa)<x-admin.status rotulo="pausada" :tom="tom_por_flag($c->ativa)" class="ms-2" />@endunless
                 </div>
             </td>
-            <td><span class="badge tone-neutral">{{ $c->canalLabel() }}</span></td>
+            <td><x-admin.status :rotulo="$c->canalLabel()" :tom="tom_por_status('canal', $c->channel)" /></td>
             <td class="text-center">{{ $c->leads_count }}</td>
             <td class="text-center">{{ $c->leads_novos }}</td>
             <td class="text-center">{{ $c->leads_vendidos }}</td>

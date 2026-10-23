@@ -129,6 +129,19 @@ $(function(){
         li.addEventListener('collapsed.lte.treeview', function(){ link.setAttribute('aria-expanded','false'); });
     });
 
+    // Todo botão "Copiar" do painel (link do pedido, URL rastreada da campanha) age sobre
+    // o campo declarado em data-copiar. Escuta delegada: a página não precisa se lembrar de chamá-la.
+    document.addEventListener('click', function(e){
+        var btn = e.target instanceof Element ? e.target.closest('[data-copiar]') : null;
+        if (!btn) return;
+        var campo = document.querySelector(btn.getAttribute('data-copiar'));
+        if (!campo) return;
+        campo.select();
+        var confirmar = function(){ toastr.success('Link copiado.'); };
+        if (navigator.clipboard) { navigator.clipboard.writeText(campo.value).then(confirmar, function(){ document.execCommand('copy'); confirmar(); }); }
+        else { document.execCommand('copy'); confirmar(); }
+    });
+
     toastr.options={timeOut:4000,positionClass:'toast-top-right'};    @foreach(['success'=>'success','error'=>'error','warning'=>'warning','info'=>'info'] as $k=>$fn)
         @if(session($k)) toastr.{{ $fn }}(@json(session($k))); @endif
     @endforeach

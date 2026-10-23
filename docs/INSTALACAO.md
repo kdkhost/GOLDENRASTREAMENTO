@@ -1,10 +1,12 @@
 # Golden Rastreamento — Instalação completa
 
 Documento de referência para colocar o sistema no ar em qualquer domínio:
-site institucional, captação de leads, painel administrativo (CRM, CMS, ERP)
-e loja virtual opcional. Tudo em Laravel, com um único instalador.
+site institucional, captação de leads, painel administrativo (CRM, CMS, ERP),
+atribuição de tráfego e loja virtual opcional. Tudo em Laravel, com um único
+instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
+- **Versão:** 2.19.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -474,7 +476,47 @@ servidor.
 
 ---
 
-## 9. Backup e restauração
+## 9. Tráfego e atribuição
+
+O sistema identifica a origem de **cada visita, clique e cadastro** sem depender de
+Google Analytics: as tabelas `visits` e `visit_events` gravam a jornada, e o painel abre em
+*Comercial → Atribuição de origens* (`/admin/atribuicao`) com as tabelas por canal, rede,
+campanha, página e dispositivo; a ficha do lead (`/admin/leads/12`) mostra primeiro toque,
+último toque e a linha do tempo da visita.
+
+Nada precisa ser configurado para funcionar: os sinais vêm da URL (`utm_*`, `gclid`,
+`fbclid`, `ttclid`, `msclkid`, `li_fat_id`, `yclid`), do referer e do user-agent. As listas
+que mandam na classificação estão em `config/golden.php` (`canais`, `meios_pagos`,
+`meios_sociais`, `meios_ia`, `buscadores`, `ia_usuarios`, `indexadores`) — acrescentar uma
+rede nova é editar o config, não o código.
+
+O cookie de visitante (`golden_visitor`, 90 dias) é de primeira parte e não guarda dado
+pessoal; o IP entra como hash. Robôs de índice (`GPTBot`, `ClaudeBot`, `Meta-ExternalAgent`,
+o crawler do Google…) entram no registro mas ficam **fora de todo número** — já o navegador
+embutido do WhatsApp/Instagram, onde o clique humano aconteceu, conta como gente.
+
+### Retenção e agendamento
+
+O registro cresce com o tráfego, por isso há poda:
+
+```bash
+php artisan rastreio:podar            # usa golden.rastreio.dias_retencao (365 dias)
+php artisan rastreio:podar --dias=90  # período menor, quando preciso
+```
+
+A poda roda toda terça às 03:30 pelo agendador do Laravel (`bootstrap/app.php`), que
+precisa de **uma** linha no cron da hospedagem (cPanel → *Tarefas de Cron*):
+
+```
+* * * * * cd ~/public_html && /opt/alt/php83/usr/bin/php artisan schedule:run >> /dev/null 2>&1
+```
+
+Use o mesmo PHP 8.3 do site (seção 2); sem o cron, o comando continua podendo ser rodado
+à mão — só não se auto-agenda.
+
+---
+
+## 10. Backup e restauração
 
 ```bash
 # banco
@@ -496,7 +538,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 10. Problemas comuns
+## 11. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -521,7 +563,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 11. Segurança
+## 12. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -546,7 +588,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 12. Checklist depois de instalar
+## 13. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
@@ -560,5 +602,8 @@ continua visível para você pelo painel ou SSH.
 - [ ] *Conteúdo → Imagens do site* lista as 19 fotos, e *Conteúdo → Textos das páginas* lista
       as sete páginas — trocar uma foto e salvar muda a página pública na hora
 - [ ] SMTP preenchido (ou `log`, assumido de propósito)
-- [ ] Crons: `php artisan schedule:run` a cada minuto, se usar lembretes
+- [ ] Cron do agendador: `php artisan schedule:run` a cada minuto (seção 9 — poda do
+      registro de tráfego)
+- [ ] Tráfego: abrir `/admin/atribuicao` depois de algumas visitas reais e conferir se as
+      origens aparecem
 - [ ] Backup automático de banco e `storage/app/public`

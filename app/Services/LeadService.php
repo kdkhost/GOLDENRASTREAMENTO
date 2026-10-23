@@ -6,27 +6,37 @@ use App\Models\Activity;
 use App\Models\Campaign;
 use App\Models\Lead;
 use App\Models\LeadStatusHistory;
+use App\Models\Visit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class LeadService
 {
+    public function __construct(private readonly Rastreio $rastreio) {}
+
     /**
-     * Monta um lead a partir da requisição pública, preservando UTMs,
-     * identificadores de clique (gclid/fbclid) e o identificador da visita.
+     * Monta um lead a partir da requisição pública. A origem não vem do POST — vem da
+     * jornada que o site registrou antes (visita + cliques), que é onde estão o referer
+     * verdadeiro e as UTMs do primeiro acesso.
      */
     public function capturar(Request $request, array $data): Lead
     {
-        $attribution = $this->atribuicao($request);
+        $visita = $this->rastreio->visitaAtual($request);
 
-        $lead = Lead::create([
+        $lead = new Lead([
             ...$data,
-            ...$attribution,
+            ...$this->atribuicao($request, $visita),
             'status' => 'novo',
             'consent_given' => (bool) ($data['consent'] ?? false),
         ]);
+        $lead->save();
 
-        $this->vincularCampanha($lead, $request);
+        $lead->fill($this->rastreio->atribuicaoParaLead($request, $lead))->save();
+
+        $this->vincularCampanha($lead);
+
+        // O cadastro é o último passo da jornada — entra na linha do tempo da visita.
+        $this->rastreio->registrarNaVisita($visita, 'lead', '/leads', null, $lead->kit);
 
         LeadStatusHistory::create([
             'lead_id' => $lead->id,
@@ -35,7 +45,7 @@ class LeadService
             'note' => 'Lead recebido pelo site.',
         ]);
 
-        Activity::log('lead_criado', "Lead {$lead->name} capturado (campanha: {$lead->campaign?->name})", $lead);
+        Activity::log('lead_criado', "Lead {$lead->name} capturado (".Atribuidor::rotuloCanal($lead->canal).')', $lead);
 
         return $lead;
     }
@@ -48,7 +58,7 @@ class LeadService
         }
 
         $lead->status = $status;
-        if ($status === 'vendido' && !$lead->won_at) {
+        if ($status === 'vendido' && ! $lead->won_at) {
             $lead->won_at = now();
         }
         if ($status === 'perdido') {
@@ -70,36 +80,88 @@ class LeadService
         Activity::log('lead_status', "Lead {$lead->name}: {$from} → {$status}", $lead);
     }
 
-    private function atribuicao(Request $request): array
+    /**
+     * Os UTMs e identificadores que o lead carrega. O formulário manda o que o
+     * navegador guardou; o que faltar vem da visita registrada no servidor.
+     *
+     * @return array<string, ?string>
+     */
+    private function atribuicao(Request $request, ?Visit $visita): array
     {
+        $utm = fn (string $campo): ?string => Str::limit(
+            (string) ($request->input($campo) ?: ($visita?->{$campo} ?? '')),
+            $campo === 'utm_source' || $campo === 'utm_medium' ? 120 : 190,
+            ''
+        ) ?: null;
+
         return [
-            'utm_source' => Str::limit($request->input('utm_source'), 120, ''),
-            'utm_medium' => Str::limit($request->input('utm_medium'), 120, ''),
-            'utm_campaign' => Str::limit($request->input('utm_campaign'), 190, ''),
-            'utm_content' => Str::limit($request->input('utm_content'), 190, ''),
-            'utm_term' => Str::limit($request->input('utm_term'), 190, ''),
-            'gclid' => Str::limit($request->input('gclid'), 120, ''),
-            'fbclid' => Str::limit($request->input('fbclid'), 120, ''),
-            'visitor_id' => $request->cookie('golden_visitor') ?: Str::random(24),
-            'landing_page' => Str::limit($request->header('referer'), 255, ''),
-            'referrer' => Str::limit($request->header('referer'), 255, ''),
-            'ip_hash' => hash('sha256', ($request->ip() ?? '') . config('app.key')),
-            'user_agent' => Str::limit($request->userAgent(), 255, ''),
+            'utm_source' => $utm('utm_source'),
+            'utm_medium' => $utm('utm_medium'),
+            'utm_campaign' => $utm('utm_campaign'),
+            'utm_content' => $utm('utm_content'),
+            'utm_term' => $utm('utm_term'),
+            'gclid' => Str::limit((string) ($request->input('gclid') ?: ($visita?->clique_id === 'gclid' ? $visita?->clique_valor : '')), 120, '') ?: null,
+            'fbclid' => Str::limit((string) ($request->input('fbclid') ?: ($visita?->clique_id === 'fbclid' ? $visita?->clique_valor : '')), 120, '') ?: null,
+            'visitor_id' => Str::limit((string) ($visita?->visitor_id ?: $request->cookie(config('golden.rastreio.cookie')) ?: Str::random(24)), 64, ''),
+            'landing_page' => $visita?->landing_path ?: Str::limit('/'.ltrim($request->path(), '/'), 255, ''),
+            'referrer' => $this->veioDeFora($visita, $request),
+            'ip_hash' => hash('sha256', ($request->ip() ?? '').config('app.key')),
+            'user_agent' => Str::limit((string) $request->userAgent(), 255, '') ?: null,
         ];
     }
 
-    private function vincularCampanha(Lead $lead, Request $request): void
+    /**
+     * A origem externa do lead: o referer da visita, mas só quando ele aponta para fora
+     * da casa. Navegar do /planos para o /contato não "veio de" lugar nenhum.
+     */
+    private function veioDeFora(?Visit $visita, Request $request): ?string
     {
-        $source = $lead->utm_source ?: ($lead->gclid ? 'google' : ($lead->fbclid ? 'facebook' : null));
-        $medium = $lead->utm_medium ?: ($source ? 'cpc' : 'direto');
-        $name = $lead->utm_campaign ?: ($source ? ucfirst($source) : 'Direto / Orgânico');
+        if ($visita) {
+            return $visita->origem_host ? $visita->referer : null;
+        }
 
-        $campaign = Campaign::firstOrCreate(
-            ['name' => $name, 'source' => $source, 'medium' => $medium],
-            ['content' => $lead->utm_content, 'channel' => $medium === 'direto' ? 'direto' : 'pago']
+        $referer = $request->header('referer');
+
+        return Atribuidor::eCasa(Atribuidor::hostDe($referer), $request) ? null : Str::limit((string) $referer, 255, '');
+    }
+
+    /**
+     * Agrupa o lead numa campanha usando a origem já resolvida pelo classificador.
+     * Antes tudo que não era 'direto' virava 'pago' — busca orgânica e rede social
+     * apareciam como anúncio. Agora o canal vem do Atribuidor.
+     */
+    private function vincularCampanha(Lead $lead): void
+    {
+        $canal = array_key_exists((string) $lead->canal, (array) config('golden.canais')) ? $lead->canal : 'desconhecido';
+        // Robô não abre campanha no painel: a linha vai existir, mas como origem não identificada.
+        if ($canal === 'indexador') {
+            $canal = 'desconhecido';
+        }
+        $rede = $lead->rede;
+        $meio = $lead->utm_medium ?: match ($canal) {
+            'anuncio' => 'cpc',
+            'rede_social' => 'social',
+            'busca_ia' => 'ai-search',
+            'busca_organica' => 'organic',
+            'email' => 'email',
+            'indicacao', 'parceiro' => 'referral',
+            default => 'direto',
+        };
+        $nome = $lead->utm_campaign
+            ?: ($rede ? Atribuidor::rotuloRede($rede).' · '.Atribuidor::rotuloCanal($canal) : Atribuidor::rotuloCanal($canal));
+
+        $campanha = Campaign::firstOrCreate(
+            ['name' => Str::limit($nome, 190, ''), 'source' => $lead->utm_source ?: $rede, 'medium' => Str::limit($meio, 120, '')],
+            ['content' => $lead->utm_content, 'channel' => $canal]
         );
 
-        $lead->campaign_id = $campaign->id;
+        // Campanha criada antes desta versão guardava o canal no vocabulário antigo
+        // ('pago', 'organico'...): o primeiro lead novo conserta a régua daquela linha.
+        if (! array_key_exists((string) $campanha->channel, (array) config('golden.canais'))) {
+            $campanha->update(['channel' => $canal]);
+        }
+
+        $lead->campaign_id = $campanha->id;
         $lead->save();
     }
 }

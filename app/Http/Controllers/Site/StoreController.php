@@ -12,6 +12,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\StockMovement;
+use App\Services\Rastreio;
 use App\Support\Carrinho;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,6 +29,8 @@ use Illuminate\View\View;
  */
 class StoreController extends Controller
 {
+    public function __construct(private readonly Rastreio $rastreio) {}
+
     public function index(Request $request): View
     {
         $atual = (string) $request->query('categoria', '');
@@ -263,7 +266,7 @@ class StoreController extends Controller
                 'notas' => $data['notas'] ?? null,
                 'consent_given' => true,
                 'customer_id' => $this->clienteDaCompra($data, $documento)?->id,
-                'visitor_id' => $request->cookie('golden_visitor'),
+                'visitor_id' => $request->cookie(config('golden.rastreio.cookie')),
                 'ip_hash' => $request->ip() ? hash('sha256', $request->ip().config('app.key')) : null,
             ]);
 
@@ -291,6 +294,7 @@ class StoreController extends Controller
         });
 
         Activity::log('pedido_site', "Pedido {$pedido->numero} recebido pela loja ({$data['nome']}).", $pedido);
+        $this->rastreio->registrarNaVisita($this->rastreio->visitaAtual($request), 'pedido', '/loja/pedido', null, $pedido->numero);
         $this->avisar($pedido);
         Carrinho::daSessao()->limpar();
 

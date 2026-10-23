@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ActivityController;
+use App\Http\Controllers\Admin\AttributionController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CustomerController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Site\LeadController as SiteLeadController;
 use App\Http\Controllers\Site\PageController;
+use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
 use App\Http\Controllers\Site\StoreController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +42,11 @@ Route::get('/privacidade', [PageController::class, 'privacidade'])->name('site.p
 Route::post('/leads', [SiteLeadController::class, 'store'])
     ->middleware('throttle:8,1')
     ->name('site.leads.store');
+
+// Farol do site: cada clique, kit, ligação e formulário iniciado do visitante.
+Route::post('/rastreio/evento', [SiteRastreioController::class, 'evento'])
+    ->middleware('throttle:120,1')
+    ->name('site.rastreio.evento');
 
 /*
 |--------------------------------------------------------------------------
@@ -109,6 +116,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/{lead}/converter', [AdminLeadController::class, 'converter'])->name('converter');
         Route::post('/{lead}', [AdminLeadController::class, 'atualizar'])->name('update');
         Route::delete('/{lead}', [AdminLeadController::class, 'destroy'])->name('destroy')->middleware('role:admin');
+    });
+
+    // De onde veio cada visita, clique e cadastro do site.
+    Route::prefix('atribuicao')->name('atribuicao.')->middleware('role:admin,vendedor')->group(function () {
+        Route::get('/', [AttributionController::class, 'index'])->name('index');
+        Route::get('/exportar', [AttributionController::class, 'export'])->name('export');
+        Route::get('/{visita}', [AttributionController::class, 'show'])->name('show');
     });
 
     Route::prefix('campanhas')->name('campanhas.')->middleware('role:admin,vendedor')->group(function () {
