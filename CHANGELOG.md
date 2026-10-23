@@ -3,17 +3,36 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
-## [2.5.0] - 2026-10-23
+## [2.7.0] - 2026-10-23
 
-### Removido
-- **A home parou de repetir o que já tem página dedicada.** Saíram da página inicial os
-  blocos de benefícios, segmentos, kits/planos, "como funciona" e FAQ — cada um agora é um
-  cartão de atalho na seção *Explore o site* (`.atalhos`), apontando para a própria página.
-- As mesmas duplicações foram desfeitas nas páginas filhas: `/planos` e `/como-funciona`
-  não repetem mais o FAQ (bridge "Ver dúvidas frequentes →") e `/solucoes` não repete os
-  passos do `/como-funciona`.
-- `PageController` deixou de consultar FAQ/depoimentos para páginas que não exibem mais
-  esse conteúdo.
+### Adicionado
+- **Abertura animada de página**: cada `main > section` entra com `pageIn` (fade + 14px de
+  subida) em 340ms na mesma `cubic-bezier(.22,.61,.36,1)` do menu, da gaveta e da central de
+  WhatsApp, com *stagger* de 50/100/140ms entre os primeiros blocos. O restante da página já
+  entra pronto, sem tela em branco.
+- **Botão "voltar ao topo" com anel de progresso**: `#toTop` no rodapé do layout, com um
+  `<circle pathLength="100">` cujo `stroke-dashoffset` é escrito pelo scroll — a borda dourada
+  **preenche conforme a página desce e esvazia no mesmo ritmo ao subir** (reverso natural, sem
+  estado separado). Aparece depois de 320px com fade+scale, e o clique sobe suavemente
+  (`behavior:'smooth'`).
+  - `initToTop()` em `public/js/golden-site.js`: listener `passive`, atualização limitada a
+    ~60Hz por marcação de tempo (sem *flag* de rAF, que trava em aba de fundo) e
+    `scrollHeight` lido só em carga, *resize* e após 500ms parado — o caminho quente não força
+    *layout*.
+- **Páginas seguintes abrem mais rápido**: `initPrefetch()` insere
+  `<link rel="prefetch">` no primeiro gesto (*pointerover*/*focusin*) sobre um link do mesmo
+  *origin* — uma vez só por URL, ignorando `_blank`, `download`, âncora, hash e as rotas
+  `/admin|/login|/logout`. Desligado com `save-data` ou conexão 2g.
+
+### Alterado
+- `.to-top` fica à **esquerda** do botão flutuante do WhatsApp (`right:92px` / 80px no mobile)
+  para nunca cobrir a central de canais; a barra de cookies ganhou `right:158px` para não passar
+  por baixo dos dois.
+- Bloco `prefers-reduced-motion` inclui `main>section{animation:none}` e os novos
+  `.to-top`/`.to-top-face`; com a preferência ligada o anel continua preenchendo (é
+  consequência do scroll), só sem transição, e a subida ao topo é instantânea.
+- `semMovimento` virou constante única do arquivo (usado pelo carrossel de depoimentos, pelo
+  anel e pelo *scroll* suave), em vez de cada *init* consultar `matchMedia`.
 
 ## [2.6.0] - 2026-10-23
 
@@ -47,6 +66,18 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   no próprio arquivo.
 - `<link rel="preconnect">` para `cdnjs.cloudflare.com` no `<head>` do site, junto dos
   *preconnect* já existentes das fontes.
+
+## [2.5.0] - 2026-10-23
+
+### Removido
+- **A home parou de repetir o que já tem página dedicada.** Saíram da página inicial os
+  blocos de benefícios, segmentos, kits/planos, "como funciona" e FAQ — cada um agora é um
+  cartão de atalho na seção *Explore o site* (`.atalhos`), apontando para a própria página.
+- As mesmas duplicações foram desfeitas nas páginas filhas: `/planos` e `/como-funciona`
+  não repetem mais o FAQ (bridge "Ver dúvidas frequentes →") e `/solucoes` não repete os
+  passos do `/como-funciona`.
+- `PageController` deixou de consultar FAQ/depoimentos para páginas que não exibem mais
+  esse conteúdo.
 
 ## [2.4.0] - 2026-10-22
 

@@ -4,6 +4,7 @@
 
   var G = window.GOLDEN || {};
   var trackingOn = G.tracking === true || G.tracking === '1' || G.tracking === 1;
+  var semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- UTMs + identificadores de clique ---------- */
   var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid'];
@@ -273,7 +274,6 @@
     var swiperEl = document.querySelector('.js-depoimentos');
     if (!swiperEl || typeof window.Swiper === 'undefined') return;
     var caixa = swiperEl.closest('.depo');
-    var parado = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     new window.Swiper(swiperEl, {
       slidesPerView: 1,
@@ -284,10 +284,10 @@
       threshold: 5,
       watchOverflow: true,
       rewind: true,
-      speed: parado ? 0 : 600,
+      speed: semMovimento ? 0 : 600,
       keyboard: { enabled: true, onlyInViewport: true },
       a11y: { prevSlideMessage: 'Depoimento anterior', nextSlideMessage: 'Próximo depoimento' },
-      autoplay: parado ? false : { delay: 5500, disableOnInteraction: false, pauseOnMouseEnter: true },
+      autoplay: semMovimento ? false : { delay: 5500, disableOnInteraction: false, pauseOnMouseEnter: true },
       pagination: { el: caixa.querySelector('.depo-dots'), clickable: true },
       navigation: { prevEl: caixa.querySelector('.depo-prev'), nextEl: caixa.querySelector('.depo-next') },
       breakpoints: {
@@ -305,8 +305,72 @@
     });
   }
 
+  /* ---------- Voltar ao topo: o anel preenche com a rolagem e esvazia ao subir ---------- */
+  function initToTop() {
+    var btn = document.getElementById('toTop');
+    if (!btn) return;
+    var anel = btn.querySelector('.to-top-bar');
+    var limite = 0;
+    var ultimo = 0;
+
+    function medir() {
+      var p = limite > 0 ? Math.min(1, Math.max(0, window.scrollY / limite)) : 0;
+      anel.style.strokeDashoffset = 100 - p * 100;
+      btn.classList.toggle('show', window.scrollY > 320);
+    }
+
+    // scrollHeight força layout: só é lido no carregamento, no resize e de tempos em tempos.
+    function calcularLimite() {
+      limite = document.documentElement.scrollHeight - window.innerHeight;
+      ultimo = performance.now();
+      medir();
+    }
+
+    window.addEventListener('scroll', function () {
+      var agora = performance.now();
+      if (agora - ultimo < 16) return;
+      if (agora - ultimo > 500) { calcularLimite(); return; }
+      ultimo = agora;
+      medir();
+    }, { passive: true });
+    window.addEventListener('resize', calcularLimite, { passive: true });
+
+    btn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: semMovimento ? 'auto' : 'smooth' });
+    });
+
+    calcularLimite();
+  }
+
+  /* ---------- Abertura rápida: antecipa o HTML do destino no primeiro gesto ---------- */
+  function initPrefetch() {
+    var c = navigator.connection;
+    if (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))) return;
+
+    var ja = Object.create(null);
+
+    function antecipar(alvo) {
+      var a = alvo && alvo.closest ? alvo.closest('a[href]') : null;
+      if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+
+      var url;
+      try { url = new URL(a.href, location.href); } catch (e) { return; }
+      if (url.origin !== location.origin || url.pathname === location.pathname || url.hash || ja[url.href]) return;
+
+      ja[url.href] = 1;
+      var l = document.createElement('link');
+      l.rel = 'prefetch';
+      l.href = url.href;
+      document.head.appendChild(l);
+    }
+
+    ['pointerover', 'focusin'].forEach(function (tipo) {
+      document.addEventListener(tipo, function (e) { antecipar(e.target); }, { passive: true, capture: true });
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initCtas();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initToTop(); initPrefetch(); initCtas();
     track('page_view', { page: location.pathname });
   });
 })();

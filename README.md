@@ -172,8 +172,17 @@ Aplicativo e Faturamento & Mensalidade — e cada canal já leva a **mensagem pr
 **Admin → Configurações → Botão do WhatsApp no site**; desligando a caixa, o botão volta a
 ser link direto.
 
-Os **depoimentos** da home são um **carrossel arrastável** no mesmo padrão: **um depoimento
-por vez** em telas menores, dois a partir de 768px, com **segurar-e-arrastar** (dedo no
+**Movimento e abertura.** Cada bloco da página entra com `pageIn` (340ms,
+`cubic-bezier(.22,.61,.36,1)` — a mesma curva do menu, da gaveta e da central de WhatsApp) e
+*stagger* nos primeiros blocos. O botão **voltar ao topo** (`#toTop`, à esquerda da bolha do
+WhatsApp) tem um **anel que enche com a rolagem e esvazia ao subir**: o `stroke-dashoffset` de
+um `<circle pathLength="100">` é atualizado pelo scroll (limitado a ~60Hz, sem forçar *layout*
+no caminho quente). No primeiro gesto sobre um link interno o navegador já faz
+`<link rel="prefetch">` da página de destino (`initPrefetch`), o que corta o tempo de abertura
+da próxima página; nada disso roda com `save-data` ou 2g, e `prefers-reduced-motion: reduce`
+desliga a animação de entrada, o *smooth scroll* e as transições.
+
+Os **depoimentos** da home são um **carrossel arrastável** no mesmo padrão: **um depoimentopor vez** em telas menores, dois a partir de 768px, com **segurar-e-arrastar** (dedo no
 celular e mouse no computador), setas, *bullets* clicáveis, teclado (`←`/`→`) e
 auto-rotação de 5,5s que pausa no hover e volta ao início no fim (`rewind`). A biblioteca é
 o **Swiper 11**, servida localmente em `public/vendor/swiper/` e carregada só na home via
