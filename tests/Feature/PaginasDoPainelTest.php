@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Campaign;
 use App\Models\Category;
+use App\Models\Contract;
 use App\Models\Customer;
 use App\Models\Faq;
 use App\Models\Lead;
@@ -12,6 +13,8 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Testimonial;
+use App\Models\Ticket;
+use App\Models\TicketMessage;
 use App\Models\User;
 use App\Models\Visit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,6 +44,24 @@ class PaginasDoPainelTest extends TestCase
         $produtos = Product::orderBy('id')->limit(2)->get();
         $umProduto = $produtos->first();
 
+        // Chamado e contrato vivem sobre a ficha do CRM: sem um registro aberto, as
+        // páginas de detalhe do atendimento não teriam o que mostrar.
+        $cliente = Customer::firstOrFail();
+        $chamado = Ticket::create([
+            'customer_id' => $cliente->id,
+            'assunto' => 'O rastreador parou de enviar',
+            'canal' => 'portal',
+            'status' => 'aberto',
+            'prioridade' => 'normal',
+        ]);
+        TicketMessage::create(['ticket_id' => $chamado->id, 'customer_id' => $cliente->id, 'corpo' => 'Não recebo posição desde ontem.']);
+        $contrato = Contract::create([
+            'customer_id' => $cliente->id,
+            'titulo' => 'Termo de adesão da plataforma',
+            'tipo' => 'adesao',
+            'status' => 'assinado',
+        ]);
+
         // A jornada nasce de uma visita real: o site registra o acesso exatamente como
         // faria no navegador de um visitante vindo de uma conversa com a IA.
         $this->get('/?utm_source=chatgpt.com&utm_medium=ai-search&utm_campaign=teste')->assertOk();
@@ -52,8 +73,10 @@ class PaginasDoPainelTest extends TestCase
             'admin.catalogo.fornecedores.edit' => ['fornecedor' => Supplier::firstOrFail()],
             'admin.catalogo.produtos.edit' => ['produto' => $umProduto],
             'admin.catalogo.produtos.estoque.show' => ['produto' => $umProduto],
+            'admin.chamados.show' => ['chamado' => $chamado],
             'admin.clientes.show' => ['cliente' => Customer::firstOrFail()],
             'admin.clientes.edit' => ['cliente' => Customer::firstOrFail()],
+            'admin.contratos.edit' => ['contrato' => $contrato],
             'admin.conteudo.depoimentos.edit' => ['depoimento' => Testimonial::firstOrFail()],
             'admin.conteudo.faqs.edit' => ['faq' => Faq::firstOrFail()],
             'admin.conteudo.paginas.edit' => ['pagina' => Page::firstOrFail()],
@@ -79,7 +102,7 @@ class PaginasDoPainelTest extends TestCase
             $abertas++;
         }
 
-        $this->assertGreaterThanOrEqual(36, $abertas, 'O painel tem menos páginas GET do que o esperado — algo sumiu do menu.');
+        $this->assertGreaterThanOrEqual(41, $abertas, 'O painel tem menos páginas GET do que o esperado — algo sumiu do menu.');
     }
 
     public function test_as_paginas_de_lista_respeitam_os_filtros(): void

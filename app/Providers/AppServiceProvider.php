@@ -7,10 +7,12 @@ use App\Models\Lead;
 use App\Models\Order;
 use App\Models\Page;
 use App\Models\Setting;
+use App\Models\Ticket;
 use App\Models\User;
 use App\Support\Carrinho;
 use App\Support\MenuPainel;
 use Illuminate\Routing\Events\RouteMatched;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -44,7 +46,7 @@ class AppServiceProvider extends ServiceProvider
         // rota); o gate serve para a tela não oferecer um botão que a rota negaria.
         Gate::define('admin', fn (User $usuario): bool => $usuario->isAdmin());
 
-        View::composer(['layouts.site', 'site.*', 'admin.layouts.app'], function ($view) {
+        View::composer(['layouts.site', 'site.*', 'portal.*', 'admin.layouts.app'], function ($view) {
             $view->with('golden', $this->dadosDoSite());
         });
 
@@ -85,6 +87,7 @@ class AppServiceProvider extends ServiceProvider
         return $this->pendencias ??= [
             'leads_novos' => Lead::where('status', 'novo')->count(),
             'pedidos_abertos' => Order::whereIn('status', Order::ABERTOS)->count(),
+            'chamados_abertos' => Ticket::whereIn('status', Ticket::ABERTOS)->count(),
         ];
     }
 
@@ -106,6 +109,9 @@ class AppServiceProvider extends ServiceProvider
         $lojaAtiva = $pegar('loja_ativa', '1') === '1';
         $box = config('golden.whatsapp_box');
 
+        // Header, gaveta e rodapé compartilham a mesma resposta: para onde a Área do cliente leva.
+        $rotaConta = Auth::guard('cliente')->check() ? 'portal.inicio' : 'portal.login';
+
         return $this->site = [
             'marca' => config('golden.marca'),
             'whatsapp' => $whatsapp,
@@ -126,7 +132,8 @@ class AppServiceProvider extends ServiceProvider
             'parceiros' => config('golden.parceiros_m2m'),
             'loja_ativa' => $lojaAtiva,
             'carrinho_itens' => $lojaAtiva ? Carrinho::daSessao()->totalItens() : 0,
-            'nav' => $this->montarMenu($lojaAtiva),
+            'nav' => $this->montarMenu($lojaAtiva, $rotaConta),
+            'portal_url' => route($rotaConta),
             'tracking' => $pegar('tracking_enabled', '0') === '1',
             'ga_id' => $pegar('ga_measurement_id'),
             'meta_pixel' => $pegar('meta_pixel_id'),
@@ -135,10 +142,10 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Árvore do menu do site: o esqueleto vem de config('golden.nav') e os grupos
-     * dinâmicos (categorias da loja e páginas do CMS) são resolvidos aqui, para que
-     * header e gaveta mobile compartilhem exatamente os mesmos itens.
+     * dinâmicos (categorias da loja, páginas do CMS e a entrada do portal) são
+     * resolvidos aqui, para que header e gaveta mobile compartilhem os mesmos itens.
      */
-    private function montarMenu(bool $lojaAtiva): array
+    private function montarMenu(bool $lojaAtiva, string $rotaConta): array
     {
         $rotaAtual = optional(request()->route())->getName() ?: '';
         $paginaAtual = (string) request()->route('slug');
@@ -188,7 +195,7 @@ class AppServiceProvider extends ServiceProvider
 
         return collect(config('golden.nav'))
             ->reject(fn ($item) => ($item['grupo'] ?? null) === 'loja' && ! $lojaAtiva)
-            ->map(function ($item) use ($montar, $paginas) {
+            ->map(function ($item) use ($montar, $paginas, $rotaConta) {
                 if (($item['grupo'] ?? null) === 'loja') {
                     $item['rota'] = 'site.loja.index';
                     $item['prefixo'] = 'site.loja.';
@@ -209,6 +216,10 @@ class AppServiceProvider extends ServiceProvider
                         ])
                         ->values()
                         ->all();
+                }
+
+                if (($item['grupo'] ?? null) === 'conta') {
+                    $item['rota'] = $rotaConta;
                 }
 
                 return $montar($item, true);

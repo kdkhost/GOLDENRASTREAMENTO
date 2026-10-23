@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Customer;
 use App\Models\User;
 
 return [
@@ -42,6 +43,16 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        /*
+        | Portal do cliente. Guarda separada de propósito: a sessão do /portal nunca
+        | atravessa para o painel, então um cliente logado continua sem nenhuma rota de
+        | admin — e sair do portal não desloga a equipe que está na mesma aba.
+        */
+        'cliente' => [
+            'driver' => 'session',
+            'provider' => 'clientes',
+        ],
     ],
 
     /*
@@ -65,6 +76,13 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        // A ficha do CRM é o usuário do portal: a mesma linha que o vendedor edita em
+        // Admin → Clientes é a que assina o acesso do cliente.
+        'clientes' => [
+            'driver' => 'eloquent',
+            'model' => Customer::class,
         ],
 
         // 'users' => [

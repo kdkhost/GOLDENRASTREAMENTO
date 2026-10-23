@@ -31,6 +31,16 @@
                 <dt>Frota</dt><dd>{{ $cliente->frota_tamanho ? $cliente->frota_tamanho.' veículo(s)' : '—' }}</dd>
                 <dt>Valor anual</dt><dd class="fw-semibold">{{ $cliente->valor_anual_cents ? brl($cliente->valor_anual_cents) : '—' }}</dd>
                 <dt>Responsável</dt><dd>{{ $cliente->owner?->name ?? 'Sem responsável definido' }}</dd>
+                <dt>Portal do cliente</dt>
+                <dd>
+                    @if($cliente->temConta())
+                        <x-admin.status rotulo="conta ativa" tom="green" />
+                        <div class="form-hint fw-normal">{{ $cliente->email_portal }}@if($cliente->ultimo_acesso_em) · último acesso {{ $cliente->ultimo_acesso_em->format('d/m/Y H:i') }}@endif</div>
+                    @else
+                        <x-admin.status rotulo="sem conta" tom="neutral" />
+                        <div class="form-hint fw-normal">Se a pessoa se cadastrar no portal, esta ficha ganha o acesso — nada é criado à mão.</div>
+                    @endif
+                </dd>
                 <dt>No funil</dt><dd><x-admin.status :rotulo="\App\Models\Customer::label($cliente->status)" :tom="tom_por_status('cliente', $cliente->status)" /></dd>
                 @if($cliente->lead)
                     <dt>Origem</dt><dd><a href="{{ route('admin.leads.show', $cliente->lead) }}">Lead #{{ $cliente->lead_id }}</a> — {{ $cliente->lead->name }}</dd>
@@ -94,6 +104,34 @@
                     <td class="text-center small">{{ brl($o->total_cents) }}</td>
                     <td class="text-center"><x-admin.status :rotulo="$o->statusLabel()" :tom="tom_por_status('pedido', $o->status)" /></td>
                     <td class="text-center small text-secondary">{{ $o->created_at->format('d/m/Y') }}</td>
+                </tr>
+            @endforeach
+        </x-admin.table>
+
+        <x-admin.table class="mt-3" :headers="['Chamado', 'center:Situação', 'center:Prioridade', 'center:Aberto em', 'end:Mensagens']"
+            empty="Nenhum chamado aberto no portal por este cliente." :paginator="$chamados">
+            @foreach($chamados as $ch)
+                <tr>
+                    <td><a href="{{ route('admin.chamados.show', $ch) }}" class="text-decoration-none fw-semibold">{{ $ch->assunto }}</a>
+                        <div class="text-secondary small">{{ $ch->numero }} · {{ $ch->canalLabel() }}</div></td>
+                    <td class="text-center"><x-admin.status :rotulo="$ch->statusLabel()" :tom="tom_por_status('chamado', $ch->status)" /></td>
+                    <td class="text-center"><x-admin.status :rotulo="$ch->prioridadeLabel()" :tom="tom_por_status('prioridade', $ch->prioridade)" /></td>
+                    <td class="text-center small text-secondary">{{ $ch->created_at->format('d/m/Y') }}</td>
+                    <td class="text-end small">{{ $ch->messages_count }}</td>
+                </tr>
+            @endforeach
+        </x-admin.table>
+
+        <x-admin.table class="mt-3" :headers="['Contrato', 'center:Tipo', 'center:Situação', 'end:Mensalidade', 'center:Vigência']"
+            empty="Nenhum contrato publicado para este cliente." :paginator="$contratos">
+            @foreach($contratos as $ct)
+                <tr>
+                    <td><a href="{{ route('admin.contratos.edit', $ct) }}" class="text-decoration-none fw-semibold">{{ $ct->titulo }}</a>
+                        <div class="text-secondary small">{{ $ct->numero }}</div></td>
+                    <td class="text-center small">{{ $ct->tipoLabel() }}</td>
+                    <td class="text-center"><x-admin.status :rotulo="$ct->statusLabel()" :tom="tom_por_status('contrato', $ct->status)" /></td>
+                    <td class="text-end small">{{ $ct->valor_mensal_cents ? brl($ct->valor_mensal_cents) : '—' }}</td>
+                    <td class="text-center small text-secondary">{{ $ct->celebrado_em?->format('d/m/Y') ?: '—' }}@if($ct->vigencia_ate)<div>até {{ $ct->vigencia_ate->format('d/m/Y') }}</div>@endif</td>
                 </tr>
             @endforeach
         </x-admin.table>

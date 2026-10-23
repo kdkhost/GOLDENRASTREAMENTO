@@ -77,9 +77,11 @@ class CustomerController extends Controller
 
         return view('admin.customers.show', [
             'cliente' => $cliente,
-            // As duas listas da ficha paginam por nomes próprios: um link não mexe na outra.
+            // As listas da ficha paginam por nomes próprios: um link não mexe na outra.
             'interacoes' => $cliente->interactions()->with('user')->paginate(itens_por_pagina(), ['*'], 'historico')->withQueryString(),
             'pedidos' => $cliente->orders()->paginate(itens_por_pagina(), ['*'], 'pedidos')->withQueryString(),
+            'chamados' => $cliente->tickets()->paginate(itens_por_pagina(), ['*'], 'chamados')->withQueryString(),
+            'contratos' => $cliente->contracts()->paginate(itens_por_pagina(), ['*'], 'contratos')->withQueryString(),
             'tipos' => Interaction::TIPOS,
         ]);
     }

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AttributionController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ContractController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController;
@@ -15,9 +16,16 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TestimonialController;
+use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Portal\PortalAuthController;
+use App\Http\Controllers\Portal\PortalChamadoController;
+use App\Http\Controllers\Portal\PortalContaController;
+use App\Http\Controllers\Portal\PortalController;
+use App\Http\Controllers\Portal\PortalContratoController;
+use App\Http\Controllers\Portal\PortalPedidoController;
 use App\Http\Controllers\Site\LeadController as SiteLeadController;
 use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
@@ -75,6 +83,55 @@ Route::middleware('loja')->group(function () {
 
     // Produto precisa ficar por último: {slug} aceita qualquer caminho de um segmento.
     Route::get('/loja/{slug}', [StoreController::class, 'show'])->name('site.loja.produto');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Portal do cliente (guard próprio: nada aqui atravessa para o painel)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('portal')->name('portal.')->group(function () {
+    Route::get('entrar', [PortalAuthController::class, 'entrar'])->name('login');
+    Route::post('entrar', [PortalAuthController::class, 'autenticar'])
+        ->middleware('throttle:10,1')->name('login.post');
+
+    Route::get('cadastro', [PortalAuthController::class, 'cadastro'])->name('cadastro');
+    Route::post('cadastro', [PortalAuthController::class, 'registrar'])
+        ->middleware('throttle:8,1')->name('cadastro.post');
+
+    // Recuperação sem broker: o link é assinado e expira, então não há tabela de tokens.
+    Route::get('esqueci-senha', [PortalAuthController::class, 'esquecer'])->name('senha.esquecer');
+    Route::post('esqueci-senha', [PortalAuthController::class, 'esquecerSenha'])
+        ->middleware('throttle:6,1')->name('senha.esquecer.post');
+    Route::get('redefinir-senha', [PortalAuthController::class, 'redefinir'])->name('senha.redefinir');
+    Route::post('redefinir-senha', [PortalAuthController::class, 'salvarSenhaNova'])
+        ->middleware('throttle:6,1')->name('senha.redefinir.post');
+
+    Route::middleware('cliente')->group(function () {
+        Route::get('/', [PortalController::class, 'inicio'])->name('inicio');
+        Route::post('sair', [PortalAuthController::class, 'sair'])->name('sair');
+
+        Route::get('pedidos', [PortalPedidoController::class, 'index'])->name('pedidos');
+        Route::get('pedidos/{pedido}', [PortalPedidoController::class, 'show'])
+            ->whereNumber('pedido')->name('pedidos.show');
+
+        Route::get('chamados', [PortalChamadoController::class, 'index'])->name('chamados');
+        Route::get('chamados/abrir', [PortalChamadoController::class, 'criar'])->name('chamados.criar');
+        Route::post('chamados', [PortalChamadoController::class, 'registrar'])
+            ->middleware('throttle:12,1')->name('chamados.registrar');
+        Route::get('chamados/{chamado}', [PortalChamadoController::class, 'show'])
+            ->whereNumber('chamado')->name('chamados.show');
+        Route::post('chamados/{chamado}/resposta', [PortalChamadoController::class, 'responder'])
+            ->whereNumber('chamado')->middleware('throttle:20,1')->name('chamados.responder');
+
+        Route::get('contratos', [PortalContratoController::class, 'index'])->name('contratos');
+        Route::get('contratos/{contrato}/arquivo', [PortalContratoController::class, 'arquivo'])
+            ->whereNumber('contrato')->name('contratos.arquivo');
+
+        Route::get('dados', [PortalContaController::class, 'dados'])->name('dados');
+        Route::post('dados', [PortalContaController::class, 'salvarDados'])->name('dados.salvar');
+        Route::post('senha', [PortalContaController::class, 'salvarSenha'])->name('senha.salvar');
+    });
 });
 
 /*
@@ -184,6 +241,24 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/{pedido}/status', [OrderController::class, 'atualizarStatus'])->name('status');
         Route::post('/{pedido}/documentos', [OrderController::class, 'documentos'])->name('documentos');
         Route::delete('/{pedido}', [OrderController::class, 'destroy'])->name('destroy')->middleware('role:admin');
+    });
+
+    // Atendimento: chamados abertos no portal e contratos publicados para o cliente ler.
+    Route::prefix('chamados')->name('chamados.')->middleware('role:admin,vendedor')->group(function () {
+        Route::get('/', [TicketController::class, 'index'])->name('index');
+        Route::get('/{chamado}', [TicketController::class, 'show'])->name('show');
+        Route::post('/{chamado}/resposta', [TicketController::class, 'responder'])->name('responder');
+        Route::post('/{chamado}/status', [TicketController::class, 'atualizarStatus'])->name('status');
+        Route::delete('/{chamado}', [TicketController::class, 'destroy'])->name('destroy')->middleware('role:admin');
+    });
+
+    Route::prefix('contratos')->name('contratos.')->middleware('role:admin')->group(function () {
+        Route::get('/', [ContractController::class, 'index'])->name('index');
+        Route::get('/novo', [ContractController::class, 'create'])->name('create');
+        Route::post('/', [ContractController::class, 'store'])->name('store');
+        Route::get('/{contrato}/editar', [ContractController::class, 'edit'])->name('edit');
+        Route::post('/{contrato}', [ContractController::class, 'update'])->name('update');
+        Route::delete('/{contrato}', [ContractController::class, 'destroy'])->name('destroy');
     });
 
     // CMS: Páginas / Imagens e textos do site / Depoimentos / FAQs

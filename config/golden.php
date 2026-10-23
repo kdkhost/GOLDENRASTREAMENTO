@@ -218,6 +218,15 @@ return [
             'separando' => 'teal', 'enviado' => 'violet', 'entregue' => 'green', 'cancelado' => 'red',
         ],
         'usuario' => ['ativo' => 'green', 'inativo' => 'red'],
+        // Chamado do portal (Ticket::STATUS): o painel e o cliente usam o mesmo selo.
+        'chamado' => [
+            'aberto' => 'amber', 'em_analise' => 'blue', 'aguardando_cliente' => 'gold',
+            'resolvido' => 'green', 'fechado' => 'neutral',
+        ],
+        // Prioridade do chamado: urgente vermelha, baixa neutra (mesma régua dos dois lados).
+        'prioridade' => ['baixa' => 'neutral', 'normal' => 'blue', 'alta' => 'gold', 'urgente' => 'red'],
+        // Contrato do cliente (Contract::STATUS): rascunho ainda não é documento.
+        'contrato' => ['rascunho' => 'neutral', 'assinado' => 'blue', 'vigente' => 'green', 'encerrado' => 'red'],
         // Estado do estoque, calculado por Product::estadoEstoque() — o painel e a vitrine
         // usam a mesma régua: sem controle, zerado, abaixo do mínimo ou abastecido.
         'estoque' => ['livre' => 'neutral', 'zerado' => 'red', 'baixo' => 'gold', 'ok' => 'green'],
@@ -512,7 +521,8 @@ return [
 
     // Menu do site (header + gaveta mobile). Itens com 'grupo' recebem filhos
     // montados pelo AppServiceProvider: 'loja' usa as categorias do catálogo e
-    // 'institucional' usa as páginas publicadas no CMS.
+    // 'institucional' usa as páginas publicadas no CMS. 'conta' não tem rota fixa:
+    // quem já entrou no portal vai para o início, quem não vai, para o login.
     'nav' => [
         ['titulo' => 'Soluções', 'rota' => 'site.solucoes', 'grupo' => 'solucoes', 'filhos' => [
             ['titulo' => 'Funcionalidades da plataforma', 'rota' => 'site.solucoes'],
@@ -523,6 +533,7 @@ return [
         ['titulo' => 'Loja', 'rota' => 'site.loja.index', 'grupo' => 'loja'],
         ['titulo' => 'Institucional', 'grupo' => 'institucional'],
         ['titulo' => 'Contato', 'rota' => 'site.contato'],
+        ['titulo' => 'Área do cliente', 'grupo' => 'conta'],
     ],
 
     // Menu do painel (sidebar). Item com 'filhos' vira grupo de treeview: o clique abre
@@ -547,6 +558,11 @@ return [
             ['titulo' => 'Categorias', 'rota' => 'admin.catalogo.categorias.index', 'prefixo' => 'admin.catalogo.categorias.', 'icone' => 'fa-tags', 'admin' => true],
             ['titulo' => 'Fornecedores', 'rota' => 'admin.catalogo.fornecedores.index', 'prefixo' => 'admin.catalogo.fornecedores.', 'icone' => 'fa-truck', 'admin' => true],
             ['titulo' => 'Loja no site', 'rota' => 'site.loja.index', 'prefixo' => 'site.loja.', 'icone' => 'fa-store', 'externo' => true, 'desligada' => 'loja_ativa'],
+        ]],
+
+        ['titulo' => 'Atendimento', 'icone' => 'fa-headset', 'filhos' => [
+            ['titulo' => 'Chamados', 'rota' => 'admin.chamados.index', 'prefixo' => 'admin.chamados.', 'icone' => 'fa-life-ring', 'bolha' => 'chamados_abertos', 'tom' => 'amber'],
+            ['titulo' => 'Contratos', 'rota' => 'admin.contratos.index', 'prefixo' => 'admin.contratos.', 'icone' => 'fa-file-signature'],
         ]],
 
         ['titulo' => 'Conteúdo do site', 'icone' => 'fa-file-lines', 'admin' => true, 'filhos' => [

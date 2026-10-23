@@ -228,8 +228,8 @@ MODELO = """<!doctype html>
 <section class="capa">
   <div class="marca">Golden Rastreamento</div>
   <h1>Instalação completa<br>do sistema</h1>
-  <p>Site, captação de leads, painel (CRM, CMS e ERP) e loja virtual — do
-     primeiro <code>git clone</code> ao checklist de saída.</p>
+  <p>Site, captação de leads, painel (CRM, CMS e ERP), loja virtual e portal do
+     cliente — do primeiro <code>git clone</code> ao checklist de saída.</p>
   <div class="metadados">
     <span>Versão <b>{versao}</b></span>
     <span>Data <b>{data}</b></span>

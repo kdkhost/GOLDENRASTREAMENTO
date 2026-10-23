@@ -12,14 +12,15 @@ use Tests\TestCase;
  */
 class TemasEIconesDoPainelTest extends TestCase
 {
-    /** Documentos HTML que o navegador abre: os três precisam da mesma favicon. */
+    /** Documentos HTML que o navegador abre: todos precisam da mesma favicon. */
     private const DOCUMENTOS = [
         'resources/views/layouts/site.blade.php',
         'resources/views/admin/layouts/app.blade.php',
         'resources/views/auth/login.blade.php',
+        'resources/views/portal/layout.blade.php',
     ];
 
-    public function test_os_tres_documentos_tem_a_mesma_favicon(): void
+    public function test_todo_documento_abre_com_a_mesma_favicon(): void
     {
         foreach (self::DOCUMENTOS as $arquivo) {
             $conteudo = $this->ler($arquivo);

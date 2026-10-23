@@ -3,6 +3,102 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.20.0] - 2026-10-23
+
+### Adicionado
+- **Portal do cliente em `/portal`** — a pessoa passa a ver a própria casa sem depender da
+  equipe: *Início* (resumo com pedidos, investido, chamados abertos e contratos), *Pedidos*
+  com a linha do tempo da jornada e os documentos, *Chamados*, *Contratos* com o PDF e *Meus
+  dados*. Guard próprio (`cliente` sobre a tabela `customers`, chave de sessão
+  `login_cliente`), então a sessão do portal nunca abre uma rota do painel e vice-versa —
+  inclusive com as duas abertas no mesmo navegador. Folha de estilo própria
+  (`public/css/golden-portal.css`) sobre o tema do site, sem cor nova.
+- **Auto-cadastro que não duplica ficha.** `App\Support\PortalDoCliente` procura a ficha do
+  CRM primeiro pelo documento (normalizado, com ou sem máscara) e depois pelo e-mail, e
+  entrega a senha a ela — `email_portal` + `password` + `remember_token` + `ultimo_acesso_em`
+  são as quatro colunas novas, nada de segunda tabela de usuário. Entre candidatas, a que tem
+  mais pedidos ganha. Quem nunca passou pela Golden ganha cadastro novo, já com `status`
+  `ativo`, e os pedidos feitos como convidado são puxados por `vincularPedidosSemFicha()`: a
+  primeira tela já vem cheia.
+- **Chamados (`tickets` + `ticket_messages`).** O cliente abre do portal (com o pedido
+  vinculado, quando ele escolhe um) e acompanha a conversa; a equipe atende em
+  **Admin → Atendimento → Chamados**, com KPIs de abertos / sem resposta / aguardando o
+  cliente / resolvidos, filtro por status e prioridade, responsável e mudança de status. A
+  conversa vive numa fila só — a primeira mensagem é o relato que abriu o chamado —, então não
+  existe campo "última resposta" para sincronizar entre as duas telas, e a autoria sai de
+  `user_id`/`customer_id` da mensagem, nunca de um campo "de".
+- **Contratos (`contracts`).** A equipe cadastra em **Admin → Atendimento → Contratos**,
+  anexa o PDF assinado pelo mesmo dropzone de todos os envios (regra `contrato_documento` em
+  `config/envios.php`, `contratos/`, PDF até 8 MB) e controla visibilidade pelo status:
+  **rascunho não aparece para o cliente** — nem na lista, nem no resumo da home, nem no
+  download. Número comercial `CT26-0001`, vigência com aviso de vencimento em 30 dias.
+- **Quatro e-mails novos** na mesma identidade visual do pedido: `ChamadoRecebido` (cliente),
+  `ChamadoEquipe` (painel), `ChamadoResposta` (bidirecional, com o link de quem respondeu) e
+  `RedefinirSenhaPortal`. Como em todo o resto do sistema, **sem SMTP configurado o aviso se
+  perde e a ação do cliente nunca é barrada** — o envio é tentado em `try/catch` dentro de
+  `PortalBaseController::avisarEquipe()`/`avisarCliente()` e do `TicketController`, regra que
+  mora numa fonte só.
+- **Recuperação de acesso sem broker.** Like link assinado
+  (`URL::temporarySignedRoute`, 60 minutos), sem tabela `password_resets`: a POST repete a URL
+  com a assinatura (`request()->fullUrl()`), porque a `UrlGenerator::current()` devolve só o
+  caminho. A resposta para e-mail com ou sem conta é a mesma frase, para a tela não revelar
+  quem é cliente da Golden.
+- **Entrada "Área do cliente" no site.** `config/golden.nav` ganhou o grupo dinâmico `conta` e
+  `AppServiceProvider` passou a expor `golden.portal_url`: header, gaveta mobile e a coluna
+  *Suporte* do rodapé apontam todos para a mesma rota, que é `/portal` para quem já entrou e
+  `/portal/entrar` para quem ainda não.
+- **`PortalDoClienteTest`** — 18 testes/175 asserções sobre as promessas do portal: nenhuma
+  tela abre sem login, o auto-cadastro reaproveita a ficha e herda o pedido de convidado, o
+  login usa `email_portal` (não o e-mail do CRM), ficha inativa perde o acesso, sessão de
+  portal ≠ sessão de painel nos dois sentidos, recurso de outro cliente é 404, rascunho não
+  chega ao portal, o PDF é entregue só ao dono, caminho de arquivo forjado é recusado e o
+  e-mail de recuperação não diz quem é cliente.
+
+### Alterado
+- **`Activity::log()` ganhou o argumento `$por`.** No portal quem age é a ficha, não um
+  usuário do painel; sem isso uma ação do cliente sairia assinada no nome da equipe que por
+  acaso está logada no mesmo navegador. `portal_autocadastro`, `portal_criou_ficha`,
+  `portal_login`, `portal_sair`, `portal_senha_*`, `portal_dados_atualizados`,
+  `portal_chamado_aberto`/`respondeu`, `chamado_respondido`, `chamado_status` e
+  `contrato_*` compõem a trilha.
+- **Ficha do CRM (Admin → Clientes) mostra a conta do portal** — selo *conta ativa* com o
+  e-mail de acesso e o último acesso, ou *sem conta* com o aviso de que ela nasce sozinha no
+  auto-cadastro —, mais as tabelas de chamados e contratos da mesma pessoa, paginadas cada una
+  no próprio nome de página.
+- **`Customer` é autenticável** e o menu do painel passou a ter cinco grupos (entrou
+  **Atendimento**), com bolha de chamados abertos. `config/golden.tons_status` ganhou os
+  grupos `chamado`, `prioridade` e `contrato`, então os selos das duas telas saem da mesma
+  régua de cor.
+- **Testes do painel atualizados**: `MenuDoPainelTest` conhece o grupo novo (admin vê cinco,
+  vendedor vê três) e `PaginasDoPainelTest` varre as novas páginas GET de chamados e
+  contratos, criando chamado + contrato sobre a ficha do CRM para as telas de detalhe terem o
+  que abrir.
+
+### Segurança
+- Recurso de outro cliente devolve **404, não 403**: a barra de endereços não descobre quais
+  ids de pedido, chamado e contrato existem.
+- Cadastro com **honeypot** (`website`), throttle dedicado por rota (`8,1` cadastro,
+  `10,1` login, `6,1` recuperação, `12,1` abrir chamado) e consentimento LGPD obrigatório.
+- `password` e `remember_token` estão em `$hidden` da ficha; o documento é só leitura no
+  portal (é a chave do vínculo com pedido e contrato); e o caminho de PDF salvo no formulário
+  é revalidado contra a pasta do campo de envio, então texto livre não faz o sistema apontar
+  para arquivo fora de `storage/contratos`.
+
+### Detalhes
+- Toda contagem do portal sai de consulta **sem a ordem embutida da relação** (`reorder()`):
+  `SUM/COUNT` com `ORDER BY criado_at` é o tipo de coisa que o SQLite aceita e o MySQL recusa.
+  As duas migrações novas trazem comprimento explícito em cada coluna de texto e
+  `email_portal` em 190 — o MySQL da hospedagem não aceita índice único maior.
+- `docs/INSTALACAO.md` ganhou a seção 10 — *Portal do cliente* — com as rotas, o auto-cadastro
+  por documento/e-mail, a diferença entre `email_portal` e o e-mail da ficha (o chamado de
+  suporte nº 1), o que a equipe faz em Atendimento, o link assinado de recuperação e as duas
+  migrations novas; as seções seguintes renumeraram, o `.env` de loja ganhou a linha
+  `contrato_documento` na tabela de campos de envio, e a seção de segurança, a de problemas
+  comuns e o checklist de saída passaram a cobrir o portal. O PDF
+  (`docs/Golden-Rastreamento-Instalacao.pdf`) foi regerado da mesma fonte, e o README traz a
+  seção do portal e a estrutura nova (`Portal/`, `Ticket`, `Contract`, `PortalDoCliente`).
+- `php artisan test`: 214 testes, 1.534 asserções verdes.
+
 ## [2.19.1] - 2026-10-23
 
 ### Corrigido

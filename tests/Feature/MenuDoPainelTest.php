@@ -48,8 +48,8 @@ class MenuDoPainelTest extends TestCase
     {
         $grupos = $this->grupos($this->get('/admin/dashboard')->content());
 
-        $this->assertCount(4, $grupos, 'Os quatro grupos do menu do administrador.');
-        $this->assertSame(['Comercial', 'Vendas', 'Conteúdo do site', 'Sistema'], array_keys($grupos));
+        $this->assertCount(5, $grupos, 'Os cinco grupos do menu do administrador.');
+        $this->assertSame(['Comercial', 'Vendas', 'Atendimento', 'Conteúdo do site', 'Sistema'], array_keys($grupos));
 
         foreach ($grupos as $titulo => $bloco) {
             $this->assertStringContainsString('data-lte-toggle="treeview"', $bloco, "O grupo {$titulo} não abre.");
@@ -114,7 +114,7 @@ class MenuDoPainelTest extends TestCase
         $this->actingAs(User::where('email', 'vendedor@golden.com.br')->firstOrFail());
         $grupos = $this->grupos($this->get('/admin/dashboard')->content());
 
-        $this->assertSame(['Comercial', 'Vendas'], array_keys($grupos));
+        $this->assertSame(['Comercial', 'Vendas', 'Atendimento'], array_keys($grupos));
         $this->assertStringNotContainsString('Produtos e estoque', $grupos['Vendas']);
         $this->assertStringContainsString('<p>Pedidos', $grupos['Vendas']);
     }

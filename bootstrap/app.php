@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AutenticarCliente;
 use App\Http\Middleware\ControleAcesso;
 use App\Http\Middleware\IdentificadorVisita;
 use App\Http\Middleware\LojaAtiva;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => ControleAcesso::class,
+            'cliente' => AutenticarCliente::class,
             'loja' => LojaAtiva::class,
         ]);
     })

@@ -103,6 +103,13 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 .defs dt{color:var(--bs-secondary-color);font-weight:500}
 .defs dd{margin:0;font-weight:600;overflow-wrap:anywhere}
 
+/* Conversa do chamado do portal: cada fala com o tom de quem escreveu. As cores vêm dos
+   pares fundo+texto do tema, então o histórico continua legível no claro e no escuro. */
+.thread{display:flex;flex-direction:column;gap:10px}
+.msg{border-radius:var(--radius-md);padding:10px 14px;border:1px solid var(--bs-border-color);background:var(--bs-tertiary-bg)}
+.msg.cliente{background:var(--t-gold-bg);border-color:transparent}
+.msg.equipe{background:var(--t-teal-bg);border-color:transparent}
+
 /* Barra de proporção das tabelas de origem (atribuição): largura vem de --w, cor vem
    do tom do selo da linha — nenhum valor novo, então claro e escuro se ajustam sozinhos. */
 /* Nome da origem em uma linha só: quebrar no meio faria a tabela caber onde não deveria

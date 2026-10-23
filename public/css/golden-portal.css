@@ -1,0 +1,130 @@
+/* Golden Rastreamento — portal do cliente.
+   Usa os mesmos tokens do site (golden-site.css) e os mesmos tons de status do painel,
+   definidos em config('golden.tons_status'): um selo "pago" tem a mesma cor aqui e no admin. */
+
+.portal-bar{position:sticky;top:0;z-index:60;background:rgba(18,22,26,.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+.portal-bar .nav{height:74px}
+.portal-quem{display:flex;align-items:center;gap:12px;color:#c4ccd4;font-size:.9rem;min-width:0}
+.portal-quem b{color:#fff;font-weight:600;display:block;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:22ch}
+.portal-quem small{display:block;font-size:.74rem;color:var(--gold);letter-spacing:.08em;text-transform:uppercase}
+.portal-inicial{width:38px;height:38px;flex:none;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;
+  display:grid;place-items:center;font-weight:700;font-size:1rem}
+
+/* Abas da área logada */
+.portal-nav{background:var(--paper-2);border-bottom:1px solid var(--line)}
+.portal-nav ul{list-style:none;margin:0;padding:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.portal-nav ul::-webkit-scrollbar{display:none}
+.portal-nav a{display:flex;align-items:center;gap:8px;padding:14px 16px;font-size:.92rem;font-weight:600;color:var(--slate);
+  border-bottom:2.5px solid transparent;white-space:nowrap;transition:color .15s ease,border-color .15s ease}
+.portal-nav a:hover{color:var(--ink)}
+.portal-nav a.atual{color:var(--ink);border-bottom-color:var(--gold)}
+.portal-nav .conta{margin-left:auto;font-size:.72rem;font-weight:700;background:var(--ink);color:#fff;border-radius:999px;padding:2px 8px}
+
+.portal-main{background:var(--paper-2);padding:40px 0 72px;min-height:60vh}
+.portal-titulo{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px}
+.portal-titulo h1{font-size:clamp(1.6rem,3.4vw,2.2rem);margin:0}
+.portal-titulo p{margin:6px 0 0;color:var(--slate);font-size:.95rem}
+
+/* Blocos de números */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:26px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;gap:14px}
+.tile i{width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;font-size:1.05rem;background:rgba(224,163,62,.14);color:var(--gold-2)}
+.tile span{display:block;font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);font-weight:700}
+.tile b{display:block;font-family:"Poppins",sans-serif;font-size:1.42rem;line-height:1.2;margin-top:2px}
+
+/* Cards de conteúdo */
+.bloco{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.bloco-cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.bloco-cab h2{font-size:1.12rem;margin:0}
+.bloco-cab a{font-size:.88rem;font-weight:600;color:var(--gold-2)}
+.bloco-cab a:hover{color:var(--ink)}
+
+/* Lista de itens (pedidos, chamados, contratos) */
+.itens{display:flex;flex-direction:column;gap:12px}
+.item{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:#fff;transition:.18s}
+.item:hover{border-color:var(--gold);box-shadow:0 10px 24px -18px rgba(18,22,26,.4)}
+.item-nucleo{flex:1 1 240px;min-width:0}
+.item-nucleo b{display:block;font-size:1rem;line-height:1.35}
+.item-nucleo small{display:block;color:var(--slate);font-size:.84rem;margin-top:3px}
+.item-lado{text-align:right;font-weight:700;white-space:nowrap}
+.item-lado small{display:block;font-weight:500;color:var(--slate);font-size:.78rem}
+a.item{color:inherit}
+.item.vazio{background:var(--paper-2);border-style:dashed;box-shadow:none;color:var(--slate);justify-content:center;text-align:center;display:block;padding:26px}
+
+/* Selos — os mesmos tons do painel */
+.selo{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:700;letter-spacing:.02em;
+  padding:4px 11px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.tone-gold{background:rgba(224,163,62,.16);color:#8a5d0d;border-color:rgba(224,163,62,.4)}
+.tone-green{background:rgba(31,158,134,.14);color:#0f6b58;border-color:rgba(31,158,134,.35)}
+.tone-teal{background:rgba(31,158,134,.14);color:#0f6b58;border-color:rgba(31,158,134,.35)}
+.tone-blue{background:rgba(37,99,235,.12);color:#1f4fb0;border-color:rgba(37,99,235,.3)}
+.tone-amber{background:rgba(217,144,32,.15);color:#8a5a10;border-color:rgba(217,144,32,.35)}
+.tone-violet{background:rgba(124,92,246,.13);color:#5a35c9;border-color:rgba(124,92,246,.3)}
+.tone-red{background:rgba(208,80,70,.13);color:#a33a31;border-color:rgba(208,80,70,.3)}
+.tone-neutral{background:var(--paper-2);color:var(--slate);border-color:var(--line)}
+
+/* Linha do tempo do pedido */
+.jornada{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px;padding:0;list-style:none}
+.jornada li{flex:1 1 110px;min-width:110px;text-align:center;position:relative;padding:0 4px}
+.jornada i{display:grid;place-items:center;width:30px;height:30px;margin:0 auto 7px;border-radius:50%;
+  font-style:normal;font-size:.82rem;font-weight:700;background:var(--paper-2);color:var(--slate);border:1.5px solid var(--line)}
+.jornada b{display:block;font-size:.78rem;font-weight:600;color:var(--slate);line-height:1.3}
+.jornada small{display:block;font-size:.72rem;line-height:1.2;min-height:1em}
+.jornada .feito i{background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;border-color:transparent}
+.jornada .feito b{color:var(--ink)}
+.jornada li:not(:last-child)::after{content:"";position:absolute;top:15px;left:calc(50% + 20px);right:calc(-50% + 20px);height:1.5px;background:var(--line)}
+.jornada .feito:not(:last-child)::after{background:var(--gold)}
+
+/* Conversa do chamado */
+.fio{display:flex;flex-direction:column;gap:14px;margin-bottom:22px}
+.msg{max-width:78ch;padding:15px 18px;border-radius:16px;border:1px solid var(--line);background:var(--paper-2)}
+.msg p{margin:8px 0 0;font-size:.94rem;white-space:pre-wrap;line-height:1.6}
+.msg small{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:.78rem;color:var(--slate);font-weight:600}
+.msg.equipe{background:#fff;border-color:rgba(31,158,134,.35);margin-left:auto;border-bottom-right-radius:6px}
+.msg.cliente{background:rgba(224,163,62,.09);border-color:rgba(224,163,62,.35);border-bottom-left-radius:6px}
+.msg .quem{color:var(--ink);font-weight:700}
+
+/* Tabelas do portal */
+.tabela{width:100%;border-collapse:collapse;font-size:.92rem}
+.tabela th,.tabela td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line)}
+.tabela th{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--slate)}
+/* Nas tabelas de dados o th é rótulo de linha: coluna estreita, texto no topo. */
+.tabela tbody tr>th{width:38%;font-weight:600;text-transform:none;letter-spacing:0;font-size:.86rem;vertical-align:top;padding-left:0}
+.tabela tbody tr:hover{background:var(--paper-2)}
+.tabela td.fim,.tabela th.fim{text-align:right}
+.tabela tbody tr:last-child td{border-bottom:0}
+
+/* Paginação das listas do portal */
+.pagineacao{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;margin-top:20px;font-size:.86rem;color:var(--slate)}
+.inativa{opacity:.45;pointer-events:none}
+
+/* Filtros de lista */.filtros{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.filtros a{font-size:.85rem;font-weight:600;color:var(--slate);border:1px solid var(--line);background:#fff;
+  border-radius:999px;padding:7px 14px;transition:.15s}
+.filtros a:hover{border-color:var(--gold);color:var(--ink)}
+.filtros a.atual{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* Páginas de acesso (entrar, cadastrar, recuperar) */
+.entrada{padding:64px 0 84px}
+.entrada-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
+.entrada-grid h1{font-size:clamp(1.9rem,4vw,2.6rem)}
+.entrada-lista{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-direction:column;gap:11px}
+.entrada-lista li{display:flex;gap:11px;align-items:flex-start;color:var(--slate);font-size:.95rem}
+.entrada-lista i{color:var(--gold-2);margin-top:4px}
+.entrada .form-card{box-shadow:var(--shadow)}
+.entrada .alterna{font-size:.88rem;color:var(--slate);margin:16px 0 0;text-align:center}
+.entrada .alterna a{font-weight:700;color:var(--gold-2)}
+.senha-dica{font-size:.8rem;color:var(--slate);margin-top:6px}
+
+@media (max-width:900px){
+  .entrada-grid{grid-template-columns:1fr;gap:28px}
+}
+@media (max-width:640px){
+  .portal-bar .nav{height:64px}
+  .portal-quem b{max-width:12ch}
+  .bloco{padding:18px}
+  .item-lado{text-align:left}
+  .msg{max-width:100%}
+  .tabela{font-size:.85rem}
+  .tabela th,.tabela td{padding:9px 8px}
+}

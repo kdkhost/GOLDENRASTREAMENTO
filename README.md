@@ -5,7 +5,8 @@ institucional **multipágina** com o padrão visual aprovado (dourado + teal sob
 escuro), um **painel administrativo de leads** para acompanhar contatos e conversões das
 campanhas de tráfego pago, e **CRM, CMS e ERP funcionando no mesmo sistema** — inclusive
 uma **loja virtual de rastreadores e chips M2M** que pode ser **desativada a qualquer
-momento pelo painel**.
+momento pelo painel** e um **portal do cliente** (`/portal`) onde ele vê os próprios
+pedidos, abre chamados e lê o contrato assinado.
 
 Construído em **Laravel 13** seguindo a estrutura e os padrões do repositório de referência
 (`foco7`): AdminLTE 4 no painel, autenticação própria com perfis, migrations
@@ -432,6 +433,33 @@ a dimensão ideal.
   comprimento de `varchar` e o MySQL devolve *Data too long* no tráfego real.
 - Testes: `tests/Feature/AtribuicaoDeOrigemTest.php` (20).
 
+### Portal do cliente (`/portal`) — a casa do cliente sem pedir nada à equipe
+- **Cinco telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
+  *Pedidos* (linha do tempo da jornada e os documentos do pedido), *Chamados*, *Contratos*
+  com o PDF e *Meus dados*. Folha própria (`public/css/golden-portal.css`) sobre o tema do
+  site, sem cor nova e com o mesmo favicon.
+- **Auto-cadastro que não duplica ficha**: `App\Support\PortalDoCliente` procura em
+  `customers` primeiro pelo documento (normalizado, com ou sem máscara) e depois pelo
+  e-mail; achou, entrega a senha à ficha existente — entre candidatas, a que tem mais
+  pedidos ganha. Não achou, cria a ficha já ativa e `vincularPedidosSemFicha()` puxa os
+  pedidos de convidado pelo e-mail. A conta são quatro colunas em `customers`
+  (`email_portal` única em 190, `password`, `remember_token`, `ultimo_acesso_em`), não uma
+  segunda tabela de usuário.
+- **Duas sessões que não se atravessam**: guarda `cliente` sobre `customers` com chave
+  `login_cliente`, contra a guarda padrão sobre `users`. Portal aberto não abre rota do
+  painel, e vice-versa — mesmo com as duas no mesmo navegador.
+- **Chamados** (`tickets` + `ticket_messages`): o cliente abre do portal, a equipe atende em
+  *Admin → Atendimento → Chamados*. A conversa é uma fila só, então não existe "última
+  resposta" para sincronizar entre as duas telas; a autoria sai de `user_id`/`customer_id`.
+- **Contratos** (`contracts`): a equipe cadastra e anexa o PDF pelo dropzone (campo
+  `contrato_documento`), e o status controla a leitura — **rascunho é invisível para o
+  cliente**, inclusive no download, que passa por `/portal/contratos/{id}/arquivo` em vez de
+  URL pública de `/storage`.
+- **Recuperação sem broker**: link assinado (`URL::temporarySignedRoute`, 60 minutos), sem
+  tabela de tokens, e a mesma frase para e-mail com ou sem conta.
+- 404 (não 403) para recurso de outro cliente, honeypot, throttle por rota e consentimento
+  LGPD no cadastro. `php artisan test`: `tests/Feature/PortalDoClienteTest.php` (18).
+
 ### Medição
 Eventos já instrumentados em `public/js/golden-site.js`: `page_view`, `view_plans`,
 `select_plan`, `contact`, `whatsapp_click`, `generate_lead` (após sucesso HTTP) e
@@ -451,41 +479,45 @@ Eventos já instrumentados em `public/js/golden-site.js`: `page_view`, `view_pla
 
 ```
 app/
-  Http/Controllers/{Site,Auth,Admin}/   # páginas, loja, captura de lead, login, painel
+  Http/Controllers/{Site,Auth,Admin,Portal}/  # páginas, loja, captura de lead, login, painel, portal
   Http/Middleware/ControleAcesso.php     # role:admin,vendedor,...
+  Http/Middleware/AutenticarCliente.php  # alias `cliente` -> guarda do portal
   Http/Middleware/LojaAtiva.php          # alias `loja` -> 404 quando a loja está off
   Http/Middleware/IdentificadorVisita.php
   Http/Middleware/RegistrarRastreio.php  # toda tela do site vira visita/evento
   Models/  Lead, Campaign, LeadStatusHistory, Activity, Setting, User,
            Customer, Interaction, Product, Category, Supplier,
            StockMovement, Order, OrderItem, OrderHistory, Page, Testimonial, Faq,
-           Visit, VisitEvent
-  Mail/    PedidoRecebido, PedidoNovoEquipe
+           Visit, VisitEvent, Ticket, TicketMessage, Contract
+  Mail/    PedidoRecebido, PedidoNovoEquipe, ChamadoRecebido, ChamadoEquipe,
+           ChamadoResposta, RedefinirSenhaPortal
   Services/LeadService.php               # atribuição + criação + funil
   Services/Atribuidor.php                # decide a origem (canal/rede/pago/motivo)
   Services/Rastreio.php                  # grava visita, evento e a atribuição do lead
   Console/Commands/PodarRastreio.php     # rastreio:podar, a retenção do registro
   Support/Carrinho.php                   # sacola em sessão, sobre o catálogo em cache
   Support/Envio.php                      # regras e gravação dos campos de arrastar-e-soltar
+  Support/PortalDoCliente.php            # auto-cadastro: acha a ficha pelo documento/e-mail
   Support/helpers.php                    # brl(), loja_ativa(), slugify_pt()
 config/golden.php                        # conteúdo do site + contatos reais
 config/envios.php                        # formatos, limite, pasta e dimensão de cada campo de envio
-database/migrations/                     # leads/campanhas + CRM + ERP + CMS
+database/migrations/                     # leads/campanhas + CRM + ERP + CMS + portal (chamados, contratos)
 database/seeders/                        # Database, Catalog, Cms, Crm, Orders
 deploy/instalador-golden.sh              # instalação em qualquer domínio (--help)
 deploy/atualiza-golden.sh                # git pull + composer + migrate + caches
 docs/INSTALACAO.md                       # guia completo em português (PDF: docs/gerar-pdf.py)
-resources/views/{layouts,site,site/store,mail,auth,admin}
+resources/views/{layouts,site,site/store,mail,auth,admin,portal}
 public/{css,js,img}                      # tema do site e do painel; golden-upload.* e golden-to-top.*
 tests/Feature/AtribuicaoDeOrigemTest.php # origem de cada clique, jornada, farol e poda
 tests/Feature/FluxoDaLojaTest.php        # vitrine -> sacola -> checkout -> pedido -> painel
+tests/Feature/PortalDoClienteTest.php    # auto-cadastro, duas sessões, chamado, contrato, recuperação
 tests/Feature/CamposDeEnvioTest.php      # regras de upload, preview gravado, caminhos forjados
 tests/Feature/LevezaDasPaginasTest.php   # zero consultas com cache quente
 tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas as telas
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (173 testes, 1.287 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (214 testes, 1.534 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

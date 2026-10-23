@@ -2,11 +2,11 @@
 
 Documento de referência para colocar o sistema no ar em qualquer domínio:
 site institucional, captação de leads, painel administrativo (CRM, CMS, ERP),
-atribuição de tráfego e loja virtual opcional. Tudo em Laravel, com um único
-instalador.
+atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
+Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.19.1
+- **Versão:** 2.20.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -354,6 +354,8 @@ rode os três de novo (ou `php artisan optimize:clear` e recarregue).
 
 - Site: `https://seudominio.com.br`
 - Painel: `https://seudominio.com.br/admin` — login definido na instalação.
+- Portal do cliente: `https://seudominio.com.br/portal/entrar` — ninguém precisa
+  criar conta no painel; o auto-cadastro reaproveita a ficha do CRM (seção 10).
 - Troque a senha padrão assim que entrar, e remova o usuário de demonstração
   (`vendedor@golden.com.br`) se não for usar.
 
@@ -457,16 +459,17 @@ desligar a vitrine sem desligar o resto, use o painel em
 do menu e o `/loja` responde 404, mas os pedidos já registrados continuam no
 painel.
 
-Os campos de envio do painel (imagem do produto, vídeo do produto e documentos
-do pedido) aceitam arrastar-e-soltar, mostram preview, progresso real, tempo
-decorrido e a regra do campo (formatos, tamanho máximo e dimensão ideal). As
-regras moram em `config/envios.php`:
+Os campos de envio do painel (imagem do produto, vídeo do produto, documentos do
+pedido e o PDF do contrato) aceitam arrastar-e-soltar, mostram preview, progresso
+real, tempo decorrido e a regra do campo (formatos, tamanho máximo e dimensão
+ideal). As regras moram em `config/envios.php`:
 
 | Campo | Formatos | Limite | Pasta no disco |
 | --- | --- | --- | --- |
 | `produto_imagem` | JPG, JPEG, PNG, WEBP | 4 MB | `produtos/` |
 | `produto_video` | MP4, WEBM | 40 MB | `produtos/video/` |
 | `pedido_documento` | PDF, JPG, JPEG, PNG | 10 MB cada, até 12 por pedido | `pedidos/` |
+| `contrato_documento` | PDF | 8 MB | `contratos/` |
 
 O servidor confere a extensão **do conteúdo** do arquivo, não o nome que o
 navegador mandou, e recusa o envio se o tipo não estiver entre os formatos do
@@ -518,7 +521,102 @@ rodado à mão — só não se auto-agenda.
 
 ---
 
-## 10. Backup e restauração
+## 10. Portal do cliente
+
+O portal (`/portal`) é a casa do cliente no mesmo domínio do site: ele vê os
+próprios pedidos, abre e acompanha chamados, lê os contratos publicados e
+corrige o cadastro — sem depender da equipe e sem nunca receber acesso ao painel.
+
+| Tela | Endereço |
+| --- | --- |
+| Entrar | `/portal/entrar` |
+| Criar conta (auto-cadastro) | `/portal/cadastro` |
+| Esqueci a senha / redefinir | `/portal/esqueci-senha`, `/portal/redefinir-senha` |
+| Início (resumo) | `/portal` |
+| Pedidos | `/portal/pedidos`, `/portal/pedidos/{id}` |
+| Chamados | `/portal/chamados`, `/portal/chamados/abrir` |
+| Contratos | `/portal/contratos` |
+| Meus dados | `/portal/dados` |
+
+A entrada aparece no menu do site, na gaveta do celular e na coluna *Suporte* do
+rodapé, sempre com o mesmo link: `/portal/entrar` para quem ainda não entrou e
+`/portal` para quem já tem sessão.
+
+### A conta nasce sozinha
+
+Ninguém precisa cadastrar cliente no painel para ele entrar. O auto-cadastro
+procura a ficha do CRM primeiro pelo **documento** (com ou sem máscara) e depois
+pelo **e-mail**; achou, entrega a senha a ela, e a ficha ganha as quatro colunas
+de acesso (`email_portal`, `password`, `remember_token`, `ultimo_acesso_em`).
+Entre duas candidatas, a que tem mais pedidos ganha. Não achou nada, cria a
+ficha nova, já ativa — e os pedidos feitos como convidado na loja são puxados
+pelo e-mail, então a primeira tela já vem cheia.
+
+**Isso é o que mais gera chamado de suporte:** o login do portal é o
+`email_portal`, e não o e-mail da ficha do CRM. São colunas diferentes de
+propósito, porque o CRM aceita e-mail repetido entre fichas e a conta do portal
+não. A ficha do painel (*Clientes → qualquer ficha*) mostra o selo *conta ativa*
+com o e-mail de acesso e o último acesso, ou *sem conta* — é esse e-mail que
+funciona no `/portal/entrar`.
+
+### Sessão separada, por construção
+
+O portal autentica na guarda `cliente` sobre a tabela `customers`; o painel, na
+guarda padrão sobre `users`. As duas sessões têm chaves próprias
+(`login_cliente` / `login`), então abrir o portal não abre rota do painel nem o
+contrário — dá para ter as duas no mesmo navegador, logadas em pessoas diferentes.
+Recurso de outro cliente (pedido, chamado ou contrato por id) devolve **404, não
+403**: a barra de endereços não descobre o que existe.
+
+### O que a equipe faz com isso
+
+- **Admin → Atendimento → Chamados**: KPIs de abertos, sem resposta, aguardando
+  o cliente e resolvidos; filtro por status e prioridade; responsável; resposta
+  e mudança de status na tela do chamado. A conversa é uma fila só (`tickets` +
+  `ticket_messages`) — a primeira mensagem é o relato que abriu o chamado —,
+  então não há "última resposta" para sincronizar entre as duas telas.
+- **Admin → Atendimento → Contratos**: cadastra o documento, anexa o PDF assinado
+  no dropzone (campo `contrato_documento`: PDF, 8 MB, pasta `contratos/`) e
+  controla a visibilidade pelo status. **Rascunho não aparece para o cliente** —
+  nem na lista, nem no resumo, nem no download. Número comercial `CT26-0001`,
+  vigência com aviso de vencimento em 30 dias.
+
+O PDF do contrato **não** sai por URL pública de `/storage`: o download passa por
+`/portal/contratos/{id}/arquivo`, que confere se o contrato é da ficha logada e se
+não é rascunho antes de entregar. Um caminho de arquivo escrito à mão no
+formulário é recusado — a gravação revalida contra a pasta do campo de envio.
+
+### E-mails e recuperação de acesso
+
+Quatro avisos saem do portal: `ChamadoRecebido` (para o cliente), `ChamadoEquipe`
+(para o painel), `ChamadoResposta` (bidirecional) e `RedefinirSenhaPortal`. Como
+no resto do sistema, **sem SMTP configurado o aviso se perde e a ação do cliente
+nunca é barrada** — o envio é tentado em `try/catch`; com `MAIL_MAILER=log` a
+mensagem fica em `storage/logs/laravel.log`.
+
+A recuperação de senha não usa tabela de tokens nem broker: o link é assinado
+(`URL::temporarySignedRoute`) e expira em 60 minutos. Consequências práticas:
+
+- a assinatura depende da `APP_KEY` — trocar a chave invalida links já enviados,
+  o que é o comportamento desejado, não um bug;
+- o e-mail com ou sem conta recebe **a mesma frase**, para a tela não revelar quem
+  é cliente da Golden;
+- o throttle é próprio por rota (cadastro `8,1`, login `10,1`, recuperação `6,1`,
+  abrir chamado `12,1`) e o cadastro tem honeypot (`website`) mais consentimento
+  LGPD obrigatório.
+
+### Migrações novas
+
+Duas migrations entram na atualização: `2026_10_24_000001_cria_conta_do_portal`
+(as quatro colunas em `customers`) e `2026_10_24_000002_create_tickets_and_contracts_tables`
+(`tickets`, `ticket_messages`, `contracts`). São aditivas e cada uma tem `down()`;
+`php artisan migrate --force` as aplica sem tocar nos dados existentes. Toda coluna
+de texto tem comprimento explícito e `email_portal` fica em 190 — o MySQL da
+hospedagem não aceita índice único maior, e o SQLite dos testes não avisa.
+
+---
+
+## 11. Backup e restauração
 
 ```bash
 # banco
@@ -540,7 +638,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 11. Problemas comuns
+## 12. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -558,6 +656,10 @@ ele, os dados criptografados e as sessões não voltam.
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/laravel.log`; depois configurar SMTP |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
 | A senha do painel "não funciona" no servidor | a senha instalada é forte, não é `golden123` | leia em `~/backups-golden/acesso-painel.txt` ou defina outra com `php artisan app:define-senha` |
+| O cliente não consegue entrar no `/portal` | o login do portal é o `email_portal`, não o e-mail da ficha do CRM | conferir o selo *conta ativa* na ficha (Admin → Clientes) e usar aquele e-mail; sem conta, ele cria em `/portal/cadastro` |
+| O link de redefinir a senha morre no caminho | expira em 60 minutos e a assinatura depende da `APP_KEY` | reenviar por `/portal/esqueci-senha`; se a `APP_KEY` foi trocada, os links anteriores deixam de valer (é o esperado) |
+| Contrato anexado não aparece no portal | o status está como `rascunho` | passar para assinado/vigente — rascunho é invisível para o cliente por projeto |
+| O PDF do contrato abre 404 no portal | arquivo fora de `storage/contratos/`, ou o download tentou por URL direta | reanexar pelo dropzone e usar `/portal/contratos/{id}/arquivo`, que é a única porta de saída |
 
 Os logs ficam em `storage/logs/laravel.log`; no cPanel também existe
 `public/error_log`, que o `.htaccess` bloqueia para visitantes, e o erro real
@@ -565,7 +667,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 12. Segurança
+## 13. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -587,10 +689,18 @@ continua visível para você pelo painel ou SSH.
 - O destino do envio (`campo`) decide a pasta; o navegador nunca escolhe caminho
   no disco, e o descarte só apaga arquivo que comece na pasta do próprio campo.
 - Backups de banco ficam fora do docroot, com `600`.
+- Portal do cliente: sessão em chave própria (`login_cliente`), recurso de outro
+  cliente devolve **404** e não 403, `password` e `remember_token` estão em
+  `$hidden` da ficha, o documento é só leitura no portal (é a chave do vínculo com
+  pedido e contrato), e o cadastro tem honeypot, throttle por rota e consentimento
+  LGPD obrigatório.
+- O PDF do contrato não tem URL pública: sai só por `/portal/contratos/{id}/arquivo`,
+  depois de conferir o dono e que não é rascunho. O caminho gravado no formulário é
+  revalidado contra a pasta do campo de envio.
 
 ---
 
-## 13. Checklist depois de instalar
+## 14. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
@@ -608,4 +718,7 @@ continua visível para você pelo painel ou SSH.
       registro de tráfego)
 - [ ] Tráfego: abrir `/admin/atribuicao` depois de algumas visitas reais e conferir se as
       origens aparecem
+- [ ] Portal: criar conta em `/portal/cadastro` sobre uma ficha que já existe no CRM e conferir que ela herda os pedidos de convidado
+- [ ] Portal: entrar com o `email_portal` (não o e-mail da ficha), abrir um chamado e respondê-lo do painel — a conversa tem de ser a mesma nas duas telas
+- [ ] Portal: anexar o PDF de um contrato assinado e baixá-lo pelo portal; com status `rascunho` ele não pode aparecer na lista
 - [ ] Backup automático de banco e `storage/app/public`

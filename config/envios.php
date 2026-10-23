@@ -47,6 +47,22 @@ return [
     ],
 
     /*
+    | O contrato do cliente entra por aqui: um PDF por ficha de contrato, gravado em
+    | storage/app/public/contratos e entregue ao portal pela rota autenticada de download
+    | — o caminho nunca é publicado na página do cliente.
+    */
+    'contrato_documento' => [
+        'tipo' => 'documento',
+        'pasta' => 'contratos',
+        'titulo' => 'PDF do contrato',
+        'chamada' => 'Arraste o contrato assinado aqui ou clique para escolher',
+        'formatos' => ['pdf'],
+        'max_mb' => 8,
+        'dimensao' => null,
+        'proporcao' => null,
+    ],
+
+    /*
     | As fotos do site (Admin → Conteúdo → Imagens e textos) entram todas por
     | este campo: a dimensão recomendada muda de slot para slot e é a tela do
     | painel que a mostra, não a regra. O destino no disco é sempre `site`.

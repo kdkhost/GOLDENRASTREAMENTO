@@ -110,6 +110,7 @@
             </div>
             <div>
                 <h5>Suporte</h5>
+                <a href="{{ $golden['portal_url'] }}">Área do cliente</a>
                 <a href="{{ route('site.faq') }}">Dúvidas frequentes</a>
                 <a href="{{ route('site.contato') }}">Fale conosco</a>
                 <a href="{{ route('site.privacidade') }}">Privacidade (LGPD)</a>

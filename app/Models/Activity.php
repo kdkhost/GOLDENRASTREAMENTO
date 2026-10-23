@@ -21,14 +21,19 @@ class Activity extends Model
 
     /**
      * Registra um evento na trilha de auditoria.
+     *
+     * `$por` existe para o portal: lá quem age é o cliente (ficha de `customers`), não um
+     * usuário do painel. Passado, ele assina a linha e nenhum `user_id` é gravado — sem
+     * isso uma ação do cliente apareceria no nome da equipe que por acaso está logada no
+     * painel do mesmo navegador.
      */
-    public static function log(string $action, ?string $description = null, ?Model $subject = null, array $meta = []): void
+    public static function log(string $action, ?string $description = null, ?Model $subject = null, array $meta = [], ?string $por = null): void
     {
-        $user = auth()->user();
+        $user = $por === null ? auth()->user() : null;
 
         static::create([
             'user_id' => $user?->id,
-            'user_name' => $user?->name ?? 'Sistema',
+            'user_name' => $por ?? $user?->name ?? 'Sistema',
             'action' => $action,
             'subject_type' => $subject ? class_basename($subject) : null,
             'subject_id' => $subject?->getKey(),
