@@ -80,6 +80,9 @@ DB_DATABASE=golden_sistema
 DB_USERNAME=golden_user
 DB_PASSWORD=***
 
+SESSION_DRIVER=file
+CACHE_STORE=file
+
 GOLDEN_WHATSAPP=5519997101483
 GOLDEN_EMAIL=comercial@goldenrastreamento.com.br
 GOLDEN_TRACKING_ENABLED=false
@@ -97,10 +100,14 @@ Depois:
 
 ```bash
 composer install --no-dev --optimize-autoloader
-php artisan migrate --force        # cria as tabelas no MySQL (mesmas migrations do SQLite)
-php artisan storage:link           # serve as imagens de produtos
-php artisan config:cache && php artisan route:cache && php artisan view:cache
+composer deploy                      # migrate --force + config:cache + route:cache + view:cache
+php artisan storage:link             # serve as imagens de produtos
 ```
+
+Deixe `SESSION_DRIVER=file` e `CACHE_STORE=file` (ou `redis`) em produção: com driver
+`database` cada visita pagava consulta de sessão e de cache. Se optar por fila
+(`QUEUE_CONNECTION=database`), mantenha `php artisan queue:work --sleep=3 --tries=3` sob
+supervisor — é por ela que os e-mails de pedido saem sem atrasar a resposta ao cliente.
 
 As **mesmas migrations** rodam em SQLite e MySQL — não há código específico de driver.
 Em produção o HTTPS é forçado automaticamente (`AppServiceProvider`). Nunca rode os
@@ -113,7 +120,7 @@ seeders de demonstração em produção (`--seed`); eles criam a senha `golden12
 ### Site público (multipágina)
 | Rota | Página |
 |------|--------|
-| `/` | Home (hero, benefícios, plataforma, segmentos, kits, como funciona, depoimentos em carrossel, FAQ) |
+| `/` | Home (hero, faixa de confiança, vitrine da plataforma, atalhos por página, depoimentos em carrossel, CTA final) |
 | `/solucoes` | Funcionalidades da plataforma |
 | `/para-quem` | Segmentos atendidos |
 | `/planos` | Kits e perguntas frequentes |
@@ -129,6 +136,22 @@ seeders de demonstração em produção (`--seed`); eles criam a senha `golden12
 Conteúdo de marketing (benefícios, segmentos, kits, passos, FAQ) fica centralizado em
 `config/golden.php` — fácil de editar sem tocar nas views. Depoimentos, FAQs e páginas
 também podem vir do banco (painel), com *fallback* para o config.
+
+**Regra de conteúdo:** o que tem página dedicada não se repete na home nem em outra página.
+A home mostra um cartão de atalho (`.atalhos`) para Soluções, Planos, Para quem é, Como
+funciona, FAQ e Contato; `/planos` e `/como-funciona` levam ao `/faq` em vez de copiar o FAQ,
+e `/solucoes` leva ao `/como-funciona` em vez de repetir os passos.
+
+**Leveza:** a página pública não consulta o banco. Menu, configurações, categorias,
+depoimentos, FAQs e páginas do CMS passam por `Cache::rememberForever` e são invalidados por
+evento de gravação do modelo (trait `App\Models\Concerns\CachesContent`); `Setting` guarda a
+rodada em memória e `AppServiceProvider::dadosDoSite()` monta `$golden` uma única vez por
+requisição. Por isso sessão e cache ficam em arquivo (`SESSION_DRIVER=file`,
+`CACHE_STORE=file`) — nada de SELECT/INSERT por visita. `tests/Feature/LevezaDasPaginasTest.php`
+mede isso: cache frio = poucas consultas por página (`/` faz 4), cache quente = **zero**.
+Índices dos caminhos de leitura em `2026_10_23_000001_add_leitura_indexes.php`. Ao publicar,
+use `composer deploy` (migrations + `config:cache` + `route:cache` + `view:cache`); depois de
+mudar conteúdo no painel, `php artisan optimize:clear` se quiser reaquecer o cache na hora.
 
 Em telas até 960px o menu vira uma **gaveta deslizante da esquerda** (abertura/fechamento
 suaves com *stagger* nos itens, backdrop, fecha por fora/`Esc`/link). O menu tem **dois

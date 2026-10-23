@@ -13,7 +13,7 @@ class PageController extends Controller
     public function home(): View
     {
         return view('site.home', [
-            'depoimentos' => Testimonial::aprovados()->limit(6)->get(),
+            'depoimentos' => Testimonial::aprovadosParaSite(6),
         ]);
     }
 
@@ -67,7 +67,8 @@ class PageController extends Controller
 
     public function pagina(string $slug): View
     {
-        $pagina = Page::where('slug', $slug)->where('publicada', true)->firstOrFail();
+        $pagina = Page::paraSite($slug);
+        abort_if($pagina === null, 404);
 
         return view('site.pagina', ['pagina' => $pagina]);
     }

@@ -3,6 +3,51 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.5.0] - 2026-10-23
+
+### Removido
+- **A home parou de repetir o que já tem página dedicada.** Saíram da página inicial os
+  blocos de benefícios, segmentos, kits/planos, "como funciona" e FAQ — cada um agora é um
+  cartão de atalho na seção *Explore o site* (`.atalhos`), apontando para a própria página.
+- As mesmas duplicações foram desfeitas nas páginas filhas: `/planos` e `/como-funciona`
+  não repetem mais o FAQ (bridge "Ver dúvidas frequentes →") e `/solucoes` não repete os
+  passos do `/como-funciona`.
+- `PageController` deixou de consultar FAQ/depoimentos para páginas que não exibem mais
+  esse conteúdo.
+
+## [2.6.0] - 2026-10-23
+
+### Adicionado
+- **Site ultra leve: página pública não visita o banco.** Cada leitura de conteúdo
+  (`settings`, páginas do CMS/menu, categorias, depoimentos, FAQs) passou a
+  `Cache::rememberForever`, invalidada por evento de gravação do modelo.
+  - Trait `App\Models\Concerns\CachesContent`: o modelo declara `protected array $cacheKeys`
+    e `saved`/`deleted` esquecem as chaves dele. Usado em `Page`, `Category`, `Testimonial`
+    e `Faq`.
+  - `Page::publicadasParaSite()` alimenta **dois** acessos de uma só consulta: o menu
+    (`menuParaSite()`) e a página do CMS (`paraSite($slug)`); `scopeMenu()` foi removido por
+    desnecessário.
+  - `Setting::$memoria` é o espelho da rodada em memória estática (`esquecerMemoria()` para
+    scripts que escrevem em massa), e `AppServiceProvider::dadosDoSite()` monta a árvore
+    `$golden` **uma vez por requisição** — antes o `View::composer` de `site.*` rodava a cada
+    *include* de parcial (≈5× por visita) refazendo ~30 consultas.
+  - `database/migrations/2026_10_23_000001_add_leitura_indexes.php`: índices dos caminhos de
+    leitura (`products(ativo,ordem)`, `products(category_id,ativo)`, `categories(ativa,ordem)`,
+    `pages(publicada,exibir_menu,ordem_menu)`, `testimonials(aprovado,ordem)`,
+    `faqs(ativa,ordem)`, `orders(status,created_at)`, `stock_movements(product_id,created_at)`,
+    `leads(campaign_id,created_at)`).
+  - `tests/Feature/LevezaDasPaginasTest.php` trava a promessa: com cache frio cada página
+    pública fica abaixo de 14 consultas e, com cache quente, ** zero** — `GET /` = 4 → 0.
+    Também cobre que gravar no painel invalida o cache da página.
+  - `composer deploy` (`migrate --force` + `config:cache` + `route:cache` + `view:cache`).
+
+### Alterado
+- `.env.example`/`.env`: `SESSION_DRIVER=file` e `CACHE_STORE=file` (com `database`, cada
+  visita pagava SELECT/INSERT em sessão e cache), `QUEUE_CONNECTION=sync` e o motivo escrito
+  no próprio arquivo.
+- `<link rel="preconnect">` para `cdnjs.cloudflare.com` no `<head>` do site, junto dos
+  *preconnect* já existentes das fontes.
+
 ## [2.4.0] - 2026-10-22
 
 ### Adicionado

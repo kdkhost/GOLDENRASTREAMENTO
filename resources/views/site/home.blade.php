@@ -119,7 +119,7 @@
 </section>
 
 {{-- DEPOIMENTOS --}}
-@if($depoimentos->isNotEmpty())
+@if($depoimentos !== [])
 @push('styles')
 <link rel="stylesheet" href="{{ asset('vendor/swiper/swiper-bundle.min.css') }}?v={{ filemtime(public_path('vendor/swiper/swiper-bundle.min.css')) }}">
 @endpush
@@ -137,11 +137,11 @@
                     @foreach($depoimentos as $d)
                     <div class="swiper-slide">
                         <div class="depo-card">
-                            <div class="stars">{{ str_repeat('★', max(1, min(5, (int) $d->nota))) }}</div>
-                            <p>"{{ $d->texto }}"</p>
+                            <div class="stars">{{ str_repeat('★', max(1, min(5, (int) $d['nota']))) }}</div>
+                            <p>"{{ $d['texto'] }}"</p>
                             <div class="depo-who">
-                                <div class="avatar">{{ strtoupper(substr($d->nome, 0, 1)) }}</div>
-                                <div><b>{{ $d->nome }}</b>@if($d->papel)<small>{{ $d->papel }}@if($d->cidade) · {{ $d->cidade }}@endif</small>@endif</div>
+                                <div class="avatar">{{ mb_strtoupper(mb_substr($d['nome'], 0, 1)) }}</div>
+                                <div><b>{{ $d['nome'] }}</b>@if($d['papel'])<small>{{ $d['papel'] }}@if($d['cidade']) · {{ $d['cidade'] }}@endif</small>@endif</div>
                             </div>
                         </div>
                     </div>
