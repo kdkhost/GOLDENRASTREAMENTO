@@ -508,11 +508,13 @@ A poda roda toda terça às 03:30 pelo agendador do Laravel (`bootstrap/app.php`
 precisa de **uma** linha no cron da hospedagem (cPanel → *Tarefas de Cron*):
 
 ```
-* * * * * cd ~/public_html && /opt/alt/php83/usr/bin/php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd ~/public_html && /opt/cpanel/ea-php83/root/usr/bin/php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Use o mesmo PHP 8.3 do site (seção 2); sem o cron, o comando continua podendo ser rodado
-à mão — só não se auto-agenda.
+O caminho do PHP é o **8.3 do site**, não o `php` do PATH da conta (que costuma ser mais
+velho). Para descobrir o certo no seu servidor: `ea-php83 -r 'echo PHP_VERSION;'` ou
+`ls /opt/cpanel/ea-php8*/root/usr/bin/php`. Sem o cron, o comando continua podendo ser
+rodado à mão — só não se auto-agenda.
 
 ---
 
