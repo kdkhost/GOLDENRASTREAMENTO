@@ -16,7 +16,7 @@
                 @if($pg->intro)<div class="small text-secondary">{{ Str::limit($pg->intro, 70) }}</div>@endif
             </td>
             <td><code class="small">/p/{{ $pg->slug }}</code></td>
-            <td class="text-center"><span class="badge {{ $pg->exibir_menu ? 'bg-info text-dark' : 'bg-secondary' }}">{{ $pg->exibir_menu ? 'no menu' : 'fora do menu' }}</span></td>
+            <td class="text-center"><span class="badge {{ $pg->exibir_menu ? 'tone-blue' : 'tone-neutral' }}">{{ $pg->exibir_menu ? 'no menu' : 'fora do menu' }}</span></td>
             <td class="text-center"><span class="badge-status {{ $pg->publicada ? 'st-vendido' : 'st-perdido' }}">{{ $pg->publicada ? 'publicada' : 'rascunho' }}</span></td>
             <td class="text-center small text-secondary">{{ $pg->updated_at->format('d/m/Y') }}</td>
             <td>

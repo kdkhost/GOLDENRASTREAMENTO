@@ -16,7 +16,7 @@
                 <div class="small text-secondary">“{{ Str::limit($d->texto, 90) }}”</div>
             </td>
             <td class="text-center text-warning small">{{ str_repeat('★', $d->nota) }}</td>
-            <td class="text-center"><span class="badge {{ $d->aprovado ? 'bg-success' : 'bg-secondary' }}">{{ $d->aprovado ? 'visível' : 'oculto' }}</span></td>
+            <td class="text-center"><span class="badge {{ $d->aprovado ? 'tone-green' : 'tone-neutral' }}">{{ $d->aprovado ? 'visível' : 'oculto' }}</span></td>
             <td>
                 <div class="table-actions">
                     <a href="{{ route('admin.conteudo.depoimentos.edit', $d) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>

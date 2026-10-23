@@ -36,11 +36,11 @@
                 @if(!$p->controle_estoque)
                     <span class="badge bg-body-secondary text-secondary">livre</span>
                 @elseif($p->estoque <= 0)
-                    <span class="badge bg-danger">0</span>
+                    <span class="badge tone-red">0</span>
                 @elseif($p->estoque > $p->estoque_minimo)
                     <span class="badge-status st-vendido">{{ $p->estoque }}</span>
                 @else
-                    <span class="badge bg-warning text-dark">{{ $p->estoque }}</span>
+                    <span class="badge tone-gold">{{ $p->estoque }}</span>
                 @endif
             </td>
             <td class="text-center"><span class="badge bg-body-secondary text-body">{{ $p->ativo ? 'ativo' : 'oculto' }}</span></td>

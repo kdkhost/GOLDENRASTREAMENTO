@@ -23,10 +23,10 @@ class DashboardController extends Controller
             ->pluck('total', 'status');
 
         $total = Lead::count();
-        $vendid = (int) ($porStatus['vendido'] ?? 0);
+        $vendido = (int) ($porStatus['vendido'] ?? 0);
         $perdido = (int) ($porStatus['perdido'] ?? 0);
         $funil = $total - $perdido;
-        $conversao = $funil > 0 ? round(($vendid / max($total, 1)) * 100, 1) : 0.0;
+        $conversao = $funil > 0 ? round(($vendido / max($total, 1)) * 100, 1) : 0.0;
         $receita = (int) Lead::where('status', 'vendido')->sum('value');
 
         // Série dos últimos 30 dias
@@ -74,7 +74,7 @@ class DashboardController extends Controller
             'novos' => (int) ($porStatus['novo'] ?? 0),
             'contatado' => (int) ($porStatus['contatado'] ?? 0),
             'proposta' => (int) ($porStatus['proposta'] ?? 0),
-            'vendid' => $vendid,
+            'vendido' => $vendido,
             'perdido' => $perdido,
             'conversao' => $conversao,
             'receita' => $receita,

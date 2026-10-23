@@ -16,7 +16,7 @@
                 <div class="small text-secondary mt-1">{{ $c->descricao ?: '—' }} · ordem {{ $c->ordem }}</div>
             </td>
             <td class="text-center">{{ $c->products_count }}</td>
-            <td class="text-center"><span class="badge {{ $c->ativa ? 'bg-success' : 'bg-secondary' }}">{{ $c->ativa ? 'ativa' : 'inativa' }}</span></td>
+            <td class="text-center"><span class="badge {{ $c->ativa ? 'tone-green' : 'tone-neutral' }}">{{ $c->ativa ? 'ativa' : 'inativa' }}</span></td>
             <td>
                 <div class="table-actions">
                     <a href="{{ route('admin.catalogo.categorias.edit', $c) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>

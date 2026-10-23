@@ -11,6 +11,7 @@
     <meta property="og:description" content="@yield('meta_description', 'Rastreamento e gestão veicular.')">
     <meta property="og:type" content="website">
     <meta property="og:image" content="{{ asset('img/logo-golden.png') }}">
+    @include('partials.favicon')
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

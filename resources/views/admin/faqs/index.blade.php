@@ -12,7 +12,7 @@
     @foreach($faqs as $f)
         <tr>
             <td><span class="fw-semibold">{{ $f->pergunta }}</span><div class="small text-secondary">{{ Str::limit($f->resposta, 90) }}</div></td>
-            <td class="text-center"><span class="badge {{ $f->ativa ? 'bg-success' : 'bg-secondary' }}">{{ $f->ativa ? 'ativa' : 'oculta' }}</span></td>
+            <td class="text-center"><span class="badge {{ $f->ativa ? 'tone-green' : 'tone-neutral' }}">{{ $f->ativa ? 'ativa' : 'oculta' }}</span></td>
             <td class="text-center small text-secondary">{{ $f->ordem }}</td>
             <td>
                 <div class="table-actions">

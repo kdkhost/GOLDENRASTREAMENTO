@@ -1,0 +1,93 @@
+/* Golden Rastreamento — paleta única dos temas claro/escuro.
+   Toda cor do painel e do login vem daqui: nenhuma página ou script escreve hex próprio,
+   assim os dois temas permanecem coerentes entre si. */
+:root{
+    /* identidade */
+    --brand-gold:#e0a33e;
+    --brand-gold-2:#c9862a;
+    --brand-gold-ink:#241a06;
+    --brand-teal:#1f9e86;
+    --brand-violet:#5e35b1;
+    --brand-blue:#1c5d99;
+    --brand-red:#c0392b;
+    --brand-green:#12694f;
+    --brand-amber:#a8630f;
+    --on-solid:#ffffff;
+
+    /* brilhos de marca usados em gradientes */
+    --glow-gold:rgba(201,134,42,.18);
+    --glow-teal:rgba(31,158,134,.25);
+
+    --gold:var(--brand-gold);
+    --bs-primary:var(--brand-gold-2);
+    --bs-primary-rgb:201,134,42;
+
+    /* tipografia e forma */
+    --font-sans:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    --font-head:"Poppins","Inter",system-ui,sans-serif;
+    --radius-lg:16px;
+    --radius-md:10px;
+    --ease:cubic-bezier(.22,.61,.36,1);
+
+    /* pares fundo+texto: um tom semântico por vez, legível nos dois temas */
+    --t-gold-bg:rgba(224,163,62,.16);   --t-gold-fg:var(--brand-gold-2);
+    --t-teal-bg:rgba(31,158,134,.14);   --t-teal-fg:var(--brand-teal);
+    --t-blue-bg:rgba(28,93,153,.12);    --t-blue-fg:var(--brand-blue);
+    --t-violet-bg:rgba(94,53,177,.12);  --t-violet-fg:var(--brand-violet);
+    --t-green-bg:rgba(18,105,79,.12);   --t-green-fg:var(--brand-green);
+    --t-amber-bg:rgba(168,99,15,.14);   --t-amber-fg:var(--brand-amber);
+    --t-red-bg:rgba(192,57,43,.12);     --t-red-fg:var(--brand-red);
+    --t-neutral-bg:#f6f8fa;      --t-neutral-fg:#5b6672;
+
+    /* gráfico */
+    --chart-line:var(--brand-gold-2);
+    --chart-area:rgba(224,163,62,.12);
+    --chart-grid:rgba(18,22,26,.08);
+    --chart-tick:#5b6672;
+
+    /* login (página própria, sem Bootstrap) */
+    --login-bg-a:#12161a;
+    --login-bg-b:#0d1114;
+    --login-surface:#ffffff;
+    --login-text:#12161a;
+    --login-muted:#5b6672;
+    --login-line:#e6e9ee;
+    --login-field-bg:#ffffff;
+}
+
+[data-bs-theme="dark"]{
+    --t-gold-bg:rgba(224,163,62,.20);    --t-gold-fg:#eabf6b;
+    --t-teal-bg:rgba(31,158,134,.20);    --t-teal-fg:#5ed3b9;
+    --t-blue-bg:rgba(28,93,153,.26);     --t-blue-fg:#82b8f0;
+    --t-violet-bg:rgba(94,53,177,.26);   --t-violet-fg:#bba2f2;
+    --t-green-bg:rgba(18,105,79,.26);    --t-green-fg:#6ed3a7;
+    --t-amber-bg:rgba(168,99,15,.26);    --t-amber-fg:#f0bd6a;
+    --t-red-bg:rgba(192,57,43,.24);      --t-red-fg:#f2908f;
+    --t-neutral-bg:rgba(255,255,255,.07);--t-neutral-fg:#9aa7b4;
+    --chart-line:var(--brand-gold);
+    --chart-area:rgba(224,163,62,.20);
+    --chart-grid:rgba(255,255,255,.09);
+    --chart-tick:#9aa7b4;
+    --login-surface:#171c21;
+    --login-text:#eef2f5;
+    --login-muted:#9aa7b4;
+    --login-line:#2c343c;
+    --login-field-bg:#12171b;
+}
+
+/* utilitários de tom — chips, ícones e bolhas usam sempre o mesmo par */
+.tone-gold{background:var(--t-gold-bg);color:var(--t-gold-fg)}
+.tone-teal{background:var(--t-teal-bg);color:var(--t-teal-fg)}
+.tone-blue{background:var(--t-blue-bg);color:var(--t-blue-fg)}
+.tone-violet{background:var(--t-violet-bg);color:var(--t-violet-fg)}
+.tone-green{background:var(--t-green-bg);color:var(--t-green-fg)}
+.tone-amber{background:var(--t-amber-bg);color:var(--t-amber-fg)}
+.tone-red{background:var(--t-red-bg);color:var(--t-red-fg)}
+.tone-neutral{background:var(--t-neutral-bg);color:var(--t-neutral-fg)}
+.text-tone-gold{color:var(--t-gold-fg)!important}
+.text-tone-teal{color:var(--t-teal-fg)!important}
+.text-tone-blue{color:var(--t-blue-fg)!important}
+.text-tone-violet{color:var(--t-violet-fg)!important}
+.text-tone-green{color:var(--t-green-fg)!important}
+.text-tone-amber{color:var(--t-amber-fg)!important}
+.text-tone-red{color:var(--t-red-fg)!important}

@@ -5,18 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Painel') | Golden Rastreamento</title>
-    <link rel="icon" href="{{ asset('img/logo-golden.png') }}">
+    @include('partials.favicon')
     <script>(function(){var t=localStorage.getItem('golden_admin_theme')||'light';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-upload.css') }}?v={{ filemtime(public_path('css/golden-upload.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/admin-golden.css') }}?v={{ filemtime(public_path('css/admin-golden.css')) }}">
-    <style>
-        :root{--bs-primary:#c9862a;--bs-primary-rgb:201,134,42;--gold:#e0a33e;}
-    </style>
     @yield('styles')
 </head>
 <body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
@@ -35,7 +33,7 @@
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
-                        <span class="avatar-letter bg-warning text-dark">{{ substr(auth()->user()->name, 0, 1) }}</span>
+                        <span class="avatar-letter">{{ substr(auth()->user()->name, 0, 1) }}</span>
                         <span class="d-none d-md-inline fw-semibold">{{ auth()->user()->name }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow">
@@ -61,7 +59,7 @@
             <a href="{{ route('admin.dashboard') }}" class="brand-link text-decoration-none d-flex align-items-center gap-2">
                 <img src="{{ asset('img/logo-golden.png') }}" alt="Golden" height="34" class="brand-image">
                 <span class="fw-bold text-white">GOLDEN</span>
-                <span class="badge bg-warning text-dark ms-1 small">{{ strtoupper($u->role) }}</span>
+                <span class="badge badge-menu tone-gold ms-1 small">{{ strtoupper($u->role) }}</span>
             </a>
             <button type="button" class="btn btn-sm btn-link text-white-50 d-lg-none p-1" data-lte-toggle="sidebar"><i class="fas fa-times fs-5"></i></button>
         </div>
@@ -72,18 +70,18 @@
                     <li class="nav-item"><a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="nav-icon fas fa-gauge-high"></i><p>Dashboard</p></a></li>
 
                     <li class="nav-header">Comercial</li>
-                    <li class="nav-item"><a href="{{ route('admin.leads.index') }}" class="nav-link {{ request()->routeIs('admin.leads.*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-plus"></i><p>Leads @if($pendencias['leads_novos'] > 0)<span class="badge bg-warning text-dark ms-auto">{{ $pendencias['leads_novos'] }}</span>@endif</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.leads.index') }}" class="nav-link {{ request()->routeIs('admin.leads.*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-plus"></i><p>Leads @if($pendencias['leads_novos'] > 0)<span class="badge badge-menu tone-gold ms-auto">{{ $pendencias['leads_novos'] }}</span>@endif</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.clientes.index') }}" class="nav-link {{ request()->routeIs('admin.clientes.*') ? 'active' : '' }}"><i class="nav-icon fas fa-users"></i><p>Clientes</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.campanhas.index') }}" class="nav-link {{ request()->routeIs('admin.campanhas.*') ? 'active' : '' }}"><i class="nav-icon fas fa-bullhorn"></i><p>Campanhas</p></a></li>
 
                     <li class="nav-header">Vendas</li>
-                    <li class="nav-item"><a href="{{ route('admin.pedidos.index') }}" class="nav-link {{ request()->routeIs('admin.pedidos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-receipt"></i><p>Pedidos @if($pendencias['pedidos_abertos'] > 0)<span class="badge bg-info text-dark ms-auto">{{ $pendencias['pedidos_abertos'] }}</span>@endif</p></a></li>
+                    <li class="nav-item"><a href="{{ route('admin.pedidos.index') }}" class="nav-link {{ request()->routeIs('admin.pedidos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-receipt"></i><p>Pedidos @if($pendencias['pedidos_abertos'] > 0)<span class="badge badge-menu tone-blue ms-auto">{{ $pendencias['pedidos_abertos'] }}</span>@endif</p></a></li>
                     @if($u->isAdmin())
                     <li class="nav-item"><a href="{{ route('admin.catalogo.produtos.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.produtos.*') ? 'active' : '' }}"><i class="nav-icon fas fa-boxes-stacked"></i><p>Produtos e estoque</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.catalogo.categorias.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.categorias.*') ? 'active' : '' }}"><i class="nav-icon fas fa-tags"></i><p>Categorias</p></a></li>
                     <li class="nav-item"><a href="{{ route('admin.catalogo.fornecedores.index') }}" class="nav-link {{ request()->routeIs('admin.catalogo.fornecedores.*') ? 'active' : '' }}"><i class="nav-icon fas fa-truck"></i><p>Fornecedores</p></a></li>
                     @endif
-                    <li class="nav-item"><a href="{{ route('site.loja.index') }}" target="_blank" rel="noopener" class="nav-link {{ $golden['loja_ativa'] ? '' : 'opacity-50' }}"><i class="nav-icon fas fa-store"></i><p>Loja no site @if(! $golden['loja_ativa'])<span class="badge bg-secondary ms-auto">desligada</span>@endif</p></a></li>
+                    <li class="nav-item"><a href="{{ route('site.loja.index') }}" target="_blank" rel="noopener" class="nav-link {{ $golden['loja_ativa'] ? '' : 'opacity-50' }}"><i class="nav-icon fas fa-store"></i><p>Loja no site @if(! $golden['loja_ativa'])<span class="badge tone-neutral ms-auto">desligada</span>@endif</p></a></li>
 
                     <li class="nav-header">Conteúdo do site</li>
                     @if($u->isAdmin())
@@ -143,7 +141,7 @@
 <script>
 $(function(){
     var theme = localStorage.getItem('golden_admin_theme')||'light';
-    function apply(t){ if(t==='dark'){document.documentElement.setAttribute('data-bs-theme','dark');$('body').addClass('dark-mode').attr('data-bs-theme','dark');$('#adminThemeIcon').removeClass('fa-moon').addClass('fa-sun');}else{document.documentElement.setAttribute('data-bs-theme','light');$('body').removeClass('dark-mode').attr('data-bs-theme','light');$('#adminThemeIcon').removeClass('fa-sun').addClass('fa-moon');} }
+    function apply(t){ if(t==='dark'){document.documentElement.setAttribute('data-bs-theme','dark');$('body').addClass('dark-mode').attr('data-bs-theme','dark');$('#adminThemeIcon').removeClass('fa-moon').addClass('fa-sun');}else{document.documentElement.setAttribute('data-bs-theme','light');$('body').removeClass('dark-mode').attr('data-bs-theme','light');$('#adminThemeIcon').removeClass('fa-sun').addClass('fa-moon');} $(document).trigger('golden:theme',[t]); }
     apply(theme);
     $('#adminThemeToggle').on('click',function(){theme=theme==='dark'?'light':'dark';localStorage.setItem('golden_admin_theme',theme);apply(theme);});
 

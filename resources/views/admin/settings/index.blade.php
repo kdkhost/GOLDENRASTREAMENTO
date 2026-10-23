@@ -59,7 +59,7 @@
     <div class="col-lg-5">
         <x-admin.card title="Loja virtual" icon="fa-store" :descricao="$lojaAtiva ? 'Ativa — as páginas /loja estão no ar e no menu do site.' : 'Desativada — /loja sai do ar e some do menu.'">
             <x-slot:actions>
-                <span class="badge {{ $lojaAtiva ? 'bg-success' : 'bg-secondary' }}">{{ $lojaAtiva ? 'Ativa' : 'Desativada' }}</span>
+                <span class="badge {{ $lojaAtiva ? 'tone-green' : 'tone-neutral' }}">{{ $lojaAtiva ? 'Ativa' : 'Desativada' }}</span>
             </x-slot:actions>
             <form method="POST" action="{{ route('admin.settings.loja') }}" class="mb-3">
                 @csrf
@@ -86,7 +86,7 @@
         <x-admin.card title="Botão do WhatsApp no site" icon="fa-brands fa-whatsapp" class="mt-3"
             :descricao="$boxAtivo ? 'Abre a central de canais com a mensagem pronta por segmento.' : 'Link direto para o número principal.'">
             <x-slot:actions>
-                <span class="badge {{ $boxAtivo ? 'bg-success' : 'bg-secondary' }}">{{ $boxAtivo ? 'Caixa multicanal' : 'Link direto' }}</span>
+                <span class="badge {{ $boxAtivo ? 'tone-green' : 'tone-neutral' }}">{{ $boxAtivo ? 'Caixa multicanal' : 'Link direto' }}</span>
             </x-slot:actions>
             <form method="POST" action="{{ route('admin.settings.whatsapp') }}" class="row g-3">
                 @csrf

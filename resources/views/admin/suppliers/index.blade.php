@@ -13,7 +13,7 @@
         <tr>
             <td><span class="fw-semibold">{{ $f->nome }}</span><div class="small text-secondary">{{ $f->cnpj ?: '—' }}</div></td>
             <td class="small">{{ $f->contato ?: '—' }}<div class="text-secondary">{{ $f->telefone }} {{ $f->email }}</div></td>
-            <td class="text-center"><span class="badge {{ $f->ativo ? 'bg-success' : 'bg-secondary' }}">{{ $f->ativo ? 'ativo' : 'inativo' }}</span></td>
+            <td class="text-center"><span class="badge {{ $f->ativo ? 'tone-green' : 'tone-neutral' }}">{{ $f->ativo ? 'ativo' : 'inativo' }}</span></td>
             <td>
                 <div class="table-actions">
                     <a href="{{ route('admin.catalogo.fornecedores.edit', $f) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>

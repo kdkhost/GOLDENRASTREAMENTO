@@ -1,21 +1,27 @@
-/* Golden admin — ajustes sobre AdminLTE 4 */
-.app-sidebar .nav-link.active{background:linear-gradient(90deg,rgba(201,134,42,.18),transparent);color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+/* Golden admin — ajustes sobre AdminLTE 4. As cores vêm todas de golden-theme.css. */
+
+/* Sidebar: o menu é escuro nos dois temas, então fixa o par de cores em vez de herdar. */
+.app-sidebar .nav-link.active{background:linear-gradient(90deg,var(--glow-gold),transparent);color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
 .app-sidebar .nav-link.active .nav-icon{color:var(--gold)}
-.app-sidebar .nav-header{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:#8b98a5;padding:14px 1rem 6px}
-.btn-golden{background:linear-gradient(135deg,#e0a33e,#c9862a);color:#241a06;border:0;font-weight:600}
-.btn-golden:hover{color:#241a06;filter:brightness(1.05)}
-.text-gold{color:#c9862a!important}
+.app-sidebar .nav-header{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--t-neutral-fg);padding:14px 1rem 6px}
+.app-sidebar .badge-menu{border-radius:999px;font-size:.68rem;font-weight:700}
+.btn-golden{background:linear-gradient(135deg,var(--brand-gold),var(--brand-gold-2));color:var(--brand-gold-ink);border:0;font-weight:600}
+.btn-golden:hover{color:var(--brand-gold-ink);filter:brightness(1.06)}
+.text-gold{color:var(--t-gold-fg)!important}
 
 /* Cards: um único raio para todo o painel — nenhuma página escreve style inline. */
-.app-content .card{border:1px solid var(--bs-border-color-translucent);border-radius:16px}
+.app-content .card{border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg)}
 .app-content .card-header{border-bottom:1px solid var(--bs-border-color-translucent);font-weight:700}
 .page-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+
+/* Títulos de zona dentro das páginas do painel. */
+.zone-title{display:flex;align-items:center;gap:8px;font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--bs-secondary-color);margin:0 0 .35rem}
 
 /* Formulários: um tamanho de campo, um rótulo e um erro por campo em todo o painel. */
 .app-content .form-label{font-weight:600;font-size:.82rem;margin-bottom:.3rem}
 .app-content .form-label .form-hint{font-weight:400;color:var(--bs-secondary-color)}
-.app-content .form-control,.app-content .form-select,.app-content .form-check-input{border-radius:10px}
-.app-content .form-control:focus,.app-content .form-select:focus{border-color:#e0a33e;box-shadow:0 0 0 3px rgba(224,163,62,.16)}
+.app-content .form-control,.app-content .form-select,.app-content .form-check-input{border-radius:var(--radius-md)}
+.app-content .form-control:focus,.app-content .form-select:focus{border-color:var(--brand-gold);box-shadow:0 0 0 3px var(--t-gold-bg)}
 .app-content .form-text{font-size:.76rem}
 .app-content textarea.font-monospace{font-size:.85rem;line-height:1.6}
 .app-content .form-check-label{font-size:.86rem}
@@ -24,44 +30,69 @@
 .app-content .table thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;font-weight:700;color:var(--bs-secondary-color);background:var(--bs-tertiary-bg);white-space:nowrap}
 .app-content .table .btn{--bs-btn-padding-y:.18rem;--bs-btn-padding-x:.5rem;--bs-btn-font-size:.76rem}
 .table-actions{display:flex;gap:6px;justify-content:flex-end}
-.table-thumb{width:38px;height:38px;border-radius:10px;overflow:hidden;display:grid;place-items:center;background:var(--bs-tertiary-bg);color:var(--bs-secondary-color);flex:none}
+.table-thumb{width:38px;height:38px;border-radius:var(--radius-md);overflow:hidden;display:grid;place-items:center;background:var(--bs-tertiary-bg);color:var(--bs-secondary-color);flex:none}
 .table-thumb img{width:100%;height:100%;object-fit:cover}
 
 /* Filtros acima das tabelas. */
 .filters-card .row{--bs-gutter-x:.65rem;--bs-gutter-y:.5rem}
 
 /* KPIs: os ícones dos módulos têm tom próprio, definidos uma única vez. */
+.stat-card{border:0;border-radius:var(--radius-lg)}
 .app-content .stat-card{border:0}
-.stat-card{border:0;border-radius:16px;overflow:hidden}
 .stat-card .icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:1.3rem;flex:none}
-.stat-card .value{font-family:"Poppins";font-size:1.9rem;font-weight:800;line-height:1}
+.stat-card .value{font-family:var(--font-head);font-size:1.9rem;font-weight:800;line-height:1}
 .stat-card .label{color:var(--bs-secondary-color);font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-.icon-gold{background:rgba(224,163,62,.16);color:#c9862a}
-.icon-teal{background:rgba(31,158,134,.14);color:#1f9e86}
-.icon-violet{background:rgba(94,53,177,.12);color:#5e35b1}
-.icon-blue{background:rgba(28,93,153,.12);color:#1c5d99}
-.icon-red{background:rgba(192,57,43,.12);color:#c0392b}
 a.stat-link{color:inherit;text-decoration:none}
+.stat-card{transition:box-shadow .3s var(--ease),transform .3s var(--ease)}
 a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transform:translateY(-2px)}
-.stat-card{transition:box-shadow .3s cubic-bezier(.22,.61,.36,1),transform .3s cubic-bezier(.22,.61,.36,1)}
 
+/* Funil: a largura chega por variável (--w), a cor por status. */
 .funnel{display:flex;flex-direction:column;gap:8px}
 .funnel-row{display:flex;align-items:center;gap:12px}
 .funnel-label{width:96px;flex:none;font-size:.85rem;color:var(--bs-secondary-color)}
-.funnel-bar{height:34px;border-radius:8px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:700;font-size:.85rem;min-width:44px;transition:width .4s}
-.fb-novo{background:#1c5d99}.fb-contatado{background:#e0a33e}.fb-proposta{background:#5e35b1}.fb-vendido{background:#1f9e86}.fb-perdido{background:#c0392b}
+.funnel-bar{width:var(--w,20%);height:34px;border-radius:var(--radius-md);display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:.85rem;min-width:44px;transition:width .4s var(--ease)}
+.funnel-bar:hover{filter:brightness(1.08)}
+.fb-novo{background:var(--brand-blue);color:var(--on-solid)}
+.fb-contatado{background:var(--brand-gold);color:var(--brand-gold-ink)}
+.fb-proposta{background:var(--brand-violet);color:var(--on-solid)}
+.fb-vendido{background:var(--brand-teal);color:var(--on-solid)}
+.fb-perdido{background:var(--brand-red);color:var(--on-solid)}
+
+/* Situações do funil e do pedido: o mesmo par fundo+texto dos ícones. */
 .badge-status{font-weight:600;padding:.4em .7em;border-radius:999px;font-size:.76rem;white-space:nowrap}
-.st-novo{background:#e8f1fb;color:#1c5d99}.st-contatado{background:#fff3e0;color:#a8630f}.st-proposta{background:#ede7f6;color:#5e35b1}.st-vendido{background:#e7f6ef;color:#12694f}.st-perdido{background:#fdecec;color:#9b2c2c}
+.st-novo{background:var(--t-blue-bg);color:var(--t-blue-fg)}
+.st-contatado{background:var(--t-amber-bg);color:var(--t-amber-fg)}
+.st-proposta{background:var(--t-violet-bg);color:var(--t-violet-fg)}
+.st-vendido{background:var(--t-green-bg);color:var(--t-green-fg)}
+.st-perdido{background:var(--t-red-bg);color:var(--t-red-fg)}
+
+/* Avisos de estado no lugar dos alerts do Bootstrap, que mudam só com o tema claro. */
+.callout{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--bs-border-color-translucent);background:var(--bs-tertiary-bg);border-radius:var(--radius-lg);padding:.6rem .9rem;font-size:.86rem}
+.callout.ok{border-color:var(--t-green-fg);background:var(--t-green-bg)}
+.callout.warn{border-color:var(--t-amber-fg);background:var(--t-amber-bg)}
+
+/* Dashboard: agenda de pendências e lista de leads recentes. */
+.task-list{display:flex;flex-direction:column;gap:8px}
+.task{display:flex;align-items:center;gap:12px;padding:.6rem .75rem;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg);background:var(--bs-body-bg);color:inherit;text-decoration:none;transition:border-color .25s var(--ease),transform .25s var(--ease)}
+.task:hover{border-color:var(--brand-gold);transform:translateX(2px)}
+.task .count{font-family:var(--font-head);font-size:1.25rem;font-weight:800;line-height:1;min-width:2.2rem;text-align:right}
+.task .icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:1rem;flex:none}
+.task .caption{flex:1;min-width:0}
+.task .caption small{display:block;color:var(--bs-secondary-color);font-size:.76rem}
+.chart-box{position:relative;min-height:220px}
+
+/* Linha do tempo de interações e histórico. */
 .timeline{list-style:none;padding:0;margin:0;position:relative}
 .timeline:before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--bs-border-color)}
 .timeline li{position:relative;padding:0 0 18px 30px}
 .timeline li:before{content:"";position:absolute;left:4px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2px solid var(--bs-body-bg)}
-.timeline li.atual:before{width:14px;height:14px;left:3px;top:3px;box-shadow:0 0 0 4px rgba(224,163,62,.22)}
+.timeline li.atual:before{width:14px;height:14px;left:3px;top:3px;box-shadow:0 0 0 4px var(--t-gold-bg)}
+
 .defs{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.86rem;margin:0}
 .defs dt{color:var(--bs-secondary-color);font-weight:500}
 .defs dd{margin:0;font-weight:600;overflow-wrap:anywhere}
 
 /* miúdos que aparecem em mais de uma página */
-.avatar-letter{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none}
+.avatar-letter{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--t-gold-bg);color:var(--t-gold-fg)}
 .canal-linha .form-control{max-width:150px;flex:none}
 .canal-linha small{font-size:.7rem!important}

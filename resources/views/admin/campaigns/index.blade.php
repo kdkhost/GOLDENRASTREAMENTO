@@ -15,7 +15,7 @@
                 <a href="{{ route('admin.leads.index', ['campanha' => $c->id]) }}" class="fw-semibold text-decoration-none">{{ $c->name }}</a>
                 <div class="small text-secondary mt-1">
                     <code>{{ $c->source ?: '—' }}</code> · <code>{{ $c->medium ?: '—' }}</code>
-                    @unless($c->ativa)<span class="badge bg-secondary ms-2">pausada</span>@endunless
+                    @unless($c->ativa)<span class="badge tone-neutral ms-2">pausada</span>@endunless
                 </div>
             </td>
             <td><span class="badge bg-body-secondary text-body">{{ $c->canalLabel() }}</span></td>

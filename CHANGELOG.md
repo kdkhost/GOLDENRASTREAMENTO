@@ -3,6 +3,59 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.15.0] - 2026-10-23
+
+### Adicionado
+- **`public/css/golden-theme.css` — a paleta única dos dois temas** — todos os tokens de cor
+  do painel moram aqui: a marca (`--brand-*`), os pares `--t-<tom>-bg` / `--t-<tom>-fg` de
+  cada tom semântico, as cores do gráfico (`--chart-*`) e as superfícies do login
+  (`--login-*`). O bloco `[data-bs-theme="dark"]` redefine **cada** par para o fundo escuro,
+  então nenhum chip, ícone ou barra fica com cor de tema errado. `admin-golden.css` e o novo
+  `golden-login.css` não têm mais nenhum hexadecimal próprio.
+- **`public/css/golden-login.css`** — a tela de acesso saiu do `<style>` de 23 linhas e passou
+  a consumir os mesmos tokens; ela lê `golden_admin_theme` do navegador e abre no tema que o
+  usuário deixou no painel.
+- **Favicon própria do produto** — `public/img/favicon.png` (64×64) e um
+  `public/favicon.ico` de três tamanhos (16/32/48) gerados a partir de `logo-golden.png`; o
+  `.ico` que existia tinha zero bytes. O partial `resources/views/partials/favicon.blade.php`
+  é a única fonte e está nos três documentos HTML (site, painel e login), então a mesma
+  imagem aparece nos dois lugares.
+- **`tests/Feature/TemasEIconesDoPainelTest.php`** — cinco travas: os três documentos usam o
+  partial da favicon (e nenhum escreve `rel="icon"` próprio), os arquivos de ícone existem e
+  não estão vazios, nenhuma view do painel escreve hexadecimal nem usa `bg-success` /
+  `bg-secondary` / `btn-outline-dark`, os CSS do painel só usam tokens, e todo tom do tema
+  claro tem par no escuro.
+- **`title` / `icon` / `descricao` e slot `actions` em `<x-admin.table>`** — o cabeçalho do
+  cartão da tabela passou a ser o mesmo do `<x-admin.card>`, sem precisar encaixar um cartão
+  dentro do outro.
+
+### Alterado
+- **`/admin/dashboard` reformulada em seis zonas** — (1) os quatro KPIs de leads, (2) os
+  quatro módulos integrados com o aviso da loja, (3) o gráfico de 30 dias ao lado do cartão
+  "Para fazer agora" (novos, pedidos em aberto e estoque abaixo do mínimo, cada linha levando
+  à fila correspondente), (4) o funil, (5) a tabela de campanhas e (6) a tabela de leads
+  recentes. As listas soltas de antes viraram tabelas com o mesmo cabeçalho do resto do
+  painel, os rótulos que quebravam em duas linhas foram encurtados e cada bloco passou a ter
+  descrição do que mede.
+- **Cores do gráfico vêm dos tokens** — o Chart.js não conhece mais `#c9862a`: ele lê
+  `--chart-line`, `--chart-area`, `--chart-grid` e `--chart-tick` do CSS e se repinta no
+  evento `golden:theme`, que o botão de tema do layout agora dispara. Trocar de tema com o
+  dashboard aberto colore linha, área, eixos e rótulos sem recarregar.
+- **Chips de situação, funil e menu do lado escuro** — `.st-*`, `.icon-*` (agora `tone-*`),
+  as bolhas de Leads/Pedidos da sidebar e o selo de papel saíram dos `bg-warning` /
+  `bg-info text-dark` do Bootstrap (que ficam com texto escuro sobre fundo claro no tema
+  escuro) para os pares de tom. As barras do funil ganharam cor de marca sólida com texto
+  legível, e a largura chega por `--w` em vez de estilo de apresentação.
+- **`<h6>` solto e `alert` do Bootstrap na dashboard** — viraram `.zone-title` e `.callout`
+  (`ok` / `warn`), que acompanham o tema.
+- **Idioma do painel** — `APP_LOCALE` do `.env` local estava em `en` enquanto
+  `.env.example` já pedia `pt_BR`; as datas relativas da dashboard saíam em inglês ("18 hours
+  ago") ao lado do resto da interface em português.
+
+### Corrigido
+- **Rótulo do canal nas campanhas da dashboard** usava o chip azul de "novo"; agora é o tom
+  neutro, que não confunde situação com origem.
+
 ## [2.14.0] - 2026-10-23
 
 ### Adicionado

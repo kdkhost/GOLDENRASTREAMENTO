@@ -13,7 +13,7 @@
         <tr>
             <td>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="avatar-letter bg-warning text-dark">{{ substr($usr->name, 0, 1) }}</span>
+                    <span class="avatar-letter">{{ substr($usr->name, 0, 1) }}</span>
                     <div><span class="fw-semibold">{{ $usr->name }}</span><div class="small text-secondary">{{ $usr->email }}</div></div>
                 </div>
             </td>
