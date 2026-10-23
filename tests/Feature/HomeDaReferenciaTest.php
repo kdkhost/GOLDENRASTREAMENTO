@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
- * A home segue a referência visual aprovada: onze seções na ordem e nenhuma
- * imagem quebrada. Foi exatamente a falta das duas coisas que derrubou a
- * entrega anterior, então elas ficam travadas aqui.
+ * A home segue a referência visual aprovada: onze seções na ordem, nenhuma imagem
+ * quebrada e as faixas escuras com a fotografia cobrindo a seção. Foi a falta
+ * dessas coisas que derrubou as entregas anteriores, então ficam travadas aqui.
  */
 class HomeDaReferenciaTest extends TestCase
 {
@@ -28,7 +28,8 @@ class HomeDaReferenciaTest extends TestCase
         'hero-foto',        // herói com a fotografia da central de monitoramento
         'trust-grid',       // faixa de confiança dentro do herói
         'ben-grid',         // por que escolher a Golden
-        'plataforma-monitor.jpg',   // aplicativo e plataforma
+        'sec-foto-esq',     // aplicativo e plataforma: fotografia de fundo em largura total
+        'sec-foto-dir',     // equipamento J16: mesmo tratamento, do outro lado
         'seg-foto',         // para quem é, em cartões com foto
         'kit-tag',          // kits com o do meio destacado
         'checks',           // equipamento J16 com as verificações
@@ -43,6 +44,27 @@ class HomeDaReferenciaTest extends TestCase
 
         foreach (self::SECOES as $marcador) {
             $this->assertStringContainsString($marcador, $html, "A seção '{$marcador}' sumiu da home.");
+        }
+    }
+
+    /**
+     * Aplicativo e plataforma, e o Rastreador J16, nasceram como faixa escura com a
+     * imagem encaixada ao lado do texto; a referência aprovada mostra os dois com a
+     * fotografia cobrindo a seção inteira. A imagem precisa ser a camada de fundo da
+     * própria seção, então ela vem antes do conteúdo — não dentro dele.
+     */
+    public function test_as_duas_faixas_escuras_tem_a_fotografia_como_fundo_da_secao(): void
+    {
+        $css = file_get_contents(public_path('css/golden-site.css'));
+        $this->assertMatchesRegularExpression('/\.sec-foto\s*>\s*\.foto\{[^}]*object-fit:\s*cover/s', $css,
+            'A classe .sec-foto perdeu o recorte em largura total: a foto voltou a ser um quadro.');
+
+        $html = $this->get('/')->getContent();
+
+        foreach (['sec-foto-esq' => 'Aplicativo e plataforma', 'sec-foto-dir' => 'Rastreador J16'] as $classe => $rotulo) {
+            $tem = preg_match('#<section class="[^"]*' . $classe . '[^"]*">(.*?)<div class="wrap#s', $html, $faixa);
+            $this->assertSame(1, $tem, "A faixa '{$rotulo}' não é mais uma .{$classe}.");
+            $this->assertStringContainsString('class="foto"', $faixa[1], "A fotografia da faixa '{$rotulo}' saiu do fundo da seção.");
         }
     }
 

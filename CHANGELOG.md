@@ -35,7 +35,14 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - No responsivo (≤960px) as duas faixas perdem as colunas e o gradiente passa a cobrir a
   seção inteira de cima a baixo; o `object-position` de cada uma aponta para o próprio
   assunto, porque na coluna estreita o recorte da foto é lateral.
-- `php artisan test`: 173 testes, 1.287 asserções verdes. Render verificado a 1440px e a
+- **Agora há teste para isso.** `HomeDaReferenciaTest` travava apenas a *presença* das onze
+  seções — foi por isso que a faixa liso com foto encaixada passou. O marcador frágil
+  `plataforma-monitor.jpg` saiu da lista e entraram `sec-foto-esq` e `sec-foto-dir`, mais o
+  teste `as duas faixas escuras tem a fotografia como fundo da secao`, que exige que o
+  `<img class="foto">` venha antes do conteúdo da seção e que `.sec-foto>.foto` ainda tenha
+  `object-fit:cover` no CSS. Voltar ao quadro arredondado quebra a home em teste, não em
+  opinião.
+- `php artisan test`: 174 testes, 1.293 asserções verdes. Render verificado a 1440px e a
   500px com captura direta do navegador.
 
 ## [2.19.0] - 2026-10-23
