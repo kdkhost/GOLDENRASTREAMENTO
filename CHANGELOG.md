@@ -73,9 +73,10 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   edição que mantém a foto, importação idempotente com avatar baixado, filtro de nota mínima,
   envio pelo portal assinado pela ficha e o carrossel mesclado da home.
 - A migration `2026_10_24_000003_da_origem_ao_depoimento` é aditiva e tem `down()`; os
-  depoimentos existentes recebem `fonte = 'site'` pelo default da coluna. Falta rodá-la no MySQL
-  da hospedagem — `externo_id` em 191 é justamente o teto que o índice único do MySQL aceita com
-  `utf8mb4`, e o SQLite dos testes não avisa quando estoura.
+  depoimentos existentes recebem `fonte = 'site'` pelo default da coluna. Rodada no MySQL da
+  hospedagem e conferida na tabela: `externo_id varchar(191)` com índice único aceito em
+  `utf8mb4` — o teto que o SQLite dos testes não fiscaliza —, `fonte` com default `site`,
+  `avatar varchar(500)`, o índice `(aprovado, fonte)` e a FK de `customer_id` com `SET NULL`.
 
 ## [2.20.5] - 2026-10-24
 
