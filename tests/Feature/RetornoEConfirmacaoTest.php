@@ -78,6 +78,21 @@ class RetornoEConfirmacaoTest extends TestCase
         $this->assertStringContainsString('golden-avisos.css', $avisos);
     }
 
+    public function test_o_sprite_de_icone_do_toastr_nunca_volta(): void
+    {
+        $avisos = $this->ler(self::AVISOS);
+        $link = strpos($avisos, 'toastr.min.css');
+        $trava = strpos($avisos, '#toast-container>.toast{background-image:none!important}');
+
+        $this->assertGreaterThan(0, (int) $link);
+        $this->assertGreaterThan((int) $link, (int) $trava,
+            'A trava do sprite precisa vir depois da folha do toastr: com a mesma especificidade e !important, só ganha quem chega por último no documento.');
+
+        $folha = $this->ler('public/css/golden-avisos.css');
+        $this->assertStringNotContainsString('background-image', $folha,
+            'O sprite se desliga num lugar só, na folha partial/avisos — duplicar na stylesheet deixa uma das duas para trás.');
+    }
+
     public function test_nenhum_script_chama_alert_ou_confirm_do_navegador(): void
     {
         $arquivos = array_merge($this->views(), $this->javascripts());

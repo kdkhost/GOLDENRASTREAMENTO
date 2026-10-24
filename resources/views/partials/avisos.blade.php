@@ -9,6 +9,10 @@
 @php $confirmacoes = $confirmacoes ?? true; @endphp
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 <link rel="stylesheet" href="{{ asset('css/golden-avisos.css') }}?v={{ filemtime(public_path('css/golden-avisos.css')) }}">
+{{-- O sprite de ícone do toastr é declarado com !important e a mesma especificidade da
+    nossa regra, então só vence quem aparece depois no documento: por isso esta linha está
+    aqui e não na folha. Uma stylesheet velha no cache do navegador não reabre o ícone. --}}
+<style>#toast-container>.toast{background-image:none!important}</style>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 @if ($confirmacoes)

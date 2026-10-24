@@ -5,6 +5,28 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.21.4] - 2026-10-24
+
+### Corrigido
+- **O ícone em mosaico do toastr não volta mais, nem com stylesheet velha no
+  cache.** O fundo de cada notificação saiu do CDN com o *sprite* de ícones
+  repetido em mosaico (o print que chegou mostrava isso nos quatro tons). A
+  trava estava em `golden-avisos.css`, e a regra do CDN tem a mesma
+  especificidade e o mesmo `!important` — ganha quem chega por último no
+  documento. Um navegador com a folha anterior em cache reabria o mosaico mesmo
+  com o servidor atualizado.
+
+### Detalhes
+- A trava passou a viver no próprio `partials/avisos`, como `<style>` logo depois
+  do `<link>` do CDN: `#toast-container>.toast{background-image:none!important}`.
+  Uma regra só, para os quatro tons, e ela viaja no HTML — que não fica em cache
+  longo — então não existe mais combinação de cache que reabra o sprite.
+- `golden-avisos.css` ficou sem nenhuma declaração de `background-image`: o
+  desenho do tom (borda esquerda + glifo Font Awesome) continua lá, a anulação do
+  fundo tem um único dono.
+- Teste novo em `RetornoEConfirmacaoTest` confere a ordem no documento (trava
+  depois da folha do CDN) e reclama se `background-image` reaparecer na stylesheet.
+
 ## [2.21.3] - 2026-10-24
 
 ### Novo

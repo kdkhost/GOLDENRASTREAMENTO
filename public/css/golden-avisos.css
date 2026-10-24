@@ -39,17 +39,17 @@ body.layout-fixed #toast-container{top:72px}
 #toast-container .toast-close-button{top:-.2em;right:-.3em;color:var(--login-muted);text-shadow:none;font-size:1.2rem}
 #toast-container .toast-close-button:hover{color:var(--login-text)}
 
-/* o tom entra pelo lado esquerdo e pelo ícone — com o id na frente, senão a regra base
-   de #toast-container>div, que é mais específica, ganharia do tom. O fundo em sprite do
-   toastr (mesma especificidade, folha dele que vem antes) é desligado aqui: o ícone do
-   sistema é Font Awesome, o mesmo de todo o resto. */
-#toast-container>.toast-success{border-left-color:var(--t-green-fg);background-image:none!important}
+/* O tom entra pelo lado esquerdo e pelo ícone — com o id na frente, senão a regra base
+   de #toast-container>div, que é mais específica, ganharia do tom. O ícone é Font
+   Awesome, o mesmo de todo o resto; o sprite do próprio toastr é desligado na folha
+   partial/avisos, onde a regra chega depois da dele. */
+#toast-container>.toast-success{border-left-color:var(--t-green-fg)}
 #toast-container>.toast-success::before{content:"\f058";color:var(--t-green-fg)}
-#toast-container>.toast-info{border-left-color:var(--t-blue-fg);background-image:none!important}
+#toast-container>.toast-info{border-left-color:var(--t-blue-fg)}
 #toast-container>.toast-info::before{content:"\f05a";color:var(--t-blue-fg)}
-#toast-container>.toast-warning{border-left-color:var(--t-amber-fg);background-image:none!important}
+#toast-container>.toast-warning{border-left-color:var(--t-amber-fg)}
 #toast-container>.toast-warning::before{content:"\f071";color:var(--t-amber-fg)}
-#toast-container>.toast-error{border-left-color:var(--t-red-fg);background-image:none!important}
+#toast-container>.toast-error{border-left-color:var(--t-red-fg)}
 #toast-container>.toast-error::before{content:"\f06a";color:var(--t-red-fg)}
 
 @media (max-width:575.98px){

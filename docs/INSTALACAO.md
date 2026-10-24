@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.21.3
+- **Versão:** 2.21.4
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -791,6 +791,14 @@ de português, o segundo é cinza do sistema operacional.
   `--aviso-sombra` e `--aviso-veu`), então o *toastr* escuro/claro acompanha o
   botão de tema. Por isso o site público passou a carregar `golden-theme.css`
   antes de `golden-site.css`.
+- **O ícone do toastr**: a folha do CDN pinta um *sprite* de fundo em cada
+  notificação, e a regra dele usa `!important` com a mesma especificidade da
+  nossa. A trava (`#toast-container>.toast{background-image:none!important}`)
+  mora num `<style>` do próprio partial, logo depois do `<link>` do CDN, porque
+  num empate de especificidade vence quem chega por último ao documento — assim
+  um navegador com a stylesheet antiga em cache não reabre o mosaico de ícones.
+  O desenho do tom (borda + glifo Font Awesome) continua em `golden-avisos.css`,
+  que não declara `background-image` nenhum.
 - **Português**: o Laravel 13 não traz texto de validação no repositório, então a
   chave crua (`validation.required`) aparecia na tela em vez da mensagem. As
   traduções estão em `lang/pt_BR/` (`validation`, `auth`, `pagination`,
