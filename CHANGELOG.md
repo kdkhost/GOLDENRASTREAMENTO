@@ -3,6 +3,41 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [Unreleased]
+
+## [2.21.2] - 2026-10-24
+
+### Novo
+- **O sistema passou a ter caixa de saída própria.** Foi criada a conta
+  `disparos@foco.server-golden.com.br` — de máquina, só para conexão e disparo, sem
+  ser o e-mail de ninguém do dia a dia — e a produção trocou `MAIL_MAILER=log` por
+  `smtp` apontando para ela (`foco.server-golden.com.br:587`, STARTTLS). Desde então
+  os avisos de chamado, resposta, depoimento e orçamento saem de verdade.
+- **A criação dessa caixa está documentada e não precisa do painel.**
+  `docs/INSTALACAO.md` ganhou a seção *A caixa de disparo se cria pela SSH, sem abrir
+  o painel*, com o comando (`uapi Email add_pop`), a checagem de SPF/DKIM e as três
+  pegadinhas que só aparecem na hora.
+
+### Detalhes
+- O domínio da caixa não foi escolha livre: a hospedagem nega acesso a
+  `goldenrastreamento.com.br` (`you do not have access to the domain`), que está em
+  outra conta do mesmo servidor. `uapi Email list_mail_domains` devolve
+  `foco.server-golden.com.br` como o único habilitado, e ele já tem SPF
+  (`v=spf1 ip4:88.99.209.75 +a +mx ~all`) e DKIM (`default._domainkey`).
+- A prova foi feita pelo caminho real, não por script avulso: chamado aberto no
+  `/portal` em produção, `ChamadoEquipe` processado pela fila em 136 ms com aceite do
+  servidor, e a mesma mensagem lida na caixa de destino (`From: Golden Rastreamento
+  <disparos@foco.server-golden.com.br>`). O `ChamadoRecebido` da conta de
+  demonstração falhou com `550 account or domain may not exist` — o endereço
+  `portal@exemplo.com.br` é de exemplo mesmo, e essa coluna de diagnóstico entrou na
+  tabela de problemas.
+- `.env.example` passou a trazer o remetente de máquina como referência, com o aviso
+  de que senha contendo `#` só funciona entre aspas no `.env` (sem aspas vira
+  comentário e o SMTP responde como senha errada).
+- Nada de credencial entra no repositório: a senha fica só no `.env` (chmod 600) da
+  instalação e nas notas do servidor em `~/backups-golden/acesso-painel.txt`, que
+  agora também registram o comando de troca de senha (`uapi Email passwd_pop`).
+
 ## [2.21.1] - 2026-10-24
 
 ### Corrigido

@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.21.1
+- **Versão:** 2.21.2
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -439,7 +439,7 @@ php artisan config:clear && php artisan config:cache
 | `MAIL_MAILER` | `smtp` | use `log` enquanto não tiver credencial |
 | `MAIL_LOG_CHANNEL` | `email` | para onde o `log` escreve o e-mail (`storage/logs/email.log`) |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION` | do seu servidor de correio | o **código de e-mail está pronto no projeto**; falta só a credencial do servidor |
-| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | `comercial@goldenrastreamento.com.br` | remetente dos orçamentos e avisos |
+| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | `disparos@foco.server-golden.com.br` / `Golden Rastreamento` | remetente dos orçamentos e avisos: caixa de máquina, não o e-mail de uma pessoa |
 | `GOLDEN_WHATSAPP` | `5519997101483` | botão de WhatsApp do site |
 | `GOLDEN_EMAIL` | endereço comercial | aparece no site e nos avisos |
 | `GOLDEN_TRACKING_ENABLED` | `0` ou `1` | liga a consulta de rastreio |
@@ -453,6 +453,36 @@ que falta para eles saírem de verdade. Em `log`, a mensagem inteira é escrita 
 Esse canal é separado do log da aplicação de propósito: o driver `log` grava o
 aviso em nível `debug`, e uma produção com `LOG_LEVEL=warning` filtrava essas
 linhas — o `queue:work` dizia `DONE` e não sobrava rastro nenhum do envio.
+
+### A caixa de disparo se cria pela SSH, sem abrir o painel
+
+Não use o e-mail de ninguém do dia a dia como remetente do sistema: crie uma caixa
+de máquina, só para conexão e disparo. Com SSH na hospedagem cPanel:
+
+```sh
+uapi Email add_pop email=disparos@seudominio.com.br password='SENHA_FORTE' quota=0
+uapi Email list_pops          # confere que a caixa existe
+```
+
+Três coisas que só aparecem na hora:
+
+- **o domínio da caixa tem de ser um que a conta hospeda.** A API responde
+  `you do not have access to the domain 'outrodominio.com.br'` para domínio que está
+  em outra conta do mesmo servidor. `uapi Email list_mail_domains` lista os liberados.
+- **SPF e DKIM precisam cobrir esse domínio.** Confira `TXT seudominio.com.br` e
+  `TXT default._domainkey.seudominio.com.br`; sem isso a mensagem sai e cai em spam.
+- **senha com `#` no `.env` só funciona entre aspas.** Sem as aspas, o `#` começa um
+  comentário e o `MAIL_PASSWORD` chega vazio ao Laravel — o erro aparece como falha de
+  login no SMTP, não como erro de arquivo.
+
+Depois, `MAIL_MAILER=smtp` no `.env` e uma prova curta antes de mexer no site:
+
+```php
+Mail::raw('prova', fn ($m) => $m->to('voce@seudominio.com.br')->subject('prova'));
+```
+
+Se o envio for aceito, a mensagem aparece na caixa de destino; o `queue:work` do cron
+(seção 6) cuida do resto sem intervenção.
 
 ---
 
@@ -773,6 +803,8 @@ ele, os dados criptografados e as sessões não voltam.
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/email.log`; depois configurar SMTP |
+| `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço de exemplo (como o login `portal@exemplo.com.br` da conta de demonstração) | esperado: o aviso à equipe saiu, o que não existe é a caixa de exemplo; um cliente cadastrado de verdade não reproduz |
+| Falha de login no SMTP com senha certa no `.env` | `MAIL_PASSWORD` sem aspas e com `#` | escreva `MAIL_PASSWORD="..."` — sem aspas o `#` vira comentário |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
 | A senha do painel "não funciona" no servidor | a senha instalada é forte, não é `golden123` | leia em `~/backups-golden/acesso-painel.txt` ou defina outra com `php artisan app:define-senha` |
 | O cliente não consegue entrar no `/portal` | o login do portal é o `email_portal`, não o e-mail da ficha do CRM | conferir o selo *conta ativa* na ficha (Admin → Clientes) e usar aquele e-mail; sem conta, ele cria em `/portal/cadastro` |
