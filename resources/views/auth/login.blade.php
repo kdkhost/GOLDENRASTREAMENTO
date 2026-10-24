@@ -20,12 +20,6 @@
         <h1>Acessar o painel administrativo</h1>
         <p class="sub">Gestão de leads e conversões de campanhas</p>
 
-        @if(session('status'))<div class="alert ok">{{ session('status') }}</div>@endif
-        @if(session('success'))<div class="alert ok">{{ session('success') }}</div>@endif
-        @if(session('warning'))<div class="alert error">{{ session('warning') }}</div>@endif
-        @if(session('error'))<div class="alert error">{{ session('error') }}</div>@endif
-        @if($errors->any())<div class="alert error">{{ $errors->first() }}</div>@endif
-
         <form method="POST" action="{{ route('login.post') }}">
             @csrf
             <div class="field">
@@ -47,5 +41,6 @@
         @endif
         <div class="back"><a href="{{ route('site.home') }}">← Voltar ao site</a></div>
     </div>
+@include('partials.avisos')
 </body>
 </html>

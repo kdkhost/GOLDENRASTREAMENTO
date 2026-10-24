@@ -4,7 +4,7 @@
     'confirm' => 'Excluir mesmo assim?',
     'icon' => 'fa-trash',
 ])
-<form method="POST" action="{{ $action }}" class="d-inline" onsubmit="return confirm(@js($confirm))">
+<form method="POST" action="{{ $action }}" class="d-inline" data-confirmar="{{ $confirm }}">
     @csrf
     @method('DELETE')
     <button class="btn btn-sm btn-outline-danger" title="{{ $label ?: 'Excluir' }}">

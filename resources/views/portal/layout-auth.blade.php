@@ -27,12 +27,6 @@
         <span><b>GOLDEN</b><small>@yield('marca', 'Portal do cliente')</small></span>
     </div>
 
-    @if(session('status'))<div class="alert ok">{{ session('status') }}</div>@endif
-    @if(session('success'))<div class="alert ok">{{ session('success') }}</div>@endif
-    @if(session('warning'))<div class="alert error">{{ session('warning') }}</div>@endif
-    @if(session('error'))<div class="alert error">{{ session('error') }}</div>@endif
-    @if($errors->any())<div class="alert error">{{ $errors->first() }}</div>@endif
-
     @yield('content')
 
     <div class="back"><a href="{{ route('site.home') }}">← Voltar ao site</a></div>
@@ -51,5 +45,6 @@
     pintar(localStorage.getItem('golden_admin_theme') || 'light');
 })();
 </script>
+@include('partials.avisos')
 </body>
 </html>

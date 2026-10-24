@@ -1,11 +1,10 @@
-{{-- Scripts que todo painel precisa: os bibliotecários do AdminLTE, o botão de tema, o
-     accordion da sidebar, o "Copiar" das listas e os avisos vindos de sessão. Painel
-     administrativo e portal do cliente carregam esta mesma folha — é por ela que os dois
-     se comportam igual, e é aqui (e só aqui) que se corrige um comportamento dos dois. --}}
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+{{-- Scripts que todo painel precisa: o retorno e a confirmação compartilhados (partials.avisos),
+     os bibliotecários do AdminLTE, o botão de tema, o accordion da sidebar e o "Copiar" das
+     listas. Painel administrativo e portal do cliente carregam esta mesma folha — é por ela que
+     os dois se comportam igual, e é aqui (e só aqui) que se corrige um comportamento dos dois. --}}
+@include('partials.avisos')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/js/adminlte.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
 $(function(){
     var theme = localStorage.getItem('golden_admin_theme')||'light';
@@ -32,13 +31,9 @@ $(function(){
         var campo = document.querySelector(btn.getAttribute('data-copiar'));
         if (!campo) return;
         campo.select();
-        var confirmar = function(){ toastr.success('Link copiado.'); };
+        var confirmar = function(){ GoldenAvisos.sucesso('Link copiado.'); };
         if (navigator.clipboard) { navigator.clipboard.writeText(campo.value).then(confirmar, function(){ document.execCommand('copy'); confirmar(); }); }
         else { document.execCommand('copy'); confirmar(); }
     });
-
-    toastr.options={timeOut:4000,positionClass:'toast-top-right'};    @foreach(['success'=>'success','error'=>'error','warning'=>'warning','info'=>'info'] as $k=>$fn)
-        @if(session($k)) toastr.{{ $fn }}(@json(session($k))); @endif
-    @endforeach
 });
 </script>

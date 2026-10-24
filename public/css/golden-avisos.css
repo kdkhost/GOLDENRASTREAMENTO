@@ -1,0 +1,95 @@
+/* Golden Rastreamento — a resposta visual do sistema, desenhada uma única vez.
+   O que o usuário ouve do sistema vem de duas fontes só: toastr (retorno) e SweetAlert2
+   (confirmação). Esta folha não cria cor: ela consome os tokens de golden-theme.css, então
+   o aviso claro e o aviso escuro são sempre o mesmo desenho. */
+
+/* ---------- toastr: o retorno de qualquer ação ---------- */
+#toast-container{z-index:1090;top:20px}
+/* no painel e no portal a barra de navegação é fixa: o aviso desce abaixo dela */
+body.layout-fixed #toast-container{top:72px}
+
+#toast-container>div{
+    position:relative;
+    width:auto;min-width:260px;max-width:min(360px,92vw);
+    padding:13px 34px 13px 46px;
+    background:var(--login-surface);
+    color:var(--login-text);
+    border:1px solid var(--login-line);
+    border-left:4px solid var(--t-neutral-fg);
+    border-radius:var(--radius-md);
+    box-shadow:var(--aviso-sombra);
+    opacity:1;
+    font-family:var(--font-sans);
+    font-size:.9rem;
+    font-weight:500;
+    line-height:1.45;
+    text-shadow:none;
+}
+#toast-container>div:hover{background:var(--login-surface);box-shadow:var(--aviso-sombra);opacity:1}
+
+/* o ícone é o mesmo glifo em todos os cantos do sistema */
+#toast-container>div::before{
+    position:absolute;left:16px;top:13px;
+    font-family:"Font Awesome 6 Free";font-weight:900;font-size:1.05rem;line-height:1;
+    color:var(--t-neutral-fg);
+}
+#toast-container .toast-title{display:none}
+#toast-container .toast-message{margin:0}
+#toast-container .toast-message a{color:var(--brand-gold-2);font-weight:700;text-decoration:underline}
+#toast-container .toast-close-button{top:-.2em;right:-.3em;color:var(--login-muted);text-shadow:none;font-size:1.2rem}
+#toast-container .toast-close-button:hover{color:var(--login-text)}
+
+/* o tom entra pelo lado esquerdo e pelo ícone — com o id na frente, senão a regra base
+   de #toast-container>div, que é mais específica, ganharia do tom. O fundo em sprite do
+   toastr (mesma especificidade, folha dele que vem antes) é desligado aqui: o ícone do
+   sistema é Font Awesome, o mesmo de todo o resto. */
+#toast-container>.toast-success{border-left-color:var(--t-green-fg);background-image:none!important}
+#toast-container>.toast-success::before{content:"\f058";color:var(--t-green-fg)}
+#toast-container>.toast-info{border-left-color:var(--t-blue-fg);background-image:none!important}
+#toast-container>.toast-info::before{content:"\f05a";color:var(--t-blue-fg)}
+#toast-container>.toast-warning{border-left-color:var(--t-amber-fg);background-image:none!important}
+#toast-container>.toast-warning::before{content:"\f071";color:var(--t-amber-fg)}
+#toast-container>.toast-error{border-left-color:var(--t-red-fg);background-image:none!important}
+#toast-container>.toast-error::before{content:"\f06a";color:var(--t-red-fg)}
+
+@media (max-width:575.98px){
+    #toast-container.toast-top-right{right:12px;left:12px}
+    #toast-container>div{width:auto;max-width:none}
+}
+
+/* ---------- SweetAlert2: a confirmação antes do que não tem volta ---------- */
+.swal2-container.swal2-backdrop-show{background:var(--aviso-veu)}
+
+.swal2-popup.swal2-modal{
+    background:var(--login-surface);
+    color:var(--login-text);
+    border:1px solid var(--login-line);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--aviso-sombra);
+    font-family:var(--font-sans);
+    padding:26px 26px 22px;
+}
+.swal2-popup .swal2-title{color:var(--login-text);font-family:var(--font-head);font-size:1.16rem;font-weight:700}
+.swal2-popup .swal2-html-container{color:var(--login-muted);font-size:.94rem}
+.swal2-popup .swal2-close{color:var(--login-muted)}
+.swal2-popup .swal2-actions{gap:10px;margin:20px 0 0}
+.swal2-popup a{color:var(--brand-gold-2)}
+
+.swal2-popup .swal2-confirm{
+    background:linear-gradient(135deg,var(--brand-gold),var(--brand-gold-2))!important;
+    border:0!important;
+    color:var(--brand-gold-ink)!important;
+    border-radius:var(--radius-md)!important;
+    font-weight:700;
+    padding:10px 20px;
+}
+.swal2-popup .swal2-cancel{
+    background:var(--t-neutral-bg)!important;
+    border:1px solid var(--login-line)!important;
+    color:var(--t-neutral-fg)!important;
+    border-radius:var(--radius-md)!important;
+    font-weight:600;
+    padding:10px 20px;
+}
+.swal2-popup .swal2-confirm:hover,
+.swal2-popup .swal2-cancel:hover{filter:brightness(1.04)}

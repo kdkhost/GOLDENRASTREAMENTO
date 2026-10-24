@@ -81,13 +81,6 @@ section{padding:84px 0}
 .cart-count:not([hidden]){animation:cartPop .3s cubic-bezier(.22,.61,.36,1)}
 @keyframes cartPop{from{transform:scale(.4)}60%{transform:scale(1.18)}to{transform:scale(1)}}
 
-/* Aviso de ação (carrinho, pedido) */
-.flash{position:sticky;top:70px;z-index:60;margin:0 auto 6px;max-width:1180px;padding:0 24px}
-.flash span{display:flex;align-items:center;gap:9px;padding:11px 16px;border-radius:12px;font-size:.9rem;font-weight:500;
-  box-shadow:0 10px 26px rgba(0,0,0,.14);animation:pageIn .3s cubic-bezier(.22,.61,.36,1) both}
-.flash .ok{background:rgba(31,158,134,.12);border:1px solid rgba(31,158,134,.32);color:#1a7f6c}
-.flash .err{background:rgba(208,106,95,.12);border:1px solid rgba(208,106,95,.32);color:#b34e43}
-
 /* Hero */
 .hero{background:radial-gradient(1200px 600px at 80% -10%,rgba(31,158,134,.18),transparent 60%),radial-gradient(900px 500px at 10% 110%,rgba(224,163,62,.14),transparent 55%),linear-gradient(180deg,var(--dark),var(--dark-2));color:#fff;padding:96px 0 72px;position:relative;overflow:hidden}
 .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center}
@@ -275,10 +268,6 @@ section{padding:84px 0}
 .consent{display:flex;gap:10px;align-items:flex-start;font-size:.84rem;color:var(--slate);margin:6px 0 18px}
 .consent input{width:auto;margin-top:3px}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-.form-alert{display:none;padding:16px;border-radius:12px;margin-bottom:16px;font-size:.92rem}
-.form-alert.err{display:block;background:#fdecec;color:#9b2c2c;border:1px solid #f5c2c2}
-.form-alert.ok{display:block;background:#e7f6ef;color:#12694f;border:1px solid #b8e6d3}
-.form-alert a{font-weight:700;text-decoration:underline}
 
 /* CTA final */
 .cta-final{background:linear-gradient(120deg,var(--dark),var(--dark-2));color:#fff;text-align:center;border-radius:26px;padding:64px 30px;position:relative;overflow:hidden}
@@ -527,7 +516,7 @@ main>section:nth-child(n+4){animation-delay:.14s}
 }
 
 @media(prefers-reduced-motion:reduce){
-  main>section,.flash span,.cart-count{animation:none}
+  main>section,.cart-count{animation:none}
   .depo{--swiper-wrapper-transition-timing-function:linear}
   .wa-float::before{animation:none}
   .nav-drawer,.nav-drawer .nav-item,.nav-drawer .nav-sub,.nav-drawer .nav-caret,.nav-links .nav-sub,.nav-arrow,

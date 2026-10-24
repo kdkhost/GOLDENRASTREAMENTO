@@ -53,6 +53,10 @@
     --login-muted:#5b6672;
     --login-line:#e6e9ee;
     --login-field-bg:#ffffff;
+
+    /* camadas flutuantes (aviso e confirmação): superfície, sombra e véu */
+    --aviso-sombra:0 18px 40px -22px rgba(18,22,26,.45);
+    --aviso-veu:rgba(18,22,26,.55);
 }
 
 [data-bs-theme="dark"]{
@@ -73,6 +77,8 @@
     --login-muted:#9aa7b4;
     --login-line:#2c343c;
     --login-field-bg:#12171b;
+    --aviso-sombra:0 18px 40px -22px rgba(0,0,0,.7);
+    --aviso-veu:rgba(0,0,0,.72);
 }
 
 /* utilitários de tom — chips, ícones e bolhas usam sempre o mesmo par */

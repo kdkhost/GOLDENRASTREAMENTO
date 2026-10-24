@@ -5,6 +5,57 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.21.3] - 2026-10-24
+
+### Novo
+- **Todo retorno do sistema passou a sair por notificação.** Nasceu
+  `resources/views/partials/avisos.blade.php` com a folha
+  `public/css/golden-avisos.css`: uma camada única que lê `success`, `status`,
+  `info`, `warning`, `error` e o `$errors` da view e entrega tudo como *toastr* no
+  canto superior direito. Qualquer controller que já fazia `->with('success', …)`
+  ou `->withErrors(…)` passou a funcionar sem código novo.
+- **As cinco superfícies agora usam a mesma folha**: painel, portal do cliente,
+  `/login`, `/portal/entrar`, `/portal/cadastro` e o site público includes do
+  mesmo partial. No site ele entra com `confirmacoes => false` — sem ato
+  destrutivo na tela pública, o SweetAlert2 nem é baixado.
+- **Confirmação de ato destrutivo é SweetAlert2.** O `<form>` marca a pergunta com
+  `data-confirmar="…"` e o interceptor bloqueia o envio até a resposta;
+  cancelar não navega. O componente `components/admin/delete.blade.php` já nasce
+  com o atributo, então as 14 chamadas existentes herdaram o comportamento.
+- **O sistema fala português nas mensagens da framework.** O Laravel 13 não traz
+  texto de validação no repositório, e a tela de acesso do portal mostrava a chave
+  crua `validation.required` (foi assim que o problema chegou, com print). Entraram
+  `lang/pt_BR/validation.php` (83 chaves + mapa `attributes` com o nome brasileiro
+  de cada campo), `auth.php`, `pagination.php` e `passwords.php`.
+
+### Detalhes
+- Cinco telas pintavam a própria caixa de feedback e foram esvaziadas: o bloco
+  `alert alert-danger alert-dismissible` do painel ("Não deu para salvar:") e do
+  portal ("Não deu para seguir:"), os cinco `div.alert.ok|error` do `/login`, o
+  `.form-alert` do formulário de lead e as regras CSS mortas que sobravam
+  (`.flash*` em `golden-site.css`, `.alert*` em `golden-login.css`). A marcação
+  por campo (`is-invalid`, `.erro`, `.form-err`) ficou — o que sumiu é a caixa.
+- A camada de aviso não cria cor própria: consome `--login-surface`, `--t-*-fg` e
+  os dois tokens novos, `--aviso-sombra` e `--aviso-veu`, declarados nas duas
+  paletas de `golden-theme.css`. Para isso o site público passou a carregar
+  `golden-theme.css` **antes** de `golden-site.css`, mantendo o próprio visual.
+- Corrigidos dois empates de especificidade contra o CSS do toastr: o ícone
+  original é um *sprite* declarado com `!important` (virou `background-image:none`
+  com `!important` e ícone Font Awesome por `::before`), e o tom do border/icon
+  só venceu quando cada regra ganhou o `#toast-container>` na frente.
+- `public/js/golden-site.js` deixou de escrever no `.form-alert` e passou a chamar
+  `GoldenAvisos.sucesso/erro`; o sucesso do lead carrega o link de WhatsApp que a
+  resposta devolve.
+- Travado por teste: `RetornoEConfirmacaoTest` (8 casos) exige o partial em toda
+  página, proíbe `alert(`/`confirm(` em Blade e no JS público, proíbe caixa pintada
+  por `{{ session(…`/`{{ $errors->… }}`, e confere que a folha de avisos só usa
+  token existente nas duas paletas. `TraducoesPtBrTest` (4 casos) varre as regras de
+  validação usadas em `app/` e reclama se alguma não tem texto em português.
+  Suíte completa: 252 testes, 2.781 asserções.
+- `docs/INSTALACAO.md` ganhou a seção *Retorno e confirmação: uma camada só*, a
+  linha de diagnóstico do `validation.required` na tabela de problemas e dois itens
+  de checklist; o PDF foi regerado.
+
 ## [2.21.2] - 2026-10-24
 
 ### Novo

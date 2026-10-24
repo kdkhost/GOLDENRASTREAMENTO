@@ -5,7 +5,6 @@
 @endphp
 <form class="form-card" data-lead-form action="{{ route('site.leads.store') }}" method="POST" novalidate>
     @csrf
-    <div class="form-alert" role="alert"></div>
 
     <div class="field">
         <label for="leadName">Seu nome</label>

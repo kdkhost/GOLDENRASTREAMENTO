@@ -140,9 +140,7 @@
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        var alertBox = form.querySelector('.form-alert');
         var btn = form.querySelector('button[type="submit"]');
-        if (alertBox) { alertBox.className = 'form-alert'; alertBox.style.display = 'none'; }
 
         // injeta atribuição de campanha nos campos ocultos
         var attr = getAttribution();
@@ -166,35 +164,23 @@
         })
           .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
           .then(function (res) {
-            if (alertBox) {
-              alertBox.style.display = 'block';
-              if (res.ok && res.d.success) {
-                alertBox.className = 'form-alert ok';
-                alertBox.textContent = res.d.message || 'Recebemos sua solicitação.';
-                if (res.d.whatsapp_url) {
-                  var link = document.createElement('a');
-                  link.href = res.d.whatsapp_url;
-                  link.target = '_blank';
-                  link.rel = 'noopener noreferrer';
-                  link.textContent = ' Continuar no WhatsApp ↗';
-                  alertBox.appendChild(link);
-                }
-                form.reset();
-                track('lead_success', {});
-              } else {
-                alertBox.className = 'form-alert err';
-                var msg = res.d && res.d.message ? res.d.message : 'Não foi possível enviar agora. Tente novamente.';
-                if (res.d && res.d.errors) {
-                  var first = Object.keys(res.d.errors)[0];
-                  msg = res.d.errors[first][0];
-                }
-                alertBox.textContent = msg;
+            if (res.ok && res.d.success) {
+              GoldenAvisos.sucesso(
+                res.d.message || 'Recebemos sua solicitação.',
+                res.d.whatsapp_url ? { url: res.d.whatsapp_url, rotulo: 'Continuar no WhatsApp ↗' } : null
+              );
+              form.reset();
+              track('lead_success', {});
+            } else {
+              var msg = res.d && res.d.message ? res.d.message : 'Não foi possível enviar agora. Tente novamente.';
+              if (res.d && res.d.errors) {
+                var first = Object.keys(res.d.errors)[0];
+                msg = res.d.errors[first][0];
               }
+              GoldenAvisos.erro(msg);
             }
           })
-          .catch(function () {
-            if (alertBox) { alertBox.style.display = 'block'; alertBox.className = 'form-alert err'; alertBox.textContent = 'Erro de conexão. Tente novamente.'; }
-          })
+          .catch(function () { GoldenAvisos.erro('Erro de conexão. Tente novamente.'); })
           .finally(function () { if (btn) btn.disabled = false; });
       });
     });

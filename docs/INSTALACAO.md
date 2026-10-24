@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.21.2
+- **Versão:** 2.21.3
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -765,7 +765,51 @@ existiam recebem `fonte = 'site'` pelo próprio default da coluna.
 
 ---
 
-## 12. Backup e restauração
+## 12. Retorno e confirmação: uma camada só
+
+Toda resposta do sistema ao usuário — o que deu certo, o que impediu a ação e a
+pergunta antes de um ato destrutivo — sai por um único lugar:
+`resources/views/partials/avisos.blade.php`, com a folha
+`public/css/golden-avisos.css`. Nada de caixa fixa no alto da página e nada de
+`alert()` ou `confirm()` do navegador: o primeiro quebra o layout em três linhas
+de português, o segundo é cinza do sistema operacional.
+
+- **Feedback** (salvou, falhou, erros de validação) vira notificação *toastr* no
+  canto superior direito. O partial lê `success`, `status`, `info`, `warning`,
+  `error` e o `$errors` da view, então qualquer controller que faça
+  `->with('success', …)` ou `->withErrors(…)` já aparece na tela sem código novo.
+- **Confirmação** de exclusão, cancelamento e atos parecidos usa **SweetAlert2**.
+  Basta escrever `data-confirmar="Excluir este usuário?"` no `<form>`; o
+  componente `components/admin/delete.blade.php` já nasce com o atributo, e o
+  interceptor do partial impede o envio até a resposta. Cancelar não navega.
+- **Cinco superfícies, uma folha**: painel, portal do cliente, as telas de acesso
+  (`/login`, `/portal/entrar`, `/portal/cadastro`) e o site público incluem o
+  mesmo partial. No site ele entra com `['confirmacoes' => false]`, porque nenhuma
+  tela pública tem ato destrutivo — assim o SweetAlert2 não é nem baixado.
+- **Tema**: a camada de aviso não cria cor própria. Ela consome os tokens de
+  `golden-theme.css` (`--login-surface`, `--t-*-fg`, e os dois novos
+  `--aviso-sombra` e `--aviso-veu`), então o *toastr* escuro/claro acompanha o
+  botão de tema. Por isso o site público passou a carregar `golden-theme.css`
+  antes de `golden-site.css`.
+- **Português**: o Laravel 13 não traz texto de validação no repositório, então a
+  chave crua (`validation.required`) aparecia na tela em vez da mensagem. As
+  traduções estão em `lang/pt_BR/` (`validation`, `auth`, `pagination`,
+  `passwords`, com o mapa `attributes` que dá nome brasileiro a cada campo) e o
+  instalador escreve `APP_LOCALE=pt_BR`. Não há nada extra a fazer na instalação;
+  se você trocar o idioma, troque também `APP_LOCALE` e crie a pasta correspondente.
+- **Travado por teste**: `tests/Feature/RetornoEConfirmacaoTest.php` exige que
+  toda página carregue o partial, proíbe `alert(`/`confirm(` em Blade e no JS
+  público, proíbe `{{ session(… }}`/`{{ $errors->… }}` pintando caixa, e confere
+  que a folha de avisos só usa token existente nas duas paletas.
+  `tests/Feature/TraducoesPtBrTest.php` varre as regras de validação usadas em
+  `app/` e reclama se alguma não tem texto em português.
+
+Instalou e ainda apareceu `validation.required`? É cache de view antigo:
+`php artisan optimize:clear`.
+
+---
+
+## 13. Backup e restauração
 
 ```bash
 # banco
@@ -787,7 +831,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 13. Problemas comuns
+## 14. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -803,6 +847,7 @@ ele, os dados criptografados e as sessões não voltam.
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/email.log`; depois configurar SMTP |
+| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 12) |
 | `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço que não existe fora do exemplo (domínio sem MX, como `@exemplo.com.br`) | esperado em conta de demonstração com e-mail fictício; o aviso à equipe saiu, o que não existe é a caixa de exemplo. Troque o `email_portal` da ficha por um endereço real e o ciclo fecha |
 | Falha de login no SMTP com senha certa no `.env` | `MAIL_PASSWORD` sem aspas e com `#` | escreva `MAIL_PASSWORD="..."` — sem aspas o `#` vira comentário |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
@@ -818,7 +863,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 14. Segurança
+## 15. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -851,7 +896,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 15. Checklist depois de instalar
+## 16. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
@@ -865,6 +910,10 @@ continua visível para você pelo painel ou SSH.
 - [ ] *Conteúdo → Imagens do site* lista as 19 fotos, e *Conteúdo → Textos das páginas* lista
       as sete páginas — trocar uma foto e salvar muda a página pública na hora
 - [ ] SMTP preenchido (ou `log`, assumido de propósito)
+- [ ] Retorno em português: errar a senha em `/login` deve abrir uma notificação
+      *toastr* no canto, nunca `validation.required` e nunca caixa dentro da página
+- [ ] Confirmação: excluir um usuário no painel abre o diálogo SweetAlert2, e
+      *Voltar* não exclui nem recarrega a lista
 - [ ] Cron do agendador: `php artisan schedule:run` a cada minuto (seção 9 — poda do
       registro de tráfego **e** fila de e-mails do portal)
 - [ ] Fila: abrir um chamado no portal e confirmar que a tabela `jobs` volta a zero no minuto
