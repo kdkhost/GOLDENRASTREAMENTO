@@ -1,7 +1,8 @@
-{{-- Sidebar do painel: a árvore vem de config('golden.menu_painel') via MenuPainel::montar().
-     O grupo da página aberta já nasce com menu-open; trocar de grupo fecha o anterior porque
-     o plugin de treeview do AdminLTE roda em modo accordion. --}}
-@foreach($menu_painel as $item)
+{{-- Sidebar compartilhada pelo painel administrativo e pelo portal do cliente. A árvore chega
+     pronta em $menu (MenuPainel::montar() sobre config('golden.menu_painel') ou
+     config('golden.menu_portal')): o grupo da página aberta já nasce com menu-open, e trocar
+     de grupo fecha o anterior porque o plugin de treeview do AdminLTE roda em modo accordion. --}}
+@foreach($menu as $item)
     @php $ehGrupo = $item['filhos'] !== []; @endphp
     <li class="nav-item{{ $ehGrupo ? ' has-child' : '' }}{{ $item['aberto'] ? ' menu-open' : '' }}">
         <a href="{{ $ehGrupo ? '#' : $item['url'] }}"

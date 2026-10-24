@@ -580,6 +580,51 @@ return [
         ]],
     ],
 
+    // Menu do portal do cliente. Mesma árvore, mesmo renderizador (MenuPainel + a sidebar do
+    // AdminLTE) e mesma organização do painel: o cliente vê a área dele com a cara do painel,
+    // só que com as rotas dele. As bolhas vêm de AppServiceProvider::pendenciasDoPortal(),
+    // que conta o que está no nome do cliente, não o total da empresa.
+    'menu_portal' => [
+        ['titulo' => 'Início', 'rota' => 'portal.inicio', 'prefixo' => 'portal.inicio', 'icone' => 'fa-house'],
+
+        ['titulo' => 'Pedidos', 'rota' => 'portal.pedidos', 'prefixo' => 'portal.pedidos', 'icone' => 'fa-box-open', 'bolha' => 'pedidos_abertos', 'tom' => 'blue'],
+
+        ['titulo' => 'Atendimento', 'icone' => 'fa-headset', 'filhos' => [
+            ['titulo' => 'Meus chamados', 'rota' => 'portal.chamados', 'prefixo' => 'portal.chamados', 'icone' => 'fa-life-ring', 'bolha' => 'chamados_abertos', 'tom' => 'amber'],
+            ['titulo' => 'Abrir chamado', 'rota' => 'portal.chamados.criar', 'icone' => 'fa-plus'],
+        ]],
+
+        ['titulo' => 'Contratos', 'rota' => 'portal.contratos', 'prefixo' => 'portal.contratos', 'icone' => 'fa-file-signature'],
+
+        ['titulo' => 'Deixar um depoimento', 'rota' => 'portal.depoimento', 'prefixo' => 'portal.depoimento', 'icone' => 'fa-quote-left'],
+
+        ['titulo' => 'Minha conta', 'icone' => 'fa-user-gear', 'filhos' => [
+            ['titulo' => 'Meus dados', 'rota' => 'portal.dados', 'prefixo' => 'portal.dados', 'icone' => 'fa-id-card'],
+        ]],
+
+        ['titulo' => 'Loja', 'rota' => 'site.loja.index', 'prefixo' => 'site.loja.', 'icone' => 'fa-store', 'externo' => true, 'desligada' => 'loja_ativa'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Depoimentos do Google Business Profile
+    |--------------------------------------------------------------------------
+    | As três peças vêm do .env da instalação — nunca do banco e nunca do
+    | repositório: ACCOUNT é `accounts/<id>` (ou o resource completo), LOCATION
+    | é `locations/<id>` e TOKEN é o Bearer de uma conta que administra o perfil
+    | (Business Profile API v4, escopo mybusiness.businessinformation). Sem elas
+    | o painel mostra "não configurado" e a importação não roda; os depoimentos
+    | digitados no painel e enviados pelo portal seguem funcionando, e o
+    | carrossel mescla as fontes que existirem.
+    */
+    'google_business' => [
+        'account' => env('GOOGLE_BUSINESS_ACCOUNT', ''),
+        'location' => env('GOOGLE_BUSINESS_LOCATION', ''),
+        'token' => env('GOOGLE_BUSINESS_TOKEN', ''),
+        'limite' => (int) env('GOOGLE_BUSINESS_LIMITE', 50),
+        'nota_minima' => (int) env('GOOGLE_BUSINESS_NOTA_MINIMA', 4),
+    ],
+
     'faq' => [
         ['q' => 'O rastreador funciona em qualquer veículo?', 'a' => 'O J16 4G/2G é compatível com a maioria dos veículos leves, motos e linha pesada. Confirme a compatibilidade no atendimento.'],
         ['q' => 'A instalação é feita pela Golden?', 'a' => 'Não. A instalação é contratada e paga pelo cliente diretamente ao profissional de sua confiança.'],

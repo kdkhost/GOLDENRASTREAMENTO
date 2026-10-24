@@ -77,4 +77,20 @@ return [
         'dimensao' => null,
         'proporcao' => null,
     ],
+
+    /*
+    | A foto de quem deu o depoimento (Admin → Conteúdo → Depoimentos, e a importação do
+    | Google). Quadrada e pequena de propósito: o carrossel desenha o avatar em 56 px, e
+    | um retrato grande pago em cada cartão do site não é troca justa.
+    */
+    'depoimento_avatar' => [
+        'tipo' => 'imagem',
+        'pasta' => 'site/depoimentos',
+        'titulo' => 'Foto do autor',
+        'chamada' => 'Arraste o avatar aqui ou clique para escolher',
+        'formatos' => ['jpg', 'jpeg', 'png', 'webp'],
+        'max_mb' => 2,
+        'dimensao' => '112 × 112 px',
+        'proporcao' => '1:1',
+    ],
 ];

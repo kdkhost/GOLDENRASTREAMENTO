@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.20.5
+- **Versão:** 2.21.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -443,6 +443,8 @@ php artisan config:clear && php artisan config:cache
 | `GOLDEN_WHATSAPP` | `5519997101483` | botão de WhatsApp do site |
 | `GOLDEN_EMAIL` | endereço comercial | aparece no site e nos avisos |
 | `GOLDEN_TRACKING_ENABLED` | `0` ou `1` | liga a consulta de rastreio |
+| `GOOGLE_BUSINESS_ACCOUNT`, `GOOGLE_BUSINESS_LOCATION`, `GOOGLE_BUSINESS_TOKEN` | do seu perfil | depoimentos do Google com avatar; sem eles o importador só avisa (seção 11) |
+| `GOOGLE_BUSINESS_LIMITE`, `GOOGLE_BUSINESS_NOTA_MINIMA` | `50`, `4` | até quantas avaliações ler e a nota mínima aceita |
 
 Sobre os e-mails: os modelos, o envio de orçamento e as notificações de pedido já
 existem. Trocar `MAIL_MAILER=log` para `smtp` e preencher as cinco chaves é tudo
@@ -641,7 +643,99 @@ hospedagem não aceita índice único maior, e o SQLite dos testes não avisa.
 
 ---
 
-## 11. Backup e restauração
+## 11. Depoimentos do site: painel, Google e portal
+
+O carrossel da home é uma lista só — a tabela `testimonials` — e cada linha diz de
+onde veio no campo `fonte`:
+
+| `fonte` | Quem escreve | Vai ao ar? | Foto do autor |
+| --- | --- | --- | --- |
+| `site` | a equipe, em *Conteúdo → Depoimentos* | quem digita decide | upload opcional no formulário |
+| `google` | `php artisan depoimentos:google` ou o botão **Atualizar do Google** | entra aprovado, com a nota da avaliação | baixada do perfil para `storage/app/public/site/depoimentos` |
+| `cliente` | o próprio cliente, no portal (*Deixar um depoimento*) | **sempre nasce oculto**, aguardando a equipe | a inicial do nome |
+
+No painel as três aparecem misturadas na mesma tela, com o selo da origem, o filtro
+**Origem** e um aviso no topo contando quantos ainda aguardam aprovação. No site,
+`Testimonial::aprovadosParaSite()` só entrega quem tem `aprovado = true`, ordenado
+por `ordem` e depois pela data — é por isso que a mesclagem não tem chave nem
+configuração: aprovar é o único interruptor.
+
+### Ler as avaliações do Google
+
+A fonte é a *Business Profile API v4*
+(`accounts/<ID>/locations/<ID>/reviews`) — a única que devolve a foto de quem
+avaliou; o Places API comum só entrega avaliações para conta Enterprise. Antes de
+funcionar, três coisas precisam existir:
+
+1. o perfil verificado no Google Business Profile há mais de 60 dias;
+2. a *Business Profile API* liberada para o seu projeto no Google Cloud — a
+   aprovação do Google leva dias úteis;
+3. um Bearer token de OAuth de uma conta que administra esse perfil, com o escopo
+   `https://www.googleapis.com/auth/business.manage`. Com o `gcloud` instalado:
+
+```bash
+gcloud auth application-default login --scopes=https://www.googleapis.com/auth/business.manage
+gcloud auth application-default print-access-token
+```
+
+As três peças vão no `.env` da instalação — nunca no banco e nunca no repositório,
+que é público:
+
+| Chave | Valor |
+| --- | --- |
+| `GOOGLE_BUSINESS_ACCOUNT` | o ID da conta, `accounts/123456789` (ou só `123456789`) |
+| `GOOGLE_BUSINESS_LOCATION` | o ID da unidade, `locations/987654321` (ou só `987654321`) |
+| `GOOGLE_BUSINESS_TOKEN` | o Bearer de OAuth — expira e precisa ser renovado |
+| `GOOGLE_BUSINESS_LIMITE` | avaliações lidas por rodada (padrão `50`) |
+| `GOOGLE_BUSINESS_NOTA_MINIMA` | nota mínima que vira depoimento (padrão `4`) |
+
+Com elas preenchidas:
+
+```bash
+php artisan depoimentos:google --apenas-leia   # mostra o que a API devolve, sem gravar
+php artisan depoimentos:google                 # importa e atualiza
+php artisan depoimentos:google --limite=25
+```
+
+A importação é **idempotente**: cada avaliação fica guardada pelo `reviewId` na
+coluna `externo_id`, então rodar de novo atualiza texto, nota e foto em vez de criar
+um segundo depoimento da mesma avaliação. Quem não tem texto não entra (sai na
+contagem `sem_texto`), nem quem está abaixo de `GOOGLE_BUSINESS_NOTA_MINIMA` —
+nota baixa é chamado, não vitrine. E o importado que a equipe desligou no painel
+**não reacende** na rodada seguinte.
+
+Sem as chaves nada quebra: o comando e o botão explicam quais três variáveis faltam
+em vez de chamar a API no escuro. Quando o token expira, o painel devolve o aviso
+vermelho com a resposta do Google e a linha `depoimentos_google_recusados` fica em
+*Auditoria*. Para manter o carrossel fresco sem ninguém precisando lembrar, o
+`schedule` pode chamar o comando uma vez por semana:
+
+```bash
+# cPanel → Cron Jobs, uma vez por semana
+cd /home/USUARIO/public_html && php artisan depoimentos:google --limite=50 >> storage/logs/depoimentos-google.log 2>&1
+```
+
+### Depoimento escrito pelo cliente
+
+No formulário do painel, o campo **Ficha do cliente** lista apenas fichas com conta
+no portal (`email_portal` preenchido): é ele que faz a linha dizer quem escreveu, do
+mesmo jeito que o portal faz quando o cliente envia de dentro da própria conta. O
+portal abre a tela *Deixar um depoimento* para todo cliente autenticado, mas só
+grava quando a ficha está `status = ativo`; enquanto houver um texto do mesmo
+cliente aguardando aprovação, a tela avisa em vez de acumular duplicados. O envio
+nasce `fonte = cliente`, `aprovado = false` e com o `customer_id` assinando — e a
+equipe recebe o aviso no `contato_email` já apontando para a fila de pendentes.
+
+### Migração nova
+
+`2026_10_24_000003_da_origem_ao_depoimento` acrescenta `fonte` (16, default `site`),
+`externo_id` (191, único), `customer_id` (FK para `customers`, zera se a ficha for
+removida) e `avatar` (500). É aditiva, tem `down()`, e os depoimentos que já
+existiam recebem `fonte = 'site'` pelo próprio default da coluna.
+
+---
+
+## 12. Backup e restauração
 
 ```bash
 # banco
@@ -663,7 +757,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 12. Problemas comuns
+## 13. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -692,7 +786,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 13. Segurança
+## 14. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -725,7 +819,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 14. Checklist depois de instalar
+## 15. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)

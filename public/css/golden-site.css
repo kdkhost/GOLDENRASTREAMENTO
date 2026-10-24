@@ -238,9 +238,11 @@ section{padding:84px 0}
 .stars{color:var(--gold);margin-bottom:12px}
 .depo-card p{color:var(--slate);font-style:italic;margin:0}
 .depo-who{display:flex;align-items:center;gap:12px;margin-top:auto;padding-top:16px}
-.avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal-2));color:#fff;display:grid;place-items:center;font-weight:700}
+.avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal-2));color:#fff;display:grid;place-items:center;font-weight:700;overflow:hidden;flex:none}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .depo-who b{display:block;font-size:.95rem}
 .depo-who small{color:var(--slate)}
+.depo-origem{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;color:var(--slate);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
 .depo-ctl{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:26px}
 .depo .swiper-pagination{position:static;width:auto;min-height:11px;display:flex;align-items:center;gap:7px}
 .depo .swiper-pagination-bullet{width:9px;height:9px;border-radius:6px;opacity:1;background:#cdd6e0;transition:width .3s cubic-bezier(.22,.61,.36,1),background .3s ease}

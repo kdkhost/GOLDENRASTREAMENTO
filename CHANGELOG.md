@@ -3,6 +3,80 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.21.0] - 2026-10-24
+
+### Novo
+- **O portal do cliente agora é o painel, com a porta do cliente.** As seis telas de `/portal`
+  (Início, Pedidos, Chamados — lista e abertura —, Contratos, Meus dados e a nova *Deixar um
+  depoimento*) foram reescritas sobre o AdminLTE 4 do `/admin`: a mesma sidebar com treeview, o
+  mesmo claro/escuro guardado em `golden_admin_theme`, os mesmos *toasts* de resposta, os mesmos
+  componentes de tela (`x-admin.card|field|table|stat|status|filters|switch`) e as mesmas classes
+  de cronologia, ficha de definição e conversa. Nada no portal desenha cor ou caixa própria.
+- **A barra lateral deixou de ser markup copiado.** `MenuPainel::montar()` recebe a árvore que
+  deve ler — `config/golden.menu_painel` para a equipe, `config/golden.menu_portal` para o
+  cliente — e um único partial (`admin/partials/sidebar-menu`) desenha as duas. Os rótulos, os
+  ícones e os `prefixo` de rota ficam só no config, e as bolhas do portal contam os pedidos e os
+  chamados abertos **daquela ficha**, não do sistema inteiro. Saem de cena
+  `public/css/golden-portal.css` (a folha própria) e `resources/views/portal/pager.blade.php`
+  (quem pagina é a tabela do painel, com a mesma régua).
+- **O depoimento aprendeu de onde veio.** `testimonials` ganhou `fonte` (`site` = escrito no
+  painel, `google` = avaliação do perfil, `cliente` = mandado pelo portal), `avatar`, `externo_id`
+  e `customer_id`. A tela *Conteúdo → Depoimentos* mostra o selo da origem, o filtro **Origem**,
+  a foto do autor e um aviso no topo contando quantos aguardam aprovação; o formulário aceita
+  avatar pelo dropzone (campo `depoimento_avatar`, 112 × 112 px) e a **ficha do cliente** que
+  assinou o texto.
+- **As avaliações do Google entram no carrossel com a foto de quem as escreveu.**
+  `App\Support\DepoimentosDoGoogle` lê a *Business Profile API v4*
+  (`accounts/{a}/locations/{l}/reviews`) — a única que devolve `profilePhotoUrl`; o Places API
+  comum só entrega avaliação para conta Enterprise. `php artisan depoimentos:google`
+  (`--limite`, `--apenas-leia`) e o botão **Atualizar do Google** chamam o mesmo `importar()`,
+  que é idempotente pelo `reviewId` guardado em `externo_id`: reimportar atualiza texto, nota e
+  foto em vez de duplicar, ignora quem não escreveu nada e quem ficou abaixo de
+  `GOOGLE_BUSINESS_NOTA_MINIMA`, e **nunca reacende** um importado que a equipe desligou. A foto
+  é baixada para `storage/app/public/site/depoimentos` em vez de hotlinkar
+  `googleusercontent.com`, que morre sem avisar e deixaria buraco no carrossel.
+- **O cliente ativo conta a experiência dele pelo portal.** Em *Deixar um depoimento* o texto
+  nasce `fonte = cliente`, `aprovado = false` e `customer_id` assinando: publicar é decisão da
+  equipe, que recebe `App\Mail\DepoimentoRecebido` no `contato_email` já apontando para a fila de
+  pendentes. A escrita só abre para ficha `status = ativo`, e um texto já aguardando aprovação
+  bloqueia o segundo envio em vez de acumular duplicados. Na tela aparecem os últimos enviados da
+  própria ficha — nunca os de outro cliente.
+- **Misturadas no site.** `Testimonial::aprovadosParaSite()` entrega as três origens na mesma
+  lista, ordenada por `ordem` e depois pela data; o cartão da home desenha a foto quando existe
+  arquivo, a inicial quando não, e o selo do Google quando a avaliação veio de lá. Não há chave
+  nova para "misturar": aprovar sempre foi o único interruptor, agora ele vale para as três
+  origens ao mesmo tempo.
+
+### Segurança
+- **O campo de avatar não aceita URL escolhida por quem edita.** `avatar` é texto livre no
+  formulário e vira atributo `src` no site público, então só passam um caminho conferido por
+  `Envio::caminhoConfere()` (precisa existir em `site/depoimentos/`, sem `..`) ou um `https://`
+  terminado em `.googleusercontent.com` — o que a própria importação devolve quando o download
+  falha. Qualquer outro endereço é recusado com erro no campo.
+
+### Detalhes
+- A chave `avatar` ausente do pedido vale "deixa a foto como está", não "apaga": o dropzone só
+  emite o campo quando há arquivo na fila, e tratar ausente como nulo faria toda edição que não
+  encosta no avatar perder a foto do autor.
+- `Testimonial` ganhou `CAMPO_ENVIO`, `FONTES`, `customer()`, `fonteLabel()`, `avatarUrl()` e
+  `iniciais()`; o cache `golden.depoimentos_site` projeta origem, rótulo, avatar e iniciais, e é
+  derrubado por `CachesContent` em cada gravação.
+- As rotas do painel registraram `POST depoimentos/importar-google` **antes** das rotas por id:
+  `importar-google` tem um segmento só e seria engolido por `{depoimento}`.
+- `.env.example` e a documentação (`docs/INSTALACAO.md`, seção 11) explicam as cinco chaves
+  `GOOGLE_BUSINESS_*`, o que precisa existir do lado do Google (perfil verificado há mais de 60
+  dias, API liberada no projeto, Bearer com escopo `business.manage`) e o cron opcional. Sem as
+  chaves o sistema funciona: comando e botão dizem quais três variáveis faltam em vez de chamar
+  a API no escuro.
+- `php artisan test`: 236 testes, 1.681 asserções verdes, com
+  `tests/Feature/DepoimentosDasTresOrigensTest.php` (12) cobrindo origem, avatar recusado,
+  edição que mantém a foto, importação idempotente com avatar baixado, filtro de nota mínima,
+  envio pelo portal assinado pela ficha e o carrossel mesclado da home.
+- A migration `2026_10_24_000003_da_origem_ao_depoimento` é aditiva e tem `down()`; os
+  depoimentos existentes recebem `fonte = 'site'` pelo default da coluna. Falta rodá-la no MySQL
+  da hospedagem — `externo_id` em 191 é justamente o teto que o índice único do MySQL aceita com
+  `utf8mb4`, e o SQLite dos testes não avisa quando estoura.
+
 ## [2.20.5] - 2026-10-24
 
 ### Corrigido

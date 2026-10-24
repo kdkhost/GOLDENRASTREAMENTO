@@ -590,38 +590,67 @@ class PortalDoClienteTest extends TestCase
     }
 
     /**
-     * A barra inferior do rodapé tem dois links lado a lado, e .site-footer a{display:block} —
-     * escrita para as colunas de link do site — empilhava cada um na sua linha, deixando o
-     * separador sozinho no meio do rodapé do portal.
+     * O portal é o painel administrativo visto pela porta do cliente: mesma carcaça do AdminLTE
+     * (navbar, sidebar com treeview, cabeçalho de página, rodapé), os mesmos pacotes e o mesmo
+     * jogo de scripts. Se uma das duas layouts esquecer um dos pedaços, os dois deixam de ser
+     * o mesmo produto — e é isso que a trava abaixo não deixa acontecer de novo.
      */
-    public function test_os_links_do_rodape_do_portal_ficam_na_mesma_linha(): void
+    public function test_o_portal_usa_a_mesma_caraca_do_painel(): void
     {
-        $css = file_get_contents(public_path('css/golden-site.css'));
-        $this->assertMatchesRegularExpression('/\.foot-bottom a\{[^}]*display:\s*inline/s', $css,
-            'Os links da barra inferior voltaram a herdar o display:block das colunas do rodapé.');
+        $admin = file_get_contents(resource_path('views/admin/layouts/app.blade.php'));
+        $portal = file_get_contents(resource_path('views/portal/layout.blade.php'));
 
-        $cliente = $this->conta();
-        $this->actingAs($cliente, 'cliente');
-        $html = $this->get(route('portal.inicio'))->getContent();
-        $this->assertMatchesRegularExpression('#<span><a href="[^"]*"#', $html,
-            'O rodapé do portal voltou a sair do formato que a trava do CSS espera.');
+        foreach ([
+            'class="app-wrapper"',
+            'class="app-header navbar',
+            'class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark"',
+            'class="app-main"',
+            'app-content-header',
+            'class="app-footer',
+            'admin.partials.theme-init',
+            'admin.partials.sidebar-menu',
+            'admin.partials.scripts',
+            'css/golden-theme.css',
+            'css/admin-golden.css',
+            "@yield('page_title'",
+            "@yield('page_actions'",
+            'admin-lte@4.0.0-beta2/dist/css/adminlte.min.css',
+        ] as $trecho) {
+            $this->assertStringContainsString($trecho, $admin, "Faltou «{$trecho}» na layout do painel.");
+            $this->assertStringContainsString($trecho, $portal, "Faltou «{$trecho}» na layout do portal — ele deixou de ser o painel.");
+        }
     }
 
     /**
-     * Cinco abas não cabem na largura do celular: com overflow-x e a barra de rolagem escondida,
-     * "Meus dados" entrava cortada no meio da palavra e nada indicava que a fila rola.
+     * A sidebar do portal vem de config('golden.menu_portal') e do mesmo MenuPainel do painel:
+     * o grupo da página aberta nasce aberto, o item atual fica ativo e a bolha conta o que está
+     * no nome do cliente, não o total da empresa.
      */
-    public function test_as_abas_do_portal_quebram_em_linhas_no_celular(): void
+    public function test_a_sidebar_do_portal_acende_a_rota_aberta_e_a_bolha_do_cliente(): void
     {
-        $css = file_get_contents(public_path('css/golden-portal.css'));
-        $tem = preg_match('/@media\s*\(max-width:640px\)\s*\{(.*)\}/s', $css, $m);
-        $this->assertSame(1, $tem, 'O bloco de celular (max-width:640px) sumiu da folha do portal.');
-        $media = $m[1];
+        $cliente = $this->conta();
+        $this->chamado($cliente);
+        $this->pedido($cliente, ['status' => 'pendente']);
+        $this->actingAs($cliente, 'cliente');
 
-        $this->assertMatchesRegularExpression('/\.portal-nav ul\{[^}]*flex-wrap:\s*wrap/s', $media,
-            'A barra de abas voltou a esconder a última aba fora da tela no celular.');
-        $this->assertMatchesRegularExpression('/\.portal-nav a\{[^}]*justify-content:\s*center/s', $media,
-            'As abas estreitas ficaram desalinhadas à esquerda da linha quebrada.');
+        $html = $this->get(route('portal.chamados'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('<i class="nav-icon fas fa-headset"', $html, 'A sidebar do portal perdeu o grupo de atendimento.');
+        $this->assertStringContainsString('menu-open', $html, 'O grupo da página aberta não nasceu aberto.');
+        $this->assertStringContainsString('data-lte-toggle="treeview"', $html, 'A sidebar do portal voltou a ser lista plana, sem treeview.');
+        $this->assertMatchesRegularExpression('/class="nav-link active".*?<i class="nav-icon fas fa-life-ring"/s', $html,
+            'O item do menu não acendeu na página aberta.');
+        $this->assertStringContainsString('<p>Meus chamados', $html, 'A sidebar do portal não lista "Meus chamados".');
+        $this->assertStringContainsString('badge-menu tone-amber ms-auto">1<', $html,
+            'A bolha de chamado aberto do cliente não apareceu na sidebar.');
+        $this->assertStringContainsString('badge-menu tone-blue ms-auto">1<', $html,
+            'A bolha de pedido em aberto do cliente não apareceu na sidebar.');
+
+        $outro = $this->conta(['email_portal' => 'outra@exemplo.com.br', 'documento' => '987.654.321-00']);
+        $this->actingAs($outro, 'cliente');
+        $semNada = $this->get(route('portal.inicio'))->assertOk()->getContent();
+        $this->assertStringNotContainsString('badge-menu tone-amber', $semNada,
+            'A bolha de chamado apareceu para quem não tem chamado nenhum.');
     }
 
     /**

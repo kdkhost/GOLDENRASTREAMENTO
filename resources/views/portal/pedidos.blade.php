@@ -1,43 +1,35 @@
 @extends('portal.layout')
 
 @section('title', 'Meus pedidos — Portal do cliente')
+@section('page_title', 'Meus pedidos')
+@section('page_description', $pedidos->total().' '.($pedidos->total() === 1 ? 'pedido' : 'pedidos').' nesta conta'.(request()->filled('status') ? ' com o filtro aplicado.' : '.'))
+
+@section('page_actions')
+@if(loja_ativa())
+<a href="{{ route('site.loja.index') }}" class="btn btn-sm btn-golden"><i class="fas fa-basket-shopping me-1"></i> Comprar mais</a>
+@endif
+@endsection
 
 @section('content')
-<div class="portal-titulo">
-    <div>
-        <h1>Meus pedidos</h1>
-        <p>{{ $pedidos->total() }} {{ $pedidos->total() === 1 ? 'pedido' : 'pedidos' }} nesta conta.</p>
-    </div>
-    @if(loja_ativa())
-    <a href="{{ route('site.loja.index') }}" class="btn btn-gold btn-sm"><i class="fa-solid fa-basket-shopping"></i> Comprar mais</a>
-    @endif
-</div>
+<x-admin.filters :reset="route('portal.pedidos')">
+    <x-admin.filter name="status" type="select" label="Situação" col="col-12 col-md-4" :options="$statuses" empty="Todos os pedidos" />
+</x-admin.filters>
 
-<div class="filtros">
-    <a href="{{ route('portal.pedidos') }}" class="{{ request()->filled('status') ? '' : 'atual' }}">Todos</a>
-    @foreach($statuses as $chave => $rotulo)
-    <a href="{{ route('portal.pedidos', ['status' => $chave]) }}" class="{{ request('status') === $chave ? 'atual' : '' }}">{{ $rotulo }}</a>
+<x-admin.table :headers="['Pedido', 'center:Data', 'center:Itens', 'Pagamento', 'center:Situação', 'end:Total']"
+    :paginator="$pedidos"
+    empty="{{ request()->filled('status') ? 'Nenhum pedido nesta situação.' : 'Você ainda não tem pedidos registrados.' }}">
+    @foreach($pedidos as $pedido)
+    <tr>
+        <td>
+            <a href="{{ route('portal.pedidos.show', $pedido) }}" class="fw-semibold text-decoration-none">{{ $pedido->numero }}</a>
+            <div class="text-secondary small">{{ $pedido->created_at->format('d/m/Y') }} · {{ $pedido->items_count }} {{ $pedido->items_count === 1 ? 'item' : 'itens' }}</div>
+        </td>
+        <td class="text-center small text-secondary">{{ $pedido->created_at->format('d/m/Y') }}</td>
+        <td class="text-center small">{{ $pedido->items_count }}</td>
+        <td class="small">{{ $pedido->pagamentoLabel() }}</td>
+        <td class="text-center"><x-admin.status :rotulo="$pedido->statusLabel()" :tom="tom_por_status('pedido', $pedido->status)" /></td>
+        <td class="text-end fw-semibold">{{ brl($pedido->total_cents) }}</td>
+    </tr>
     @endforeach
-</div>
-
-<div class="itens">
-    @forelse($pedidos as $pedido)
-    <a class="item" href="{{ route('portal.pedidos.show', $pedido) }}">
-        <div class="item-nucleo">
-            <b>{{ $pedido->numero }}</b>
-            <small>{{ $pedido->created_at->format('d/m/Y') }} · {{ $pedido->items_count }} {{ $pedido->items_count === 1 ? 'item' : 'itens' }} · {{ $pedido->pagamentoLabel() }}</small>
-        </div>
-        <div class="item-lado">
-            {{ brl($pedido->total_cents) }}
-            <small><span class="selo tone-{{ tom_por_status('pedido', $pedido->status) }}">{{ $pedido->statusLabel() }}</span></small>
-        </div>
-    </a>
-    @empty
-    <div class="item vazio">
-        {{ request()->filled('status') ? 'Nenhum pedido nesta situação.' : 'Você ainda não tem pedidos registrados.' }}
-    </div>
-    @endforelse
-</div>
-
-@include('portal.pager', ['paginas' => $pedidos])
+</x-admin.table>
 @endsection

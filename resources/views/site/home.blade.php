@@ -184,8 +184,9 @@
                             <div class="stars">{{ str_repeat('★', max(1, min(5, (int) $d['nota']))) }}</div>
                             <p>"{{ $d['texto'] }}"</p>
                             <div class="depo-who">
-                                <div class="avatar">{{ mb_strtoupper(mb_substr($d['nome'], 0, 1)) }}</div>
+                                <div class="avatar">@if($d['avatar'])<img src="{{ $d['avatar'] }}" alt="Foto de {{ $d['nome'] }}" loading="lazy" width="46" height="46">@else{{ $d['iniciais'] }}@endif</div>
                                 <div><b>{{ $d['nome'] }}</b>@if($d['papel'])<small>{{ $d['papel'] }}@if($d['cidade']) · {{ $d['cidade'] }}@endif</small>@endif</div>
+                                @if(($d['fonte'] ?? 'site') === 'google')<span class="depo-origem" title="Avaliação pública no Google"><i class="fa-brands fa-google" aria-hidden="true"></i> Google</span>@endif
                             </div>
                         </div>
                     </div>

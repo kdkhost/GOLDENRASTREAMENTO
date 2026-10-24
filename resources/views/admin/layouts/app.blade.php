@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Painel') | Golden Rastreamento</title>
     @include('partials.favicon')
-    <script>(function(){var t=localStorage.getItem('golden_admin_theme')||'light';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
+    @include('admin.partials.theme-init')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
@@ -66,7 +66,7 @@
         <div class="sidebar-wrapper">
             <nav class="mt-2">
                 <ul class="nav sidebar-menu flex-column" role="menu">
-                    @include('admin.partials.sidebar-menu')
+                    @include('admin.partials.sidebar-menu', ['menu' => $menu_painel])
                 </ul>
             </nav>
         </div>
@@ -107,46 +107,7 @@
 
 @include('partials.to-top')
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/js/adminlte.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-<script>
-$(function(){
-    var theme = localStorage.getItem('golden_admin_theme')||'light';
-    function apply(t){ if(t==='dark'){document.documentElement.setAttribute('data-bs-theme','dark');$('body').addClass('dark-mode').attr('data-bs-theme','dark');$('#adminThemeIcon').removeClass('fa-moon').addClass('fa-sun');}else{document.documentElement.setAttribute('data-bs-theme','light');$('body').removeClass('dark-mode').attr('data-bs-theme','light');$('#adminThemeIcon').removeClass('fa-sun').addClass('fa-moon');} $(document).trigger('golden:theme',[t]); }
-    apply(theme);
-    $('#adminThemeToggle').on('click',function(){theme=theme==='dark'?'light':'dark';localStorage.setItem('golden_admin_theme',theme);apply(theme);});
-
-    // O plugin de treeview faz o accordion (um grupo aberto por vez) mas não mexe no
-    // aria-expanded, que precisa acompanhar o estado para o leitor de tela. Os eventos
-    // dele têm o ponto no próprio nome ('expanded.lte.treeview') e não sobem, então a
-    // escuta é em cada item, não delegada na lista.
-    document.querySelectorAll('.sidebar-menu .nav-item').forEach(function(li){
-        var link = li.querySelector(':scope > .nav-link');
-        if (!link || !li.querySelector(':scope > .nav-treeview')) return;
-        li.addEventListener('expanded.lte.treeview', function(){ link.setAttribute('aria-expanded','true'); });
-        li.addEventListener('collapsed.lte.treeview', function(){ link.setAttribute('aria-expanded','false'); });
-    });
-
-    // Todo botão "Copiar" do painel (link do pedido, URL rastreada da campanha) age sobre
-    // o campo declarado em data-copiar. Escuta delegada: a página não precisa se lembrar de chamá-la.
-    document.addEventListener('click', function(e){
-        var btn = e.target instanceof Element ? e.target.closest('[data-copiar]') : null;
-        if (!btn) return;
-        var campo = document.querySelector(btn.getAttribute('data-copiar'));
-        if (!campo) return;
-        campo.select();
-        var confirmar = function(){ toastr.success('Link copiado.'); };
-        if (navigator.clipboard) { navigator.clipboard.writeText(campo.value).then(confirmar, function(){ document.execCommand('copy'); confirmar(); }); }
-        else { document.execCommand('copy'); confirmar(); }
-    });
-
-    toastr.options={timeOut:4000,positionClass:'toast-top-right'};    @foreach(['success'=>'success','error'=>'error','warning'=>'warning','info'=>'info'] as $k=>$fn)
-        @if(session($k)) toastr.{{ $fn }}(@json(session($k))); @endif
-    @endforeach
-});
-</script>
+@include('admin.partials.scripts')
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
 <script src="{{ asset('js/golden-upload.js') }}?v={{ filemtime(public_path('js/golden-upload.js')) }}"></script>
 @yield('scripts')

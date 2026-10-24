@@ -3,12 +3,12 @@
 namespace App\Support;
 
 /**
- * Árvore do menu do painel (sidebar).
+ * Árvore da sidebar — a mesma para o painel e para o portal do cliente.
  *
- * O esqueleto vem de config('golden.menu_painel') e esta classe só resolve o estado da
- * rota atual: qual item está ativo, qual grupo precisa nascer aberto e quais itens o
- * papel do usuário não vê. A view não decide nada — ela pinta o que sai daqui —, então
- * o mesmo resultado vale para o header colapsado, o mobile e o teste.
+ * O esqueleto vem de config('golden.menu_painel') ou config('golden.menu_portal') e esta
+ * classe só resolve o estado da rota atual: qual item está ativo, qual grupo precisa nascer
+ * aberto e quais itens o papel do usuário não vê. A view não decide nada — ela pinta o que
+ * sai daqui —, então o mesmo resultado vale para o header colapsado, o mobile e o teste.
  *
  * O grupo abre sozinho o grupo da página aberta porque o AdminLTE só mostra
  * `.nav-treeview` dentro de `.menu-open`; o "um grupo por vez" depois do clique é o
@@ -21,7 +21,7 @@ class MenuPainel
      * @param  array<string,bool>  $flags  bandeiras named ('loja_ativa' => ...)
      * @return array<int,array<string,mixed>>
      */
-    public static function montar(array $pendencias, bool $isAdmin, array $flags = []): array
+    public static function montar(array $pendencias, bool $isAdmin, array $flags = [], string $arvore = 'golden.menu_painel'): array
     {
         $rotaAtual = optional(request()->route())->getName() ?: '';
 
@@ -56,7 +56,7 @@ class MenuPainel
 
         $grupos = [];
 
-        foreach (config('golden.menu_painel', []) as $grupo) {
+        foreach (config($arvore, []) as $grupo) {
             if (($grupo['admin'] ?? false) && ! $isAdmin) {
                 continue;
             }

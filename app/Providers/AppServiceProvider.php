@@ -30,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     /** @var array<int,array<string,mixed>>|null árvore da sidebar do painel, nesta requisição */
     private ?array $menuPainel = null;
 
+    /** @var array<int,array<string,mixed>>|null árvore da sidebar do portal, nesta requisição */
+    private ?array $menuPortal = null;
+
     public function register(): void
     {
         //
@@ -54,6 +57,12 @@ class AppServiceProvider extends ServiceProvider
             $view->with('menu_painel', $this->menuDoPainel($this->dadosDoSite()['loja_ativa']));
         });
 
+        // O portal tem a mesma sidebar do painel: mesmo renderizador, mesma árvore resolvida
+        // por MenuPainel, só que com as rotas e as contas do cliente.
+        View::composer('portal.layout', function ($view) {
+            $view->with('menu_portal', $this->menuDoPortal($this->dadosDoSite()['loja_ativa']));
+        });
+
         // As memórias acima valem para UMA requisição: o provider sobrevive entre duas
         // requisições do mesmo teste (e entre requisições em servidor embutido com
         // keep-alive), e o menu da página anterior chegaria pronto na próxima. Cada
@@ -62,6 +71,7 @@ class AppServiceProvider extends ServiceProvider
             $this->site = null;
             $this->pendencias = null;
             $this->menuPainel = null;
+            $this->menuPortal = null;
         });
     }
 
@@ -76,6 +86,33 @@ class AppServiceProvider extends ServiceProvider
             (bool) optional(auth()->user())->can('admin'),
             ['loja_ativa' => $lojaAtiva],
         );
+    }
+
+    /**
+     * Árvore da sidebar do portal: o mesmo MenuPainel do painel administrativo, com a árvore
+     * do cliente e as contas dele. Ninguém que entra no portal é administrador.
+     */
+    private function menuDoPortal(bool $lojaAtiva): array
+    {
+        return $this->menuPortal ??= MenuPainel::montar(
+            $this->pendenciasDoPortal(),
+            false,
+            ['loja_ativa' => $lojaAtiva],
+            'golden.menu_portal',
+        );
+    }
+
+    /**
+     * Bolhas do portal: o que está esperando no nome desta ficha, não o total da empresa.
+     */
+    private function pendenciasDoPortal(): array
+    {
+        $cliente = Auth::guard('cliente')->user();
+
+        return [
+            'pedidos_abertos' => $cliente?->orders()->reorder()->whereIn('status', Order::ABERTOS)->count() ?? 0,
+            'chamados_abertos' => $cliente?->tickets()->reorder()->whereIn('status', Ticket::ABERTOS)->count() ?? 0,
+        ];
     }
 
     /**

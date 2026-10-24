@@ -243,6 +243,10 @@ auto-rotação de 5,5s que pausa no hover e volta ao início no fim (`rewind`). 
 o **Swiper 11**, servida localmente em `public/vendor/swiper/` e carregada só na home via
 `@push('styles')` / `@push('scripts')`; sem JavaScript o bloco continua legível como lista.
 Com `prefers-reduced-motion: reduce` a auto-rotação desliga e o deslocamento fica instantâneo.
+Cada cartão mostra a **foto de quem escreveu** — a avatar baixada do perfil do Google, a que a
+equipe anexou no painel, ou a inicial do nome quando não há arquivo — e a avaliação vinda do
+Google leva o selo `Google` no canto. Os três origens (painel, Google e portal) saem da mesma
+lista `aprovadosParaSite()`: não há bloco separado por origem, só o que está aprovado.
 
 ### CRM (`/admin/clientes`)
 - **Clientes** com dados de empresa (documento, tipo física/jurídica, endereço, cidade/UF,
@@ -291,7 +295,12 @@ Com `prefers-reduced-motion: reduce` a auto-rotação desliga e o deslocamento f
   em `config/golden.php` fica por baixo, então **campo em branco = texto/foto original de
   volta**, sem republicar nada. Nenhuma chave é aceita do formulário — a lista vem do config,
   o que barra escrita arbitrária em `settings`.
-- **Depoimentos** e **FAQs** editáveis, publicados no site sem tocar em código.
+- **Depoimentos** e **FAQs** editáveis, publicados no site sem tocar em código. Em
+  *Conteúdo → Depoimentos*, cada linha declara a **origem** (`site`, `google`, `cliente`),
+  pode trazer **avatar** pelo dropzone (campo `depoimento_avatar`, 112 × 112 px) e aponta a
+  **ficha** de quem escreveu; a tela filtra por origem, conta os pendentes no topo e tem o
+  botão **Atualizar do Google**, que roda a mesma importação do
+  `php artisan depoimentos:google`.
 
 ### Loja virtual com *switch* no painel
 Fluxo de ponta a ponta: **vitrine → sacola → checkout → pedido numerado → linha do tempo →
@@ -434,10 +443,14 @@ a dimensão ideal.
 - Testes: `tests/Feature/AtribuicaoDeOrigemTest.php` (20).
 
 ### Portal do cliente (`/portal`) — a casa do cliente sem pedir nada à equipe
-- **Cinco telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
+- **É o mesmo painel, com a porta do cliente**: a barra lateral, o tema claro/escuro, os
+  treeviews, os *toasts* e os componentes de tela (`x-admin.card|field|table|stat|status`)
+  vêm do AdminLTE 4 do `/admin` — o portal não tem CSS nem markup próprios. O que muda é a
+  árvore do menu, lida de `config/golden.menu_portal` pelo mesmo `MenuPainel::montar()`, com
+  as bolhas contando os pedidos e chamados **daquela ficha**.
+- **Seis telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
   *Pedidos* (linha do tempo da jornada e os documentos do pedido), *Chamados*, *Contratos*
-  com o PDF e *Meus dados*. Folha própria (`public/css/golden-portal.css`) sobre o tema do
-  site, sem cor nova e com o mesmo favicon.
+  com o PDF, *Meus dados* e *Deixar um depoimento*.
 - **Auto-cadastro que não duplica ficha**: `App\Support\PortalDoCliente` procura em
   `customers` primeiro pelo documento (normalizado, com ou sem máscara) e depois pelo
   e-mail; achou, entrega a senha à ficha existente — entre candidatas, a que tem mais
@@ -457,8 +470,12 @@ a dimensão ideal.
   URL pública de `/storage`.
 - **Recuperação sem broker**: link assinado (`URL::temporarySignedRoute`, 60 minutos), sem
   tabela de tokens, e a mesma frase para e-mail com ou sem conta.
+- **O cliente escreve o próprio depoimento** (*Deixar um depoimento*): só a ficha `ativo`
+  envia, nunca há dois textos do mesmo cliente na fila, e a linha nasce `fonte = cliente`,
+  `aprovado = false` e com o `customer_id` assinando — publicar continua decisão da equipe,
+  que recebe o aviso no `contato_email` já filtrada nos pendentes.
 - 404 (não 403) para recurso de outro cliente, honeypot, throttle por rota e consentimento
-  LGPD no cadastro. `php artisan test`: `tests/Feature/PortalDoClienteTest.php` (18).
+  LGPD no cadastro. `php artisan test`: `tests/Feature/PortalDoClienteTest.php` (24).
 
 ### Medição
 Eventos já instrumentados em `public/js/golden-site.js`: `page_view`, `view_plans`,
@@ -517,7 +534,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (221 testes, 1.579 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (236 testes, 1.681 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

@@ -25,6 +25,7 @@ use App\Http\Controllers\Portal\PortalChamadoController;
 use App\Http\Controllers\Portal\PortalContaController;
 use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalContratoController;
+use App\Http\Controllers\Portal\PortalDepoimentoController;
 use App\Http\Controllers\Portal\PortalPedidoController;
 use App\Http\Controllers\Site\LeadController as SiteLeadController;
 use App\Http\Controllers\Site\PageController;
@@ -131,6 +132,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('dados', [PortalContaController::class, 'dados'])->name('dados');
         Route::post('dados', [PortalContaController::class, 'salvarDados'])->name('dados.salvar');
         Route::post('senha', [PortalContaController::class, 'salvarSenha'])->name('senha.salvar');
+
+        // O cliente conta a experiência dele; a equipe aprova antes de ir ao carrossel do site.
+        Route::get('depoimento', [PortalDepoimentoController::class, 'mostrar'])->name('depoimento');
+        Route::post('depoimento', [PortalDepoimentoController::class, 'store'])
+            ->middleware('throttle:6,1')->name('depoimento.enviar');
     });
 });
 
@@ -288,6 +294,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
             Route::get('/', [TestimonialController::class, 'index'])->name('index');
             Route::get('/novo', [TestimonialController::class, 'create'])->name('create');
             Route::post('/', [TestimonialController::class, 'store'])->name('store');
+            // Antes das rotas por id: "importar-google" é um segmento só e cairia no {depoimento}.
+            Route::post('/importar-google', [TestimonialController::class, 'importar'])->name('importar');
             Route::get('/{depoimento}/editar', [TestimonialController::class, 'edit'])->name('edit');
             Route::post('/{depoimento}', [TestimonialController::class, 'update'])->name('update');
             Route::delete('/{depoimento}', [TestimonialController::class, 'destroy'])->name('destroy');
