@@ -18,6 +18,15 @@ class TemasEIconesDoPainelTest extends TestCase
         'resources/views/admin/layouts/app.blade.php',
         'resources/views/auth/login.blade.php',
         'resources/views/portal/layout.blade.php',
+        'resources/views/portal/layout-auth.blade.php',
+    ];
+
+    /** As quatro telas de acesso do cliente: entrada, cadastro e a dupla de recuperação. */
+    private const TELAS_DE_ACESSO = [
+        'resources/views/portal/entrar.blade.php',
+        'resources/views/portal/cadastro.blade.php',
+        'resources/views/portal/esquecer.blade.php',
+        'resources/views/portal/redefinir.blade.php',
     ];
 
     public function test_todo_documento_abre_com_a_mesma_favicon(): void
@@ -63,6 +72,42 @@ class TemasEIconesDoPainelTest extends TestCase
                 $this->ler($arquivo),
                 "{$arquivo} define cor própria; a paleta vive em golden-theme.css."
             );
+        }
+    }
+
+    public function test_o_acesso_do_portal_entra_pela_carcaca_do_painel(): void
+    {
+        $carcaca = $this->ler('resources/views/portal/layout-auth.blade.php');
+
+        $this->assertStringContainsString('golden-login.css', $carcaca,
+            'As telas de acesso do cliente precisam da mesma folha da entrada do painel.');
+        $this->assertStringContainsString("@include('partials.favicon')", $carcaca);
+        $this->assertStringContainsString("@include('admin.partials.theme-init')", $carcaca,
+            'O tema escolhido no painel tem que valer para a tela de entrada do cliente.');
+
+        foreach (self::TELAS_DE_ACESSO as $arquivo) {
+            $this->assertStringContainsString("@extends('portal.layout-auth')", $this->ler($arquivo),
+                "{$arquivo} não entra pela carcaça compartilhada.");
+        }
+    }
+
+    public function test_toda_classe_do_acesso_do_portal_existe_na_folha(): void
+    {
+        $folha = $this->ler('public/css/golden-login.css');
+
+        foreach (self::TELAS_DE_ACESSO as $arquivo) {
+            preg_match_all('/class="([^"]*)"/', $this->ler($arquivo), $grupos);
+
+            foreach ($grupos[1] as $linha) {
+                foreach (preg_split('/\s+/', trim($linha)) as $classe) {
+                    if ($classe === '' || str_starts_with($classe, 'fa-')) {
+                        continue;
+                    }
+
+                    $this->assertStringContainsString('.'.$classe, $folha,
+                        "{$arquivo} usa .{$classe}, que não existe em golden-login.css — a tela sairia sem estilo.");
+                }
+            }
         }
     }
 

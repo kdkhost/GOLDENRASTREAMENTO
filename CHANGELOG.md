@@ -3,6 +3,35 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.21.1] - 2026-10-24
+
+### Corrigido
+- **As quatro telas de acesso do cliente saíram sem estilo.** `/portal/entrar`, `/portal/cadastro`,
+  `/portal/esquecer` e `/portal/redefinir` desenhavam classes que não existem em folha nenhuma —
+  `entrada`, `entrada-grid`, `entrada-lista`, `alterna`, `senha-dica` — então o suposto
+  "formulário ao lado do argumento" era uma pilha: título gigante, campo de e-mail de 1.100px de
+  largura e o "Esqueci minha senha" parecendo texto solto. A carcaça antiga vivia em
+  `layouts.site`, que nunca teve essas regras.
+
+### Novo
+- **O cliente entra pela mesma porta do painel.** As quatro telas passaram a estender
+  `portal.layout-auth.blade.php`, que é a folha `golden-login.css` da entrada do `/admin` com a
+  marca "Portal do cliente": mesma favicon, mesmo `theme-init`, mesmo `localStorage` de tema, e um
+  botão de claro/escuro no canto — a preferência escolhida antes de entrar já vale dentro do portal.
+  Em tela larga o argumento fica à esquerda, separado por um filete, e o formulário à direita; em
+  celular o formulário vem primeiro e o argumento desce.
+- `golden-login.css` ganhou as classes que faltavam (`.box-largo`, `.apresenta`, `.lista`, `.dica`,
+  `.erro`, `.consent`, `.alternar`, `.hp`, `.troca-tema`) só com tokens de `golden-theme.css`, e
+  `.field` de texto/telefone, antes cobertos apenas por e-mail e senha.
+
+### Detalhes
+- `tests/Feature/TemasEIconesDoPainelTest.php` ganha dois travamentos: as quatro telas têm de
+  estender a carcaça compartilhada, e **toda** classe escrita numa delas precisa existir na folha —
+  foi exatamente a ausência dessa checagem que deixou o bug chegar à produção. 239 testes,
+  1.745 asserções.
+- `auth/login.blade.php` deixa de repetir o script do tema e passa a incluir
+  `admin.partials.theme-init`, como o painel e o portal.
+
 ## [2.21.0] - 2026-10-24
 
 ### Novo
