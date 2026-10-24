@@ -27,10 +27,11 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - A prova foi feita pelo caminho real, não por script avulso: chamado aberto no
   `/portal` em produção, `ChamadoEquipe` processado pela fila em 136 ms com aceite do
   servidor, e a mesma mensagem lida na caixa de destino (`From: Golden Rastreamento
-  <disparos@foco.server-golden.com.br>`). O `ChamadoRecebido` da conta de
-  demonstração falhou com `550 account or domain may not exist` — o endereço
-  `portal@exemplo.com.br` é de exemplo mesmo, e essa coluna de diagnóstico entrou na
-  tabela de problemas.
+  <disparos@foco.server-golden.com.br>`). Nessa primeira tentativa o `ChamadoRecebido`
+  da conta de demonstração falhou com `550 account or domain may not exist` — o login
+  dela era `portal@exemplo.com.br`, endereço que não existe fora do exemplo. A conta
+  passou a `juliana@foco.server-golden.com.br` (mesma senha), a cópia para o cliente
+  chegou na caixa, e a linha de diagnóstico do `550` entrou na tabela de problemas.
 - `.env.example` passou a trazer o remetente de máquina como referência, com o aviso
   de que senha contendo `#` só funciona entre aspas no `.env` (sem aspas vira
   comentário e o SMTP responde como senha errada).

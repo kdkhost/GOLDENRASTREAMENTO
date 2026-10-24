@@ -803,7 +803,7 @@ ele, os dados criptografados e as sessões não voltam.
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/email.log`; depois configurar SMTP |
-| `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço de exemplo (como o login `portal@exemplo.com.br` da conta de demonstração) | esperado: o aviso à equipe saiu, o que não existe é a caixa de exemplo; um cliente cadastrado de verdade não reproduz |
+| `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço que não existe fora do exemplo (domínio sem MX, como `@exemplo.com.br`) | esperado em conta de demonstração com e-mail fictício; o aviso à equipe saiu, o que não existe é a caixa de exemplo. Troque o `email_portal` da ficha por um endereço real e o ciclo fecha |
 | Falha de login no SMTP com senha certa no `.env` | `MAIL_PASSWORD` sem aspas e com `#` | escreva `MAIL_PASSWORD="..."` — sem aspas o `#` vira comentário |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
 | A senha do painel "não funciona" no servidor | a senha instalada é forte, não é `golden123` | leia em `~/backups-golden/acesso-painel.txt` ou defina outra com `php artisan app:define-senha` |
