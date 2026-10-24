@@ -88,8 +88,35 @@ class HomeDaReferenciaTest extends TestCase
         }
     }
 
-    public function test_os_cinco_segmentos_tem_fotografia_propria(): void
+    /**
+     * A linha de cartões nasceu dentro da coluna do texto de cabeça, e o grid pagou por
+     * isso: com 1fr puro a menor largura dos rótulos empurrou as trilhas, os três cartões
+     * saíram com lados desiguais e o "Mais escolhido" quebrou em duas linhas, descendo
+     * sobre o subtítulo. Aqui a cabeça fica em cima e os cartões ocupam a largura do
+     * miolo — o mesmo arranjo da seção "Para quem é".
+     */
+    public function test_os_tres_kits_formam_uma_linha_alinhada(): void
     {
+        $css = file_get_contents(public_path('css/golden-site.css'));
+        $this->assertMatchesRegularExpression('/\.kits\{[^}]*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s', $css,
+            'As trilhas dos kits voltaram a 1fr puro: um rótulo longo desalinha os três cartões.');
+        $this->assertMatchesRegularExpression('/\.kit-tag\{[^}]*white-space:\s*nowrap/s', $css,
+            'O rótulo do cartão em destaque voltou a quebrar em duas linhas.');
+        $this->assertMatchesRegularExpression('/\.kit \.btn\{[^}]*width:\s*100%/s', $css,
+            'Os botões dos kits perderam a largura do cartão e deixam de formar linha.');
+
+        $html = $this->get('/')->getContent();
+        $pos = strpos($html, '<div class="kits">');
+        $this->assertNotFalse($pos, 'A linha de cartões sumiu da home.');
+
+        // Do <section> até os cartões: o .wrap é só .wrap e a cabeça é um .split à parte.
+        $abertura = (int) strrpos(substr($html, 0, $pos), '<section');
+        $antes = substr($html, $abertura, $pos - $abertura);
+        $this->assertMatchesRegularExpression('#^<section class="sec-light">\s*<div class="wrap">\s*<div class="split">#s', $antes,
+            'A linha de cartões voltou a morar dentro da coluna do texto de cabeça.');
+    }
+
+    public function test_os_cinco_segmentos_tem_fotografia_propria(): void    {
         $slots = config('golden.imagens');
 
         foreach (config('golden.segmentos') as $s) {

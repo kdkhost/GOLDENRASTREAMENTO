@@ -150,7 +150,7 @@ section{padding:84px 0}
 .split-larga{grid-template-columns:.72fr 1.28fr}
 /* Coluna de título estreita: o h2 precisa descer de tamanho para não virar bloco de 5 linhas */
 .split-txt h2{font-size:clamp(1.55rem,2.3vw,2rem)}
-.split .kits,.split .faq,.split .ben-grid,.split .steps{margin-top:0}
+.split .faq,.split .ben-grid,.split .steps{margin-top:0}
 .split .faq{max-width:none}
 .ben-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px 24px}
 .ben i{font-size:1.55rem;color:var(--gold-2);display:block;margin-bottom:12px}
@@ -195,18 +195,25 @@ section{padding:84px 0}
 .atalho:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 
 /* Kits / planos */
-.kits{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:48px;align-items:stretch}
-.kit{position:relative;background:#fff;border:1px solid var(--line);border-radius:20px;padding:34px 30px;display:flex;flex-direction:column;transition:.2s}
+/* minmax(0,1fr): com 1fr puro a menor largura do conteúdo (botão nowrap) empurra as
+   trilhas, os três cartões saem com lados desiguais e a linha estoura a coluna. */
+.kits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin-top:44px;align-items:stretch}
+.kit{position:relative;min-width:0;background:#fff;border:1px solid var(--line);border-radius:20px;padding:32px 28px;display:flex;flex-direction:column;transition:.2s}
 .kit:hover{box-shadow:var(--shadow)}
-.kit.feature{border:2px solid var(--gold);box-shadow:0 24px 50px -26px rgba(224,163,62,.5)}
-.kit-tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:7px 16px;border-radius:999px}
-.kit .eyebrow{margin-bottom:8px}
-.kit .num{font-family:"Poppins";font-size:3rem;font-weight:800;color:var(--ink);line-height:1}
+/* Anel dourado em vez de borda de 2px: o cartão em destaque pesa igual aos vizinhos,
+   então os três subtítulos, os três números e os três botões caem no mesmo pixel. */
+.kit.feature{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 24px 50px -26px rgba(224,163,62,.5)}
+.kit.feature:hover{box-shadow:0 0 0 1px var(--gold),var(--shadow)}
+/* nowrap: sem ele o rótulo quebra em duas linhas, vira um blob e desce sobre o subtítulo */
+.kit-tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);white-space:nowrap;background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:7px 16px;border-radius:999px;box-shadow:0 8px 18px -10px rgba(224,163,62,.9)}
+.kit .eyebrow{margin-bottom:10px}
+.kit .num{display:flex;align-items:baseline;gap:8px;font-family:"Poppins";font-size:3rem;font-weight:800;color:var(--ink);line-height:1}
 .kit .num small{font-size:1rem;color:var(--slate);font-weight:600}
-.kit ul{list-style:none;padding:0;margin:18px 0 24px;display:flex;flex-direction:column;gap:11px}
-.kit li{display:flex;gap:10px;align-items:flex-start;color:var(--slate);font-size:.95rem}
-.kit li i{color:var(--teal);margin-top:3px}
-.kit .btn{margin-top:auto}
+.kit ul{list-style:none;padding:0;margin:20px 0 26px;display:flex;flex-direction:column;gap:12px;flex:1}
+.kit li{display:flex;gap:10px;align-items:flex-start;color:var(--slate);font-size:.95rem;line-height:1.45}
+.kit li i{color:var(--teal);margin-top:4px;flex:none}
+/* Botão na largura do cartão: os três terminam na mesma medida e formam uma linha só. */
+.kit .btn{margin-top:auto;width:100%;white-space:normal}
 .fine{font-size:.82rem;color:var(--slate)}
 
 /* Passos */
@@ -408,6 +415,11 @@ main>section:nth-child(n+4){animation-delay:.14s}
 @media(max-width:960px){
   .hero-grid,.lead-panel,.split,.split-larga{grid-template-columns:1fr;gap:34px}
   .grid-3,.kits,.steps,.trust-grid,.seg-grid{grid-template-columns:repeat(2,1fr)}
+  /* Três cartões em duas colunas deixaria um buraco na última linha: em tablet o
+     destaque vira a faixa de cima e os dois outros dividem a de baixo. */
+  .kits .kit.feature{grid-column:1/-1;order:-1}
+  /* Solto na linha larga, o botão do destaque viraria uma barra; ele mantém a medida dos irmãos. */
+  .kits .kit.feature .btn{max-width:360px;margin-inline:auto}
   .ben-grid{grid-template-columns:repeat(2,1fr)}
   .cta-final.cta-foto .cta-marca{display:none}
   /* Sem as duas colunas, o texto volta a ocupar a linha e a foto vira só pano de fundo. */
@@ -493,6 +505,8 @@ main>section:nth-child(n+4){animation-delay:.14s}
 @media(max-width:600px){
   section{padding:60px 0}
   .grid-3,.kits,.steps,.trust-grid,.seg-grid,.row-2,.atalhos,.ben-grid{grid-template-columns:1fr}
+  /* Uma coluna só: os kits voltam a ser lidos em ordem de grandeza (5, 10, 10+). */
+  .kits .kit.feature{order:0}
   .foot-grid{grid-template-columns:1fr}
   .cookie{right:16px}
   .wa-float{width:52px;height:52px;font-size:1.5rem;right:16px;bottom:16px}

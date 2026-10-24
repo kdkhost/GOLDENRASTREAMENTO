@@ -3,7 +3,39 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
-## [2.20.1] - 2026-10-23
+## [2.20.2] - 2026-10-23
+
+### Corrigido
+- **A linha de kits da home parou de estourar a coluna.** Os três cartões moravam dentro da
+   coluna direita de um `.split-larga`, e o grid não cabia ali: com `repeat(3,1fr)` a menor
+   largura do conteúdo (o botão é `nowrap`) empurra as trilhas, então cada cartão media ~285px
+   dentro de uma coluna de 692px. O transbordo apertava a coluna do texto de cabeça, que era
+   o motivo real do "Escolha a solução ideal para a sua frota." quebrar em cinco linhas.
+- **O rótulo "Mais escolhido" voltou a ser uma linha só.** Absoluto com `left:50%` e sem
+   largura própria, ele tinha como teto metade do cartão; o texto ia para duas linhas, virava
+   um blob e descia sobre o subtítulo "Frota Profissional".
+
+### Alterado
+- A seção segue o arranjo que a "Para quem é" já usa: cabeça em cima (`.split` com o título à
+   esquerda e o texto + o botão à direita) e a linha de cartões na largura inteira do miolo.
+   Cada cartão passou de ~214px para 361px de caixa, e com isso os três subtítulos, os três
+   números, as três listas e os três botões caem na mesma linha — nada mais quebra ao meio.
+- Trilhas `repeat(3,minmax(0,1fr))`, `min-width:0` no cartão e botão na largura do cartão: os
+   três ficam com a mesma medida e a mesma altura, e um rótulo longo do CMS cede a linha em vez
+   de vazar pela borda.
+- O cartão em destaque perdeu a `border:2px` e ganhou anel (`box-shadow:0 0 0 1px`): pesa igual
+   aos vizinhos, então as bordas dos três alinham no mesmo pixel.
+- Em tablet (≤960px) os três cartões deixavam um buraco na segunda linha: o destaque passa a
+   faixa de cima, com o botão limitado a 360px, e os outros dois dividem a de baixo. Em celular
+   (≤600px) a ordem volta a ser 5, 10 e 10+.
+
+### Detalhes
+- `HomeDaReferenciaTest` ganha `test_os_tres_kits_formam_uma_linha_alinhada`, que trava pelo
+   CSS (`minmax(0,1fr)`, `white-space:nowrap` no rótulo, botão a 100%) e pela estrutura — o
+   `<section>` seguido de `.wrap` e só então de `.split`, forma que o arranjo antigo não tem.
+- `php artisan test`: 215 testes, 1.545 asserções verdes.
+
+
 
 ### Corrigido
 - **A chamada final "Pronto para ter mais controle?" voltou a ser faixa de fundo total.** Ela

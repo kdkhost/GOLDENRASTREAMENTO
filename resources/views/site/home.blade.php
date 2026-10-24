@@ -90,12 +90,16 @@
 
 {{-- KITS --}}
 <section class="sec-light">
-    <div class="wrap split split-larga">
-        <div class="split-txt">
-            <span class="eyebrow">Nossos kits</span>
-            <h2>Escolha a solução ideal para a sua frota.</h2>
-            <p class="lead-sub">Equipamentos com chip M2M, prontos para uso na plataforma Golden. Instalação realizada por profissional contratado pelo cliente.</p>
-            <p><a href="{{ route('site.planos') }}" class="btn btn-dark" data-track="view_plans" data-cta="home_kits">Ver todos os planos →</a></p>
+    <div class="wrap">
+        <div class="split">
+            <div>
+                <span class="eyebrow">Nossos kits</span>
+                <h2>Escolha a solução ideal para a sua frota.</h2>
+            </div>
+            <div>
+                <p class="lead-sub">Equipamentos com chip M2M, prontos para uso na plataforma Golden. Instalação realizada por profissional contratado pelo cliente.</p>
+                <p><a href="{{ route('site.planos') }}" class="btn btn-dark" data-track="view_plans" data-cta="home_kits">Ver todos os planos →</a></p>
+            </div>
         </div>
         <div class="kits">
             @foreach($kits as $kit)
