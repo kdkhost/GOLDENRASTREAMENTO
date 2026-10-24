@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Mail\ChamadoEquipe;
 use App\Mail\ChamadoRecebido;
 use App\Mail\ChamadoResposta;
+use App\Mail\PedidoNovoEquipe;
+use App\Mail\PedidoRecebido;
 use App\Mail\RedefinirSenhaPortal;
 use App\Models\Contract;
 use App\Models\Customer;
@@ -620,5 +622,83 @@ class PortalDoClienteTest extends TestCase
             'A barra de abas voltou a esconder a última aba fora da tela no celular.');
         $this->assertMatchesRegularExpression('/\.portal-nav a\{[^}]*justify-content:\s*center/s', $media,
             'As abas estreitas ficaram desalinhadas à esquerda da linha quebrada.');
+    }
+
+    /**
+     * Mail::fake() intercepta o envio antes de construir o objeto, então um `->autor` escrito sem
+     * parêntese — e `autor` não é coluna, é método — passava verde nos testes e estourava na
+     * produção no instante em que a fila tentava montar o assunto. Renderizar de verdade é a única
+     * forma de ver o mailable inteiro: envelope, view e cada acesso a dado do modelo.
+     */
+    public function test_todo_aviso_por_e_mail_renderiza_de_verdade(): void
+    {
+        $cliente = $this->conta();
+        $chamado = $this->chamado($cliente);
+        $abertura = $chamado->messages()->oldest()->firstOrFail();
+        $respostaDaEquipe = TicketMessage::create([
+            'ticket_id' => $chamado->id,
+            'user_id' => $this->admin->id,
+            'corpo' => 'Técnico agendado para amanhã à tarde.',
+        ]);
+
+        $avisos = [
+            'ChamadoEquipe' => new ChamadoEquipe($chamado),
+            'ChamadoRecebido' => new ChamadoRecebido($chamado),
+            'ChamadoResposta para a equipe' => new ChamadoResposta(
+                $chamado,
+                $abertura,
+                route('admin.chamados.show', $chamado),
+                'O cliente respondeu o chamado.',
+            ),
+            'ChamadoResposta para o cliente' => new ChamadoResposta(
+                $chamado,
+                $respostaDaEquipe,
+                route('portal.chamados.show', $chamado),
+                'A equipe respondeu o seu chamado.',
+            ),
+            'RedefinirSenhaPortal' => new RedefinirSenhaPortal(
+                $cliente,
+                URL::temporarySignedRoute('portal.senha.redefinir', now()->addHour(), ['cliente' => $cliente->id]),
+                60,
+            ),
+        ];
+
+        foreach ($avisos as $nome => $aviso) {
+            $this->assertNotEmpty($aviso->envelope()->subject, "O aviso «{$nome}» está sem assunto.");
+            $this->assertStringContainsString('<body', $aviso->render(), "O aviso «{$nome}» renderizou sem corpo.");
+        }
+
+        // Os quatro avisos do chamado carregam o número em toda parte — é por ele que cliente e
+        // equipe batem a conversa com a ficha.
+        foreach (['ChamadoEquipe', 'ChamadoRecebido', 'ChamadoResposta para a equipe',
+            'ChamadoResposta para o cliente'] as $nome) {
+            $this->assertStringContainsString($chamado->numero, $avisos[$nome]->envelope()->subject,
+                "O aviso «{$nome}» saiu do ar com um assunto sem número de chamado.");
+        }
+
+        // Os dois lados da mesma conversa assinam com quem escreveu: a equipe pelo nome do painel,
+        // o cliente pelo nome da ficha — é esse autor() que já derrubou o envio.
+        $this->assertStringContainsString($this->admin->name, $avisos['ChamadoResposta para o cliente']->render());
+        $this->assertStringContainsString($cliente->nome, $avisos['ChamadoResposta para a equipe']->render());
+        $this->assertStringContainsString($abertura->autor(), (string) $avisos['ChamadoResposta para a equipe']->envelope()->subject);
+        $this->assertStringContainsString($cliente->nome, $avisos['RedefinirSenhaPortal']->render());
+    }
+
+    /**
+     * O recibo da loja e o alerta interno de venda nova saem do mesmo molde dos avisos do portal:
+     * um acesso errado no mailable derruba o e-mail do comprador na fila, silenciosamente.
+     */
+    public function test_os_avisos_da_loja_renderizam_de_verdade(): void
+    {
+        $cliente = $this->conta();
+
+        foreach (['PedidoNovoEquipe' => new PedidoNovoEquipe($this->pedido($cliente)),
+            'PedidoRecebido' => new PedidoRecebido($this->pedido($cliente))] as $nome => $aviso) {
+            $html = $aviso->render();
+            $this->assertStringContainsString('Rastreador veicular', $html,
+                "O aviso «{$nome}» perdeu a linha do item comprado.");
+            $this->assertStringContainsString('R$ 234,00', $html,
+                "O aviso «{$nome}» não traz o total do pedido.");
+        }
     }
 }

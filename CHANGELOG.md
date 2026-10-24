@@ -3,6 +3,30 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.20.4] - 2026-10-24
+
+Drenar a fila pela primeira vez na produção revelou o quarto defeito do portal — e o pior dos
+quatro: ele não atrasa o aviso, ele o destrói.
+
+### Corrigido
+- **A resposta da equipe ao chamado volta a chegar por e-mail ao cliente.** O assunto de
+   `ChamadoResposta` lia `$this->mensagem->autor`, sem parêntese. `autor` não é coluna da tabela:
+   é um método, e o Eloquent, ao ver um atributo desconhecido, procura uma relação — como
+   `TicketMessage::autor()` devolve string e não um `Relation`, o job estourava antes de montar a
+   mensagem (`LogicException: App\Models\TicketMessage::autor must return a relationship
+   instance`) e ia inteiro para `failed_jobs`. Na prática, toda vez que a equipe respondia pelo
+   painel o cliente era o único que não era avisado. A chamada agora é `autor()`, como já faziam
+   as views do portal, do painel e do próprio corpo do e-mail.
+
+### Detalhes
+- **Por que os testes deixaram passar:** `Mail::fake()` intercepta o envio antes de construir o
+   objeto, então `Mail::assertQueued(ChamadoResposta::class)` ficava verde com o mailable quebrado
+   — o assunto só é lido na hora de entregar, e essa hora nunca chegava no teste. As duas travas
+   novas renderizam os seis mailables de verdade (`->render()`): assunto, corpo e os dois autores
+   da conversa (equipe pela conta do painel, cliente pela ficha). Verificado ao contrário: trocando
+   `autor()` de volta por `autor`, o teste falha com exatamente a exceção da produção.
+- `php artisan test`: 220 testes, 1.576 asserções verdes.
+
 ## [2.20.3] - 2026-10-24
 
 Ao abrir a conta de demonstração e percorrer o portal no ar, apareceram três defeitos que nenhum

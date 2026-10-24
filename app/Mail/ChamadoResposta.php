@@ -28,7 +28,10 @@ class ChamadoResposta extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Chamado '.$this->chamado->numero.': '.$this->mensagem->autor.' respondeu');
+        // autor() com parêntese: sem eles o Eloquent lê `autor` como relação e o aviso
+        // inteiro estoura antes de sair — Mail::fake não constrói o mailable, então só o
+        // render de verdade pega isso.
+        return new Envelope(subject: 'Chamado '.$this->chamado->numero.': '.$this->mensagem->autor().' respondeu');
     }
 
     public function content(): Content

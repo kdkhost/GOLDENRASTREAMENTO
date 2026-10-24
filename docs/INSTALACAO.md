@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.20.3
+- **Versão:** 2.20.4
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -532,6 +532,14 @@ php artisan queue:work --stop-when-empty   # consome o que está preso e sai
 Não use `queue:listen` nem deixe um worker residente: a hospedagem compartilhada não tem
 supervisor, e o `--stop-when-empty` existe justamente para o trabalho caber no disparo de um
 minuto do `schedule:run`.
+
+Se um aviso estourar ao ser montado (endereço inválido, dado faltando), ele não se perde: sai de
+`jobs` e entra em `failed_jobs`, com o erro por extenso. Depois de corrigir a causa, o retry
+recoloca a mensagem na fila sem precisar abrir o chamado de novo:
+
+```bash
+php artisan queue:retry all    # devolve tudo que está em failed_jobs para a fila
+```
 
 ---
 
