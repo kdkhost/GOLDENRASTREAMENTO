@@ -3,6 +3,32 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.20.5] - 2026-10-24
+
+### Corrigido
+- **O aviso enviado com `MAIL_MAILER=log` volta a deixar rastro.** O driver `log` grava a mensagem
+   inteira em nível `debug`, e a produção roda com `LOG_LEVEL=warning`: o e-mail era filtrado junto
+   com o resto do log. Na prática o `queue:work` respondia `DONE`, a tabela `jobs` ficava zerada e
+   não havia como provar que o cliente foi avisado — o `storage/logs/laravel.log` não tinha uma
+   linha de e-mail desde a instalação. Entra o canal `email` em `config/logging.php`, com nível
+   próprio fixo em `debug` e arquivo separado (`storage/logs/email.log`), e `MAIL_LOG_CHANNEL`
+   passa a apontar para ele por padrão. O log da aplicação continua no nível que a hospedagem
+   pede; o que sai por e-mail fica auditável. Nada muda quando o SMTP estiver de pé — o canal só
+   é usado pelo driver `log`.
+- A documentação de instalação apontava `storage/logs/laravel.log` como o lugar onde conferir o
+   aviso — tabela de `.env`, seção do portal, tabela de erros e checklist. Nenhum deles tinha
+   razão de existir enquanto `LOG_LEVEL=warning` filtrava a mensagem.
+
+### Detalhes
+- `PortalDoClienteTest` ganha `test_o_aviso_gravado_em_log_deixa_rastro_apesar_do_log_level`, que
+   lê o canal do mailer `log` e exige que ele exista, que o nível dele seja `debug` e que o
+   arquivo seja outro senão o do log da aplicação — a trava pega tanto o canal sumido quanto o
+   canal herdando `LOG_LEVEL`.
+- `.env.example` traz `MAIL_LOG_CHANNEL=email` comentado com o porquê, então toda instalação nova
+   já nasce com o rastro; a instalação que está no ar continua funcionando sem mexer no `.env`,
+   porque o padrão agora vem do `config/mail.php`.
+- `php artisan test`: 221 testes, 1.579 asserções verdes.
+
 ## [2.20.4] - 2026-10-24
 
 Drenar a fila pela primeira vez na produção revelou o quarto defeito do portal — e o pior dos

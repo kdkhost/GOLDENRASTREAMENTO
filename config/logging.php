@@ -65,6 +65,20 @@ return [
             'replace_placeholders' => true,
         ],
 
+        /*
+         * O driver 'log' de e-mail grava a mensagem inteira no nível debug. Numa produção com
+         * LOG_LEVEL=warning — que é o recomendado aqui — essas linhas morriam filtradas e não
+         * sobrava rastro nenhum do que foi enviado. Este canal tem nível próprio, fixo em debug,
+         * e é para ele que o e-mail vai: o log da aplicação continua limpo e o aviso enviado
+         * continua auditável em storage/logs/email.log.
+         */
+        'email' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/email.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

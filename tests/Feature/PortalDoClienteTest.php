@@ -685,6 +685,26 @@ class PortalDoClienteTest extends TestCase
     }
 
     /**
+     * Enquanto não há SMTP, o aviso sai pelo driver `log`, que grava a mensagem inteira no nível
+     * debug. A produção roda com LOG_LEVEL=warning: o rastro do e-mail era filtrado junto com o
+     * resto e não havia como conferir se o cliente foi avisado — o `queue:work` dizia DONE e
+     * nada sobrava. O canal do e-mail tem nível próprio, então o registro existe com qualquer
+     * LOG_LEVEL da aplicação.
+     */
+    public function test_o_aviso_gravado_em_log_deixa_rastro_apesar_do_log_level(): void
+    {
+        $canal = config('mail.mailers.log.channel');
+        $this->assertNotNull($canal,
+            'O mailer log voltou a herdar o canal padrão: com LOG_LEVEL=warning nenhum e-mail fica registrado.');
+
+        $this->assertSame('debug', config("logging.channels.$canal.level"),
+            "O canal {$canal} filtraria o aviso, que é gravado em nível debug.");
+
+        $this->assertNotSame(config('logging.channels.single.path'), config("logging.channels.$canal.path"),
+            'O rastro dos e-mails precisa estar fora do log da aplicação, que tem nível e rotatividade próprios.');
+    }
+
+    /**
      * O recibo da loja e o alerta interno de venda nova saem do mesmo molde dos avisos do portal:
      * um acesso errado no mailable derruba o e-mail do comprador na fila, silenciosamente.
      */

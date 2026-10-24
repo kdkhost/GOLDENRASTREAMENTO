@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.20.4
+- **Versão:** 2.20.5
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -437,6 +437,7 @@ php artisan config:clear && php artisan config:cache
 | `FILESYSTEM_DISK` | `public` | onde os envios vão parar |
 | `LOG_CHANNEL` / `LOG_LEVEL` | `stack` / `warning` | log em `storage/logs` |
 | `MAIL_MAILER` | `smtp` | use `log` enquanto não tiver credencial |
+| `MAIL_LOG_CHANNEL` | `email` | para onde o `log` escreve o e-mail (`storage/logs/email.log`) |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION` | do seu servidor de correio | o **código de e-mail está pronto no projeto**; falta só a credencial do servidor |
 | `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | `comercial@goldenrastreamento.com.br` | remetente dos orçamentos e avisos |
 | `GOLDEN_WHATSAPP` | `5519997101483` | botão de WhatsApp do site |
@@ -445,9 +446,11 @@ php artisan config:clear && php artisan config:cache
 
 Sobre os e-mails: os modelos, o envio de orçamento e as notificações de pedido já
 existem. Trocar `MAIL_MAILER=log` para `smtp` e preencher as cinco chaves é tudo
-que falta para eles saírem de verdade. Em `log`, a mensagem fica escrita em
-`storage/logs/laravel.log` — útil para conferir o conteúdo antes de liberar o
-SMTP.
+que falta para eles saírem de verdade. Em `log`, a mensagem inteira é escrita em
+`storage/logs/email.log` — útil para conferir o conteúdo antes de liberar o SMTP.
+Esse canal é separado do log da aplicação de propósito: o driver `log` grava o
+aviso em nível `debug`, e uma produção com `LOG_LEVEL=warning` filtrava essas
+linhas — o `queue:work` dizia `DONE` e não sobrava rastro nenhum do envio.
 
 ---
 
@@ -614,7 +617,7 @@ Quatro avisos saem do portal: `ChamadoRecebido` (para o cliente), `ChamadoEquipe
 (para o painel), `ChamadoResposta` (bidirecional) e `RedefinirSenhaPortal`. Como
 no resto do sistema, **sem SMTP configurado o aviso se perde e a ação do cliente
 nunca é barrada** — o envio é tentado em `try/catch`; com `MAIL_MAILER=log` a
-mensagem fica em `storage/logs/laravel.log`.
+mensagem fica em `storage/logs/email.log`.
 
 A recuperação de senha não usa tabela de tokens nem broker: o link é assinado
 (`URL::temporarySignedRoute`) e expira em 60 minutos. Consequências práticas:
@@ -675,7 +678,7 @@ ele, os dados criptografados e as sessões não voltam.
 | `could not find driver` | `pdo_mysql` desligado | ative a extensão no painel de PHP |
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
-| E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/laravel.log`; depois configurar SMTP |
+| E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/email.log`; depois configurar SMTP |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
 | A senha do painel "não funciona" no servidor | a senha instalada é forte, não é `golden123` | leia em `~/backups-golden/acesso-painel.txt` ou defina outra com `php artisan app:define-senha` |
 | O cliente não consegue entrar no `/portal` | o login do portal é o `email_portal`, não o e-mail da ficha do CRM | conferir o selo *conta ativa* na ficha (Admin → Clientes) e usar aquele e-mail; sem conta, ele cria em `/portal/cadastro` |
@@ -739,7 +742,9 @@ continua visível para você pelo painel ou SSH.
 - [ ] Cron do agendador: `php artisan schedule:run` a cada minuto (seção 9 — poda do
       registro de tráfego **e** fila de e-mails do portal)
 - [ ] Fila: abrir um chamado no portal e confirmar que a tabela `jobs` volta a zero no minuto
-      seguinte — com `MAIL_MAILER=log`, o texto aparece em `storage/logs/laravel.log`
+      seguinte — com `MAIL_MAILER=log`, o texto aparece em `storage/logs/email.log`
+- [ ] Fila com erro: se `failed_jobs` tiver linha, ler o motivo nela, corrigir e rodar
+      `php artisan queue:retry all`
 - [ ] Tráfego: abrir `/admin/atribuicao` depois de algumas visitas reais e conferir se as
       origens aparecem
 - [ ] Portal: criar conta em `/portal/cadastro` sobre uma ficha que já existe no CRM e conferir que ela herda os pedidos de convidado
