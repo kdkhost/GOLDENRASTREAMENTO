@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -564,5 +565,60 @@ class PortalDoClienteTest extends TestCase
         $this->get(route('admin.clientes.show', $cliente))->assertOk()
             ->assertSee('Termo de adesão da plataforma')
             ->assertSee('Equipamento fora do ar');
+    }
+
+    /**
+     * Todo aviso do portal — chamado aberto, resposta da equipe, recibo, link de recuperação —
+     * entra em fila, e a hospedagem tem um único cron: schedule:run. Sem o worker pendurado nele
+     * o e-mail morre na tabela jobs e o cliente fica esperando uma mensagem que nunca sai. O
+     * envio em si já é coberto com Mail::fake; o que só se prova aqui é quem drena a fila.
+     */
+    public function test_a_fila_de_avisos_do_portal_tem_quem_rodando_no_cron(): void
+    {
+        $worker = collect(app(Schedule::class)->events())
+            ->first(fn ($e) => str_contains((string) ($e->command ?? ''), 'queue:work'));
+
+        $this->assertNotNull($worker, 'Nenhum worker agendado: os e-mails do portal ficam presos na tabela jobs.');
+        $this->assertStringContainsString('--stop-when-empty', (string) $worker->command,
+            'Um worker sem --stop-when-empty nunca devolve o processo e o cron da hospedagem empilha um por minuto.');
+        $this->assertSame('* * * * *', $worker->getExpression(),
+            'A fila precisa ser drenada a cada minuto — é a menor janela que o schedule:run da hospedagem oferece.');
+        $this->assertTrue((bool) $worker->withoutOverlapping,
+            'Sem withoutOverlapping dois workers consomem a mesma fila e o cliente recebe o aviso em dobro.');
+    }
+
+    /**
+     * A barra inferior do rodapé tem dois links lado a lado, e .site-footer a{display:block} —
+     * escrita para as colunas de link do site — empilhava cada um na sua linha, deixando o
+     * separador sozinho no meio do rodapé do portal.
+     */
+    public function test_os_links_do_rodape_do_portal_ficam_na_mesma_linha(): void
+    {
+        $css = file_get_contents(public_path('css/golden-site.css'));
+        $this->assertMatchesRegularExpression('/\.foot-bottom a\{[^}]*display:\s*inline/s', $css,
+            'Os links da barra inferior voltaram a herdar o display:block das colunas do rodapé.');
+
+        $cliente = $this->conta();
+        $this->actingAs($cliente, 'cliente');
+        $html = $this->get(route('portal.inicio'))->getContent();
+        $this->assertMatchesRegularExpression('#<span><a href="[^"]*"#', $html,
+            'O rodapé do portal voltou a sair do formato que a trava do CSS espera.');
+    }
+
+    /**
+     * Cinco abas não cabem na largura do celular: com overflow-x e a barra de rolagem escondida,
+     * "Meus dados" entrava cortada no meio da palavra e nada indicava que a fila rola.
+     */
+    public function test_as_abas_do_portal_quebram_em_linhas_no_celular(): void
+    {
+        $css = file_get_contents(public_path('css/golden-portal.css'));
+        $tem = preg_match('/@media\s*\(max-width:640px\)\s*\{(.*)\}/s', $css, $m);
+        $this->assertSame(1, $tem, 'O bloco de celular (max-width:640px) sumiu da folha do portal.');
+        $media = $m[1];
+
+        $this->assertMatchesRegularExpression('/\.portal-nav ul\{[^}]*flex-wrap:\s*wrap/s', $media,
+            'A barra de abas voltou a esconder a última aba fora da tela no celular.');
+        $this->assertMatchesRegularExpression('/\.portal-nav a\{[^}]*justify-content:\s*center/s', $media,
+            'As abas estreitas ficaram desalinhadas à esquerda da linha quebrada.');
     }
 }

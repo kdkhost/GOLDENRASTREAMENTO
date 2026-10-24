@@ -306,6 +306,9 @@ section{padding:84px 0}
 .foot-brand img{width:42px;height:42px;border-radius:9px}
 .foot-brand b{color:#fff;font-family:"Poppins";font-size:1.1rem}
 .foot-bottom{border-top:1px solid rgba(255,255,255,.08);margin-top:44px;padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:.84rem}
+/* .site-footer a é display:block para as colunas de link do site; na barra inferior os
+   links são um texto corrido e o mesmo display empilha cada um na sua linha. */
+.foot-bottom a{display:inline;margin:0;color:inherit}
 
 /* WhatsApp flutuante */
 /* Botão flutuante + caixa multicanal de WhatsApp (padrão foco7) */

@@ -3,6 +3,39 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.20.3] - 2026-10-24
+
+Ao abrir a conta de demonstração e percorrer o portal no ar, apareceram três defeitos que nenhum
+teste de tela pegava: nenhum deles quebra o HTML, todos quebram a entrega.
+
+### Corrigido
+- **Os avisos do portal saem da fila.** Todo e-mail que o cliente espera — "a equipe respondeu",
+   o recibo do chamado aberto, o link de recuperação de senha — entra em fila (`Mail::queue`), e
+   a hospedagem tem um único cron: `schedule:run`. Sem worker pendurado nele, nada é consumido;
+   na conta de demonstração havia quatro mensagens presas na tabela `jobs`, nenhuma delas com
+   menos de um dia. O agendador passa a rodar `queue:work --stop-when-empty --max-time=50` a cada
+   minuto, com `withoutOverlapping`: o `--stop-when-empty` devolve o processo quando a fila esvazia
+   (um worker solto nunca terminaria e o cron empilharia um por minuto) e o `--max-time` deixa a
+   janela livre antes do próximo disparo.
+- **Os dois links do rodapé do portal voltaram para a mesma linha.** `.site-footer a` é
+   `display:block` porque as colunas *Navegação*, *Suporte* e *Contato* são listas de link — e a
+   mesma regra alcançava a barra inferior, onde "Falar com a equipe" e "Privacidade (LGPD)" são
+   texto corrido. O resultado medido no navegador: os dois links e o separador empilhados em três
+   linhas, com um "·" órfão no meio do rodapé. A trava fica em `.foot-bottom a`, na fonte da regra.
+- **As cinco abas do portal cabem no celular.** A barra usava `overflow-x:auto` com a barra de
+   rolagem escondida de propósito: em 638px a última aba entrava cortada no meio da palavra
+   ("Meus dad") e nada indicava que a fila rola. Abaixo de 640px ela quebra em duas linhas, com
+   cada aba centrada e crescendo até preencher a linha.
+
+### Detalhes
+- `PortalDoClienteTest` ganha três travas: a fila tem quem rode no cron (expressão, `--stop-when-empty`
+   e `withoutOverlapping` lidos do próprio `Schedule`), o rodapé não empilha (CSS + a forma do
+   markup) e as abas quebram dentro do `@media (max-width:640px)` — o teste exige que o bloco exista,
+   senão a busca vazia passaria verde com a regra fora do breakpoint.
+- Reentra na 2.20.2 o cabeçalho `## [2.20.1]`, que a edição da vez tinha derrubado junto com a
+   própria entrada — o corpo da 2.20.1 ficou órfão dentro da 2.20.2.
+- `php artisan test`: 218 testes, 1.554 asserções verdes.
+
 ## [2.20.2] - 2026-10-23
 
 ### Corrigido
@@ -35,7 +68,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
    `<section>` seguido de `.wrap` e só então de `.split`, forma que o arranjo antigo não tem.
 - `php artisan test`: 215 testes, 1.545 asserções verdes.
 
-
+## [2.20.1] - 2026-10-23
 
 ### Corrigido
 - **A chamada final "Pronto para ter mais controle?" voltou a ser faixa de fundo total.** Ela

@@ -122,6 +122,11 @@ a.item{color:inherit}
 @media (max-width:640px){
   .portal-bar .nav{height:64px}
   .portal-quem b{max-width:12ch}
+  /* Cinco abas não cabem na largura do celular: com overflow-x e a barra de rolagem
+     escondida a última entrava cortada no meio da palavra, sem pista de que a fila rola.
+     Em duas linhas todas ficam inteiras e do tamanho de um toque. */
+  .portal-nav ul{flex-wrap:wrap;overflow:visible}
+  .portal-nav a{flex:1 1 auto;justify-content:center;padding:12px 10px;font-size:.82rem}
   .bloco{padding:18px}
   .item-lado{text-align:left}
   .msg{max-width:100%}

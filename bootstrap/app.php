@@ -21,6 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // O registro de tráfego cresce com cada visita; sem a poda semanal a tabela
         // visits/visit_events incha para sempre. A retenção é o dias_retencao do config.
         $schedule->command('rastreio:podar')->weeklyOn(2, '03:30')->withoutOverlapping();
+
+        // Todo aviso do portal (chamado aberto, resposta da equipe, recibo, link de senha)
+        // entra em fila, e a hospedagem só tem o cron de schedule:run — sem isto o e-mail
+        // espera para sempre na tabela jobs. O --max-time deixa a janela livre antes do
+        // próximo minuto e o withoutOverlapping impede dois workers sobre a mesma fila.
+        $schedule->command('queue:work --stop-when-empty --max-time=50')
+            ->everyMinute()->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

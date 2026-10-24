@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.20.2
+- **Versão:** 2.20.3
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -519,6 +519,20 @@ velho). Para descobrir o certo no seu servidor: `ea-php83 -r 'echo PHP_VERSION;'
 `ls /opt/cpanel/ea-php8*/root/usr/bin/php`. Sem o cron, o comando continua podendo ser
 rodado à mão — só não se auto-agenda.
 
+**A mesma linha de cron também drena a fila de e-mails.** Todo aviso do portal (chamado
+aberto, resposta da equipe, recibo, link de recuperação de senha) entra em fila, e o
+agendador dispara `queue:work --stop-when-empty --max-time=50` a cada minuto. Numa hospedagem
+sem esse cron as mensagens ficam paradas na tabela `jobs` e o cliente espera um e-mail que
+nunca sai. Para conferir à mão:
+
+```bash
+php artisan queue:work --stop-when-empty   # consome o que está preso e sai
+```
+
+Não use `queue:listen` nem deixe um worker residente: a hospedagem compartilhada não tem
+supervisor, e o `--stop-when-empty` existe justamente para o trabalho caber no disparo de um
+minuto do `schedule:run`.
+
 ---
 
 ## 10. Portal do cliente
@@ -715,7 +729,9 @@ continua visível para você pelo painel ou SSH.
       as sete páginas — trocar uma foto e salvar muda a página pública na hora
 - [ ] SMTP preenchido (ou `log`, assumido de propósito)
 - [ ] Cron do agendador: `php artisan schedule:run` a cada minuto (seção 9 — poda do
-      registro de tráfego)
+      registro de tráfego **e** fila de e-mails do portal)
+- [ ] Fila: abrir um chamado no portal e confirmar que a tabela `jobs` volta a zero no minuto
+      seguinte — com `MAIL_MAILER=log`, o texto aparece em `storage/logs/laravel.log`
 - [ ] Tráfego: abrir `/admin/atribuicao` depois de algumas visitas reais e conferir se as
       origens aparecem
 - [ ] Portal: criar conta em `/portal/cadastro` sobre uma ficha que já existe no CRM e conferir que ela herda os pedidos de convidado
