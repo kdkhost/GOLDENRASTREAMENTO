@@ -3,6 +3,25 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.20.1] - 2026-10-23
+
+### Corrigido
+- **A chamada final "Pronto para ter mais controle?" voltou a ser faixa de fundo total.** Ela
+   era a única das três faixas escuras da referência que ainda vinha como cartão arredondado
+   dentro do miolo: `section.sec-light > div.wrap > div.cta-final.cta-foto`, com a fotografia
+   recortada dentro do quadro. Agora o `<section>` da faixa é o próprio fundo
+   (`section.cta-final.cta-foto.sec-foto.sec-foto-esq`), a `<img class="foto">` vem antes do
+   `.wrap`, e o gradiente que escurece o lado do texto é o de `.sec-foto-esq` — o mesmo
+   tratamento do herói, do aplicativo e do J16, sem regra duplicada: as três linhas de `.foto`
+   e `::before` que a faixa tinha por conta própria saíram do CSS.
+
+### Detalhes
+- `HomeDaReferenciaTest` passou a varrer as **três** faixas (antes eram duas) e a travar o
+   tratamento pelo CSS: exige `.sec-foto > .foto{object-fit:cover}` e
+   `.cta-final.cta-foto{…border-radius:0}`, porque foi exatamente o quadro arredondado que
+   derrubou a entrega anterior. Nome de arquivo continua fora das travas.
+- `php artisan test`: 214 testes, 1.540 asserções verdes.
+
 ## [2.20.0] - 2026-10-23
 
 ### Adicionado

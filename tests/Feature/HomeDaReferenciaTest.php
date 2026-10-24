@@ -48,23 +48,29 @@ class HomeDaReferenciaTest extends TestCase
     }
 
     /**
-     * Aplicativo e plataforma, e o Rastreador J16, nasceram como faixa escura com a
-     * imagem encaixada ao lado do texto; a referência aprovada mostra os dois com a
-     * fotografia cobrindo a seção inteira. A imagem precisa ser a camada de fundo da
-     * própria seção, então ela vem antes do conteúdo — não dentro dele.
+     * Aplicativo e plataforma, o Rastreador J16 e a chamada final nasceram como faixa escura
+     * com a imagem encaixada ao lado do texto; a referência aprovada mostra as três com a
+     * fotografia cobrindo a seção inteira. A imagem precisa ser a camada de fundo da própria
+     * seção, então ela vem antes do conteúdo — não dentro dele.
      */
-    public function test_as_duas_faixas_escuras_tem_a_fotografia_como_fundo_da_secao(): void
+    public function test_as_tres_faixas_escuras_tem_a_fotografia_como_fundo_da_secao(): void
     {
         $css = file_get_contents(public_path('css/golden-site.css'));
         $this->assertMatchesRegularExpression('/\.sec-foto\s*>\s*\.foto\{[^}]*object-fit:\s*cover/s', $css,
             'A classe .sec-foto perdeu o recorte em largura total: a foto voltou a ser um quadro.');
 
+        // A chamada final divide o tratamento com as outras duas; se ela recuperar o quadro
+        // arredondado, vira cartão dentro do miolo de novo — foi o que a referência desmentiu.
+        $this->assertMatchesRegularExpression('/\.cta-final\.cta-foto\{[^}]*border-radius:\s*0\s*[;}]/s', $css,
+            'A chamada final voltou a ser quadro arredondado em vez de faixa de fundo total.');
+
         $html = $this->get('/')->getContent();
 
-        foreach (['sec-foto-esq' => 'Aplicativo e plataforma', 'sec-foto-dir' => 'Rastreador J16'] as $classe => $rotulo) {
-            $tem = preg_match('#<section class="[^"]*' . $classe . '[^"]*">(.*?)<div class="wrap#s', $html, $faixa);
+        foreach (['sec-foto-esq' => 'Aplicativo e plataforma', 'sec-foto-dir' => 'Rastreador J16', 'cta-foto' => 'chamada final'] as $classe => $rotulo) {
+            $tem = preg_match('#<section class="([^"]*' . $classe . '[^"]*)">(.*?)<div class="wrap#s', $html, $faixa);
             $this->assertSame(1, $tem, "A faixa '{$rotulo}' não é mais uma .{$classe}.");
-            $this->assertStringContainsString('class="foto"', $faixa[1], "A fotografia da faixa '{$rotulo}' saiu do fundo da seção.");
+            $this->assertStringContainsString('sec-foto', $faixa[1], "A faixa '{$rotulo}' saiu do tratamento de fundo total.");
+            $this->assertStringContainsString('class="foto"', $faixa[2], "A fotografia da faixa '{$rotulo}' saiu do fundo da seção.");
         }
     }
 

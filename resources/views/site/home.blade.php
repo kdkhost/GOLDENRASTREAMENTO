@@ -216,24 +216,22 @@
 </section>
 
 {{-- CTA FINAL --}}
-<section class="sec-light">
+<section class="cta-final cta-foto sec-foto sec-foto-esq">
+    <x-site.img imagem="home_cta" class="foto" />
     <div class="wrap">
-        <div class="cta-final cta-foto">
-            <x-site.img imagem="home_cta" class="foto" />
-            <div class="cta-final-inner">
-                <span class="eyebrow on-dark">Pronto para ter mais controle?</span>
-                <h2>Fale com um especialista e encontre <span class="destaque">a solução ideal</span> para você.</h2>
-                <p>Receba um atendimento personalizado e descubra como a Golden pode ajudar você ou sua empresa a ir mais longe.</p>
-                <div class="cta-actions">
-                    <a href="{{ route('site.contato') }}" class="btn btn-gold" data-track="contact" data-cta="footer">Quero uma proposta →</a>
-                    <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" data-track="whatsapp_click" data-cta="footer"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
-                </div>
-            </div>
-            <div class="cta-marca">
-                <x-site.img imagem="marca_logo" alt="" :largura="44" :altura="44" />
-                <span><b>GOLDEN</b><small>Rastreamento</small></span>
+        <div class="cta-final-inner">
+            <span class="eyebrow on-dark">Pronto para ter mais controle?</span>
+            <h2>Fale com um especialista e encontre <span class="destaque">a solução ideal</span> para você.</h2>
+            <p>Receba um atendimento personalizado e descubra como a Golden pode ajudar você ou sua empresa a ir mais longe.</p>
+            <div class="cta-actions">
+                <a href="{{ route('site.contato') }}" class="btn btn-gold" data-track="contact" data-cta="footer">Quero uma proposta →</a>
+                <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" data-track="whatsapp_click" data-cta="footer"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
             </div>
         </div>
+    </div>
+    <div class="cta-marca">
+        <x-site.img imagem="marca_logo" alt="" :largura="44" :altura="44" />
+        <span><b>GOLDEN</b><small>Rastreamento</small></span>
     </div>
 </section>
 @endsection
