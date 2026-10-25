@@ -5,6 +5,46 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.25.3] - 2026-10-25
+
+### Adicionado
+- **A máscara de topo.** `.video-mascara`, no partial do player, é uma faixa de 96 px com o
+  preto da casa que desce sobre o quadro no instante em que o vídeo começa a tocar e sobe
+  sozinha depois. É a resposta ao cartão de título — avatar, nome do vídeo e nome do canal —
+  que o YouTube pinta nos primeiros segundos de **toda** reprodução, inclusive na retomada do
+  meio do vídeo. Ela não recebe clique (`pointer-events:none`) e não esconde a imagem: é
+  gradiente, não cortina.
+- **As duas esquinas da barra.** `.video-controles::before` e `::after` fecham os cantos
+  inferiores de baixo com o preto da barra. Ali o iframe desenha o botão de link/compartilhar
+  à esquerda e a marca "YouTube" à direita, e não existe `playerVar` que os tire. Cobrimos só
+  as pontas: o meio da faixa continua livre, porque estes tutoriais trazem a legenda queimada
+  na própria imagem, e um corte que fechasse a barra inteira comeria a legenda junto.
+- **O selo da casa por cima da bolha dele.** No mesmo instante do tocar, o selo dourado do
+  vidro entra maior (`.video-vidro.pulso`, escala 1,55) exatamente sobre o centro do quadro,
+  onde o YouTube desenha a própria bolha cinza de play/pause, e sai junto com a máscara. O
+  ícone do selo é o mesmo da barra — play parado, pause tocando —, de modo que o único
+  play/pause visível na tela é sempre o da casa.
+- **Uma janela medida, não suposta.** `JANELA_DAS_MARCAS` é o tempo que a cobertura fica no ar,
+  e ele veio de medição no player real: o cartão de título some por volta de 7 s e a bolha do
+  centro ainda está inteira aos 5 s, já tendo ido aos 9. A janela é 9 s, e um temporizador só
+  governa as duas coberturas — as duas janelas antigas (6 s e 2,8 s) deixavam a bolha exposta.
+- **Trava em teste.** `test_a_casa_cobre_o_que_o_youtube_pinta_durante_a_reproducao()` responde
+  pela máscara, pelas esquinas, pelo pulso do selo, pela janela única e pelo fato de o `marca`
+  cair no `PLAYING` e subir no `PAUSED`.
+
+### Corrigido
+- **Os controles da casa pintavam debaixo da própria cobertura.** As esquinas novas são
+  pseudo-elementos posicionados, e pseudo-elemento posicionado pinta depois de irmão não
+  posicionado: na primeira versão o `::before` tapava o play e o mudo da barra. Levaram
+  `position:relative` e voltaram para a frente.
+
+### Limitação conhecida — encerrada
+- A "Limitação conhecida" da 2.25.2, sobre a interface do YouTube aparecer enquanto o vídeo
+  toca, não existe mais. O vídeo continua vindo do YouTube, mas nada da interface dele fica na
+  tela: os controles estão desligados, o vidro opaco cobre o quadro em todos os outros
+  momentos, e o que o player desenha por cima da imagem durante a reprodução — cartão de
+  título, bolha central, botão de link e marca — passa a ser coberto pela casa.
+
 ## [2.25.2] - 2026-10-25
 
 ### Adicionado

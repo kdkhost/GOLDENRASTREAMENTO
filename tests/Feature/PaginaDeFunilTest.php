@@ -325,6 +325,39 @@ class PaginaDeFunilTest extends TestCase
     }
 
     /**
+     * O que o YouTube pinta por cima do próprio vídeo durante a reprodução não é playerVar que
+     * tira: é a casa que cobre. A máscara de topo segura o cartão de título, as duas esquinas da
+     * barra seguram o botão de link e a marca, e o selo da casa entra grande por cima da bolha
+     * cinza de play/pause — o único play/pause que se vê na tela é o nosso.
+     */
+    public function test_a_casa_cobre_o_que_o_youtube_pinta_durante_a_reproducao(): void
+    {
+        $js = file_get_contents(public_path('js/golden-site.js'));
+        $css = file_get_contents(public_path('css/golden-site.css'));
+
+        // Uma janela só, medida no player: o cartão de título dura ~7 s e a bolha do centro, ~9.
+        $this->assertStringContainsString('var JANELA_DAS_MARCAS = 9000;', $js);
+        $this->assertStringContainsString("slot.classList.add('marca')", $js);
+        $this->assertStringContainsString("vidro.classList.add('pulso')", $js);
+        // A janela cai no instante de cada reprodução — inclusive na retomada do meio — e sobe
+        // no pausa, quando o vidro opaco já assume o quadro inteiro.
+        $this->assertStringContainsString('if (e.data === window.YT.PlayerState.PLAYING) cobrirMarcas();', $js);
+        $this->assertStringContainsString('if (e.data === window.YT.PlayerState.PAUSED) descobrirMarcas();', $js);
+        // O selo do vidro é o mesmo ícone da barra: play quando parado, pause quando tocando.
+        $this->assertStringContainsString('selo.className = icone.className;', $js);
+
+        $this->assertStringContainsString('.video-mascara{position:absolute;left:0;right:0;top:0;z-index:2', $css);
+        $this->assertStringContainsString('.video-slot.marca .video-mascara{opacity:1', $css);
+        $this->assertStringContainsString('.video-vidro.pulso .video-vidro-selo{opacity:.96;transform:scale(1.55)}', $css);
+        $this->assertStringContainsString('.video-controles::before,.video-controles::after{', $css);
+        // Sem isto, a esquina da casa pintaria por cima do próprio play da barra.
+        $this->assertStringContainsString('.video-botao,.video-volume{position:relative}', $css);
+
+        $html = $this->get('/c/frota-j16')->assertOk()->getContent();
+        $this->assertStringContainsString('class="video-mascara"', $html);
+    }
+
+    /**
      * A entrada das seções não pode reter transform: o último keyframe preso no elemento
      * faria da seção o bloco de contenção de qualquer position:fixed que more nela.
      */

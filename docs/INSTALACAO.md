@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.25.2
+- **Versão:** 2.25.3
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -864,28 +864,35 @@ o `montarVideo()` de `public/js/golden-site.js`. O `public/js/golden-funil.js` q
 campanha tinha foi excluído, e nenhum `.blade.php` escreve `<iframe>` — quem monta o
 player é a API, sobre o nó `.video-quadro`.
 
-As três invariantes, cada uma com teste travando:
+As quatro invariantes, cada uma com teste travando:
 
 - **nada toca sozinho.** `autoplay: 0`, `cueVideoById` ao trocar de vídeo (nunca
   `loadVideoById`, que já sai tocando) e abrir quadro é só abrir. O toque dado antes
   de a API chegar é guardado e aplicado no `onReady`, porque ali quem pediu foi o
   visitante;
-- **nada diz YouTube.** Não há link, botão, marca ou texto do YouTube escrito pela
+- **nada diz YouTube na tela.** Nenhum botão, marca ou texto do YouTube é escrito pela
   casa, e o `title` do iframe é o rótulo da faixa ou o título do tutorial — costurado
   de volta por um `MutationObserver`, porque a API reescreve o atributo quando recebe
-  os metadados do vídeo;
+  os metadados do vídeo. A única exceção é invisível e é o plano B: o `href` do card da
+  galeria aponta para `youtube.com/watch?v=…` para que, sem JavaScript, o link continue
+  funcionando — com JavaScript ele nunca chega a ser seguido;
 - **o vidro cobre enquanto não toca.** `.video-vidro.cobre` é opaco (`#05070a`) e
   traz o selo dourado de play; ele levanta no primeiro frame tocando e desce de novo
   ao pausar, ao terminar e ao fechar. O botão direito morre no vidro e na barra de
   controles, nunca no player de fora.
 
-O que **não** se resolve por fora: enquanto o vídeo está tocando, o player do YouTube
-desenha a interface dele sobre a imagem (em janela estreita, o logo "Shorts", o
-volume, os três pontos, o joinha e o compartilhamento, mais o `@canal` embaixo). Não
-há parâmetro oficial que desligue isso — `controls: 0` e `modestbranding: 1` são o
-que existe. A única forma de um tutorial tocar sem marca nenhuma de fora é servir o
-arquivo `.mp4` no próprio site; enquanto o acervo estiver no YouTube, a casa cobre o
-quadro em todos os outros momentos.
+- **e o que ele desenha tocando, a casa cobre.** Há três marcas que nenhum
+  `playerVar` tira da tela, e cada uma tem uma resposta nossa: o **cartão de título**
+  do topo (avatar, nome do vídeo, canal) é segurado pela `.video-mascara`; o **botão
+  de link** e a **marca "YouTube"** das esquinas de baixo são fechados pelos
+  pseudo-elementos `.video-controles::before/::after` — só as pontas, porque o meio da
+  faixa é onde estes tutoriais trazem a legenda queimada; e a **bolha cinza de
+  play/pause** do centro é coberta pelo próprio selo da casa, que entra maior
+  (`.video-vidro.pulso`) exatamente por cima dela. A janela da cobertura é
+  `JANELA_DAS_MARCAS`, medida no player real: o cartão dura ~7 s e a bolha passa dos
+  5 s e some antes dos 9 — logo, 9 s. Ela cai no `PLAYING` (inclusive na retomada do
+  meio) e sobe no `PAUSED`, quando o vidro opaco já assume o quadro inteiro. O único
+  play/pause que aparece na tela é o da casa.
 
 ### Migração e seed novas
 

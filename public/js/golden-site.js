@@ -465,10 +465,21 @@
         e — enquanto o vídeo não está tocando — o vidro fica opaco, cobrindo o play
         vermelho, a faixa de título e a tela de vídeos sugeridos. Até o nome que o YouTube
         escreve no iframe vai embora: leva o rótulo da casa.
+     3. e quando o vídeo ESTÁ tocando, quem esconde o que o YouTube ainda pinta é a máscara:
+        ela cai no instante do tocar e sobe quando a janela dele passa, porque o player repete
+        o cartão de título no topo e a bolha cinza de play/pause no centro em toda reprodução,
+        inclusive na retomada do meio. Durante essa janela o selo da casa fica grande, por cima
+        da bolha — é o play/pause dele que se vê, nunca o do YouTube. O botão de link e a marca
+        da esquina inferior direita ficam cobertos pela própria barra da casa, em CSS.
 
      A API só é pedida no primeiro abrir, para a página não carregar um byte de terceiros
      antes de alguém querer assistir. */
   var ENDERECO_DA_API = 'https://www.youtube.com/iframe_api';
+  // Medido no player, em cada retomada de reprodução: o cartão de título do topo some por
+  // volta de 7 s, e a bolha cinza de play/pause no centro ainda está inteira aos 5 s e já
+  // foi aos 9. Uma janela só cobre as duas — e cobre com o selo da casa por cima da bolha,
+  // que é justamente o único controle que pode aparecer.
+  var JANELA_DAS_MARCAS = 9000;
   var filaDaApi = null;
   var controladores = new WeakMap();
 
@@ -502,11 +513,29 @@
     var botaoMudo = player.querySelector('[data-acao="mudo"]');
     var regua = player.querySelector('[data-acao="volume"]');
     var icone = botaoTocar.querySelector('i');
+    var selo = vidro.querySelector('.video-vidro-selo i');
 
     var inst = null;
     var codigo = slot.getAttribute('data-video-id') || '';
     var noQuadro = '';
     var pediuTocar = false;
+    var marcas = null;
+
+    function cobrirMarcas() {
+      window.clearTimeout(marcas);
+      slot.classList.add('marca');
+      // A bolha de play/pause do YouTube dura o mesmo que o cartão de título: o selo da casa
+      // entra grande, exatamente por cima dela, e sai junto com a máscara.
+      vidro.classList.add('pulso');
+      marcas = window.setTimeout(descobrirMarcas, JANELA_DAS_MARCAS);
+    }
+
+    function descobrirMarcas() {
+      window.clearTimeout(marcas);
+      marcas = null;
+      slot.classList.remove('marca');
+      vidro.classList.remove('pulso');
+    }
 
     function tocando() {
       return !!(inst && inst.getPlayerState && inst.getPlayerState() === window.YT.PlayerState.PLAYING);
@@ -515,6 +544,7 @@
     function pintar() {
       var tocandoAgora = tocando();
       icone.className = 'fa-solid ' + (tocandoAgora ? 'fa-pause' : 'fa-play');
+      selo.className = icone.className;
       botaoTocar.setAttribute('aria-label', tocandoAgora ? 'Pausar o vídeo' : 'Tocar o vídeo');
       vidro.classList.toggle('cobre', !tocandoAgora);
 
@@ -575,6 +605,10 @@
             pintar();
           },
           onStateChange: function (e) {
+            // O cartão de título do YouTube nasce a cada reprodução, inclusive na retomada do
+            // meio: a máscara cai agora e sobe sozinha quando a janela dele passa.
+            if (e.data === window.YT.PlayerState.PLAYING) cobrirMarcas();
+            if (e.data === window.YT.PlayerState.PAUSED) descobrirMarcas();
             if (e.data === window.YT.PlayerState.ENDED) terminar();
 
             pintar();
@@ -587,6 +621,7 @@
     // modal, o quadro coberto. É o que não deixa a tela final do YouTube na frente de ninguém.
     function terminar() {
       pediuTocar = false;
+      descobrirMarcas();
       if (inst) {
         inst.pauseVideo();
         inst.seekTo(0, true);

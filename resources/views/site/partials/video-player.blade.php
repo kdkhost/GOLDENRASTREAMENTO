@@ -10,6 +10,11 @@
     E nada toca sozinho, em lugar nenhum: abrir o quadro não toca. Tocar é sempre um toque
     dado sobre um botão de play nosso. O comportamento está em public/js/golden-site.js.
 
+    Onde o vidro não alcança — porque o vídeo já está tocando e tem de aparecer — a casa fecha
+    a passagem de outro jeito: a máscara de topo segura o cartão de título que o YouTube mostra
+    nos primeiros segundos de cada reprodução, e as duas esquinas da barra cobrem o botão de link
+    e a marca dele, que nenhum playerVar tira da tela.
+
     Propriedades: $codigo (onze caracteres, vazio no modal), $thumb (miniatura; sem ela o
     quadro já aparece aberto, como no modal), $rotulo, $cta e $farol (medição do funil).
 --}}
@@ -39,6 +44,7 @@
         {{-- O buraco onde a API do YouTube troca o div pelo iframe. Fica dentro de .video-yt
              de propósito: o iframe herda o lugar, nunca a classe. --}}
         <div class="video-yt"><div class="video-quadro"></div></div>
+        <div class="video-mascara" aria-hidden="true"></div>
         <div class="video-vidro" aria-hidden="true"><span class="video-vidro-selo"><i class="fa-solid fa-play"></i></span></div>
         <div class="video-controles">
             <button type="button" class="video-botao" data-acao="tocar" aria-label="Tocar o vídeo">
