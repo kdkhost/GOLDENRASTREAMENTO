@@ -10,6 +10,14 @@
 @section('page_description', 'Visitas, cliques e cadastros de '.$pagina->url().' — o que o link produziu.')
 
 @section('page_actions')
+    <form method="POST" action="{{ route('admin.funil.toggle', $pagina) }}" class="d-inline"
+        data-confirmar="{{ $pagina->status === 'publicada' ? 'Tirar esta campanha do ar? Quem tem o link vê 404 até ela voltar.' : 'Colocar esta campanha no ar agora?' }}">
+        @csrf
+        <button class="btn btn-sm {{ $pagina->status === 'publicada' ? 'btn-outline-secondary' : 'btn-golden' }}">
+            <i class="fas fa-{{ $pagina->status === 'publicada' ? 'pause' : 'play' }} me-1" aria-hidden="true"></i>
+            {{ $pagina->status === 'publicada' ? 'Tirar do ar' : 'Colocar no ar' }}
+        </button>
+    </form>
     @if($pagina->status === 'publicada')
         <a href="{{ $pagina->url() }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
             <i class="fas fa-up-right-from-square me-1" aria-hidden="true"></i> Abrir a campanha

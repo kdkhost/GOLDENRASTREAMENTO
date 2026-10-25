@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.23.1
+- **Versão:** 2.24.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -338,6 +338,35 @@ E o teste do que o painel envia, que é o que costuma sobrar depois de mexer no
 Quando o docroot é a pasta `public/` (VPS com nginx, ou subdomínio apontando
 para `public`), o `.htaccess` da raiz nem é lido — e a proteção já existe por
 construção.
+
+**A entrega do que é estático mora em `public/.htaccess`, no repositório.** O
+arquivo da raiz é gerado pelo instalador e cuida da *barreira*; o da pasta
+`public` cuida da *velocidade*, e por isso ele viaja com o código:
+
+- CSS, JS, imagem e fonte saem com `Cache-Control: public, max-age=31536000` e
+  `Expires` de um ano; HTML sai com `Expires` zero, porque é página com sessão e
+  formulário — quem cacheia a página perde o formulário.
+- Cache de um ano é seguro porque cada arquivo é chamado com `?v=<filemtime>`:
+  mudou o arquivo, mudou o endereço na URL, e ninguém vê tela velha.
+- `.woff2`, `.woff` e `.ttf` levam `Access-Control-Allow-Origin: *`. Fonte é
+  sempre pedida em modo CORS; no mesmo endereço isso não aparece, mas no dia em
+  que o CSS sair por um subdomínio ou um CDN, sem a linha a tela inteira perde os
+  ícones.
+- `mod_deflate` comprime o que é texto. Onde o servidor já entrega brotli — é o
+  caso da hospedagem em OpenLiteSpeed — o brotli ganha e o bloco fica como par
+  para o Apache puro de um servidor próprio.
+
+O teste, depois de publicar:
+
+```bash
+curl -sI https://seudominio.com.br/css/golden-site.css | grep -i "cache-control\|expires"
+curl -sI https://seudominio.com.br/webfonts/nao-existe   # 404, não 200 com HTML
+curl -sI -H 'Accept-Encoding: br, gzip' https://seudominio.com.br/ | grep -i content-encoding
+```
+
+Em nginx a mesma regra vai para o bloco `location ~* \.(css|js|jpg|jpeg|png|webp|svg|ico|woff2)$
+{ expires 1y; add_header Cache-Control "public"; }` — o `.htaccess` é lido só por
+Apache e OpenLiteSpeed.
 
 ### 4.8 Caches de produção
 
@@ -802,6 +831,19 @@ cache na hora (`CachesContent`). O filtro por categoria é link verdadeiro
 (`?categoria=frotas`): funciona sem JavaScript, é indexável e não precisa de
 biblioteca de filtragem no cliente.
 
+A galeria é paginada em **12 por página** (`config('golden.videos_por_pagina')`,
+régua única — a tela não escolhe número próprio), com resumo "1–12 de 24
+tutoriais" e pager logo abaixo da grade. A fatia é feita **em memória**, sobre o
+cache do modelo: paginar consultando o banco a cada página jogaria fora o que faz
+a tela abrir sem nenhum SELECT. Pedir uma página além da última (`?page=99`) volta
+para a última real em vez de erro ou tela em branco, e o pager carrega a categoria
+escolhida em cada link.
+
+O pager do site é um view próprio (`resources/views/pagination/site.blade.php`,
+seção 15) porque nem o do Tailwind nem o do painel vestem o CSS do site. As
+miniaturas vêm de `i.ytimg.com`, e a página adianta a conexão com `preconnect` —
+só ela, já que é a única que usa.
+
 O `<iframe>` só existe depois que o visitante abre um cartão, e usa
 `youtube-nocookie.com` (nada é gravado em quem só passou os olhos pela galeria).
 Fechar o modal esvazia o player — é isso que corta o áudio. Cada clique conta
@@ -823,7 +865,7 @@ vazia, então resemear não duplica nada.
 ## 13. Página de campanha: o funil que só existe para quem tem o link
 
 A campanha de divulgação não é uma página do site. Ela nasce em
-**Admin → Comercial → Páginas de funil**, recebe um endereço `/c/{slug}`, e é
+**Admin → Comercial → Marketing (funil)**, recebe um endereço `/c/{slug}`, e é
 montada bloco a bloco no painel. Quem não tem o link não a encontra: ela não entra
 no menu, não entra no rodapé, não entra no `sitemap.xml` e nasce com
 `<meta name="robots" content="noindex,follow">` — a visibilidade, porém, é
@@ -864,6 +906,31 @@ O `itens` de um bloco é texto digitável, não tabela: **uma linha por item**,
 **colunas separadas por `|`** e, nas colunas de lista, itens separados por `;`. A
 barra do lado do campo mostra a ordem das colunas que aquele tipo espera.
 
+No bloco **Texto sobre a foto** a imagem é plano de fundo da faixa inteira, não
+quadro ao lado do texto: ela cobre a seção de borda a borda e escurece por baixo do
+texto com o mesmo véu em gradiente já aprovado no herói do site. No celular o véu
+fica uniforme, porque a coluna é estreita demais para um degradê lateral. Por isso
+o campo se chama **Foto de fundo** e a dica pede paisagem (1600 × 900 px). Sem
+foto, o bloco é texto sobre a pele da página.
+
+### A tecla de ar da campanha
+
+Na listagem e no contador de cada campanha há um botão de ligar e desligar. Ele não
+inventa um status novo: escreve o mesmo `publicada` / `pausada` do formulário, só
+que sem reescrever a página inteira. Confirmado em SweetAlert2, respondido em
+toastr, e o ato fica na auditoria (`funil_publicada`, `funil_pausada`).
+
+O que a tecla garante:
+
+- **campanha sem bloco nenhum não sobe.** A tecla avisa e manda montar pelo menos
+  um bloco antes — senão ela abriria um endereço em branco para quem clicou no
+  anúncio;
+- **pausar devolve 404**, como sempre devolveu, e **não zera o contador**: a página
+  guarda todo endereço que já teve (`caminhos`), então o tráfego que ainda chega
+  pelo link antigo continua sendo registrado e volta a aparecer quando ela reabre;
+- o menu do painel chama a tela de **Marketing (funil)**, que é o nome que o
+  operador usa para a coisa.
+
 ### SEO e compartilhamento da campanha
 
 A página monta `<title>`, descrição, palavras-chave, `robots`, `canonical`,
@@ -896,7 +963,7 @@ essa jornada:
 - o pixel de conversão do Google Ads e os píxeis de Meta/TikTok disparam no
   envio do formulário, medindo **só aquela campanha**.
 
-A tela `Admin → Comercial → Páginas de funil → nome da campanha` é o contador:
+A tela `Admin → Comercial → Marketing (funil) → nome da campanha` é o contador:
 visitas do período (com únicos e o total desde sempre), telas vistas, cliques
 medidos, cadastros, a taxa visita→cadastro, vendas fechadas, a fatia de tráfego
 pago e os robôs contados à parte. Abaixo, o gráfico dia a dia com visitas e
@@ -991,7 +1058,7 @@ Instalou e ainda apareceu `validation.required`? É cache de view antigo:
 
 ---
 
-## 15. Paginação das listas: um view só
+## 15. Paginação: um view por superfície
 
 Toda lista paginada do sistema — as 12 do painel, as interações da ficha do CRM e
 os chamados e pedidos do portal do cliente — sai pelo mesmo
@@ -1003,10 +1070,10 @@ Paginator::defaultView('pagination.painel');
 Paginator::defaultSimpleView('pagination.painel');
 ```
 
-Nenhuma view escreve `->links()` com view própria, e nenhuma folha do framework é
-publicada no projeto. Isso importa porque **o padrão do Laravel é o view do
-Tailwind**, e ele dentro do Bootstrap produz três sintomas que parecem três bugs
-diferentes:
+Nenhuma view do painel escreve `->links()` com view própria, e nenhuma folha do
+framework é publicada no projeto. Isso importa porque **o padrão do Laravel é o
+view do Tailwind**, e ele dentro do Bootstrap produz três sintomas que parecem três
+bugs diferentes:
 
 - os botões saem como caixa branca sem estilo — as classes utilitárias
   (`px-4 py-2`, `inline-flex`) não correspondem a nada carregado;
@@ -1030,6 +1097,16 @@ regra vale para os dois.
 `PaginasDoPainelTest::test_a_paginacao_e_do_painel_e_nao_do_framework` abre duas
 listas e recusa qualquer rastro do view do framework. É o que impede a volta do
 problema se o provider mudar.
+
+**A superfície pública tem o view irmão** (`resources/views/pagination/site.blade.php`):
+o site não veste Bootstrap nem Tailwind, então os números vêm com as classes e os
+tokens do `golden-site.css` — disco dourado na página atual, chevron de Font Awesome
+nas setas, seta desativada (não sumida) na primeira e na última página. Ele é chamado
+no lugar do `->links()` **uma única vez**, na galeria de vídeos, e não registrado como
+padrão: no `boot()` do provider ainda não se sabe por qual rota o pedido entrou, então
+não há como escolher a folha pela superfície. É também o motivo de a página atual
+carregar `class="pagina pagina-on"` e não só `pagina-on` — sem a classe base ela não
+recebe a caixa compartilhada e encolhe até virar um traço dourado em volta do número.
 
 ---
 
@@ -1064,6 +1141,8 @@ ele, os dados criptografados e as sessões não voltam.
 | `Route [admin.xxx] not defined` ao salvar | cache de rotas velho | `php artisan route:clear && php artisan route:cache` |
 | Página quebra depois de editar um `.php` em `config/` | cache de configuração | `php artisan config:cache` |
 | Lista paginada sai com caixa branca de "Anterior/Próximo", contador em inglês e um ícone SVG do tamanho da tela | o view de paginação do framework (Tailwind) voltou a ser o ativo | confira as duas linhas de `Paginator::defaultView()` no `AppServiceProvider` e rode `php artisan optimize:clear` (seção 15) |
+| Na galeria pública, o número da página atual é um traço dourado apertado em volta do algarismo | o `<span>` da página atual perdeu a classe base `pagina` e não recebe a caixa compartilhada | `resources/views/pagination/site.blade.php` (seção 15) |
+| Ícone sai como quadradinho (□) no lugar do símbolo, em qualquer tela | o CSS de ícone é servido pela casa e chama a fonte por caminho relativo: movido um dos dois, a fonte não é alcançada. A outra causa é o CSS servido por endereço diferente do arquivo, sem `Access-Control-Allow-Origin` na fonte | mantenha `public/css/fontawesome/css/all.min.css` ao lado de `public/css/fontawesome/webfonts/`, e chame o CSS só pelo `partials/icones.blade.php`. `php artisan test --filter=test_os_icones_sao_servidos_pela_casa_e_nao_por_um_cdn` percorre cada caminho declarado no CSS (seção 4.7) |
 | Imagem enviada não aparece | `public/storage` inexistente | `php artisan storage:link` |
 | Imagem enviada existe no servidor e a URL devolve **403** | o `.htaccess` da raiz bloqueia o caminho `/storage` | tire `storage` da regra de pastas de código-fonte (seção 4.7) |
 | Upload falha com erro em `getimagesize`/`finfo` | `fileinfo` desligada no PHP da web | ative a extensão no seletor de PHP (seção 2) |
@@ -1142,6 +1221,15 @@ continua visível para você pelo painel ou SSH.
 - [ ] Paginação: uma lista com mais de 20 registros (Leads, Vídeos) mostra "1–20 de 45" e os
       números em dourado — nunca caixa branca, nunca "Showing … results", nunca ícone gigante
       (seção 15)
+- [ ] Paginação pública: `/videos` abre com 12 cartões, o resumo "1–12 de 24 tutoriais" e o
+      pager em disco dourado; `?page=99` volta para a última página e o filtro de categoria
+      continua no enlace (seções 12 e 15)
+- [ ] Entrega estática: `curl -sI https://seudominio.com.br/css/golden-site.css` responde
+      `cache-control: public, max-age=31536000`, e o HTML responde `no-cache` (seção 4.7)
+- [ ] Ícones: nenhuma requisição a `cdnjs.cloudflare.com/ajax/libs/font-awesome` no
+      carregamento da página, e nenhum quadradinho (□) no lugar de símbolo (seção 4.7)
+- [ ] Tecla de ar: em *Comercial → Marketing (funil)*, pausar a campanha deve devolver 404
+      no `/c/...` sem zerar o contador, e uma campanha sem bloco não sobe (seção 13)
 - [ ] Cron do agendador: `php artisan schedule:run` a cada minuto (seção 9 — poda do
       registro de tráfego **e** fila de e-mails do portal)
 - [ ] Fila: abrir um chamado no portal e confirmar que a tabela `jobs` volta a zero no minuto

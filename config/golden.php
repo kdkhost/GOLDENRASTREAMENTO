@@ -215,6 +215,11 @@ return [
     // paginam por aqui; nenhuma tela escolhe número próprio.
     'itens_por_pagina' => 20,
 
+    // Galeria pública de vídeos tutoriais. É menor que a do painel porque cada cartão carrega
+    // uma miniatura de fora: menos cartões acima da dobra, menos requisição no primeiro
+    // carregamento. É a única régua da galeria — a tela não escolhe número próprio.
+    'videos_por_pagina' => 12,
+
     // Cor de cada status do painel, agrupada por domínio. Os tons são os utilitários .tone-*
     // do tema, que já têm par no claro e no escuro. Nenhuma view decide cor: ela pergunta
     // o tom pela função tom_por_status(), que lê esta lista.
@@ -673,9 +678,11 @@ return [
             'colunas' => ['pergunta' => 'Pergunta', 'resposta' => 'Resposta'],
         ],
         'conteudo' => [
-            'rotulo' => 'Texto e imagem', 'icone' => 'fa-align-left',
+            'rotulo' => 'Texto sobre a foto', 'icone' => 'fa-align-left',
             'descricao' => 'Um trecho de argumentação com foto e botão no meio do funil.',
             'campos' => ['titulo', 'corpo', 'imagem', 'imagem_alt', 'cta_texto', 'cta_destino'],
+            'rotulos' => ['imagem' => 'Foto de fundo'],
+            'dica' => 'A foto ocupa a faixa inteira como plano de fundo e escurece por baixo do texto: use paisagem (1600 × 900 px).',
         ],
     ],
 
@@ -709,7 +716,7 @@ return [
             ['titulo' => 'Leads', 'rota' => 'admin.leads.index', 'prefixo' => 'admin.leads.', 'icone' => 'fa-user-plus', 'bolha' => 'leads_novos', 'tom' => 'gold'],
             ['titulo' => 'Clientes', 'rota' => 'admin.clientes.index', 'prefixo' => 'admin.clientes.', 'icone' => 'fa-users'],
             ['titulo' => 'Campanhas', 'rota' => 'admin.campanhas.index', 'prefixo' => 'admin.campanhas.', 'icone' => 'fa-bullhorn'],
-            ['titulo' => 'Páginas de funil', 'rota' => 'admin.funil.index', 'prefixo' => 'admin.funil.', 'icone' => 'fa-bullseye', 'admin' => true],
+            ['titulo' => 'Marketing (funil)', 'rota' => 'admin.funil.index', 'prefixo' => 'admin.funil.', 'icone' => 'fa-bullseye', 'admin' => true],
             ['titulo' => 'Atribuição de tráfego', 'rota' => 'admin.atribuicao.index', 'prefixo' => 'admin.atribuicao.', 'icone' => 'fa-diagram-project'],
         ]],
 

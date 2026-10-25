@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
-@section('title', 'Páginas de funil')
-@section('page_title', 'Páginas de funil')
+@section('title', 'Marketing (funil)')
+@section('page_title', 'Marketing (funil)')
 @section('page_description', 'Campanhas de divulgação montadas por blocos: quem não tem o link, não vê.')
 
 @section('page_actions')
@@ -72,6 +72,14 @@
                 <div class="table-actions">
                     <a href="{{ route('admin.funil.show', $pagina) }}" class="btn btn-sm btn-outline-secondary" title="Contador da campanha"><i class="fas fa-chart-column"></i></a>
                     <a href="{{ route('admin.funil.edit', $pagina) }}" class="btn btn-sm btn-outline-secondary" title="Editar página e blocos"><i class="fas fa-pen"></i></a>
+                    <form method="POST" action="{{ route('admin.funil.toggle', $pagina) }}" class="d-inline"
+                        data-confirmar="{{ $pagina->status === 'publicada' ? 'Tirar esta campanha do ar? Quem tem o link vê 404 até ela voltar.' : 'Colocar esta campanha no ar agora?' }}">
+                        @csrf
+                        <button class="btn btn-sm btn-outline-secondary"
+                            title="{{ $pagina->status === 'publicada' ? 'Tirar do ar' : 'Colocar no ar' }}">
+                            <i class="fas fa-{{ $pagina->status === 'publicada' ? 'pause' : 'play' }}" aria-hidden="true"></i>
+                        </button>
+                    </form>
                     @if($pagina->status === 'publicada')
                         <a href="{{ $pagina->url() }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="Abrir a campanha"><i class="fas fa-up-right-from-square"></i></a>
                     @endif

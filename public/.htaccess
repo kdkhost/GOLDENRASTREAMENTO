@@ -23,3 +23,48 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Entrega dos arquivos estáticos. A pasta public é a única porta de saída do site,
+# então é aqui — e não no ajuste do painel da hospedagem — que a regra mora: um
+# deploy novo leva a entrega junto.
+#
+# Cada CSS e JS é chamado com ?v=<filemtime>, então o endereço muda sozinho quando o
+# arquivo muda. Isso permite o ano inteiro de cache sem risco de tela velha: o nome
+# na URL é a versão. O HTML fica de fora — sessão, carrinho e página de funil mudam
+# a cada pedido e quem cacheia a página perde o formulário.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+    # O Cache-Control manda mais que o Expires para quem já entende os dois. O HTML
+    # fica de fora: ele sai do Laravel com no-cache, private, que é o certo para página
+    # com sessão e formulário.
+    <FilesMatch "\.(css|js|jpg|jpeg|png|webp|svg|ico|woff|woff2)$">
+        Header set Cache-Control "public, max-age=31536000"
+    </FilesMatch>
+
+    # Fonte é sempre pedida em modo CORS. Enquanto o CSS e o arquivo estão no mesmo
+    # endereço isso não aparece; no dia em que o CSS sair por um subdomínio ou um CDN,
+    # sem esta linha a tela inteira perde os ícones.
+    <FilesMatch "\.(woff2|woff|ttf)$">
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+</IfModule>
+
+# Compressão do que é texto. A hospedagem (OpenLiteSpeed) já brota o que pode; este
+# bloco é o par para o Apache puro de um servidor próprio, sem deixar o site servindo
+# os ~600 KB de CSS/JS crus.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml application/font-woff font/woff2
+</IfModule>

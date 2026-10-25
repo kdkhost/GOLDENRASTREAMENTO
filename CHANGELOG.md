@@ -5,6 +5,62 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.24.0] - 2026-10-25
+
+### Adicionado
+- **A galeria de vídeos tem páginação.** `/videos` mostrava os 24 tutoriais de uma vez e
+  a lista só cresce: cada cartão puxa uma miniatura de fora, então a página ficava longa,
+  pesada e lenta para abrir. Agora saem **12 por página** — régua única em
+  `config('golden.videos_por_pagina')`, a tela não escolhe número próprio — com o resumo
+  "1–12 de 24 tutoriais" e o pager abaixo da grade.
+- **Pager do site, não do painel.** O view padrão do framework é o do Tailwind e o do
+  painel é o do Bootstrap; nenhum dos dois veste o CSS do site. Nasceu
+  `resources/views/pagination/site.blade.php`: disco dourado na página atual, chevron de
+  Font Awesome nas setas, `aria-current`/`aria-label` em português, seta desativada (não
+  sumida) na primeira e na última. O filtro de categoria é preservado em cada link.
+- **A tecla de ar da campanha.** *Comercial → Marketing (funil)* ganhou um botão de
+  ligar/desligar na listagem e no contador da campanha: publicar e pausar sem reescrever a
+  página inteira no formulário. Confirmação em SweetAlert2, retorno em toastr, e a ação
+  fica na auditoria (`funil_publicada` / `funil_pausada`). Uma campanha sem bloco nenhum
+  não sobe — a tecla avisa e não abre um endereço em branco para quem clicou no anúncio.
+- **Entrega estática é regra do repositório.** O `public/.htaccess` passou a declarar a
+  entrega de tudo que sai da pasta `public`: um ano de cache para CSS, JS, imagem e fonte,
+  zero para HTML, `Access-Control-Allow-Origin` nas fontes e compressão como par do
+  brotli da hospedagem. Cada arquivo já é chamado com `?v=<filemtime>`, então o endereço
+  muda sozinho quando o arquivo muda — cache longo sem risco de tela velha.
+
+### Alterado
+- **Os ícones são servidos pela casa.** O CSS de ícone vinha do cdnjs em site, funil,
+  painel, portal e tela de acesso: resolução de DNS, aperto de mão TLS e uma conexão nova
+  no caminho do primeiro pixel. Font Awesome 6.5.2 copiado para
+  `public/css/fontawesome/` (a distribuição oficial, `css/` e `webfonts/` lado a lado,
+  porque o CSS chama a fonte por caminho relativo) e chamado por um único
+  `partials/icones.blade.php`. As miniaturas do YouTube ganharam `preconnect` — só na
+  página de vídeos, que é a única que as usa.
+- **A foto do bloco de texto virou plano de fundo.** No bloco "Texto sobre a foto" da
+  página de campanha a imagem aparecia emoldurada à direita do texto. Agora ela cobre a
+  faixa inteira, com o mesmo véu em gradiente já aprovado no herói: o texto entra por
+  cima, a foto aparece por trás, e no celular o véu é uniforme porque a coluna é estreita
+  demais para um degradê lateral. O campo no painel passou a se chamar **Foto de fundo**,
+  com a dica de usar paisagem 1600 × 900 px.
+- O item do menu saiu de "Páginas de funil" para **Marketing (funil)**, que é o nome que o
+  operador usa para a coisa.
+
+### Corrigido
+- **A página atual do pager do site encolhia.** Faltava a classe base no `<span>` do
+  número corrente, então ele não recebia a caixa compartilhada e virava um traço dourado
+  apertado em volta do algarismo.
+
+### Detalhes
+- A galeria é fatiada **em memória**, sobre o cache do modelo: paginar consultando o banco
+  a cada página jogaria fora o que faz a tela abrir sem nenhum `SELECT`.
+- `GaleriaDeVideosTest` ganhou três testes (página cheia, `?page=99` volta para a última,
+  categoria preservada) e rejeita o markup do framework; `PaginaDeFunilTest` cobre a tecla
+  nos dois sentidos, a guarda da campanha sem bloco e o `position:absolute` da foto no CSS;
+  `LevezaDasPaginasTest` verifica o caminho relativo de cada fonte declarada no CSS — foi
+  ele que pegou o quadradinho no lugar do ícone antes de publicar — e o `.htaccess`.
+- Suíte completa: **310 testes, 3.378 asserções**.
+
 ## [2.23.1] - 2026-10-25
 
 ### Corrigido

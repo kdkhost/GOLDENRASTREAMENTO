@@ -7,6 +7,7 @@ use App\Models\Faq;
 use App\Models\Page;
 use App\Models\Testimonial;
 use App\Models\Video;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -83,8 +84,28 @@ class PageController extends Controller
             $contagem[$video['categoria']] = ($contagem[$video['categoria']] ?? 0) + 1;
         }
 
+        $da_categoria = $atual === '' ? $todos : array_values(array_filter($todos, fn (array $v) => $v['categoria'] === $atual));
+
+        // A galeria vem do cache do modelo, então a fatia é feita em memória: paginar
+        // consultando o banco a cada página jogaria fora o cache que faz a página abrir
+        // sem nenhum SELECT.
+        $por = (int) config('golden.videos_por_pagina', 12);
+        $pagina = max(1, (int) $request->query('page', 1));
+        $total = count($da_categoria);
+        $ultimoPag = max(1, (int) ceil($total / $por));
+        $pagina = min($pagina, $ultimoPag);
+
+        $videos = new LengthAwarePaginator(
+            array_slice($da_categoria, ($pagina - 1) * $por, $por),
+            $total,
+            $por,
+            $pagina,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+        $videos->appends($request->query());
+
         return view('site.videos', [
-            'videos' => $atual === '' ? $todos : array_values(array_filter($todos, fn (array $v) => $v['categoria'] === $atual)),
+            'videos' => $videos,
             'todos' => count($todos),
             'contagem' => $contagem,
             'atual' => $atual,

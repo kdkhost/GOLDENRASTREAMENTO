@@ -106,18 +106,68 @@ class GaleriaDeVideosTest extends TestCase
         $this->assertSame(0, Video::where('codigo', 'OhtdphIxdf0')->where('titulo', 'Tutorial qualquer')->count());
     }
 
-    public function test_a_galeria_do_site_mostra_cada_tutorial_sem_carregar_o_player(): void
+    public function test_a_galeria_do_site_mostra_os_tutoriais_da_pagina_sem_carregar_o_player(): void
     {
         $html = $this->get('/videos')->assertOk()->getContent();
+        $por = (int) config('golden.videos_por_pagina');
 
-        $this->assertSame(Video::count(), substr_count($html, 'class="video-card"'));
-        $this->assertSame(Video::count(), substr_count($html, 'data-farol="video"'));
+        $this->assertGreaterThan($por, Video::where('ativa', true)->count(), 'O seed precisa renderar mais de uma página para a galeria ser testada paginada.');
+        $this->assertSame($por, substr_count($html, 'class="video-card"'));
+        $this->assertSame($por, substr_count($html, 'data-farol="video"'));
         $this->assertStringNotContainsString('youtube-nocookie.com/embed', $html);
         $this->assertStringNotContainsString('<iframe', $html);
 
         // O cartão é um link de verdade: sem JavaScript o visitante ainda assiste no YouTube.
         $this->assertStringContainsString('href="https://www.youtube.com/watch?v=OhtdphIxdf0"', $html);
         $this->assertStringContainsString('id="videoModal"', $html);
+    }
+
+    public function test_a_galeria_publica_pagina_com_o_pager_do_site(): void
+    {
+        $por = (int) config('golden.videos_por_pagina');
+        $total = Video::where('ativa', true)->count();
+        $html = $this->get('/videos')->assertOk()->getContent();
+
+        $this->assertStringContainsString('class="paginacao-site"', $html);
+        // A página atual é caixa do mesmo tamanho das outras: sem a classe base ela
+        // encolhe até virar um traço dourado em volta do número.
+        $this->assertStringContainsString('class="pagina pagina-on"', $html);
+        $this->assertStringContainsString('1–'.$por, $html);
+        $this->assertStringContainsString('de <strong>'.number_format($total, 0, ',', '.').'</strong>', $html);
+        $this->assertStringContainsString('aria-label="Próxima página"', $html);
+
+        // O view padrão do framework é o do Tailwind e o do painel é o do Bootstrap: nenhum
+        // dos dois veste o CSS do site, então a galeria pública tem pager próprio.
+        foreach (['dark:bg-gray-800', 'px-4 py-2', 'Showing', 'pagination pagination-sm'] as $rastro) {
+            $this->assertStringNotContainsString($rastro, $html, "A galeria carregou o pager '{$rastro}' de outra superfície.");
+        }
+
+        // A segunda página traz o resto, e o resumo acompanha a janela.
+        $segunda = $this->get('/videos?page=2')->assertOk()->getContent();
+        $this->assertSame($total - $por, substr_count($segunda, 'class="video-card"'));
+        $this->assertStringContainsString('aria-label="Página anterior"', $segunda);
+        $this->assertStringContainsString(($por + 1).'–'.$total, $segunda);
+
+        // Página além da última não inventa cartão nem deixa a lista vazia: cai na última.
+        $alem = $this->get('/videos?page=99')->assertOk()->getContent();
+        $this->assertSame($total - $por, substr_count($alem, 'class="video-card"'));
+        $this->assertStringContainsString(($por + 1).'–'.$total, $alem);
+    }
+
+    public function test_o_pager_da_galeria_preserva_a_categoria_escolhida(): void
+    {
+        // Nenhuma categoria do registro tem mais tutoriais que a página padrão, então o
+        // tamanho é encolhido aqui: o que se testa é o link do pager, não a conta.
+        config(['golden.videos_por_pagina' => 5]);
+
+        $html = $this->get('/videos?categoria=aplicativo')->assertOk()->getContent();
+
+        $this->assertStringContainsString('categoria=aplicativo&amp;page=2', $html);
+
+        $segunda = $this->get('/videos?categoria=aplicativo&page=2')->assertOk()->getContent();
+        $this->assertStringContainsString('class="paginacao-site"', $segunda);
+        $this->assertStringContainsString('em Aplicativo', $segunda);
+        $this->assertSame(3, substr_count($segunda, 'class="video-card"'));
     }
 
     public function test_o_filtro_de_categoria_so_deixa_os_videos_daquela_categoria(): void
@@ -139,7 +189,10 @@ class GaleriaDeVideosTest extends TestCase
 
         $html = $this->get('/videos')->assertOk()->getContent();
         $this->assertStringNotContainsString('OhtdphIxdf0', $html);
-        $this->assertSame(Video::where('ativa', true)->count(), substr_count($html, 'class="video-card"'));
+        $this->assertSame(
+            min((int) config('golden.videos_por_pagina'), Video::where('ativa', true)->count()),
+            substr_count($html, 'class="video-card"')
+        );
     }
 
     public function test_gravar_no_painel_devolve_a_galeria_sem_cache(): void

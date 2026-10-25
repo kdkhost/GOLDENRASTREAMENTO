@@ -164,6 +164,73 @@ class PaginaDeFunilTest extends TestCase
             ->assertSee('/c/frota-j16', false);
     }
 
+    public function test_a_tecla_do_painel_coloca_e_tira_a_campanha_do_ar(): void
+    {
+        $esta = $this->campanha->fresh();
+        $this->assertSame('publicada', $esta->status);
+
+        $this->actingAs($this->admin)->post(route('admin.funil.toggle', $esta))
+            ->assertRedirect()->assertSessionHas('success');
+        $this->assertSame('pausada', $esta->fresh()->status);
+        $this->get('/c/frota-j16')->assertNotFound();
+
+        $this->actingAs($this->admin)->post(route('admin.funil.toggle', $esta))
+            ->assertSessionHas('success');
+        $this->assertSame('publicada', $esta->fresh()->status);
+        $this->get('/c/frota-j16')->assertOk();
+
+        $this->assertDatabaseHas('activities', ['action' => 'funil_pausada']);
+        $this->assertDatabaseHas('activities', ['action' => 'funil_publicada']);
+    }
+
+    /** A tecla não abre um endereço vazio: sem bloco, não há o que publicar. */
+    public function test_uma_campanha_sem_bloco_nao_sobe_pela_tecla(): void
+    {
+        $vazia = FunnelPage::create(['nome' => 'Campanha sem conteúdo', 'slug' => 'sem-conteudo', 'status' => 'rascunho']);
+
+        $this->actingAs($this->admin)->post(route('admin.funil.toggle', $vazia))
+            ->assertSessionHas('error');
+        $this->assertSame('rascunho', $vazia->fresh()->status);
+        $this->get('/c/sem-conteudo')->assertNotFound();
+
+        $vazia->blocks()->create(['tipo' => 'hero', 'titulo' => 'Abertura', 'ordem' => 1, 'ativa' => true]);
+
+        $this->actingAs($this->admin)->post(route('admin.funil.toggle', $vazia))
+            ->assertSessionHas('success');
+        $this->assertSame('publicada', $vazia->fresh()->status);
+        $this->get('/c/sem-conteudo')->assertOk();
+    }
+
+    /** O controle está à mão nas duas telas da campanha: na listagem e no contador. */
+    public function test_a_tecla_aparece_na_listagem_e_no_contador_da_campanha(): void
+    {
+        $url = route('admin.funil.toggle', $this->campanha);
+
+        $this->actingAs($this->admin)->get(route('admin.funil.index'))->assertOk()
+            ->assertSee('Marketing (funil)')
+            ->assertSee('action="'.$url.'"', false);
+
+        $esta = $this->get(route('admin.funil.show', $this->campanha))->assertOk()->getContent();
+        $this->assertStringContainsString('action="'.$url.'"', $esta);
+        $this->assertStringContainsString('Tirar do ar', $esta);
+        $this->assertStringContainsString('data-confirmar=', $esta);
+    }
+
+    /** A foto do bloco de texto é o plano de fundo da faixa, não um quadro na coluna ao lado. */
+    public function test_a_foto_do_bloco_de_texto_fica_no_plano_de_fundo(): void
+    {
+        $html = $this->get('/c/frota-j16')->assertOk()->getContent();
+
+        $this->assertStringContainsString('<section class="f-conteudo com-foto">', $html);
+        $this->assertStringContainsString('class="f-foto"', $html);
+        $this->assertStringNotContainsString('f-conteudo-foto', $html);
+
+        // O véu que segura a leitura mora no CSS, junto do do herói.
+        $css = file_get_contents(public_path('css/golden-funil.css'));
+        $this->assertStringContainsString('.f-conteudo .f-foto{position:absolute;inset:0', $css);
+        $this->assertStringContainsString('.f-conteudo.com-foto::before', $css);
+    }
+
     public function test_o_bloco_guarda_so_os_campos_que_o_tipo_declara(): void
     {
         $this->actingAs($this->admin)->post(route('admin.funil.blocos.store', $this->campanha), [

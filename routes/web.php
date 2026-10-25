@@ -215,6 +215,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/{pagina}', [AdminFunnelController::class, 'show'])->name('show');
         Route::get('/{pagina}/editar', [AdminFunnelController::class, 'edit'])->name('edit');
         Route::post('/{pagina}', [AdminFunnelController::class, 'update'])->name('update');
+        Route::post('/{pagina}/toggle', [AdminFunnelController::class, 'toggle'])->name('toggle');
         Route::delete('/{pagina}', [AdminFunnelController::class, 'destroy'])->name('destroy');
 
         Route::get('/{pagina}/blocos/novo', [AdminFunnelController::class, 'blocoCreate'])->name('blocos.create');

@@ -133,6 +133,31 @@ class FunnelController extends Controller
         return redirect()->route('admin.funil.index')->with('success', 'Página de campanha removida.');
     }
 
+    /**
+     * A tecla de ligar e desligar a campanha no ar. Não é um status novo: é o mesmo
+     * 'publicada'/'pausada' que o formulário oferece, só que sem reescrever a página
+     * inteira. Uma campanha sem bloco nenhum não vai ao ar — a tecla não abre um
+     * endereço em branco para quem clicou no anúncio.
+     */
+    public function toggle(FunnelPage $pagina): RedirectResponse
+    {
+        if ($pagina->status !== 'publicada') {
+            if (! $pagina->blocks()->where('ativa', true)->exists()) {
+                return back()->with('error', 'Monte pelo menos um bloco antes de publicar esta campanha.');
+            }
+
+            $pagina->update(['status' => 'publicada']);
+            Activity::log('funil_publicada', "Página de funil {$pagina->nome} publicada.", $pagina);
+
+            return back()->with('success', "A campanha {$pagina->nome} está no ar.");
+        }
+
+        $pagina->update(['status' => 'pausada']);
+        Activity::log('funil_pausada', "Página de funil {$pagina->nome} pausada.", $pagina);
+
+        return back()->with('success', "A campanha {$pagina->nome} saiu do ar — o link mostra 404 e o contador não para.");
+    }
+
     /* ------------------------------------------------------------------ blocos */
 
     public function blocoCreate(Request $request, FunnelPage $pagina): View

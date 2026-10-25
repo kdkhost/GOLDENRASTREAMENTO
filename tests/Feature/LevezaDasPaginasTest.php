@@ -125,6 +125,50 @@ class LevezaDasPaginasTest extends TestCase
         $this->get('/loja')->assertOk()->assertSee('renamed');
     }
 
+    /**
+     * O CSS de ícone não pode vir de um CDN: um arquivo de terceiro no <head> custa
+     * resolução de DNS, aperto de mão TLS e uma conexão nova antes do primeiro pixel,
+     * e nada disso depende do nosso servidor. Copiado para a pasta public, entra no
+     * cache de um ano e reaproveita a conexão que o navegador já tem.
+     */
+    public function test_os_icones_sao_servidos_pela_casa_e_nao_por_um_cdn(): void
+    {
+        $css = public_path('css/fontawesome/css/all.min.css');
+        $this->assertFileExists($css);
+
+        // O CSS da fonte chama os arquivos por caminho relativo. Se a pasta webfonts
+        // sair do lugar, cada ícone vira um quadradinho na tela — e nada no PHP reclama.
+        preg_match_all('#url\((\.\./[^)]+\.woff2)\)#', (string) file_get_contents($css), $achados);
+        $this->assertNotEmpty($achados[1], 'O CSS de ícone não declara nenhuma fonte woff2.');
+
+        foreach (array_unique($achados[1]) as $relativo) {
+            $this->assertFileExists(dirname($css).'/'.$relativo, "A fonte {$relativo} chamada pelo CSS não está no lugar.");
+        }
+
+        foreach (['/', '/videos', '/planos', '/contato'] as $url) {
+            $html = $this->get($url)->assertOk()->getContent();
+
+            $this->assertStringNotContainsString('ajax/libs/font-awesome', $html, "{$url} ainda busca o ícone no cdnjs.");
+            $this->assertStringContainsString('css/fontawesome/css/all.min.css?v=', $html);
+        }
+    }
+
+    /** A entrega estática é regra do repositório, não um ajuste solto no painel da hospedagem. */
+    public function test_a_entrega_estatica_declara_cache_longo_e_compressao(): void
+    {
+        $htaccess = file_get_contents(base_path('public/.htaccess'));
+
+        $this->assertStringContainsString('ExpiresByType text/css "access plus 1 year"', $htaccess);
+        $this->assertStringContainsString('ExpiresByType application/javascript "access plus 1 year"', $htaccess);
+        $this->assertStringContainsString('ExpiresByType font/woff2 "access plus 1 year"', $htaccess);
+        $this->assertStringContainsString('Cache-Control "public, max-age=31536000"', $htaccess);
+        $this->assertStringContainsString('Access-Control-Allow-Origin "*"', $htaccess);
+        $this->assertStringContainsString('mod_deflate', $htaccess);
+
+        // O HTML fica de fora do cache longo: é página com sessão e formulário.
+        $this->assertStringContainsString('ExpiresByType text/html "access plus 0 seconds"', $htaccess);
+    }
+
     /** Cada view de página pode custar no máximo uma visita e um evento gravados. */
     public function test_o_rastreio_custa_pouco_por_pagina(): void
     {
