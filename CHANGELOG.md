@@ -5,6 +5,30 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.23.1] - 2026-10-25
+
+### Corrigido
+- **A paginação do painel voltou a ser do painel.** Toda lista paginada — leads, clientes,
+  pedidos, catálogo, conteúdo, vídeos, auditoria, as interações da ficha do CRM e as listas
+  do portal do cliente — saía com duas caixas brancas de "Anterior / Próximo", o contador em
+  inglês ("Showing 1 to 20 of 24 results") e, no meio da página, um chevron SVG do tamanho da
+  tela. A causa era uma só: o Laravel entrega o view de paginação do **Tailwind** por padrão,
+  e ele não existe dentro do Bootstrap — as classes não casam com nada e o SVG, sem largura
+  definida, cresce até o limite do container.
+- Agora há **um único view de paginação no sistema** (`resources/views/pagination/painel.blade.php`),
+  registrado uma vez no `AppServiceProvider` e coberto também pelo `simplePaginate`. Ele é
+  Bootstrap 5 (`pagination pagination-sm`), fala português ("1–20 de 24", rótulos `aria-label`
+  em pt-BR) e mostra os números das páginas, que antes sumiam.
+- A página ativa saiu do ciano padrão do Bootstrap — que não tem par no tema escuro — e entrou
+  no dourado do painel, por token: `--bs-pagination-*` recebe `var(--gold)`, `var(--brand-gold-ink)`
+  e os tokens de borda/fundo, então claro e escuro vêm juntos sem regra extra.
+
+### Detalhes
+- `PaginasDoPainelTest::test_a_paginacao_e_do_painel_e_nao_do_framework` abre duas listas e
+  exige o markup do painel, rejeitando qualquer rastro do view do framework (`Showing`,
+  `px-4 py-2`, `dark:bg-gray-800`). É o teste que impede a volta do bug.
+- Suíte completa: **300 testes, 3.279 asserções**.
+
 ## [2.23.0] - 2026-10-24
 
 ### Adicionado

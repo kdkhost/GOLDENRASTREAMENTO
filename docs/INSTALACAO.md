@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.23.0
+- **Versão:** 2.23.1
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -991,7 +991,49 @@ Instalou e ainda apareceu `validation.required`? É cache de view antigo:
 
 ---
 
-## 15. Backup e restauração
+## 15. Paginação das listas: um view só
+
+Toda lista paginada do sistema — as 12 do painel, as interações da ficha do CRM e
+os chamados e pedidos do portal do cliente — sai pelo mesmo
+`resources/views/pagination/painel.blade.php`, registrado uma única vez em
+`AppServiceProvider::boot()`:
+
+```php
+Paginator::defaultView('pagination.painel');
+Paginator::defaultSimpleView('pagination.painel');
+```
+
+Nenhuma view escreve `->links()` com view própria, e nenhuma folha do framework é
+publicada no projeto. Isso importa porque **o padrão do Laravel é o view do
+Tailwind**, e ele dentro do Bootstrap produz três sintomas que parecem três bugs
+diferentes:
+
+- os botões saem como caixa branca sem estilo — as classes utilitárias
+  (`px-4 py-2`, `inline-flex`) não correspondem a nada carregado;
+- o contador vem em inglês ("Showing 1 to 20 of 24 results"), porque aquele texto
+  é do próprio view do framework, não de um arquivo de tradução;
+- e um **chevron SVG do tamanho da tela** aparece no meio da página: o ícone não
+  tem largura definida, então cresce até estourar o container.
+
+O nosso view entrega `pagination pagination-sm` (Bootstrap 5), os números das
+páginas, o resumo em português ("1–20 de 24") e `aria-label` em português em cada
+enlace. Ele serve o `paginate()` e o `simplePaginate()` — o bloco de números só
+existe quando o paginador sabe o total.
+
+A cor também vem de uma fonte só. O Bootstrap pinta a página ativa com o ciano
+`#0dcaf0`, que não tem par no tema escuro; `public/css/admin-golden.css` redefine
+as variáveis `--bs-pagination-*` a partir dos tokens do painel (`--gold`,
+`--brand-gold-ink`, `--bs-border-color`, `--bs-tertiary-bg`), então claro e escuro
+acompanham o botão de tema sem regra extra. Como o portal inclui a mesma folha, a
+regra vale para os dois.
+
+`PaginasDoPainelTest::test_a_paginacao_e_do_painel_e_nao_do_framework` abre duas
+listas e recusa qualquer rastro do view do framework. É o que impede a volta do
+problema se o provider mudar.
+
+---
+
+## 16. Backup e restauração
 
 ```bash
 # banco
@@ -1013,7 +1055,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 16. Problemas comuns
+## 17. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -1021,6 +1063,7 @@ ele, os dados criptografados e as sessões não voltam.
 | Site mostra a lista de arquivos e pastas | docroot na raiz sem `.htaccess`, e `Options Indexes` ligado | rode o instalador (ou copie o `.htaccess` da seção 4.7) |
 | `Route [admin.xxx] not defined` ao salvar | cache de rotas velho | `php artisan route:clear && php artisan route:cache` |
 | Página quebra depois de editar um `.php` em `config/` | cache de configuração | `php artisan config:cache` |
+| Lista paginada sai com caixa branca de "Anterior/Próximo", contador em inglês e um ícone SVG do tamanho da tela | o view de paginação do framework (Tailwind) voltou a ser o ativo | confira as duas linhas de `Paginator::defaultView()` no `AppServiceProvider` e rode `php artisan optimize:clear` (seção 15) |
 | Imagem enviada não aparece | `public/storage` inexistente | `php artisan storage:link` |
 | Imagem enviada existe no servidor e a URL devolve **403** | o `.htaccess` da raiz bloqueia o caminho `/storage` | tire `storage` da regra de pastas de código-fonte (seção 4.7) |
 | Upload falha com erro em `getimagesize`/`finfo` | `fileinfo` desligada no PHP da web | ative a extensão no seletor de PHP (seção 2) |
@@ -1045,7 +1088,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 17. Segurança
+## 18. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -1078,7 +1121,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 18. Checklist depois de instalar
+## 19. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
@@ -1096,6 +1139,9 @@ continua visível para você pelo painel ou SSH.
       *toastr* no canto, nunca `validation.required` e nunca caixa dentro da página
 - [ ] Confirmação: excluir um usuário no painel abre o diálogo SweetAlert2, e
       *Voltar* não exclui nem recarrega a lista
+- [ ] Paginação: uma lista com mais de 20 registros (Leads, Vídeos) mostra "1–20 de 45" e os
+      números em dourado — nunca caixa branca, nunca "Showing … results", nunca ícone gigante
+      (seção 15)
 - [ ] Cron do agendador: `php artisan schedule:run` a cada minuto (seção 9 — poda do
       registro de tráfego **e** fila de e-mails do portal)
 - [ ] Fila: abrir um chamado no portal e confirmar que a tabela `jobs` volta a zero no minuto

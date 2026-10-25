@@ -44,6 +44,16 @@
 .table-thumb{width:38px;height:38px;border-radius:var(--radius-md);overflow:hidden;display:grid;place-items:center;background:var(--bs-tertiary-bg);color:var(--bs-secondary-color);flex:none}
 .table-thumb img{width:100%;height:100%;object-fit:cover}
 
+/* Paginação: o resumo à esquerda e os números à direita, e a página ativa no dourado do
+   painel — o ciano padrão do Bootstrap não tem par no tema escuro. Tudo por token, então
+   os dois temas vêm juntos. */
+.paginacao{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem}
+.paginacao-resumo{margin:0;font-size:.82rem;color:var(--bs-secondary-color)}
+.paginacao-resumo strong{color:var(--bs-body-color)}
+.pagination{--bs-pagination-color:var(--bs-body-color);--bs-pagination-bg:var(--bs-body-bg);--bs-pagination-border-color:var(--bs-border-color);--bs-pagination-hover-color:var(--gold);--bs-pagination-hover-bg:var(--bs-tertiary-bg);--bs-pagination-hover-border-color:var(--bs-border-color);--bs-pagination-focus-color:var(--gold);--bs-pagination-active-bg:var(--gold);--bs-pagination-active-border-color:var(--gold);--bs-pagination-active-color:var(--brand-gold-ink);--bs-pagination-disabled-color:var(--bs-secondary-color);--bs-pagination-disabled-bg:var(--bs-tertiary-bg)}
+.pagination .page-link{border-radius:var(--radius-md);display:grid;place-items:center;min-width:2rem}
+.pagination .page-item+.page-item .page-link{margin-left:.25rem}
+
 /* Filtros acima das tabelas. */
 .filters-card .row{--bs-gutter-x:.65rem;--bs-gutter-y:.5rem}
 

@@ -126,6 +126,31 @@ class PaginasDoPainelTest extends TestCase
         $this->get(route('admin.activities.index', ['acao' => 'lead_recebido']))->assertOk();
     }
 
+    public function test_a_paginacao_e_do_painel_e_nao_do_framework(): void
+    {
+        // O view default do Laravel é o do Tailwind: dentro do Bootstrap ele sai como caixa
+        // sem estilo, em inglês, e com um SVG de ícone sem largura — desenhado do tamanho da
+        // tela. Um único view, registrado no provider, atende painel e portal.
+        $this->actingAs($this->admin);
+
+        $listas = [
+            'leads' => route('admin.leads.index'),
+            'vídeos' => route('admin.conteudo.videos.index'),
+        ];
+
+        foreach ($listas as $tela => $url) {
+            $conteudo = $this->get($url)->assertOk()->getContent();
+
+            foreach (['class="paginacao"', 'pagination pagination-sm', 'de <strong>', 'aria-label="Próxima página"'] as $esperado) {
+                $this->assertStringContainsString($esperado, $conteudo, "A paginação não chegou na lista de {$tela}.");
+            }
+
+            foreach (['Showing', 'px-4 py-2', 'dark:bg-gray-800', 'text-gray-700'] as $rastro) {
+                $this->assertStringNotContainsString($rastro, $conteudo, "A lista de {$tela} carregou a paginação '{$rastro}' do framework.");
+            }
+        }
+    }
+
     public function test_o_painel_do_vendedor_abre_sem_as_areas_restritas(): void
     {
         $vendedor = User::where('email', 'vendedor@golden.com.br')->firstOrFail();

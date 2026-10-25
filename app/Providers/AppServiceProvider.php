@@ -11,6 +11,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Support\Carrinho;
 use App\Support\MenuPainel;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
@@ -43,6 +44,12 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        // Toda lista paginada do painel e do portal passa por um único view. O padrão do
+        // framework é o do Tailwind: dentro do Bootstrap ele sai sem estilo e com SVG de
+        // ícone sem largura, desenhado do tamanho da tela.
+        Paginator::defaultView('pagination.painel');
+        Paginator::defaultSimpleView('pagination.painel');
 
         // "É administrador" tem uma única pergunta no sistema inteiro: @can('admin').
         // As rotas continuam travadas pelo middleware de papel (a regra que vale é a da
