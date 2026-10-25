@@ -5,6 +5,15 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.26.1] - 2026-10-25
+
+### Alterado
+- **A agência assinada no rodapé é a cliente, não o autor do código.** Onde estava
+  "KDKHOST" entra **Eth! Estratégias** — <https://ethestrategias.com.br>. O nome do
+  desenvolvedor continua apontando para o endereço dele, e o teste que vigiava a
+  correspondência entre tela e `composer.json` passou a comparar só o desenvolvedor:
+  a agência não tem nada a ver com o autor do pacote.
+
 ## [2.26.0] - 2026-10-25
 
 ### Adicionado

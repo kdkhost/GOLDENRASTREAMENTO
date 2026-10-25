@@ -86,8 +86,9 @@ class CantoDoRodapeTest extends TestCase
     }
 
     /**
-     * O mesmo crédito sai do pacote (composer.json) e da tela: se um dos dois for editado e
-     * o outro não, o site passa a desmentir o próprio repositório.
+     * O desenvolvedor creditado na tela é o mesmo creditado no pacote: se um dos dois for
+     * editado e o outro não, o site passa a desmentir o próprio composer.json. A agência é
+     * a cliente dona do produto e não tem nada a ver com o autor do código.
      */
     public function test_a_assinatura_do_site_e_a_mesma_do_pacote(): void
     {
@@ -96,8 +97,10 @@ class CantoDoRodapeTest extends TestCase
         $credito = config('golden.credito');
 
         $this->assertNotEmpty($autor, 'O composer.json deixou de creditar o desenvolvedor do sistema.');
-        $this->assertSame($credito['agencia_site'], $autor['homepage'],
-            'Site e pacote apontam para agências diferentes.');
+        $this->assertStringContainsString($credito['desenvolvedor'], $autor['name'],
+            'Site e pacote assinam o desenvolvimento com nomes diferentes.');
+        $this->assertSame($credito['site'], $autor['homepage'],
+            'Site e pacote apontam para endereços diferentes para quem fez o sistema.');
         $this->assertSame($credito['email'], $autor['email'],
             'Site e pacote dão contatos diferentes para quem fez o sistema.');
     }
