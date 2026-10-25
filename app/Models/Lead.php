@@ -29,6 +29,7 @@ class Lead extends Model
         'visit_id', 'canal', 'rede', 'pago', 'canal_primeiro', 'rede_primeiro',
         'primeiro_toque_em', 'toques', 'dispositivo', 'navegador',
         'status', 'owner_id', 'consent_given', 'value', 'won_at', 'lost_at', 'customer_id',
+        'funnel_page_id', 'clique_id', 'clique_valor',
     ];
 
     protected $casts = [
@@ -56,6 +57,12 @@ class Lead extends Model
     public function jornada(): HasMany
     {
         return $this->hasMany(Visit::class, 'visitor_id', 'visitor_id')->orderBy('aberta_em');
+    }
+
+    /** A página de campanha que gerou o cadastro — null para todo lead do site institucional. */
+    public function funnelPage(): BelongsTo
+    {
+        return $this->belongsTo(FunnelPage::class);
     }
 
     public function customer(): BelongsTo

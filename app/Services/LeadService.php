@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Activity;
 use App\Models\Campaign;
+use App\Models\FunnelPage;
 use App\Models\Lead;
 use App\Models\LeadStatusHistory;
 use App\Models\Visit;
@@ -94,6 +95,8 @@ class LeadService
             ''
         ) ?: null;
 
+        $caminho = $visita?->landing_path ?: '/'.ltrim($request->path(), '/');
+
         return [
             'utm_source' => $utm('utm_source'),
             'utm_medium' => $utm('utm_medium'),
@@ -102,11 +105,44 @@ class LeadService
             'utm_term' => $utm('utm_term'),
             'gclid' => Str::limit((string) ($request->input('gclid') ?: ($visita?->clique_id === 'gclid' ? $visita?->clique_valor : '')), 120, '') ?: null,
             'fbclid' => Str::limit((string) ($request->input('fbclid') ?: ($visita?->clique_id === 'fbclid' ? $visita?->clique_valor : '')), 120, '') ?: null,
+            // Todo identificador de clique, de qualquer plataforma, chega no par genérico:
+            // o formulário envia o que a URL trouxe e a visita guarda o primeiro deles.
+            'clique_id' => $this->clica($request, $visita)[0],
+            'clique_valor' => $this->clica($request, $visita)[1],
+            'funnel_page_id' => FunnelPage::idPublicado((int) $request->input('funnel_page_id'))
+                ?: FunnelPage::idPeloCaminho($caminho),
             'visitor_id' => Str::limit((string) ($visita?->visitor_id ?: $request->cookie(config('golden.rastreio.cookie')) ?: Str::random(24)), 64, ''),
             'landing_page' => $visita?->landing_path ?: Str::limit('/'.ltrim($request->path(), '/'), 255, ''),
             'referrer' => $this->veioDeFora($visita, $request),
             'ip_hash' => hash('sha256', ($request->ip() ?? '').config('app.key')),
             'user_agent' => Str::limit((string) $request->userAgent(), 255, '') ?: null,
+        ];
+    }
+
+    /**
+     * O par [identificador, valor] do clique que originou o cadastro. O POST vem do
+     * formulário, que copia a URL; o que faltar vem da visita registrada no servidor —
+     * é onde o identificador continua depois que a pessoa navega para outra página.
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function clica(Request $request, ?Visit $visita): array
+    {
+        $id = Str::limit((string) $request->input('clique_id'), 40, '');
+        $valor = Str::limit((string) $request->input('clique_valor'), 120, '');
+
+        if ($id !== '' && $valor !== '') {
+            return [$id, $valor];
+        }
+
+        // Nem toda plataforma usa o sufixo "clid": o Instagram cola igsh, o LinkedIn li_fat_id.
+        $naUrl = collect(config('golden.ids_clique'))
+            ->keys()
+            ->first(fn (string $chave) => $request->filled($chave));
+
+        return [
+            $id ?: ($naUrl ?? (string) $visita?->clique_id) ?: null,
+            $valor ?: ($naUrl ? (string) $request->input($naUrl) : (string) $visita?->clique_valor) ?: null,
         ];
     }
 

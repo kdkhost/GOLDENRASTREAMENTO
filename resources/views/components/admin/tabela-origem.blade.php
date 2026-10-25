@@ -14,7 +14,7 @@
                     <i class="fas {{ $linha->icone }} text-gold flex-shrink-0" aria-hidden="true"></i>
                     <span class="origem-nome fw-semibold" title="{{ $linha->rotulo }}">{{ $linha->rotulo }}</span>
                     @if(($linha->pagas ?? 0) > 0)
-                        <x-admin.status :rotulo="$linha->pagas.' paga(s)'" tom="red" class="flex-shrink-0" />
+                        <x-admin.status :rotulo="$linha->pagas.' visita'.($linha->pagas === 1 ? ' paga' : ' pagas')" tom="red" class="flex-shrink-0" />
                     @endif
                 </div>
                 <div class="mini-bar tone-{{ $linha->tom }}" style="--w:{{ round(max($linha->visitas / max($lider, 1), .04) * 100) }}%"></div>

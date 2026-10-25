@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Contract;
 use App\Models\Customer;
 use App\Models\Faq;
+use App\Models\FunnelPage;
 use App\Models\Lead;
 use App\Models\Order;
 use App\Models\Page;
@@ -67,6 +68,9 @@ class PaginasDoPainelTest extends TestCase
         // faria no navegador de um visitante vindo de uma conversa com a IA.
         $this->get('/?utm_source=chatgpt.com&utm_medium=ai-search&utm_campaign=teste')->assertOk();
 
+        // A campanha de funil vem semeada: sem ela não haveria bloco nem contador para abrir.
+        $funil = FunnelPage::firstOrFail();
+
         $parametros = [
             'admin.atribuicao.show' => ['visita' => Visit::latest('id')->firstOrFail()],
             'admin.campanhas.edit' => ['campaign' => Campaign::firstOrFail()],
@@ -82,6 +86,10 @@ class PaginasDoPainelTest extends TestCase
             'admin.conteudo.faqs.edit' => ['faq' => Faq::firstOrFail()],
             'admin.conteudo.paginas.edit' => ['pagina' => Page::firstOrFail()],
             'admin.conteudo.videos.edit' => ['video' => Video::firstOrFail()],
+            'admin.funil.blocos.create' => ['pagina' => $funil],
+            'admin.funil.blocos.edit' => ['pagina' => $funil, 'bloco' => $funil->blocks()->firstOrFail()],
+            'admin.funil.edit' => ['pagina' => $funil],
+            'admin.funil.show' => ['pagina' => $funil],
             'admin.leads.show' => ['lead' => Lead::firstOrFail()],
             'admin.pedidos.show' => ['pedido' => Order::firstOrFail()],
             'admin.usuarios.edit' => ['user' => $this->admin],
@@ -128,7 +136,7 @@ class PaginasDoPainelTest extends TestCase
             $this->get($pagina)->assertOk();
         }
 
-        foreach (['admin/configuracoes', 'admin/usuarios', 'admin/catalogo/produtos', 'admin/conteudo/paginas', 'admin/auditoria'] as $pagina) {
+        foreach (['admin/configuracoes', 'admin/usuarios', 'admin/catalogo/produtos', 'admin/conteudo/paginas', 'admin/auditoria', 'admin/funil'] as $pagina) {
             $this->get($pagina)->assertForbidden();
         }
     }

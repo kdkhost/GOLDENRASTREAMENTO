@@ -12,6 +12,9 @@
     <x-admin.filter name="busca" label="Buscar" col="col-12 col-md-3" placeholder="Nome, telefone ou e-mail..." />
     <x-admin.filter name="status" type="select" label="Status" col="col-6 col-md-2" :options="\App\Models\Lead::STATUS_LABELS" empty="Todos" />
     <x-admin.filter name="campanha" type="select" label="Campanha" col="col-6 col-md-2" :options="$campanhas->mapWithKeys(fn ($nome, $id) => [$id => Str::limit($nome, 22)])" empty="Todas" />
+    @if($paginasFunil->isNotEmpty())
+        <x-admin.filter name="pagina" type="select" label="Página de campanha" col="col-6 col-md-2" :options="$paginasFunil->mapWithKeys(fn ($nome, $id) => [$id => Str::limit($nome, 22)])" empty="Todas" />
+    @endif
     <x-admin.filter name="canal" type="select" label="Origem" col="col-6 col-md-2" :options="\App\Models\Campaign::canais()" empty="Todos os canais" />
     <x-admin.filter name="responsavel" type="select" label="Responsável" col="col-6 col-md-2" :options="$responsaveis" empty="Qualquer" />
     <x-admin.filter name="inicio" type="date" label="De" col="col-6 col-md-2" />

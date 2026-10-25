@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ContractController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController;
+use App\Http\Controllers\Admin\FunnelController as AdminFunnelController;
 use App\Http\Controllers\Admin\LeadController as AdminLeadController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalContratoController;
 use App\Http\Controllers\Portal\PortalDepoimentoController;
 use App\Http\Controllers\Portal\PortalPedidoController;
+use App\Http\Controllers\Site\FunnelController;
 use App\Http\Controllers\Site\LeadController as SiteLeadController;
 use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
@@ -48,6 +50,9 @@ Route::get('/faq', [PageController::class, 'faq'])->name('site.faq');
 Route::get('/videos', [PageController::class, 'videos'])->name('site.videos');
 Route::get('/contato', [PageController::class, 'contato'])->name('site.contato');
 Route::get('/privacidade', [PageController::class, 'privacidade'])->name('site.privacidade');
+
+// Funil de vendas pago: não entra no menu, no rodapé nem na busca — só chega quem tem o link.
+Route::get('/c/{slug}', [FunnelController::class, 'show'])->name('site.funil');
 
 // Captura de leads (validação + rate limit + honeypot)
 Route::post('/leads', [SiteLeadController::class, 'store'])
@@ -198,6 +203,25 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/{campaign}', [CampaignController::class, 'update'])->name('update');
         Route::post('/{campaign}/toggle', [CampaignController::class, 'toggle'])->name('toggle');
         Route::delete('/{campaign}', [CampaignController::class, 'destroy'])->name('destroy')->middleware('role:admin');
+    });
+
+    // Páginas de funil: a campanha de divulgação que só quem tem o link vê. Montagem por
+    // blocos, pixels por página e o contador dela — nada disso existe no site fixo.
+    Route::prefix('funil')->name('funil.')->middleware('role:admin')->group(function () {
+        Route::get('/', [AdminFunnelController::class, 'index'])->name('index');
+        Route::get('/nova', [AdminFunnelController::class, 'create'])->name('create');
+        Route::post('/', [AdminFunnelController::class, 'store'])->name('store');
+        // 'nova' é um segmento só: vir depois dele, {pagina} engoliria a tela de criação.
+        Route::get('/{pagina}', [AdminFunnelController::class, 'show'])->name('show');
+        Route::get('/{pagina}/editar', [AdminFunnelController::class, 'edit'])->name('edit');
+        Route::post('/{pagina}', [AdminFunnelController::class, 'update'])->name('update');
+        Route::delete('/{pagina}', [AdminFunnelController::class, 'destroy'])->name('destroy');
+
+        Route::get('/{pagina}/blocos/novo', [AdminFunnelController::class, 'blocoCreate'])->name('blocos.create');
+        Route::post('/{pagina}/blocos', [AdminFunnelController::class, 'blocoStore'])->name('blocos.store');
+        Route::get('/{pagina}/blocos/{bloco}/editar', [AdminFunnelController::class, 'blocoEdit'])->name('blocos.edit');
+        Route::post('/{pagina}/blocos/{bloco}', [AdminFunnelController::class, 'blocoUpdate'])->name('blocos.update');
+        Route::delete('/{pagina}/blocos/{bloco}', [AdminFunnelController::class, 'blocoDestroy'])->name('blocos.destroy');
     });
 
     // CRM: Clientes

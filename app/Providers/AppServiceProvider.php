@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
         // rota); o gate serve para a tela não oferecer um botão que a rota negaria.
         Gate::define('admin', fn (User $usuario): bool => $usuario->isAdmin());
 
-        View::composer(['layouts.site', 'site.*', 'portal.*', 'admin.layouts.app'], function ($view) {
+        View::composer(['layouts.site', 'layouts.funil', 'site.*', 'portal.*', 'admin.layouts.app'], function ($view) {
             $view->with('golden', $this->dadosDoSite());
         });
 

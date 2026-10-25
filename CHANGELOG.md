@@ -5,6 +5,77 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-10-24
+
+### Adicionado
+- **Página de campanha: o funil de vendas que só existe para quem recebe o link.**
+  `/c/{slug}` é montada bloco a bloco no painel (*Comercial → Páginas de funil*),
+  captura lead na própria página e não aparece em lugar nenhum do site: nem no menu,
+  nem no rodapé, nem no `sitemap.xml`, e nasce com `noindex,follow`. Cada campanha
+  tem título, descrição, palavras-chave, imagem de compartilhamento, `canonical`,
+  pele, píxeis e nota legal próprios — a visibilidade é escolha por página, então dá
+  para publicar uma delas na busca sem tocar em código.
+- **Nove tipos de bloco, todos editáveis:** abertura com foto, benefícios, oferta,
+  prova social, vídeo, urgência com prazo, formulário, dúvidas e conteúdo de apoio.
+  O tipo decide quais campos aparecem na tela, e um bloco que muda de tipo perde o
+  que o novo tipo não usa — nada de texto velho escondido. O conteúdo dos blocos é
+  texto digitável (uma linha por item, colunas separadas por `|`), a lista de tipos
+  mora em `config('golden.funil_blocos')` e criar um tipo novo é acrescentar um bloco
+  na config: sem controller novo, sem view nova.
+- **Contador de visitas por campanha.** A tela da campanha separa gente de robô e
+  mostra visitas do período (com únicos e o total desde sempre), telas vistas,
+  cliques medidos, cadastros, a taxa visita→cadastro, vendas fechadas, a fatia de
+  tráfego pago e os robôs à parte; gráfico dia a dia com as duas séries, origem por
+  canal, rede e dispositivo, o **clique por clique** de cada anúncio, a visita por
+  visita com a jornada de cada uma e os últimos cadastros — com link para a listagem
+  de leads já filtrada naquela página.
+- **O clique do anúncio chega ao cadastro, de qualquer plataforma.** Google
+  (`gclid`/`gbraid`/`wbraid`), Meta, TikTok, Bing, LinkedIn, X, Yahoo, Instagram e as
+  demais redes colam nomes diferentes na URL; o lead agora guarda `clique_id` e
+  `clique_valor` além da página que o gerou, então o painel sabe qual anúncio abriu a
+  carteira, não só qual rede. O formulário oculto herda da visita registrada quando a
+  URL já foi embora, e o pixel de conversão do Google Ads, do Meta e do TikTok ecoa no
+  cadastro gravado — medindo aquela campanha, não o site inteiro.
+- Tabelas `funnel_pages` e `funnel_blocks`
+  (`2026_10_24_000005_criam_as_paginas_de_funil`), as três colunas novas em `leads`
+  (`2026_10_24_000006_amarram_o_lead_a_pagina_de_funil`) e a campanha
+  **Campanha de frota — J16 4G/2G** (`/c/frota-j16`) semeada pronta com os nove
+  blocos na ordem de leitura.
+
+### Detalhes
+- **Trocar o endereço não apaga o histórico.** Antes de a mudança ir ao banco, o
+  caminho antigo entra no histórico JSON `caminhos` da página: os dois endereços
+  seguem servindo a mesma campanha e seguem somando visitas no contador. Um rename
+  nunca deixa o relatório mudo.
+- O SEO da campanha é completo, mas honesto: `LocalBusiness` sempre, `FAQPage` quando
+  há dúvidas preenchidas e `Product` com `Offer` e `aggregateRating` **só com o preço
+  declarado** no painel. O seletor não inventa valor nem píxel — as campanhas semeadas
+  deixam os dois em branco para o anunciante preencher, e apagar o preço derruba o
+  `Product` na hora.
+- A carcaça `layouts/funil` leva as mesmas folhas do site (`golden-theme` +
+  `golden-site`) e `golden-funil.css`, que só define as três peles (`ouro`, `noite`,
+  `claro`) como conjuntos de tokens — sem cor solta no painel. Não há navegação para o
+  resto do site: quem chegou por um anúncio tem um único caminho, que é a chamada da
+  página. A barra de consentimento, o modal de vídeo e a caixa de WhatsApp viraram
+  parciais para as duas carcaças usarem a mesma tela.
+- A página inteira (campanha + blocos ativos) sai do cache `golden.paginas_funil`:
+  `/c/{slug}` aquecido não faz nenhum SELECT, e gravar no painel derruba a chave na
+  hora. O endereço da campanha semeada entrou na promessa de leveza.
+- Rascunho e página pausada **não têm endereço e não recebem cadastro** — só página
+  publicada aceita um `funnel_page_id`, senão qualquer POST atribuiria lead a uma
+  campanha guardada. O funil é área de administrador: o vendedor não abre a tela.
+- O formulário de lead continuou um só: a página de contato e o bloco de formulário do
+  funil chamam a mesma parcial, mudando só o texto do botão, a linha de confiança e a
+  campanha que pede o cadastro.
+- O contador é por caminho, não por página com id no rastreador: ele continua
+  independente do funil e sem consultar a tabela de campanhas a cada visita.
+- Testes novos em `tests/Feature/PaginaDeFunilTest.php` (13 casos: SEO e invisibilidade,
+  campanha ausente do site, ciclo rascunho→publicada→pausada, endereço antigo vivo,
+  cadastro guardando página e clique do TikTok, herança do `gclid` pela visita, rascunho
+  que não recebe lead, gente separada de robô no contador, bloco gravando só o que o tipo
+  declara, troca de tipo esvaziando o resto, preço apagando o `Product`, e a área fechada
+  ao vendedor). Suíte completa: 298 testes, 3.251 asserções.
+
 ## [2.22.0] - 2026-10-24
 
 ### Adicionado

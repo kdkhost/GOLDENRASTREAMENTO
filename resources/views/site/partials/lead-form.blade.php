@@ -1,4 +1,10 @@
-{{-- Formulário de captura de lead. Campos ocultos recebem UTMs/gclid/fbclid via JS. --}}
+{{--
+    Formulário de captura de lead — o único do site. A página de contato e o bloco de
+    formulário do funil chamam esta mesma parcial; o que muda entre elas são três
+    detalhes opcionais: o texto do botão ($cta_texto), a linha de confiança abaixo dele
+    ($confianca) e a página de campanha que está pedindo o cadastro ($pagina_funil).
+    Campos ocultos recebem UTMs e identificadores de clique via JS.
+--}}
 @php
     $kits = $kits ?? config('golden.kits');
     $perfis = $perfis ?? config('golden.perfis');
@@ -59,16 +65,26 @@
         <label>Não preencha <input type="text" name="company_url" tabindex="-1" autocomplete="off"></label>
     </div>
 
-    {{-- Atribuição de campanha (preenchido via JS) --}}
+    {{-- Atribuição de campanha (preenchido via JS): as UTMs que vieram na URL de chegada,
+         as duas colunas próprias de clique e um par genérico para as outras redes — o
+         nome diz de quem é o clique (ttclid do TikTok, msclkid do Bing, gbraid do Google
+         quando o app não usa o gclid...) e o valor é a prova dele. A lista dos nomes que
+         o navegador guarda vem de config('golden.ids_clique'), a mesma régua do Atribuidor. --}}
     @foreach(['utm_source','utm_medium','utm_campaign','utm_content','utm_term','gclid','fbclid'] as $campo)
         <input type="hidden" name="{{ $campo }}" value="">
     @endforeach
+    <input type="hidden" name="clique_id" value="">
+    <input type="hidden" name="clique_valor" value="">
+
+    @if(! empty($pagina_funil))
+    <input type="hidden" name="funnel_page_id" value="{{ (int) $pagina_funil }}">
+    @endif
 
     <label class="consent">
         <input type="checkbox" name="consent" value="1" required>
         <span>Autorizo o contato da Golden sobre esta solicitação e declaro ter lido a <a href="{{ route('site.privacidade') }}" target="_blank" style="text-decoration:underline">Política de Privacidade</a>.</span>
     </label>
 
-    <button type="submit" class="btn btn-gold btn-block" data-track="contact" data-cta="form">Solicitar minha proposta →</button>
-    <p class="fine" style="text-align:center;margin-top:12px">Resposta rápida em horário comercial. Seus dados não são compartilhados.</p>
+    <button type="submit" class="btn btn-gold btn-block" data-track="contact" data-cta="form">{{ $cta_texto ?? 'Solicitar minha proposta' }} →</button>
+    <p class="fine" style="text-align:center;margin-top:12px">{{ $confianca ?? 'Resposta rápida em horário comercial. Seus dados não são compartilhados.' }}</p>
 </form>

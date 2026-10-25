@@ -251,6 +251,9 @@ return [
             'aplicativo' => 'blue', 'plataforma' => 'teal', 'frotas' => 'violet',
             'bloqueio' => 'amber', 'financeiro' => 'green',
         ],
+        // Página de funil (config 'funil_statuses'): o selo da listagem e o do relatório.
+        // O grupo não se chama 'funil' porque essa chave já veste o status do lead.
+        'pagina_funil' => ['rascunho' => 'neutral', 'publicada' => 'green', 'pausada' => 'amber'],
         // Origem da visita/lead, resolvida por Atribuidor::classificar() a partir das chaves
         // de 'canais' logo abaixo. O tom é o mesmo no cartão de atribuição e na ficha do lead.
         'canal' => [
@@ -553,6 +556,129 @@ return [
         'financeiro' => ['rotulo' => 'Financeiro e faturas', 'icone' => 'fa-file-invoice-dollar'],
     ],
 
+    // Situação da página de funil na listagem do painel. Só 'publicada' serve no site.
+    'funil_statuses' => [
+        'rascunho' => 'Rascunho',
+        'publicada' => 'No ar',
+        'pausada' => 'Pausada',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Páginas de funil (divulgação por link)
+    |--------------------------------------------------------------------------
+    | Página de campanha que não entra no menu, no rodapé nem na busca: só vê quem
+    | recebeu o link. O conteúdo é composto por blocos e esta lista é a única fonte
+    | dos tipos — o painel oferece apenas os campos que o tipo declara, o parser
+    | separa os itens pelas colunas daqui e a página pública ignora tipo desconhecido.
+    |
+    | Itens são digitados um por linha, com as colunas separadas por |. Quem lê a linha
+    | é FunnelBlock::itens(); em 'colunas' a chave é o nome que a view usa para ler o
+    | item e o valor é o rótulo que o painel mostra na dica — uma régua só dos dois lados.
+    */
+    'funil_visibilidade' => [
+        'noindex' => 'Invisível na busca — só entra por link (recomendado)',
+        'index' => 'Aparece nos buscadores',
+        'noindex_nofollow' => 'Invisível e sem seguir os links da página',
+    ],
+
+    // Pele da página: uma classe no <body>, definida em golden-funil.css com a mesma
+    // paleta do site. Não é escolha de cor solta — são três layouts aprovados.
+    'funil_peles' => [
+        'ouro' => 'Ouro sobre escuro (padrão da Golden)',
+        'noite' => 'Noite azulada',
+        'claro' => 'Claro (papel)',
+    ],
+
+    // Rótulo e controle de cada campo, na régua do x-admin.field. O tipo do bloco decide
+    // quais aparecem; 'rotulos' troca o nome do campo naquele tipo só.
+    'funil_campos' => [
+        'titulo' => ['label' => 'Título', 'type' => 'text', 'maxlength' => 190],
+        'texto' => ['label' => 'Texto', 'type' => 'textarea', 'rows' => 3],
+        'corpo' => ['label' => 'Corpo (HTML simples)', 'type' => 'textarea', 'rows' => 12],
+        'itens' => ['label' => 'Itens — um por linha', 'type' => 'textarea', 'rows' => 8],
+        'imagem' => ['label' => 'Imagem', 'type' => 'imagem'],
+        'imagem_alt' => ['label' => 'Descrição da imagem', 'type' => 'text', 'maxlength' => 190],
+        'cta_texto' => ['label' => 'Texto do botão', 'type' => 'text', 'maxlength' => 120],
+        'cta_destino' => ['label' => 'Destino do botão', 'type' => 'text', 'maxlength' => 255],
+        'cta2_texto' => ['label' => 'Texto do segundo botão', 'type' => 'text', 'maxlength' => 120],
+        'cta2_destino' => ['label' => 'Destino do segundo botão', 'type' => 'text', 'maxlength' => 255],
+        'limite_em' => ['label' => 'Termina em', 'type' => 'datetime-local'],
+    ],
+
+    'funil_blocos' => [
+        'hero' => [
+            'rotulo' => 'Abertura', 'icone' => 'fa-bolt',
+            'descricao' => 'A primeira dobra: a promessa, os selos de confiança e a chamada principal.',
+            'campos' => ['titulo', 'texto', 'imagem', 'imagem_alt', 'itens', 'cta_texto', 'cta_destino', 'cta2_texto', 'cta2_destino'],
+            'colunas' => ['icone' => 'Ícone (fa-…)', 'texto' => 'Selo de confiança'],
+            'rotulos' => ['texto' => 'Subtítulo', 'itens' => 'Selos — um por linha'],
+            'dica' => 'A foto fica atrás do texto, escurecida: use paisagem (1600 × 900 px). Para pular ao formulário, escreva #formulario no destino.',
+        ],
+        'beneficios' => [
+            'rotulo' => 'Benefícios', 'icone' => 'fa-list-check',
+            'descricao' => 'Cartões curtos do que a oferta resolve.',
+            'campos' => ['titulo', 'texto', 'itens'],
+            'colunas' => ['icone' => 'Ícone (fa-…)', 'titulo' => 'Título', 'texto' => 'Descrição'],
+        ],
+        'oferta' => [
+            'rotulo' => 'Oferta e preço', 'icone' => 'fa-tags',
+            'descricao' => 'Os kits com preço, o que inclui e o botão de cada card.',
+            'campos' => ['titulo', 'texto', 'itens', 'cta_texto', 'cta_destino'],
+            'colunas' => [
+                'kit' => 'Nome do kit',
+                'avista' => 'Preço à vista (R$)',
+                'mensal' => 'Mensalidade (R$)',
+                'inclui' => 'O que inclui (separe com ;)',
+                'selo' => 'Selo (ex.: mais escolhido)',
+            ],
+            // Colunas que viram lista quando o bloco é lido: o traço separa os itens do
+            // card, este ponto e vírgula separa os benefícios dentro de uma delas.
+            'listas' => ['inclui'],
+            'rotulos' => ['cta_texto' => 'Texto do botão de cada card'],
+            'dica' => 'O preço do primeiro card é o que o Google recebe como preço da oferta.',
+        ],
+        'prova' => [
+            'rotulo' => 'Prova social', 'icone' => 'fa-quote-left',
+            'descricao' => 'Depoimentos de quem já usa.',
+            'campos' => ['titulo', 'texto', 'itens'],
+            'colunas' => [
+                'nome' => 'Nome',
+                'papel' => 'Cidade ou papel',
+                'texto' => 'Depoimento',
+                'nota' => 'Nota de 1 a 5',
+            ],
+        ],
+        'video' => [
+            'rotulo' => 'Vídeo de vendas', 'icone' => 'fa-play',
+            'descricao' => 'Uma apresentação do canal, aberta sem sair da página.',
+            'campos' => ['titulo', 'texto', 'cta_texto', 'cta_destino'],
+            'rotulos' => ['titulo' => 'Legenda', 'cta_texto' => 'Texto do botão de assistir', 'cta_destino' => 'Link do vídeo no YouTube'],
+        ],
+        'urgencia' => [
+            'rotulo' => 'Urgência', 'icone' => 'fa-stopwatch',
+            'descricao' => 'Contagem regressiva até o fim da condição.',
+            'campos' => ['titulo', 'texto', 'limite_em', 'cta_texto', 'cta_destino'],
+        ],
+        'formulario' => [
+            'rotulo' => 'Formulário de captura', 'icone' => 'fa-user-plus',
+            'descricao' => 'O cadastro do lead, com o nome dele já no WhatsApp de retorno.',
+            'campos' => ['titulo', 'texto', 'cta_texto'],
+            'rotulos' => ['texto' => 'Linha de confiança abaixo do botão', 'cta_texto' => 'Texto do botão de envio'],
+        ],
+        'faq' => [
+            'rotulo' => 'Dúvidas frequentes', 'icone' => 'fa-circle-question',
+            'descricao' => 'As objeções que sobram antes do cadastro.',
+            'campos' => ['titulo', 'texto', 'itens'],
+            'colunas' => ['pergunta' => 'Pergunta', 'resposta' => 'Resposta'],
+        ],
+        'conteudo' => [
+            'rotulo' => 'Texto e imagem', 'icone' => 'fa-align-left',
+            'descricao' => 'Um trecho de argumentação com foto e botão no meio do funil.',
+            'campos' => ['titulo', 'corpo', 'imagem', 'imagem_alt', 'cta_texto', 'cta_destino'],
+        ],
+    ],
+
     // Menu do site (header + gaveta mobile). Itens com 'grupo' recebem filhos
     // montados pelo AppServiceProvider: 'loja' usa as categorias do catálogo e
     // 'institucional' usa as páginas publicadas no CMS. 'conta' não tem rota fixa:
@@ -583,6 +709,7 @@ return [
             ['titulo' => 'Leads', 'rota' => 'admin.leads.index', 'prefixo' => 'admin.leads.', 'icone' => 'fa-user-plus', 'bolha' => 'leads_novos', 'tom' => 'gold'],
             ['titulo' => 'Clientes', 'rota' => 'admin.clientes.index', 'prefixo' => 'admin.clientes.', 'icone' => 'fa-users'],
             ['titulo' => 'Campanhas', 'rota' => 'admin.campanhas.index', 'prefixo' => 'admin.campanhas.', 'icone' => 'fa-bullhorn'],
+            ['titulo' => 'Páginas de funil', 'rota' => 'admin.funil.index', 'prefixo' => 'admin.funil.', 'icone' => 'fa-bullseye', 'admin' => true],
             ['titulo' => 'Atribuição de tráfego', 'rota' => 'admin.atribuicao.index', 'prefixo' => 'admin.atribuicao.', 'icone' => 'fa-diagram-project'],
         ]],
 

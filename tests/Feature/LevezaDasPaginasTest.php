@@ -53,6 +53,7 @@ class LevezaDasPaginasTest extends TestCase
             '/contato',
             '/privacidade',
             '/p/sobre',
+            '/c/frota-j16',
             '/loja',
             '/loja/rastreador-j16-4g',
             '/loja/carrinho',

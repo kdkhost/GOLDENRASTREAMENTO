@@ -1,0 +1,172 @@
+/* Golden Rastreamento — página de campanha (/c/…)
+   Reaproveita os componentes do site (wrap, btn, kits, depo-card, faq, form-card) e só
+   acrescenta o layout do funil. As três peles trocam exclusivamente os tokens abaixo:
+   quem quiser outra aparência escolhe a pele no painel, não um hex avulso. */
+
+/* ---------- Estrutura comum às peles ---------- */
+/* A cor da página é do body: as seções ficam transparentes e só as faixas alternadas
+   recebem --f-bg-2, sem briga de especificidade com os blocos que têm fundo próprio. */
+body.funil{background:var(--f-bg);color:var(--f-text)}
+body.funil h1,body.funil h2,body.funil h3{color:var(--f-title)}
+body.funil .lead-sub{color:var(--f-text)}
+body.funil section{padding:76px 0}
+body.funil .wrap{position:relative}
+/* O âncora do formulário não pode ficar escondida embaixo do topo fixo. */
+body.funil #formulario{scroll-margin-top:84px}
+
+/* Topo e rodapé são sempre escuros: a campanha é dourada, e o visitante precisa saber
+   de quem é a página antes de ler o primeiro benefício. */
+.f-topo{position:sticky;top:0;z-index:60;background:rgba(13,17,20,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+.f-topo .wrap{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:68px}
+.f-topo .brand{color:#fff}
+.f-topo .brand img{width:38px;height:38px;border-radius:9px}
+.f-topo-contatos{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.f-topo-contatos a{display:inline-flex;align-items:center;gap:8px;font-size:.86rem;font-weight:600;color:#dbe2e9;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:9px 15px;transition:.18s}
+.f-topo-contatos a:hover{border-color:var(--gold);color:var(--gold-soft)}
+.f-topo-contatos a:first-child{background:linear-gradient(135deg,var(--gold),var(--gold-2));border-color:transparent;color:#241a06}
+.f-topo-contatos a:first-child:hover{color:#241a06}
+
+.f-rodape{background:var(--dark-2);color:#9fb0bd;padding:42px 0 48px}
+.f-rodape p{margin:0 0 8px;font-size:.9rem}
+.f-rodape .fine{color:#7f8b98}
+.f-rodape a{color:#c4ccd4;text-decoration:underline;text-underline-offset:3px}
+.f-rodape a:hover{color:var(--gold-soft)}
+
+/* ---------- Herói ---------- */
+.f-hero{position:relative;overflow:hidden;padding:clamp(64px,9vw,110px) 0 clamp(56px,7vw,86px);background:linear-gradient(160deg,var(--dark),var(--dark-2))}
+.f-hero .f-foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 42%;z-index:0}
+.f-hero.com-foto::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(100deg,rgba(13,17,20,.96) 0%,rgba(13,17,20,.9) 38%,rgba(13,17,20,.42) 72%,rgba(13,17,20,.6) 100%)}
+.f-hero-caixa{position:relative;z-index:2;max-width:760px}
+body.funil .f-hero h1{color:#fff;font-size:clamp(2.2rem,5.4vw,3.7rem);margin-bottom:.4em}
+.f-hero-lead{font-size:1.16rem;color:#cdd6df;max-width:58ch}
+.f-selos{list-style:none;margin:26px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:12px 26px}
+.f-selos li{display:flex;align-items:center;gap:9px;color:#e7edf3;font-size:.95rem;font-weight:500}
+.f-selos i{color:var(--gold);font-size:1.05rem}
+
+.f-acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.f-acoes:empty{display:none}
+
+/* ---------- Benefícios ---------- */
+.f-ben-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:38px}
+.f-ben{min-width:0;background:var(--f-card);border:1px solid var(--f-line);border-radius:var(--radius);padding:26px 24px;transition:.2s}
+.f-ben:hover{border-color:var(--gold-soft);box-shadow:var(--f-shadow)}
+.f-ben-ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:var(--f-accent-bg);color:var(--f-accent);font-size:1.15rem;margin-bottom:16px}
+.f-ben h3{font-size:1.08rem;margin-bottom:.4em}
+.f-ben p{margin:0;color:var(--f-text);font-size:.94rem}
+
+/* ---------- Oferta (kits) ---------- */
+.f-oferta .kits{margin-top:40px}
+.f-mensal{color:var(--f-text);font-size:.95rem;margin:-6px 0 14px}
+.f-mensal b{color:var(--f-title);font-weight:700}
+
+/* ---------- Prova social ---------- */
+.f-provas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:38px}
+.f-prova .depo-card{background:var(--f-card);border-color:var(--f-line);cursor:default}
+.f-prova .depo-card p{color:var(--f-text)}
+.f-prova .depo-who b{color:var(--f-title)}
+
+/* ---------- Vídeo ---------- */
+.f-video-abrir{display:inline-flex;align-items:center;gap:18px;margin-top:32px;background:var(--f-card);border:1px solid var(--f-line);border-radius:18px;padding:14px;max-width:520px;transition:.2s}
+.f-video-abrir:hover{border-color:var(--gold);box-shadow:var(--f-shadow)}
+.f-video-thumb{position:relative;flex:none;width:172px;border-radius:12px;overflow:hidden;background:var(--dark)}
+.f-video-thumb img{width:100%;height:auto;display:block}
+.f-video-thumb i{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:1.1rem;background:rgba(13,17,20,.42);transition:background .2s}
+.f-video-abrir:hover .f-video-thumb i{background:rgba(224,163,62,.55)}
+.f-video-abrir b{font-family:"Poppins",sans-serif;font-size:1rem;color:var(--f-title);padding-right:8px}
+
+/* ---------- Urgência ---------- */
+.f-urgencia .wrap>h2{margin-bottom:.35em}
+.f-cont-data{margin:22px 0 10px;font-size:.86rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--f-accent)}
+.f-contagem{display:flex;gap:14px;flex-wrap:wrap}
+.f-cont-item{min-width:92px;background:var(--f-card);border:1px solid var(--f-line);border-radius:14px;padding:14px 10px;text-align:center}
+.f-cont-item b{display:block;font-family:"Poppins",sans-serif;font-size:2rem;line-height:1;font-weight:800;color:var(--f-title);font-variant-numeric:tabular-nums}
+.f-cont-item small{display:block;margin-top:6px;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--f-text)}
+.f-cont-fim{display:none;margin-top:22px;padding:14px 18px;border-radius:12px;background:var(--f-accent-bg);border:1px solid var(--f-line);color:var(--f-title);font-size:.95rem}
+/* A data passou: a contagem some e entra o aviso, para a campanha não prometer o que já acabou. */
+.f-urgencia.encerrada .f-contagem,.f-urgencia.encerrada .f-cont-data{display:none}
+.f-urgencia.encerrada .f-cont-fim{display:block}
+
+/* ---------- Formulário ---------- */
+.f-form-caixa{max-width:680px}
+.f-form-texto{text-align:center;margin-bottom:8px}
+.f-form .form-card{background:var(--f-card);border-color:var(--f-line)}
+
+/* ---------- FAQ e conteúdo ---------- */
+.f-faq .faq details{background:var(--f-card);border-color:var(--f-line)}
+.f-faq .faq summary{color:var(--f-title)}
+.f-faq .faq details p{color:var(--f-text)}
+.f-conteudo-caixa{display:grid;grid-template-columns:1fr;gap:34px;align-items:center}
+.f-conteudo-caixa.com-foto{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}
+.f-conteudo-foto{border-radius:20px;box-shadow:var(--f-shadow)}
+.f-conteudo .cms-body{color:var(--f-text)}
+.f-conteudo .cms-body h2,.f-conteudo .cms-body h3{color:var(--f-title)}
+
+.f-vazio{padding:120px 0}
+
+/* ---------- Pele ouro: dourado sobre grafite (padrão das campanhas) ---------- */
+body.funil.pele-ouro{
+  --f-bg:#12161a; --f-bg-2:#171d23;
+  --f-title:#ffffff; --f-text:#c4ccd4;
+  --f-card:#ffffff; --f-line:#e6e9ee;
+  --f-accent:var(--gold-2); --f-accent-bg:rgba(224,163,62,.12);
+  --f-shadow:0 18px 40px -22px rgba(0,0,0,.6);
+}
+/* Os cartões são claros sobre o fundo grafite, então o texto interno deles volta ao
+   tom de tinta do site — é o par que as regras herdadas de golden-site.css esperam. */
+.pele-ouro .f-ben,.pele-ouro .f-cont-item,.pele-ouro .f-video-abrir{color:var(--ink)}
+.pele-ouro .f-ben h3,.pele-ouro .f-video-abrir b,.pele-ouro .f-cont-item b{color:var(--ink)}
+.pele-ouro .f-ben p,.pele-ouro .f-cont-item small,.pele-ouro .f-prova .depo-card p{color:var(--slate)}
+.pele-ouro .f-prova .depo-who b,.pele-ouro .f-faq .faq summary{color:var(--ink)}
+.pele-ouro .f-faq .faq details p,.pele-ouro .f-oferta .f-mensal{color:var(--slate)}
+.pele-ouro .f-oferta .f-mensal b{color:var(--ink)}
+
+/* ---------- Pele noite: grafite azulados, leitura noturna ---------- */
+body.funil.pele-noite{
+  --f-bg:#0b1120; --f-bg-2:#111a2e;
+  --f-title:#eaf1fb; --f-text:#a9b8cf;
+  --f-card:#ffffff; --f-line:#e6e9ee;
+  --f-accent:#f0c274; --f-accent-bg:rgba(224,163,62,.1);
+  --f-shadow:0 18px 40px -22px rgba(0,0,0,.7);
+}
+.pele-noite .f-ben,.pele-noite .f-cont-item,.pele-noite .f-video-abrir{color:var(--ink)}
+.pele-noite .f-ben h3,.pele-noite .f-video-abrir b,.pele-noite .f-cont-item b{color:var(--ink)}
+.pele-noite .f-ben p,.pele-noite .f-cont-item small,.pele-noite .f-prova .depo-card p{color:var(--slate)}
+.pele-noite .f-prova .depo-who b,.pele-noite .f-faq .faq summary{color:var(--ink)}
+.pele-noite .f-faq .faq details p,.pele-noite .f-oferta .f-mensal{color:var(--slate)}
+.pele-noite .f-oferta .f-mensal b{color:var(--ink)}
+
+/* ---------- Pele claro: a mesma cara do site institucional ---------- */
+body.funil.pele-claro{
+  --f-bg:#ffffff; --f-bg-2:#f6f8fa;
+  --f-title:var(--ink); --f-text:var(--slate);
+  --f-card:#ffffff; --f-line:var(--line);
+  --f-accent:var(--gold-2); --f-accent-bg:rgba(224,163,62,.12);
+  --f-shadow:var(--shadow);
+}
+/* Sem o fundo escuro para contrastar, o cartão precisa de borda e sombra próprias. */
+.pele-claro .f-ben,.pele-claro .f-cont-item{border-color:var(--line);box-shadow:0 12px 26px -22px rgba(18,22,26,.5)}
+.pele-claro .f-video-abrir,.pele-claro .f-prova .depo-card,.pele-claro .f-faq .faq details,.pele-claro .f-oferta .kit{border-color:var(--line)}
+.pele-claro .f-ben-ic{color:var(--gold-2)}
+
+/* Alternância de faixas: o funil inteiro em cor única cansa a leitura da oferta. */
+.pele-ouro .f-beneficios,.pele-ouro .f-prova,.pele-ouro .f-faq,.pele-ouro .f-form{background:var(--f-bg-2)}
+.pele-noite .f-beneficios,.pele-noite .f-prova,.pele-noite .f-faq,.pele-noite .f-form{background:var(--f-bg-2)}
+.pele-claro .f-beneficios,.pele-claro .f-prova,.pele-claro .f-faq,.pele-claro .f-form{background:var(--f-bg-2)}
+
+/* ---------- Responsivo ---------- */
+@media (max-width:960px){
+  .f-ben-grid,.f-provas,.kits{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .f-conteudo-caixa.com-foto{grid-template-columns:1fr}
+  .f-conteudo-foto{order:-1}
+}
+@media (max-width:720px){
+  body.funil section{padding:54px 0}
+  .f-topo .wrap{flex-direction:column;align-items:flex-start;gap:10px;padding-top:12px;padding-bottom:12px}
+  .f-ben-grid,.f-provas,.kits{grid-template-columns:1fr}
+  .f-contagem{gap:10px}
+  .f-cont-item{flex:1 1 calc(50% - 10px);min-width:0}
+  .f-video-abrir{max-width:100%;flex-direction:column;align-items:stretch}
+  .f-video-thumb{width:100%}
+  .f-video-abrir b{padding:4px 6px 8px}
+  .f-acoes .btn{width:100%}
+}

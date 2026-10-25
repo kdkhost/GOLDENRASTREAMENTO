@@ -7,11 +7,15 @@
   var semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- UTMs + identificadores de clique ---------- */
-  var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid'];
+  var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+  // Os nomes que as plataformas de anúncio colam na URL de chegada. A classificação de
+  // origem é do servidor (config/golden.php > ids_clique); o navegador só precisa guardar
+  // o par {nome, valor} para o lead não nascer cego quando a visita expirou.
+  var CLIQUE_KEYS = ['gclid', 'gbraid', 'wbraid', 'dclid', 'gaplid', 'fbclid', 'ttclid', 'msclkid', 'twclid', 'yclid', 'igsh', 'igshid', 'li_fat_id'];
 
   function readQuery() {
     var p = new URLSearchParams(window.location.search), out = {};
-    UTM_KEYS.forEach(function (k) { if (p.get(k)) out[k] = p.get(k); });
+    UTM_KEYS.concat(CLIQUE_KEYS).forEach(function (k) { if (p.get(k)) out[k] = p.get(k); });
     return out;
   }
   function saveAttribution() {
@@ -40,6 +44,25 @@
     }
   }
   window.goldenTrack = track;
+
+  /**
+   * A conversão devolvida à plataforma de anúncio: cada uma quer o próprio nome de
+   * evento, e só dispara se aquele pixel foi carregado na página. O cadastro já é
+   * contado do lado do servidor (farol 'lead' + lead no painel) — isto aqui é o eco
+   * que alimenta o leilão do Google, do Meta e do TikTok.
+   */
+  function conversaoDeAnuncio() {
+    var f = G.funil || {};
+    if (f.conversao_google_ads && window.gtag) {
+      window.gtag('event', 'conversion', {
+        send_to: f.conversao_google_ads,
+        value: f.preco_cents ? f.preco_cents / 100 : 1,
+        currency: 'BRL'
+      });
+    }
+    if (window.fbq) window.fbq('track', 'Lead');
+    if (window.ttq) window.ttq.track('Lead');
+  }
 
   /* ---------- Farol próprio (primeira mão, sem third party) ---------- */
   // O mesmo gesto que já alimenta gtag/fbq alimenta a jornada que o painel mostra.
@@ -144,10 +167,19 @@
 
         // injeta atribuição de campanha nos campos ocultos
         var attr = getAttribution();
-        UTM_KEYS.forEach(function (k) {
+        UTM_KEYS.concat(CLIQUE_KEYS).forEach(function (k) {
           var input = form.querySelector('[name="' + k + '"]');
           if (input && attr[k]) input.value = attr[k];
         });
+        // O par genérico traz a rede que não tem coluna própria (ttclid, msclkid...):
+        // o nome do campo de chegada é o que diz de quem foi o clique.
+        var clicado = CLIQUE_KEYS.filter(function (k) { return attr[k]; })[0];
+        var campoClique = form.querySelector('[name="clique_id"]');
+        var campoValor = form.querySelector('[name="clique_valor"]');
+        if (clicado && campoClique && campoValor) {
+          campoClique.value = clicado;
+          campoValor.value = attr[clicado];
+        }
 
         var payload = {};
         new FormData(form).forEach(function (v, k) { payload[k] = v; });
@@ -171,6 +203,9 @@
               );
               form.reset();
               track('lead_success', {});
+              // O eco para a plataforma de anúncio só acontece com o cadastro gravado:
+              // é este o evento que o Google, o Meta e o TikTok usam para otimizar o leilão.
+              conversaoDeAnuncio();
             } else {
               var msg = res.d && res.d.message ? res.d.message : 'Não foi possível enviar agora. Tente novamente.';
               if (res.d && res.d.errors) {
@@ -357,7 +392,7 @@
   /* ---------- Galeria de vídeos: o player só entra no DOM quando o visitante abre ---------- */
   function initVideos() {
     var modal = document.getElementById('videoModal');
-    var cards = document.querySelectorAll('.video-card[data-video]');
+    var cards = document.querySelectorAll('[data-video]');
     if (!modal || !cards.length) return;
 
     var titulo = document.getElementById('videoModalTitulo');
@@ -420,6 +455,45 @@
     });
   }
 
+  /* ---------- Contagem regressiva da oferta ---------- */
+  function initContagem() {
+    document.querySelectorAll('[data-contagem]').forEach(function (caixa) {
+      var alvo = Date.parse(caixa.getAttribute('data-contagem'));
+      if (isNaN(alvo)) return;
+
+      var bloco = caixa.closest('section') || caixa;
+      var paineis = {};
+      ['dias', 'horas', 'minutos', 'segundos'].forEach(function (k) {
+        paineis[k] = caixa.querySelector('[data-cont="'+k+'"]');
+      });
+
+      var relogio;
+      function pintar() {
+        var falta = alvo - Date.now();
+
+        if (falta <= 0) {
+          // A data passou: a contagem sai de cena e entra o aviso de condição encerrada,
+          // que é o que a página mostra para quem chegou por um anúncio ainda ativo.
+          bloco.classList.add('encerrada');
+          if (relogio) clearInterval(relogio);
+          return;
+        }
+
+        var seg = Math.floor(falta / 1000);
+        if (paineis.dias) paineis.dias.textContent = String(Math.floor(seg / 86400));
+        if (paineis.horas) paineis.horas.textContent = String(Math.floor(seg / 3600) % 24).padStart(2, '0');
+        if (paineis.minutos) paineis.minutos.textContent = String(Math.floor(seg / 60) % 60).padStart(2, '0');
+        if (paineis.segundos) paineis.segundos.textContent = String(seg % 60).padStart(2, '0');
+      }
+
+      // Com a aba em segundo plano o navegador segura os intervalos; o visibilitychange
+      // pinta o valor certo no instante em que o visitante volta, sem esperar o próximo tique.
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) pintar(); });
+      pintar();
+      relogio = setInterval(pintar, 1000);
+    });
+  }
+
   /* ---------- CTAs com rastreamento ---------- */
   function initCtas() {
     document.querySelectorAll('[data-track]').forEach(function (el) {
@@ -462,7 +536,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initVideos(); initPrefetch(); initCtas(); initFarol();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol();
     track('page_view', { page: location.pathname });
   });
 })();

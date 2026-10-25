@@ -121,6 +121,7 @@ class DatabaseSeeder extends Seeder
             CmsSeeder::class,
             CrmSeeder::class,
             OrdersSeeder::class,
+            FunnelSeeder::class,
         ]);
     }
 

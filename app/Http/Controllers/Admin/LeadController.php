@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Campaign;
 use App\Models\Customer;
+use App\Models\FunnelPage;
 use App\Models\Lead;
 use App\Models\LeadStatusHistory;
 use App\Models\User;
@@ -23,8 +24,9 @@ class LeadController extends Controller
 
         return view('admin.leads.index', [
             'leads' => $leads,
-            'filtros' => $request->only(['status', 'campanha', 'inicio', 'fim', 'busca', 'responsavel']),
+            'filtros' => $request->only(['status', 'campanha', 'inicio', 'fim', 'busca', 'responsavel', 'pagina']),
             'campanhas' => Campaign::orderBy('name')->pluck('name', 'id'),
+            'paginasFunil' => FunnelPage::orderBy('nome')->pluck('nome', 'id'),
             'responsaveis' => User::whereIn('role', ['admin', 'vendedor'])->orderBy('name')->pluck('name', 'id'),
             'contagem' => Lead::selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status'),
         ]);
@@ -152,6 +154,7 @@ class LeadController extends Controller
             ->with(['campaign', 'owner'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('campanha'), fn ($q) => $q->where('campaign_id', $request->campanha))
+            ->when($request->filled('pagina'), fn ($q) => $q->where('funnel_page_id', $request->pagina))
             ->when($request->filled('canal'), fn ($q) => $q->where('canal', $request->canal))
             ->when($request->filled('responsavel'), fn ($q) => $q->where('owner_id', $request->responsavel))
             ->when($request->filled('inicio'), fn ($q) => $q->whereDate('created_at', '>=', $request->inicio))

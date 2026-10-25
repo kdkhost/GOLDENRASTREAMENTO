@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.22.0
+- **Versão:** 2.23.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -820,7 +820,126 @@ vazia, então resemear não duplica nada.
 
 ---
 
-## 13. Retorno e confirmação: uma camada só
+## 13. Página de campanha: o funil que só existe para quem tem o link
+
+A campanha de divulgação não é uma página do site. Ela nasce em
+**Admin → Comercial → Páginas de funil**, recebe um endereço `/c/{slug}`, e é
+montada bloco a bloco no painel. Quem não tem o link não a encontra: ela não entra
+no menu, não entra no rodapé, não entra no `sitemap.xml` e nasce com
+`<meta name="robots" content="noindex,follow">` — a visibilidade, porém, é
+escolhida por campanha, então dá para virar uma delas pública para a busca sem
+mexer em código.
+
+Cada campanha carrega a própria captura de lead, os próprios pixels e o próprio
+contador. É a página inteira do funil: a promessa, os benefícios, a oferta, o
+vídeo, a prova social, a urgência, o formulário, as dúvidas e o conteúdo de
+apoio — nove tipos de bloco, todos editáveis na tela.
+
+### O que uma página de campanha guarda
+
+| Coluna | O que guarda |
+| --- | --- |
+| `nome` | como a campanha aparece no painel |
+| `slug` | o endereço `/c/{slug}`; trocar o nome antigo continua no ar |
+| `caminhos` | histórico JSON de todo endereço já servido — é o que preserva o contador |
+| `status` | `rascunho` (sem endereço), `publicada`, `pausada` (volta a 404) |
+| `visibilidade` | `noindex,follow` (padrão), `index` ou `noindex,nofollow` |
+| `pele` | `ouro`, `noite` ou `claro` — a mesma paleta de tokens do site, por folha |
+| `titulo`, `meta_description`, `meta_keywords`, `og_imagem`, `canonical` | o que o buscador e o compartilhamento veem |
+| `pixel_ga4`, `pixel_google_ads`, `conversao_google_ads`, `pixel_meta`, `pixel_tiktok` | os píxeis **da campanha**, não do site |
+| `codigo_head`, `codigo_body` | o que o anunciante precisar colar a mais |
+| `preco_cents`, `nota_media`, `num_avaliacoes` | a oferta e a nota do JSON-LD de `Product` |
+| `nota_legal` | o aviso miúdo do rodapé do funil |
+
+Os blocos vivem em `funnel_blocks`, com `tipo`, `ordem`, `ativa` e um conjunto fixo
+de campos de texto (`titulo`, `texto`, `corpo`, `itens`, `imagem`, `cta_*`,
+`limite_em`). **O tipo decide quais campos aparecem**: um bloco de vídeo não mostra
+o campo de itens, e um bloco que muda de tipo perde o que o novo tipo não usa — não
+há texto velho escondido em outro lugar da página. A lista de tipos mora em
+`config('golden.funil_blocos')`, com os rótulos, ícones, descrição, dica de
+preenchimento e as colunas de cada item; criar um tipo novo é acrescentar um bloco
+na config, sem controller e sem view.
+
+O `itens` de um bloco é texto digitável, não tabela: **uma linha por item**,
+**colunas separadas por `|`** e, nas colunas de lista, itens separados por `;`. A
+barra do lado do campo mostra a ordem das colunas que aquele tipo espera.
+
+### SEO e compartilhamento da campanha
+
+A página monta `<title>`, descrição, palavras-chave, `robots`, `canonical`,
+`hreflang`, todo o bloco Open Graph e Twitter, e o JSON-LD do site: `LocalBusiness`
+sempre, `FAQPage` quando há bloco de dúvidas preenchido e `Product` com `Offer` e
+`aggregateRating` **só quando o preço estiver preenchido** — sem preço na tela não
+há oferta a declarar ao Google, e o seletor não inventa valor. Apagar o preço no
+painel derruba o `Product` na hora.
+
+A carcaça é `resources/views/layouts/funil.blade.php`: leva a folha do site
+(`golden-theme` + `golden-site`) mais `golden-funil.css`, que só define as três
+peles. Não há navegação para o resto do site no topo nem no rodapé — quem chegou
+por um anúncio tem um único caminho a seguir, que é a chamada da página. O rodapé
+guarda a nota legal da campanha e o link da política de privacidade.
+
+### O clique, o cadastro e a conta
+
+O funil não reimplementa o rastreio: ele usa a régua que já existia
+(`Atribuidor`, `Rastreio`, `config('golden.ids_clique')`). Toda visita a `/c/...`
+registra a origem do clique (`gclid`, `fbclid`, `ttclid`, `msclkid`, `li_fat_id`,
+`yclid`, `igsh`, `epik` e os demais) no cookie de visitante, e o cadastro herda
+essa jornada:
+
+- o lead guarda `funnel_page_id`, `clique_id` e `clique_valor` — o nome do
+  parâmetro é a prova de qual anúncio gerou o cadastro;
+- a página do lead vem do campo oculto `funnel_page_id` do formulário, e, quando
+  ele falta, do endereço em que a visita começou (`landing_path`);
+- **rascunho e página pausada não recebem cadastro**: o painel só aceita id de
+  página publicada, senão qualquer POST atribuiria lead a uma campanha guardada;
+- o pixel de conversão do Google Ads e os píxeis de Meta/TikTok disparam no
+  envio do formulário, medindo **só aquela campanha**.
+
+A tela `Admin → Comercial → Páginas de funil → nome da campanha` é o contador:
+visitas do período (com únicos e o total desde sempre), telas vistas, cliques
+medidos, cadastros, a taxa visita→cadastro, vendas fechadas, a fatia de tráfego
+pago e os robôs contados à parte. Abaixo, o gráfico dia a dia com visitas e
+cadastros na mesma escala, as três tabelas de origem (canal, rede, dispositivo),
+o **clique por clique** de cada anúncio, a lista paginada de visita por visita com
+a jornada de cada uma, e os últimos cadastros da campanha — com link para a
+listagem de leads já filtrada por ela.
+
+Trocar o `slug` não zera nada: o endereço antigo entra no histórico `caminhos`
+antes de a mudança ir ao banco, continua servindo a mesma página e continua
+somando visitas no contador.
+
+### Cache e leveza
+
+Assim como o resto do CMS, a campanha inteira (página + blocos ativos) sai do
+cache `golden.paginas_funil`: `/c/{slug}` com o cache aquecido não faz nenhum
+SELECT, e a primeira leitura do dia custa as mesmas poucas consultas das outras
+páginas públicas — o teste `LevezaDasPaginasTest` inclui o endereço da campanha
+semeada. Gravar página ou bloco no painel derruba a chave na hora.
+
+### Campanha pronta no primeiro acesso
+
+O `FunnelSeeder` cria a campanha **Campanha de frota — J16 4G/2G**
+(`/c/frota-j16`) com os nove blocos na ordem de leitura, usando os kits e as
+dúvidas reais do `config('golden.php')` e as fotos que já vêm no projeto. Ele não
+inventa preço nem píxel: o operador preenche os dois no painel quando a campanha
+for ao ar, e os pacotes de preço ficam em branco para a equipe comercial confirmar.
+Roda uma única vez — se já houver blocos, o seletor sai sem duplicar.
+
+### Migrações novas
+
+- `2026_10_24_000005_criam_as_paginas_de_funil` cria `funnel_pages` e
+  `funnel_blocks` (índices em `slug`, `status` e `(funnel_page_id, ativa, ordem)`);
+- `2026_10_24_000006_amarram_o_lead_a_pagina_de_funil` acrescenta em `leads` as
+  colunas `funnel_page_id`, `clique_id` e `clique_valor`.
+
+Ambas são aditivas e têm `down()`. Como todo migration deste projeto, elas
+precisam ser conferidas no **MySQL da hospedagem** antes de dadas por prontas: o
+SQLite dos testes não reclama de comprimento de `varchar`.
+
+---
+
+## 14. Retorno e confirmação: uma camada só
 
 Toda resposta do sistema ao usuário — o que deu certo, o que impediu a ação e a
 pergunta antes de um ato destrutivo — sai por um único lugar:
@@ -872,7 +991,7 @@ Instalou e ainda apareceu `validation.required`? É cache de view antigo:
 
 ---
 
-## 14. Backup e restauração
+## 15. Backup e restauração
 
 ```bash
 # banco
@@ -894,7 +1013,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 15. Problemas comuns
+## 16. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -910,7 +1029,7 @@ ele, os dados criptografados e as sessões não voltam.
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/email.log`; depois configurar SMTP |
-| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 13) |
+| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 14) |
 | `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço que não existe fora do exemplo (domínio sem MX, como `@exemplo.com.br`) | esperado em conta de demonstração com e-mail fictício; o aviso à equipe saiu, o que não existe é a caixa de exemplo. Troque o `email_portal` da ficha por um endereço real e o ciclo fecha |
 | Falha de login no SMTP com senha certa no `.env` | `MAIL_PASSWORD` sem aspas e com `#` | escreva `MAIL_PASSWORD="..."` — sem aspas o `#` vira comentário |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
@@ -926,7 +1045,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 16. Segurança
+## 17. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -959,7 +1078,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 17. Checklist depois de instalar
+## 18. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
@@ -985,6 +1104,9 @@ continua visível para você pelo painel ou SSH.
       `php artisan queue:retry all`
 - [ ] Tráfego: abrir `/admin/atribuicao` depois de algumas visitas reais e conferir se as
       origens aparecem
+- [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`
+      no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
+      cadastro na tela da campanha (seção 13)
 - [ ] Portal: criar conta em `/portal/cadastro` sobre uma ficha que já existe no CRM e conferir que ela herda os pedidos de convidado
 - [ ] Portal: entrar com o `email_portal` (não o e-mail da ficha), abrir um chamado e respondê-lo do painel — a conversa tem de ser a mesma nas duas telas
 - [ ] Portal: anexar o PDF de um contrato assinado e baixá-lo pelo portal; com status `rascunho` ele não pode aparecer na lista

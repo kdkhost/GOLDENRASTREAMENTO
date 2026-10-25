@@ -70,13 +70,17 @@ class ConteudoSite
     /** URL pública da imagem, ou null quando a página ainda não tem nenhuma. */
     public static function url(?string $slot): ?string
     {
-        if ($slot === null) {
-            return null;
-        }
+        return $slot === null ? null : self::urlCaminho(self::caminho($slot));
+    }
 
-        $caminho = self::caminho($slot);
-
-        if ($caminho === null || $caminho === '') {
+    /**
+     * URL de um caminho de arquivo do site que não veio de um slot — a foto que o
+     * bloco de funil recebeu no editor. O que está em storage/ é envio do painel,
+     * o resto é arquivo empacotado; a régua é a mesma do slot.
+     */
+    public static function urlCaminho(?string $caminho): ?string
+    {
+        if ($caminho === null || trim($caminho) === '') {
             return null;
         }
 
