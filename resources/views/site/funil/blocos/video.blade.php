@@ -1,42 +1,22 @@
 {{--
-    Vídeo da campanha. Toca na própria página, sem o cartaz do YouTube: o iframe entra sem
-    controles e coberto por um vidro, porque clique e botão direito que caem na superfície do
-    YouTube trazem de volta a marca e o menu dele. O único controle que existe é o daqui em
-    baixo — play, pause e volume. O resto do comportamento está em public/js/golden-funil.js.
+    Vídeo da campanha. Toca na própria faixa, no player da casa (site.partials.video-player):
+    nada de modal, nada de autoplay, nada do YouTube no quadro — o vidro cobre o que a
+    superfície dele mostraria. A faixa só muda de estado pelo que o visitante manda.
 --}}
 @php $codigo = \App\Models\Video::codigoDe($b->cta_destino); @endphp
 @if($codigo)
-@push('scripts')
-<script src="{{ asset('js/golden-funil.js') }}?v={{ filemtime(public_path('js/golden-funil.js')) }}"></script>
-@endpush
 <section class="f-video">
     <div class="wrap">
         @if($b->titulo)<h2>{{ $b->titulo }}</h2>@endif
         @if($b->texto)<p class="lead-sub">{{ $b->texto }}</p>@endif
 
-        <div class="f-video-slot" data-video-id="{{ $codigo }}">
-            <button type="button" class="f-video-cartaz" data-farol="video" data-detalhe="{{ $b->titulo }}">
-                <img src="{{ \App\Models\Video::thumb($codigo) }}" alt="" width="640" height="360" loading="lazy" decoding="async">
-                <span class="f-video-cartaz-play" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
-                <b>{{ $b->cta_texto ?: 'Assistir a apresentação' }}</b>
-            </button>
-
-            <div class="f-video-player" hidden>
-                {{-- O buraco onde a API do YouTube troca o div pelo iframe. Fica dentro de
-                     .f-video-yt de propósito: o iframe herda o lugar, nunca a classe. --}}
-                <div class="f-video-yt"><div class="f-video-quadro"></div></div>
-                <div class="f-video-vidro"></div>
-                <div class="f-video-controles">
-                    <button type="button" class="f-video-botao" data-acao="tocar" aria-label="Pausar o vídeo">
-                        <i class="fa-solid fa-pause" aria-hidden="true"></i>
-                    </button>
-                    <button type="button" class="f-video-botao" data-acao="mudo" aria-label="Silenciar o vídeo" aria-pressed="false">
-                        <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
-                    </button>
-                    <input type="range" class="f-video-volume" data-acao="volume" min="0" max="100" step="1" value="80" aria-label="Volume do vídeo">
-                </div>
-            </div>
-        </div>
+        @include('site.partials.video-player', [
+            'codigo' => $codigo,
+            'thumb' => \App\Models\Video::thumb($codigo),
+            'rotulo' => $b->titulo ?: 'Apresentação da plataforma Golden',
+            'cta' => $b->cta_texto ?: 'Assistir a apresentação',
+            'farol' => $b->titulo,
+        ])
     </div>
 </section>
 @endif

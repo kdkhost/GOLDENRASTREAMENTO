@@ -120,6 +120,22 @@ class GaleriaDeVideosTest extends TestCase
         // O cartão é um link de verdade: sem JavaScript o visitante ainda assiste no YouTube.
         $this->assertStringContainsString('href="https://www.youtube.com/watch?v=OhtdphIxdf0"', $html);
         $this->assertStringContainsString('id="videoModal"', $html);
+
+        // Dentro do modal mora o player da casa — o mesmo da faixa do funil, com o vidro e a
+        // barra de controles. E nenhuma marca do YouTube em cima dele: o link vermelho de
+        // "Assistir no YouTube" saiu, porque exibido ele é informação de terceiros na tela.
+        $this->assertStringContainsString('class="video-slot" data-rotulo="Tutorial em vídeo"', $html);
+        $this->assertStringContainsString('<div class="video-yt"><div class="video-quadro"></div></div>', $html);
+        $this->assertStringContainsString('class="video-vidro"', $html);
+        $this->assertStringContainsString('data-acao="tocar"', $html);
+        $this->assertStringNotContainsString('Assistir no YouTube', $html);
+        $this->assertStringNotContainsString('fa-youtube', $html);
+        $this->assertStringNotContainsString('video-modal-yt', $html);
+
+        // O endereço do player não é mais colado no iframe pelo JavaScript, e o helper que
+        // escrevia o embed com autoplay=1 foi embora junto.
+        $this->assertStringNotContainsString('embed/', file_get_contents(public_path('js/golden-site.js')));
+        $this->assertFalse(method_exists(Video::class, 'embed'), 'O Video ainda conhece o próprio embed.');
     }
 
     public function test_a_galeria_publica_pagina_com_o_pager_do_site(): void

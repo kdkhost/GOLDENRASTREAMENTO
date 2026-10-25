@@ -5,6 +5,45 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.25.2] - 2026-10-25
+
+### Adicionado
+- **Um player só para a casa inteira.** `resources/views/site/partials/video-player.blade.php`
+  é a única peça de vídeo que existe: a faixa da campanha e o modal da galeria incluem o
+  mesmo partial e ganham o mesmo quadro, o mesmo vidro e os mesmos controles. Antes havia
+  duas máquinas escritas soltas — o `public/js/golden-funil.js` da faixa e o iframe que o
+  `initVideos()` da galeria montava na hora — e as duas já tinham divergido em comportamento.
+  O `golden-funil.js` foi excluído; o vídeo mora só em `golden-site.js`, e o `<iframe>` não
+  é mais escrito em lugar nenhum: quem monta o player é a API, sobre o `.video-quadro`.
+- **O quadro abre coberto e calado.** O vidro opaco (`.video-vidro.cobre`, `#05070a`) fica
+  sobre o player enquanto o vídeo não está tocando de fato, com o selo dourado de play por
+  cima. É o que não deixa a barra de título, o logo e a tela final do YouTube aparecerem
+  para quem só abriu o quadro e ainda não apertou play.
+- **O iframe passa a ter nome da casa.** O `title` que o visitante e o leitor de tela leem
+  é o rótulo do bloco ou o título do tutorial, nunca "YouTube video player". Como a API
+  reescreve o atributo depois que recebe os metadados do vídeo, um `MutationObserver`
+  preso ao `title` do iframe (`inst.getIframe()`) costura o rótulo de volta toda vez.
+
+### Removido
+- **Autoplay, em qualquer superfície.** O parâmetro que a casa pede é `autoplay: 0`, o
+  `embed/…?autoplay=1` do modal antigo sumiu junto com `Video::embed()`, e abrir um quadro
+  nunca chama `playVideo()`: abrir é só abrir. Trocar de vídeo no modal usa
+  `cueVideoById` (deixa pronto, não toca) em vez de `loadVideoById` (que toca). O único
+  caminho para o som começar é um toque em play nosso — inclusive o toque dado antes de a
+  API chegar, que é guardado e aplicado no `onReady`, porque foi o visitante que pediu.
+- **Todo convite ao YouTube que a página fazia.** O link vermelho "Assistir no YouTube" do
+  modal e o `.video-modal-yt` saíram; o `<link rel="preconnect">` do YouTube saiu do layout
+  do funil e agora só é empurrado pela página que realmente tem vídeo. Nenhuma marca, botão
+  ou texto do YouTube é escrito por nós em lugar nenhum.
+
+### Limitação conhecida
+- Enquanto o vídeo **está tocando**, o player do YouTube desenha a interface dele por cima
+  da imagem — em janela estreita é o logo "Shorts", o volume, os três pontos, o joinha e o
+  compartilhamento no canto direito, mais o avatar e o `@canal` embaixo à esquerda. Não há
+  parâmetro da API que desligue isso (`controls: 0` e `modestbranding: 1` são o que existe
+  oficial), e a casa cobre o quadro com o vidro em todos os outros momentos. A única forma
+  de o vídeo tocar sem nenhuma marca de fora é servir o arquivo no próprio site.
+
 ## [2.25.1] - 2026-10-25
 
 ### Removido

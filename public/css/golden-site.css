@@ -306,6 +306,40 @@ section{padding:84px 0}
 .paginacao-site .pagina-elipse{border-color:transparent;background:none}
 .paginacao-site .pagina-seta{color:var(--slate);font-size:.82rem}
 
+/* ---------- O player da casa ----------
+   Um quadro 16:9 com o vídeo dentro e o vidro por cima, servindo à faixa do funil e ao modal
+   da galeria. A moldura é nossa do começo ao fim: os controles do YouTube estão desligados e,
+   enquanto o vídeo não toca, o vidro fica opaco — é a cortina que não deixa o play vermelho,
+   a faixa de título com o nome do canal nem a tela de vídeos sugeridos aparecerem na tela.
+   Nada aqui toca sozinho: o selo dourado do vidro é o play, e ele só responde a um toque. */
+.video-slot{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:var(--dark-2)}
+.video-cartaz{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 18px;border:0;border-radius:inherit;overflow:hidden;background:var(--dark);cursor:pointer;color:#fff}
+.video-cartaz img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.72}
+.video-cartaz::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,17,20,.15),rgba(13,17,20,.82))}
+.video-cartaz-play,.video-cartaz b{position:relative;z-index:2}
+.video-cartaz-play{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;font-size:1.35rem;box-shadow:0 16px 34px -18px rgba(0,0,0,.8);transition:transform .28s cubic-bezier(.22,.61,.36,1)}
+.video-cartaz:hover .video-cartaz-play{transform:scale(1.08)}
+.video-cartaz b{font-family:"Poppins",sans-serif;font-size:1rem;font-weight:600;margin-top:16px;text-align:center}
+.video-player{position:absolute;inset:0;background:#000;user-select:none;-webkit-user-select:none}
+/* O hidden do navegador não vale aqui: os dois têm display próprio declarado acima, e sem
+   esta linha o cartaz e o player ficariam os dois na tela. */
+.video-cartaz[hidden],.video-player[hidden]{display:none}
+.video-yt,.video-vidro{position:absolute;inset:0}
+.video-yt iframe{width:100%;height:100%;display:block;border:0}
+/* O vidro é a superfície que o visitante vê: por cima do iframe, ele não deixa clique, hover
+   nem botão direito chegarem à interface do YouTube. Com o .cobre ele ainda esconde o quadro. */
+.video-vidro{z-index:2;cursor:pointer}
+.video-vidro.cobre{background:#05070a;transition:background .3s ease}
+.video-vidro-selo{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;
+  display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;font-size:1.2rem;
+  opacity:0;transform:scale(.86);transition:opacity .24s ease,transform .3s cubic-bezier(.22,.61,.36,1)}
+.video-vidro.cobre .video-vidro-selo{opacity:1;transform:none}
+.video-vidro.cobre:hover .video-vidro-selo{transform:scale(1.08)}
+.video-controles{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(0deg,rgba(9,12,15,.86),rgba(9,12,15,0))}
+.video-botao{flex:none;width:38px;height:38px;border:0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14);color:#fff;font-size:.92rem;cursor:pointer;transition:background .2s ease,transform .2s ease}
+.video-botao:hover{background:var(--gold);color:#241a06;transform:scale(1.06)}
+.video-volume{flex:0 1 132px;height:4px;accent-color:var(--gold);cursor:pointer}
+
 /* Player em modal. 1080: sopra a gaveta do menu (90) e o botão topo (1050), mas fica
    embaixo da camada do toastr (1090) — o aviso nunca some atrás do vídeo. */
 .video-modal{position:fixed;inset:0;z-index:1080;display:grid;place-items:center;padding:26px;
@@ -319,15 +353,10 @@ section{padding:84px 0}
 .video-modal.aberta .video-modal-caixa{transform:none}
 .video-modal-topo{display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--line)}
 .video-modal-topo h3{margin:0;font-size:1rem;line-height:1.3}
-.video-modal-acoes{display:flex;align-items:center;gap:9px;flex:none;margin-left:auto}
-.video-modal-yt{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:700;color:#fff;background:#c3272f;
-  padding:8px 14px;border-radius:999px;white-space:nowrap;transition:.2s background,.2s transform}
-.video-modal-yt:hover{background:#a91f26;transform:translateY(-1px)}
-.video-modal-fechar{width:36px;height:36px;flex:none;border:0;border-radius:50%;background:var(--paper-2);color:var(--ink);
+.video-modal .video-slot{border-radius:0}
+.video-modal-fechar{width:36px;height:36px;flex:none;margin-left:auto;border:0;border-radius:50%;background:var(--paper-2);color:var(--ink);
   cursor:pointer;display:grid;place-items:center;font-size:.95rem;transition:background .2s,transform .3s cubic-bezier(.22,.61,.36,1)}
 .video-modal-fechar:hover{background:var(--line);transform:rotate(90deg)}
-.video-player{aspect-ratio:16/9;background:var(--dark-2)}
-.video-player iframe{width:100%;height:100%;border:0;display:block}
 body.video-aberto{overflow:hidden}
 
 /* Formulário de lead */
@@ -595,7 +624,9 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .video-modal-caixa{width:100%;border-radius:0}
   .video-modal-topo{padding:11px 13px}
   .video-modal-topo h3{font-size:.92rem}
-  .video-modal-yt{padding:7px 12px;font-size:.74rem}
+  /* No celular o selo do vidro encolhe com o quadro: continua sendo o play, só que do
+     tamanho do polegar. */
+  .video-vidro-selo{width:58px;height:58px;margin:-29px 0 0 -29px;font-size:1.05rem}
 }
 @media(max-width:700px){
   .carro-ctl{margin-top:20px}
@@ -610,7 +641,8 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .nav-backdrop,.drawer-head,.drawer-cta,.drawer-foot,.nav-toggle i,.drawer-close,
   .carro-nav,.carrossel .swiper-pagination-bullet,.atalho,.atalho-go,.seg-foto,.seg-foto>.foto,
   .to-top,.to-top-face,.cart-link,
-  .video-filtro,.video-card,.video-thumb>i,.video-modal,.video-modal-caixa,.video-modal-yt,.video-modal-fechar,
+  .video-filtro,.video-card,.video-thumb>i,.video-modal,.video-modal-caixa,.video-modal-fechar,
+  .video-cartaz-play,.video-vidro,.video-vidro-selo,.video-botao,
   .paginacao-site a,.paginacao-site .pagina,.paginacao-site .pagina-seta,
 
   .wa-float,.wa-popup,.wa-channel,.wa-tip{

@@ -21,9 +21,6 @@ class Video extends Model
 
     protected $casts = ['ativa' => 'boolean', 'ordem' => 'integer'];
 
-    /** O player vem sem cookies: a galeria abre depois do consentimento do visitante. */
-    private const EMBED = 'https://www.youtube-nocookie.com/embed/';
-
     public static function categorias(): array
     {
         return (array) config('golden.video_categorias');
@@ -63,11 +60,6 @@ class Video extends Model
     public static function thumb(?string $codigo): ?string
     {
         return $codigo === null || $codigo === '' ? null : 'https://i.ytimg.com/vi/'.$codigo.'/hqdefault.jpg';
-    }
-
-    public static function embed(?string $codigo): ?string
-    {
-        return $codigo === null || $codigo === '' ? null : self::EMBED.$codigo.'?autoplay=1&rel=0';
     }
 
     public function scopeAtivas($q)

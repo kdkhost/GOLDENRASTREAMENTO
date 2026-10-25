@@ -234,40 +234,94 @@ class PaginaDeFunilTest extends TestCase
     }
 
     /**
-     * O vídeo toca na própria faixa. Não há modal, não há marca do YouTube no quadro e o
-     * botão direito morre no vidro nosso — os únicos controles que existem são play,
-     * pause e volume daqui de baixo.
+     * O vídeo toca na própria faixa, no player da casa. Não há modal aqui, não há um byte do
+     * YouTube no quadro e o botão direito morre no vidro nosso — os únicos controles são
+     * tocar/pausar, mudo e volume. E nada toca sozinho: abrir o quadro não toca.
      */
     public function test_o_video_toca_na_faixa_sem_a_marca_do_youtube(): void
     {
         $html = $this->get('/c/frota-j16')->assertOk()->getContent();
 
-        $this->assertStringContainsString('class="f-video-slot" data-video-id="OhtdphIxdf0"', $html);
-        $this->assertStringContainsString('class="f-video-cartaz"', $html);
-        $this->assertStringContainsString('<div class="f-video-yt"><div class="f-video-quadro"></div></div>', $html);
-        $this->assertStringContainsString('class="f-video-vidro"', $html);
+        $this->assertStringContainsString('class="video-slot" data-video-id="OhtdphIxdf0"', $html);
+        $this->assertStringContainsString('class="video-cartaz"', $html);
+        $this->assertStringContainsString('<div class="video-yt"><div class="video-quadro"></div></div>', $html);
+        $this->assertStringContainsString('class="video-vidro"', $html);
         $this->assertStringContainsString('data-acao="tocar"', $html);
         $this->assertStringContainsString('data-acao="mudo"', $html);
         $this->assertStringContainsString('data-acao="volume"', $html);
 
         // O modal da galeria é de outra superfície: aqui não há nada que abra sobre a página.
         $this->assertStringNotContainsString('videoModal', $html);
-        $this->assertStringNotContainsString('f-video-abrir', $html);
-        // Nem o quadro que se solta da faixa e flutua sobre ela: ficou fora do lugar e saiu.
-        $this->assertStringNotContainsString('f-video-fechar', $html);
+        // Nem o quadro que se soltava da faixa e flutuava sobre ela: ficou fora do lugar e saiu.
+        $this->assertStringNotContainsString('f-video-', $html);
+        // Marca, nome e link do YouTube não aparecem em lugar nenhum da faixa.
+        $this->assertStringNotContainsString('Assistir no YouTube', $html);
+        $this->assertStringNotContainsString('fa-youtube', $html);
+    }
 
-        $js = file_get_contents(public_path('js/golden-funil.js'));
+    /**
+     * A regra do vídeo é uma fonte só: o mesmo player atende a faixa do funil e o modal da
+     * galeria, e o comportamento mora todo em golden-site.js — não há uma segunda folha.
+     */
+    public function test_o_player_da_casa_e_a_mesma_peca_na_faixa_e_no_modal(): void
+    {
+        $funil = file_get_contents(resource_path('views/site/funil/blocos/video.blade.php'));
+        $modal = file_get_contents(resource_path('views/site/partials/video-modal.blade.php'));
+        $player = file_get_contents(resource_path('views/site/partials/video-player.blade.php'));
+
+        $this->assertStringContainsString("site.partials.video-player", $funil);
+        $this->assertStringContainsString("site.partials.video-player", $modal);
+        $this->assertFileDoesNotExist(public_path('js/golden-funil.js'));
+        $this->assertStringNotContainsString('video-modal-yt', $modal);
+        // A peça não traz nenhum iframe escrito no HTML: o quadro é buraco vazio até um toque.
+        $this->assertStringNotContainsString('<iframe', $player);
+        $this->assertStringNotContainsString('src="https://www', $player);
+    }
+
+    /**
+     * Autoplay nunca, em parte alguma do player: o parâmetro entra desligado, a casa não dá
+     * play no pronto do player e o vídeo trocado entre cards entra em cue, não em load.
+     */
+    public function test_nada_no_player_toca_sozinho(): void
+    {
+        $js = file_get_contents(public_path('js/golden-site.js'));
+
+        $this->assertStringContainsString('autoplay: 0', $js);
+        $this->assertStringNotContainsString('autoplay: 1', $js);
+        $this->assertStringNotContainsString('autoplay=1', $js);
+        $this->assertStringNotContainsString("'autoplay;", $js);
+        // O play da casa só vem de um toque: o onReady não toca, quem toca é o pedido guardado.
+        $this->assertStringContainsString('if (pediuTocar) { pediuTocar = false; inst.playVideo(); }', $js);
+        $this->assertStringContainsString('cueVideoById', $js);
+        $this->assertStringNotContainsString('loadVideoById', $js);
+    }
+
+    /**
+     * O vidro é cortina e escudo: cobre o quadro enquanto o vídeo não toca, não deixa clique
+     * nem botão direito chegarem ao YouTube, e o nome que o YouTube escreve no iframe vira
+     * rótulo da casa.
+     */
+    public function test_o_vidro_cobre_o_quadro_enquanto_o_video_nao_toca(): void
+    {
+        $js = file_get_contents(public_path('js/golden-site.js'));
+        $css = file_get_contents(public_path('css/golden-site.css'));
+
         $this->assertStringContainsString("'https://www.youtube-nocookie.com'", $js);
         $this->assertStringContainsString('controls: 0', $js);
         $this->assertStringContainsString('disablekb: 1', $js);
         $this->assertStringContainsString("addEventListener('contextmenu'", $js);
-        // O player só é pedido no primeiro toque em assistir.
+        $this->assertStringContainsString("vidro.classList.toggle('cobre', !tocandoAgora)", $js);
+        // O nome que o YouTube escreve no iframe não sobra nem na árvore de acessibilidade.
+        $this->assertStringContainsString('inst.getIframe()', $js);
+        $this->assertStringContainsString("attributeFilter: ['title']", $js);
+        // O player só é pedido no primeiro abrir.
         $this->assertStringContainsString('comAYouTube(function () {', $js);
-        $this->assertStringNotContainsString('flutuante', $js);
-        $this->assertStringNotContainsString('IntersectionObserver', $js);
 
-        $css = file_get_contents(public_path('css/golden-funil.css'));
-        $this->assertStringNotContainsString('flutuante', $css);
+        $this->assertStringContainsString('.video-vidro.cobre{background:#05070a', $css);
+
+        $funil = file_get_contents(public_path('css/golden-funil.css'));
+        $this->assertStringNotContainsString('flutuante', $funil);
+        $this->assertStringNotContainsString('IntersectionObserver', $js);
     }
 
     /**

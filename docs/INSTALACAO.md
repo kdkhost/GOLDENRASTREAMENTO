@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.25.1
+- **Versão:** 2.25.2
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -846,12 +846,46 @@ só ela, já que é a única que usa.
 
 O `<iframe>` só existe depois que o visitante abre um cartão, e usa
 `youtube-nocookie.com` (nada é gravado em quem só passou os olhos pela galeria).
-Fechar o modal esvazia o player — é isso que corta o áudio. Cada clique conta
-"Abriu um tutorial em vídeo" na jornada do visitante (evento `video` de
-`config('golden.rastreio.eventos')`).
+Abrir **não** põe o vídeo para tocar: o quadro nasce coberto pelo vidro da casa e o
+play é sempre um toque seguinte em controle nosso. Fechar o modal pausa e volta o
+quadro ao zero — é isso que corta o áudio e é isso que não deixa a tela final do
+YouTube na frente de ninguém. Cada clique conta "Abriu um tutorial em vídeo" na
+jornada do visitante (evento `video` de `config('golden.rastreio.eventos')`).
 
 A galeria tem cartaz próprio (`hero_videos`), entrada no menu institucional, no
 rodapé e um link na seção de dúvidas da home — a home não repete os cartões.
+
+### O player da casa é uma peça só
+
+`resources/views/site/partials/video-player.blade.php` é o único lugar do projeto que
+descreve um quadro de vídeo. A faixa da campanha e o modal da galeria incluem o mesmo
+partial, então o comportamento é idêntico nas duas telas e a regra mora em um lugar só:
+o `montarVideo()` de `public/js/golden-site.js`. O `public/js/golden-funil.js` que a
+campanha tinha foi excluído, e nenhum `.blade.php` escreve `<iframe>` — quem monta o
+player é a API, sobre o nó `.video-quadro`.
+
+As três invariantes, cada uma com teste travando:
+
+- **nada toca sozinho.** `autoplay: 0`, `cueVideoById` ao trocar de vídeo (nunca
+  `loadVideoById`, que já sai tocando) e abrir quadro é só abrir. O toque dado antes
+  de a API chegar é guardado e aplicado no `onReady`, porque ali quem pediu foi o
+  visitante;
+- **nada diz YouTube.** Não há link, botão, marca ou texto do YouTube escrito pela
+  casa, e o `title` do iframe é o rótulo da faixa ou o título do tutorial — costurado
+  de volta por um `MutationObserver`, porque a API reescreve o atributo quando recebe
+  os metadados do vídeo;
+- **o vidro cobre enquanto não toca.** `.video-vidro.cobre` é opaco (`#05070a`) e
+  traz o selo dourado de play; ele levanta no primeiro frame tocando e desce de novo
+  ao pausar, ao terminar e ao fechar. O botão direito morre no vidro e na barra de
+  controles, nunca no player de fora.
+
+O que **não** se resolve por fora: enquanto o vídeo está tocando, o player do YouTube
+desenha a interface dele sobre a imagem (em janela estreita, o logo "Shorts", o
+volume, os três pontos, o joinha e o compartilhamento, mais o `@canal` embaixo). Não
+há parâmetro oficial que desligue isso — `controls: 0` e `modestbranding: 1` são o
+que existe. A única forma de um tutorial tocar sem marca nenhuma de fora é servir o
+arquivo `.mp4` no próprio site; enquanto o acervo estiver no YouTube, a casa cobre o
+quadro em todos os outros momentos.
 
 ### Migração e seed novas
 
@@ -915,16 +949,18 @@ foto, o bloco é texto sobre a pele da página.
 
 ### O vídeo da campanha toca na própria página
 
-O bloco **Vídeo de vendas** não abre modal nem leva ninguém para o YouTube: ele toca
-na faixa. Ao clicar em assistir, a API do YouTube entra em cena (só então — até ali
-a página não tem um byte de terceiros no caminho crítico) e monta o iframe com
-`controls: 0`, `disablekb: 1`, `fs: 0`, `rel: 0`, `modestbranding: 1` e o endereço
-`youtube-nocookie.com`. Sobre o quadro há um **vidro** nosso, transparente, que fica
-com o clique e com o botão direito — é o que devolve ao visitante um menu vazio em
-vez do menu do YouTube. Os únicos controles que existem são os da casa, embaixo do
-quadro: **tocar/pausar, mudo e a régua de volume**. O vídeo fica onde a faixa o pôs —
-não se solta da página ao rolar — e ao terminar volta ao cartaz e para no zero, pronto
-para assistir de novo com um toque.
+O bloco **Vídeo de vendas** é o `@include('site.partials.video-player', …)` da casa —
+a mesma peça do modal da galeria (seção 12), sem modal e sem link de saída. O bloco
+não abre janela nova nem leva ninguém para o YouTube: ele toca na faixa. Ao clicar em
+assistir, a API do YouTube entra em cena (só então — até ali a página não tem um byte
+de terceiros no caminho crítico) e monta o player sobre `.video-quadro`. O quadro
+entra em cena **coberto e calado**: o vidro da casa só levanta no primeiro frame
+tocando, e o play é sempre um toque em controle nosso. Sobre o quadro há um **vidro**
+que fica com o clique e com o botão direito — é o que devolve ao visitante um menu
+vazio em vez do menu de fora. Os únicos controles que existem são os da casa, embaixo
+do quadro: **tocar/pausar, mudo e a régua de volume**. O vídeo fica onde a faixa o
+pôs — não se solta da página ao rolar — e ao terminar volta ao cartaz e para no zero,
+pronto para assistir de novo com um toque.
 
 Duas coisas valem conferir antes de mexer na folha:
 
@@ -932,7 +968,7 @@ Duas coisas valem conferir antes de mexer na folha:
   `both`: o estado final do keyframe já é o padrão do elemento, e um `transform` preso
   no fim faria da seção o bloco de contenção de qualquer `position: fixed` que morasse
   nela;
-- o iframe entra no `.f-video-quadro`, nunca no `.f-video-yt`: a API troca o nó pelo
+- o player entra no `.video-quadro`, nunca no `.video-yt`: a API troca o nó pelo
   iframe e não repassa a classe dele.
 
 ### Os carrosséis da campanha
@@ -1300,9 +1336,11 @@ continua visível para você pelo painel ou SSH.
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`
       no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
       cadastro na tela da campanha (seção 13)
-- [ ] Vídeo da campanha: tocar em assistir abre o quadro **na própria página**, sem marca do
-      YouTube, sem a barra dele e sem menu de botão direito; sobem play/pause, mudo e volume
-      da casa, o quadro fica na faixa (não flutua) e ao terminar volta ao cartaz (seção 13)
+- [ ] Vídeo: na campanha e na galeria, abrir o quadro **não** põe nada para tocar — ele nasce
+      coberto pelo vidro da casa, sem autoplay e sem link de saída; só o toque em play (da
+      faixa, do modal ou do próprio vidro) sobe o vídeo, junto com play/pause, mudo e volume
+      da casa e sem menu de botão direito. Ao pausar ou terminar, o vidro desce de novo e o
+      quadro da faixa volta ao cartaz (seções 12 e 13)
 - [ ] Carrosséis da campanha: no notebook os benefícios ficam em **linha única** e a prova
       social em até três por vez, com os títulos centralizados; no celular um por vez,
       arrastando para qualquer lado, parado ao segurar (seção 13)

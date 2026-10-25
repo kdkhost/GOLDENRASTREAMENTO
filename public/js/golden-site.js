@@ -453,29 +453,245 @@
     });
   }
 
-  /* ---------- Galeria de vídeos: o player só entra no DOM quando o visitante abre ---------- */
+  /* ---------- O player da casa ----------
+     Uma peça só, servindo à faixa de vídeo do funil e ao modal da galeria. Duas regras
+     mandam nele, e as duas são do visitante:
+
+     1. nada toca sozinho. Abrir o quadro é uma coisa, tocar é outra — e tocar só acontece
+        quando o dedo cai sobre um play nosso (o selo do vidro ou o botão da barra). O
+        iframe nasce com autoplay: 0 e a casa não chama playVideo() em nenhum onReady;
+     2. nada do YouTube aparece. Os controles dele estão desligados, o endereço é o de
+        sem cookies, o vidro por cima não deixa clique nem hover caírem na superfície dele
+        e — enquanto o vídeo não está tocando — o vidro fica opaco, cobrindo o play
+        vermelho, a faixa de título e a tela de vídeos sugeridos. Até o nome que o YouTube
+        escreve no iframe vai embora: leva o rótulo da casa.
+
+     A API só é pedida no primeiro abrir, para a página não carregar um byte de terceiros
+     antes de alguém querer assistir. */
+  var ENDERECO_DA_API = 'https://www.youtube.com/iframe_api';
+  var filaDaApi = null;
+  var controladores = new WeakMap();
+
+  function comAYouTube(cb) {
+    if (window.YT && window.YT.Player) { cb(); return; }
+
+    filaDaApi = filaDaApi || [];
+    filaDaApi.push(cb);
+
+    if (document.querySelector('script[data-youtube-api]')) return;
+
+    var script = document.createElement('script');
+    script.src = ENDERECO_DA_API;
+    script.async = true;
+    script.setAttribute('data-youtube-api', '');
+    document.head.appendChild(script);
+
+    window.onYouTubeIframeAPIReady = function () {
+      var fila = filaDaApi || [];
+      filaDaApi = null;
+      fila.forEach(function (f) { f(); });
+    };
+  }
+
+  function montarVideo(slot) {
+    var cartaz = slot.querySelector('.video-cartaz');
+    var player = slot.querySelector('.video-player');
+    var quadro = slot.querySelector('.video-quadro');
+    var vidro = slot.querySelector('.video-vidro');
+    var botaoTocar = player.querySelector('[data-acao="tocar"]');
+    var botaoMudo = player.querySelector('[data-acao="mudo"]');
+    var regua = player.querySelector('[data-acao="volume"]');
+    var icone = botaoTocar.querySelector('i');
+
+    var inst = null;
+    var codigo = slot.getAttribute('data-video-id') || '';
+    var noQuadro = '';
+    var pediuTocar = false;
+
+    function tocando() {
+      return !!(inst && inst.getPlayerState && inst.getPlayerState() === window.YT.PlayerState.PLAYING);
+    }
+
+    function pintar() {
+      var tocandoAgora = tocando();
+      icone.className = 'fa-solid ' + (tocandoAgora ? 'fa-pause' : 'fa-play');
+      botaoTocar.setAttribute('aria-label', tocandoAgora ? 'Pausar o vídeo' : 'Tocar o vídeo');
+      vidro.classList.toggle('cobre', !tocandoAgora);
+
+      var mudo = !!(inst && inst.isMuted && inst.isMuted());
+      botaoMudo.querySelector('i').className = 'fa-solid ' + (mudo ? 'fa-volume-xmark' : 'fa-volume-high');
+      botaoMudo.setAttribute('aria-pressed', mudo ? 'true' : 'false');
+      botaoMudo.setAttribute('aria-label', mudo ? 'Tirar o silêncio' : 'Silenciar o vídeo');
+    }
+
+    // O rótulo é da casa, nunca o título que o YouTube dá ao vídeo — e o nome do iframe é o
+    // que um leitor de tela anuncia, então "YouTube video player" também tem de sair.
+    function etiquetar() {
+      var iframe = inst && inst.getIframe ? inst.getIframe() : null;
+      if (!iframe) return;
+
+      function nomeDaCasa() {
+        return slot.getAttribute('data-rotulo') || 'Vídeo';
+      }
+      if (iframe.getAttribute('title') !== nomeDaCasa()) iframe.setAttribute('title', nomeDaCasa());
+
+      // O YouTube escreve o nome do vídeo no iframe quando os metadados chegam, depois do
+      // nosso pronto. O observador devolve o rótulo da casa a cada troca: nem na árvore de
+      // acessibilidade a marca entra.
+      if (iframe.dataset.rotuloAmarrado) return;
+      iframe.dataset.rotuloAmarrado = '1';
+      new MutationObserver(function () {
+        if (iframe.getAttribute('title') !== nomeDaCasa()) iframe.setAttribute('title', nomeDaCasa());
+      }).observe(iframe, {attributes: true, attributeFilter: ['title']});
+    }
+
+    function criar() {
+      if (!codigo) return;
+      inst = new window.YT.Player(quadro, {
+        videoId: codigo,
+        // O mesmo endereço da galeria: sem cookie de terceiros no quadro.
+        host: 'https://www.youtube-nocookie.com',
+        playerVars: {
+          // controls:0 e o vidro por cima são o que tira o YouTube da tela. autoplay:0 é o
+          // que garante que nem a superfície dele, nem a casa, põem o vídeo pra rodar sozinhas.
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          iv_load_policy: 3,
+          modestbranding: 1,
+          playsinline: 1,
+          rel: 0,
+          origin: window.location.origin
+        },
+        events: {
+          onReady: function () {
+            // O volume que está na régua é o que o vídeo toca: a régua manda, o player obedece.
+            inst.setVolume(Number(regua.value));
+            noQuadro = codigo;
+            etiquetar();
+            // O toque dado enquanto a API estava a caminho não se perde: ele é o play pedido.
+            if (pediuTocar) { pediuTocar = false; inst.playVideo(); }
+            pintar();
+          },
+          onStateChange: function (e) {
+            if (e.data === window.YT.PlayerState.ENDED) terminar();
+
+            pintar();
+          }
+        }
+      });
+    }
+
+    // O vídeo que terminou volta ao estado de antes e para no zero: em casa, o cartaz; no
+    // modal, o quadro coberto. É o que não deixa a tela final do YouTube na frente de ninguém.
+    function terminar() {
+      pediuTocar = false;
+      if (inst) {
+        inst.pauseVideo();
+        inst.seekTo(0, true);
+      }
+      if (cartaz) {
+        player.hidden = true;
+        cartaz.hidden = false;
+      }
+    }
+
+    function alternar() {
+      if (!inst) {
+        pediuTocar = true;
+
+        return;
+      }
+      pediuTocar = false;
+      if (tocando()) {
+        inst.pauseVideo();
+      } else {
+        inst.playVideo();
+      }
+      pintar();
+    }
+
+    // Abrir é só abrir: o quadro entra em cena coberto e calado.
+    function abrir(novoCodigo) {
+      if (novoCodigo) codigo = novoCodigo;
+      if (cartaz) cartaz.hidden = true;
+      player.hidden = false;
+
+      comAYouTube(function () {
+        if (!inst) {
+          if (codigo) criar();
+
+          return;
+        }
+        // cue, e não load: cue deixa o vídeo pronto sem tocar.
+        if (codigo !== noQuadro) { inst.cueVideoById(codigo); noQuadro = codigo; }
+        etiquetar();
+        pintar();
+      });
+    }
+
+    if (cartaz) cartaz.addEventListener('click', function () { abrir(); });
+    botaoTocar.addEventListener('click', alternar);
+    // O vidro é a área do vídeo em si: tocar no selo também é play/pause.
+    vidro.addEventListener('click', alternar);
+
+    botaoMudo.addEventListener('click', function () {
+      if (!inst) return;
+      if (inst.isMuted && inst.isMuted()) inst.unMute(); else inst.mute();
+      pintar();
+    });
+
+    regua.addEventListener('input', function () {
+      if (!inst) return;
+      inst.setVolume(Number(regua.value));
+      if (Number(regua.value) > 0 && inst.isMuted && inst.isMuted()) inst.unMute();
+      pintar();
+    });
+
+    // Botão direito nunca chega ao YouTube: o vidro é nosso e ele bloqueia o menu aqui.
+    [vidro, player.querySelector('.video-controles')].forEach(function (camada) {
+      camada.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+
+        return false;
+      });
+    });
+
+    pintar();
+
+    return {
+      abrir: abrir,
+      // Parar corta o áudio sem despeçar o player: é o que fechar a página precisa de fazer.
+      parar: terminar,
+      estado: function () { return { codigo: codigo, noQuadro: noQuadro, tocando: tocando() }; }
+    };
+  }
+
+  function initVideo() {
+    document.querySelectorAll('.video-slot').forEach(function (slot) {
+      controladores.set(slot, montarVideo(slot));
+    });
+  }
+
+  /* ---------- Galeria de vídeos: o quadro só se abre quando o visitante escolhe ---------- */
   function initVideos() {
     var modal = document.getElementById('videoModal');
     var cards = document.querySelectorAll('[data-video]');
     if (!modal || !cards.length) return;
 
     var titulo = document.getElementById('videoModalTitulo');
-    var player = modal.querySelector('.video-player');
-    var yt = modal.querySelector('.video-modal-yt');
+    var slot = modal.querySelector('.video-slot');
     var botaoFechar = modal.querySelector('.video-modal-fechar');
+    var video = controladores.get(slot);
     var ultimoCard = null;
 
     function abrir(card) {
       ultimoCard = card;
       titulo.textContent = card.getAttribute('data-titulo') || 'Tutorial em vídeo';
-      yt.href = card.getAttribute('href');
-      var iframe = document.createElement('iframe');
-      // autoplay dentro do modal: o visitante já disse que quer ver este vídeo ao clicar.
-      iframe.src = 'https://www.youtube-nocookie.com/embed/' + card.getAttribute('data-video') + '?autoplay=1&rel=0';
-      iframe.title = titulo.textContent;
-      iframe.allow = 'autoplay; fullscreen; picture-in-picture';
-      iframe.setAttribute('allowfullscreen', '');
-      player.replaceChildren(iframe);
+      slot.setAttribute('data-rotulo', titulo.textContent);
+      // O quadro abre coberto e mudo. O play é o toque seguinte, sempre da casa.
+      if (video) video.abrir(card.getAttribute('data-video'));
       modal.classList.add('aberta');
       modal.setAttribute('aria-hidden', 'false');
       document.body.classList.add('video-aberto');
@@ -487,8 +703,8 @@
       modal.classList.remove('aberta');
       modal.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('video-aberto');
-      // Esvaziar o player é o que corta o áudio: só esconder o modal deixaria o iframe tocando.
-      player.replaceChildren();
+      // Parar o vídeo é o que corta o áudio: só esconder o modal deixaria ele tocando.
+      if (video) video.parar();
       if (ultimoCard) ultimoCard.focus();
     }
 
@@ -600,7 +816,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initCarrosseis(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initCarrosseis(); initVideo(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol();
     track('page_view', { page: location.pathname });
   });
 })();
