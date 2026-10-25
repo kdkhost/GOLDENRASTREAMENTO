@@ -9,6 +9,9 @@
   --flutuante-gap:22px;
   --selo-recaptcha:74px;
   --flutuante-bottom:var(--flutuante-gap);
+  /* Calha que o WhatsApp + voltar ao topo tomam no canto direito. Quem escreve no fim da
+     página — a barra do rodapé, a barra de cookies — desvia dela em vez de ficar atrás. */
+  --flutuante-largura:150px;
 }
 body:has(.grecaptcha-badge){--flutuante-bottom:calc(var(--selo-recaptcha) + var(--flutuante-gap))}
 
@@ -34,7 +37,7 @@ body:has(.grecaptcha-badge){--flutuante-bottom:calc(var(--selo-recaptcha) + var(
 
 @media(max-width:640px){
   /* No celular o recuo do canto encolhe e o stack inteiro acompanha o mesmo token. */
-  :root{--flutuante-gap:16px}
+  :root{--flutuante-gap:16px;--flutuante-largura:132px}
   .to-top{--to-top-size:46px}
   .to-top-face{inset:5px;font-size:.9rem}
 }

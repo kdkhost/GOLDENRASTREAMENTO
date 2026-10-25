@@ -12,7 +12,9 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   e a agência, cada um com o próprio link. Vive em `config('golden.credito')` — a mesma fonte
   dos autores do `composer.json`, que um teste compara com a tela para o site não desmentir o
   pacote. O rodapé do site e o da página de campanha incluem o mesmo parcial
-  (`partials.desenvolvedor`); nenhum dos dois escreve URL.
+  (`partials.desenvolvedor`); nenhum dos dois escreve URL. Ela desvia da calha dos botões
+  flutuantes (`--flutuante-largura`), que paira exatamente sobre o fim da página — sem a
+  calha, o nome ficava atrás dos dois botões em toda tela estreita.
 - **Uma régua só para o canto direito.** A distância do pé da tela virou o token
   `--flutuante-bottom` (em `golden-to-top.css`, carregado por site, funil, portal e painel), e
   WhatsApp flutuante, caixa multicanal e "voltar ao topo" passam a obedecê-lo.

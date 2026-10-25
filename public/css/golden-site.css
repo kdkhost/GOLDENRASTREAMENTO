@@ -427,8 +427,10 @@ body.video-aberto{overflow:hidden}
    links são um texto corrido e o mesmo display empilha cada um na sua linha. */
 .foot-bottom a{display:inline;margin:0;color:inherit}
 /* A assinatura de quem fez o sistema fecha a barra pelo canto direito: a margem automática
-   dela come o espaço sobrando, então os dois textos continuam encostados à esquerda. */
-.foot-dev{margin-left:auto;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+   dela come o espaço sobrando, então os dois textos continuam encostados à esquerda. A
+   calha à direita é dos botões flutuantes, que pairam sobre o fim da página — sem ela, o
+   nome ficava atrás deles em toda tela estreita. */
+.foot-dev{margin-left:auto;padding-inline-end:var(--flutuante-largura);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .foot-dev i{color:var(--gold);font-size:.78rem}
 .foot-dev a{display:inline;margin:0;color:var(--gold);text-decoration:none}
 .foot-dev a:hover{text-decoration:underline;text-underline-offset:3px}

@@ -35,6 +35,8 @@ class CantoDoRodapeTest extends TestCase
         $this->assertMatchesRegularExpression(
             '/body:has\(\.grecaptcha-badge\)\{--flutuante-bottom:calc\([^}]*--selo-recaptcha[^}]*\)\}/s', $topo,
             'Com o selo do reCAPTCHA na página, os flutuantes deixaram de subir acima dele.');
+        $this->assertMatchesRegularExpression('/:root\{[^}]*--flutuante-largura:\d+px/s', $topo,
+            'A calha dos flutuantes saiu do :root e cada rodapé voltaria a adivinhar a medida.');
 
         $site = file_get_contents(public_path('css/golden-site.css'));
         $this->assertMatchesRegularExpression('/\.wa-float\{[^}]*bottom:var\(--flutuante-bottom\)/s', $site,
@@ -74,10 +76,13 @@ class CantoDoRodapeTest extends TestCase
         }
 
         // Uma só assinatura para os dois rodapés, e ela é a última coisa da barra: o
-        // auto-margin é o que a encosta no canto direito.
+        // auto-margin é o que a encosta no canto direito. A calha à direita é a largura dos
+        // flutuantes, que pairam sobre o fim da página — sem ela o nome fica atrás deles.
         $css = file_get_contents(public_path('css/golden-site.css'));
         $this->assertMatchesRegularExpression('/\.foot-dev\{[^}]*margin-left:auto/s', $css,
             'A assinatura voltou para o meio da barra em vez do canto direito.');
+        $this->assertMatchesRegularExpression('/\.foot-dev\{[^}]*padding-inline-end:var\(--flutuante-largura\)/s', $css,
+            'A assinatura deixou de desviar da calha dos botões flutuantes.');
     }
 
     /**
