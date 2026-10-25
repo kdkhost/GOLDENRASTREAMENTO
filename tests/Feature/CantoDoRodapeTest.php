@@ -104,4 +104,53 @@ class CantoDoRodapeTest extends TestCase
         $this->assertSame($credito['email'], $autor['email'],
             'Site e pacote dão contatos diferentes para quem fez o sistema.');
     }
+
+    /**
+     * Nada na página pública pode ser mais largo que a tela. Quando é, o navegador entende
+     * que existe um lado direito para mostrar e habilita a rolagem horizontal: no celular,
+     * segurar e arrastar faz o site inteiro tremer. Três coisas garantem que isso não volta,
+     * medidas em todas as larguras de 320px a 1440px com zero de transbordo:
+     * a assinatura cabe quebrando linha, nenhuma coluna de grade cresce por causa do próprio
+     * conteúdo, e uma palavra maior que a coluna quebra em vez de vazar tinta para fora.
+     */
+    public function test_nada_na_pagina_publica_e_mais_largo_que_a_tela(): void
+    {
+        $site = file_get_contents(public_path('css/golden-site.css'));
+
+        $this->assertMatchesRegularExpression('/\.foot-dev\{[^}]*flex-wrap:wrap/s', $site,
+            'A assinatura do rodapé voltou a ser uma linha só: com a calha dos flutuantes ela não cabe no celular.');
+        preg_match('/\.foot-dev\{[^}]*\}/s', $site, $assinatura);
+        $this->assertNotEmpty($assinatura, 'O bloco .foot-dev saiu de cena.');
+        $this->assertDoesNotMatchRegularExpression('/white-space:nowrap/s', $assinatura[0],
+            'A assinatura cravou o texto em uma linha de novo e empurra a página para o lado.');
+
+        // Uma coluna declarada como "1fr" tem piso no conteúdo mínimo: uma palavra longa
+        // alarga a coluna, e a grade inteira passa da tela. O teto é o que quebra o ciclo.
+        preg_match_all('/grid-template-columns:([^;}]+)/s', $site, $colunas);
+        $this->assertNotEmpty($colunas[1], 'Nenhuma grade sobrou no CSS do site.');
+        foreach ($colunas[1] as $declaracao) {
+            foreach (preg_split('/\s+/', trim($declaracao), -1, PREG_SPLIT_NO_EMPTY) as $coluna) {
+                $this->assertDoesNotMatchRegularExpression('/^[0-9.]+fr$/', $coluna,
+                    "A coluna '{$coluna}' voltou a crescer com o próprio conteúdo e faz a página ter rolagem horizontal.");
+            }
+        }
+
+        $this->assertMatchesRegularExpression('/body\{[^}]*overflow-wrap:break-word/s', $site,
+            'Uma palavra maior que a coluna voltou a vazar tinta para fora da tela.');
+
+        // A calha reservada aos flutuantes é espaço que tira do texto: se crescer demais, é
+        // ela mesma que não cabe numa tela de celular.
+        $topo = file_get_contents(public_path('css/golden-to-top.css'));
+        preg_match_all('/--flutuante-largura:(\d+)px/s', $topo, $calhas);
+        $this->assertNotEmpty($calhas[1], 'A calha dos flutuantes deixou de ter medida no :root.');
+        foreach ($calhas[1] as $largura) {
+            $this->assertLessThanOrEqual(150, (int) $largura,
+                "A calha de {$largura}px come a tela do celular e a assinatura não tem onde caber.");
+        }
+
+        // Os dois botões do cartão de produto também não cabem lado a lado no celular.
+        $loja = file_get_contents(resource_path('views/site/store/index.blade.php'));
+        $this->assertMatchesRegularExpression('/\.prod-actions\{[^}]*flex-wrap:wrap/s', $loja,
+            'A linha de ações do cartão de produto voltou a ser uma linha só e alarga a loja.');
+    }
 }

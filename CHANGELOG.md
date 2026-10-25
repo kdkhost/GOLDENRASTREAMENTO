@@ -5,6 +5,32 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.26.2] - 2026-10-25
+
+### Corrigido
+- **O site para de sacudir quando se arrasta a tela para o lado no celular.** A assinatura do
+  rodapé foi publicada quebrando linha proibida (`white-space:nowrap`) e ainda com a calha dos
+  flutuantes somada à própria largura: numa tela de 390 px ela passava a página inteira em
+  87 px, o navegador entendia que havia um lado direito para mostrar e habilitava a rolagem
+  horizontal. A medida foi feita em tela, com o documento real, e não por suposição — e ela
+  achou dois transbordos antigos que a assinatura só tornou visível: a linha de botões
+  "Detalhes" + "Adicionar" do cartão de produto (15 px no celular, 34 px no tablet) e o e-mail
+  `comercial@goldenrastreamento.com.br`, uma palavra maior que a coluna do rodapé, que alargava
+  a grade em qualquer desktop.
+- **A regra, agora única:** nenhuma coluna de grade cresce por causa do próprio conteúdo
+  (`minmax(0,…)` em toda `grid-template-columns` do site), o que não cabe quebra linha em vez de
+  esticar (a assinatura e a linha de ações dos cartões), e uma palavra maior que a caixa quebra
+  no meio em vez de vazar tinta para fora da tela (`overflow-wrap` no `body`). A coluna de
+  contato do rodapé ganhou o espaço que faltava para o e-mail continuar inteiro em desktop.
+  Medido em `/`, `/loja`, `/videos` e `/c/frota-j16` em dez larguras, de 320 px a 1440 px:
+  zero de rolagem horizontal.
+
+### Adicionado
+- **Teste que vigia a largura da página** (`test_nada_na_pagina_publica_e_mais_largo_que_a_tela`):
+  nenhuma `grid-template-columns` pode voltar a declarar coluna `1fr` seca, a assinatura não pode
+  voltar a cravar linha única, a calha dos flutuantes não pode passar de 150 px e a linha de
+  ações do cartão de produto tem de poder quebrar.
+
 ## [2.26.1] - 2026-10-25
 
 ### Alterado

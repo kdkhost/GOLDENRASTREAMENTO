@@ -18,6 +18,11 @@ h2{font-size:clamp(1.7rem,3.6vw,2.5rem)}
 h3{font-size:1.25rem}
 p{margin:0 0 1rem}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+/* Uma coluna sempre pode receber uma palavra maior que ela: o e-mail comercial do rodapé
+   ("comercial@goldenrastreamento.com.br") não cabia na sua em telas de tablet e a tinta
+   transbordava, empurrando o documento para rolagem horizontal. A palavra quebra no meio;
+   a página alargar, nunca. */
+body{overflow-wrap:break-word}
 section{padding:84px 0}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-2);margin-bottom:14px}
 .eyebrow::before{content:"";width:26px;height:2px;background:var(--gold);border-radius:2px}
@@ -83,7 +88,7 @@ section{padding:84px 0}
 
 /* Hero */
 .hero{background:radial-gradient(1200px 600px at 80% -10%,rgba(31,158,134,.18),transparent 60%),radial-gradient(900px 500px at 10% 110%,rgba(224,163,62,.14),transparent 55%),linear-gradient(180deg,var(--dark),var(--dark-2));color:#fff;padding:96px 0 72px;position:relative;overflow:hidden}
-.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:52px;align-items:center}
 .hero h1 em{color:var(--gold);font-style:normal}
 .hero p{color:#c4ccd4;font-size:1.14rem;max-width:46ch}
 .hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin:26px 0 22px}
@@ -127,7 +132,7 @@ section{padding:84px 0}
 
 /* Faixa de confiança */
 .trust{border-top:1px solid rgba(255,255,255,.12);margin-top:64px;padding:28px 0 34px}
-.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.trust-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}
 .trust-item{display:flex;flex-direction:column;align-items:flex-start;gap:11px;color:#dbe2e9;font-size:.92rem;font-weight:500;line-height:1.4;max-width:210px}
 .trust-item i{width:42px;height:42px;flex:0 0 42px;border-radius:11px;background:rgba(224,163,62,.14);color:var(--gold);display:grid;place-items:center;font-size:1.1rem}
 
@@ -135,17 +140,17 @@ section{padding:84px 0}
 .sec-light{background:var(--paper)}
 .sec-alt{background:var(--paper-2)}
 .sec-dark{background:linear-gradient(180deg,var(--dark),var(--dark-2));color:#fff}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:44px}
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:26px;margin-top:44px}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin-top:44px}
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px;margin-top:44px}
 
 /* Título de um lado e conteúdo do outro (referência aprovada) */
-.split{display:grid;grid-template-columns:.92fr 1.08fr;gap:54px;align-items:start}
-.split-larga{grid-template-columns:.72fr 1.28fr}
+.split{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:54px;align-items:start}
+.split-larga{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr)}
 /* Coluna de título estreita: o h2 precisa descer de tamanho para não virar bloco de 5 linhas */
 .split-txt h2{font-size:clamp(1.55rem,2.3vw,2rem)}
 .split .faq,.split .ben-grid,.split .steps{margin-top:0}
 .split .faq{max-width:none}
-.ben-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px 24px}
+.ben-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px 24px}
 .ben i{font-size:1.55rem;color:var(--gold-2);display:block;margin-bottom:12px}
 .ben h4{margin:0 0 6px;font-size:1rem}
 .ben p{margin:0;color:var(--slate);font-size:.88rem}
@@ -156,7 +161,7 @@ section{padding:84px 0}
 .card p{color:var(--slate);margin:0}
 
 /* Segmentos */
-.seg-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:44px}
+.seg-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;margin-top:44px}
 .seg{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 18px;text-align:center;transition:.2s}
 .seg:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
 .seg i{font-size:1.7rem;color:var(--teal);margin-bottom:12px;display:block}
@@ -176,7 +181,7 @@ section{padding:84px 0}
 .seg-foto p{margin:0;font-size:.84rem;color:#c4ccd4}
 
 /* Atalhos da home para as páginas dedicadas */
-.atalhos{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:40px}
+.atalhos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:40px}
 .atalho{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;transition:border-color .2s ease,box-shadow .3s cubic-bezier(.22,.61,.36,1),transform .3s cubic-bezier(.22,.61,.36,1)}
 .atalho:hover{transform:translateY(-3px);border-color:rgba(224,163,62,.45);box-shadow:var(--shadow)}
 .atalho-ic{flex:none;width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,rgba(224,163,62,.16),rgba(31,158,134,.16));color:var(--gold-2);display:grid;place-items:center;font-size:1.15rem}
@@ -210,7 +215,7 @@ section{padding:84px 0}
 .fine{font-size:.82rem;color:var(--slate)}
 
 /* Passos */
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:48px}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:48px}
 .step{text-align:center;position:relative}
 .step .ic{width:64px;height:64px;margin:12px auto 16px;border-radius:18px;background:linear-gradient(135deg,rgba(224,163,62,.16),rgba(31,158,134,.14));color:var(--gold-2);display:grid;place-items:center;font-size:1.5rem}
 .sec-dark .step .ic{background:rgba(255,255,255,.06);color:var(--gold)}
@@ -380,13 +385,13 @@ section{padding:84px 0}
 body.video-aberto{overflow:hidden}
 
 /* Formulário de lead */
-.lead-panel{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.lead-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
 .form-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:34px;box-shadow:var(--shadow)}
 .field{margin-bottom:16px}
 .field label{display:block;font-weight:600;font-size:.88rem;margin-bottom:7px;color:var(--ink)}
 .field input,.field select,.field textarea{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:11px;font:inherit;color:var(--ink);background:#fff;transition:.15s}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px rgba(224,163,62,.14)}
-.row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 .field-title{display:block;font-weight:600;font-size:.88rem;margin-bottom:7px;color:var(--ink)}
 .field input[type=radio],.field input[type=checkbox]{width:auto;flex:none;accent-color:var(--gold)}
 .form-err{display:block;color:#d06a5f;font-size:.8rem;margin-top:6px}
@@ -415,7 +420,7 @@ body.video-aberto{overflow:hidden}
 
 /* Footer */
 .site-footer{background:var(--dark-2);color:#9fb0bd;padding:64px 0 28px;border-top:1px solid rgba(255,255,255,.06)}
-.foot-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1.2fr;gap:34px}
+.foot-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.95fr) minmax(0,.95fr) minmax(0,1.35fr);gap:34px}
 .site-footer h5{color:#fff;font-family:"Poppins";font-size:1rem;margin-bottom:16px}
 .site-footer a{display:block;color:#9fb0bd;font-size:.92rem;margin-bottom:9px;transition:.15s}
 .site-footer a:hover{color:var(--gold)}
@@ -429,8 +434,11 @@ body.video-aberto{overflow:hidden}
 /* A assinatura de quem fez o sistema fecha a barra pelo canto direito: a margem automática
    dela come o espaço sobrando, então os dois textos continuam encostados à esquerda. A
    calha à direita é dos botões flutuantes, que pairam sobre o fim da página — sem ela, o
-   nome ficava atrás deles em toda tela estreita. */
-.foot-dev{margin-left:auto;padding-inline-end:var(--flutuante-largura);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+   nome ficava atrás deles em toda tela estreita.
+   Ela quebra em vez de esticar: numa tela de celular, o texto inteiro em uma linha, mais a
+   calha de 132px, passou da largura da tela e o documento ganhou rolagem horizontal — segurar
+   e arrastar para o lado sacudia a página. Cada palavra se acomoda dentro da calha. */
+.foot-dev{margin-left:auto;padding-inline-end:var(--flutuante-largura);display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:7px;max-width:100%}
 .foot-dev i{color:var(--gold);font-size:.78rem}
 .foot-dev a{display:inline;margin:0;color:var(--gold);text-decoration:none}
 .foot-dev a:hover{text-decoration:underline;text-underline-offset:3px}
@@ -544,14 +552,14 @@ main>section:nth-child(n+4){animation-delay:.14s}
 
 /* Responsivo */
 @media(max-width:960px){
-  .hero-grid,.lead-panel,.split,.split-larga{grid-template-columns:1fr;gap:34px}
-  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.videos-grid{grid-template-columns:repeat(2,1fr)}
+  .hero-grid,.lead-panel,.split,.split-larga{grid-template-columns:minmax(0,1fr);gap:34px}
+  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.videos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   /* Três cartões em duas colunas deixaria um buraco na última linha: em tablet o
      destaque vira a faixa de cima e os dois outros dividem a de baixo. */
   .kits .kit.feature{grid-column:1/-1;order:-1}
   /* Solto na linha larga, o botão do destaque viraria uma barra; ele mantém a medida dos irmãos. */
   .kits .kit.feature .btn{max-width:360px;margin-inline:auto}
-  .ben-grid{grid-template-columns:repeat(2,1fr)}
+  .ben-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cta-final.cta-foto .cta-marca{display:none}
   /* Sem as duas colunas, o texto volta a ocupar a linha e a foto vira só pano de fundo. */
   .sec-foto .col-dir{grid-column:auto}
@@ -560,7 +568,7 @@ main>section:nth-child(n+4){animation-delay:.14s}
      cada lado aponta para o próprio assunto (o monitor / o equipamento). */
   .sec-foto-esq>.foto{object-position:70% 34%}
   .sec-foto-dir>.foto{object-position:16% 58%}
-  .foot-grid{grid-template-columns:1fr 1fr}
+  .foot-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .nav-cta .btn:not(.nav-toggle){display:none}
   .nav-links{display:none}
 
@@ -594,7 +602,7 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .drawer-close:hover{background:rgba(224,163,62,.24);color:#fff;transform:rotate(90deg)}
   body.nav-open .drawer-head{opacity:1;transform:none;transition-delay:.05s}
 
-  .nav-drawer .nav-item{display:grid;grid-template-columns:1fr auto;align-items:center;
+  .nav-drawer .nav-item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
     border-bottom:1px solid rgba(255,255,255,.06);
     opacity:0;transform:translateX(-16px);
     transition:opacity .3s ease,transform .3s cubic-bezier(.22,.61,.36,1)}
@@ -635,10 +643,10 @@ main>section:nth-child(n+4){animation-delay:.14s}
 }
 @media(max-width:600px){
   section{padding:60px 0}
-  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.row-2,.atalhos,.ben-grid,.videos-grid{grid-template-columns:1fr}
+  .grid-3,.kits,.steps,.trust-grid,.seg-grid,.row-2,.atalhos,.ben-grid,.videos-grid{grid-template-columns:minmax(0,1fr)}
   /* Uma coluna só: os kits voltam a ser lidos em ordem de grandeza (5, 10, 10+). */
   .kits .kit.feature{order:0}
-  .foot-grid{grid-template-columns:1fr}
+  .foot-grid{grid-template-columns:minmax(0,1fr)}
   .cookie{right:16px}
   .wa-float{width:52px;height:52px;font-size:1.5rem;right:16px}
   .to-top{right:80px}

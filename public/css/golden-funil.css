@@ -193,7 +193,7 @@ body.funil.pele-claro{
 @media (max-width:720px){
   body.funil section{padding:54px 0}
   .f-topo .wrap{flex-direction:column;align-items:flex-start;gap:10px;padding-top:12px;padding-bottom:12px}
-  .kits{grid-template-columns:1fr}
+  .kits{grid-template-columns:minmax(0,1fr)}
   /* Na coluna estreita o texto ocupa a largura toda sobre a foto: o véu deixa de ser
      degradê de lado e vira camada uniforme, senão a última linha sai ilegível. */
   .f-conteudo.com-foto::before{background:rgba(13,17,20,.9)}

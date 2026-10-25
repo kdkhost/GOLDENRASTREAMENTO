@@ -96,8 +96,11 @@
 .prod-stock{font-size:.82rem;margin-top:4px}
 .prod-stock .ok{color:var(--teal)}
 .prod-stock .out{color:#d06a5f}
-.prod-actions{display:flex;gap:8px;margin-top:auto;padding-top:12px}
-.prod-actions form{flex:1}
+.prod-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:12px}
+/* Cada botão tem texto inteiro e não encolhe: na tela de celular os dois lado a lado
+   passavam da largura do cartão, e o documento ganhava rolagem horizontal. A linha quebra
+   e cada botão passa a ocupar o cartão inteiro. */
+.prod-actions form{flex:1 1 120px;min-width:0}
 .prod-actions .btn{width:100%}
 </style>
 @endpush
