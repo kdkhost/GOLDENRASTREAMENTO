@@ -249,6 +249,7 @@ class AppServiceProvider extends ServiceProvider
                         ->map(fn ($p) => ['titulo' => $p['titulo'], 'rota' => 'site.pagina', 'param' => $p['slug']])
                         ->concat([
                             ['titulo' => 'Dúvidas frequentes', 'rota' => 'site.faq'],
+                            ['titulo' => 'Vídeos tutoriais', 'rota' => 'site.videos'],
                             ['titulo' => 'Política de privacidade', 'rota' => 'site.privacidade'],
                         ])
                         ->values()

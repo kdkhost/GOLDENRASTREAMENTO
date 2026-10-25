@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Faq;
 use App\Models\Page;
 use App\Models\Testimonial;
+use App\Models\Video;
 use Illuminate\Database\Seeder;
 
 class CmsSeeder extends Seeder
@@ -27,6 +28,48 @@ class CmsSeeder extends Seeder
         if (Faq::count() === 0) {
             foreach (config('golden.faq', []) as $i => $f) {
                 Faq::create(['pergunta' => $f['q'], 'resposta' => $f['a'], 'ordem' => $i, 'ativa' => true]);
+            }
+        }
+
+        // Galeria de vídeos tutoriais: os tutoriais que já estão no ar no canal da
+        // Golden, agrupados pelas categorias de config('golden.video_categorias'). O
+        // título não tem numeração de passo — a ordem de leitura é o campo 'ordem'.
+        if (Video::count() === 0) {
+            $videos = [
+                ['OhtdphIxdf0', 'aplicativo', 'Conheça o app Golden'],
+                ['WlYkoiqhZzI', 'aplicativo', 'Veja o histórico completo do seu veículo'],
+                ['JO3SKuPrkO0', 'aplicativo', 'Como habilitar ou desabilitar os alertas'],
+                ['O4RUKHo1K5A', 'aplicativo', 'Informações do veículo: tudo o que você precisa ver'],
+                ['Lm_9Xmx5-Pw', 'aplicativo', 'Como usar o Google Street View e o Google Maps no app'],
+                ['asxS978JC94', 'aplicativo', 'Como compartilhar o acesso do seu rastreador'],
+                ['dysoTH36NWQ', 'aplicativo', 'Suporte Golden: onde encontrar no app'],
+                ['ZejNzrvtI8A', 'aplicativo', 'Como alterar sua senha'],
+                ['XR7xaBQu60k', 'plataforma', 'Bloqueio e desbloqueio de um carro pela plataforma'],
+                ['8SWRF1gijT4', 'plataforma', 'Como pegar o histórico de um veículo'],
+                ['kvXDDEtE_Q8', 'plataforma', 'Como criar alertas personalizados e cercas virtuais'],
+                ['h_ETZlJNhNU', 'plataforma', 'Como fazer relatórios básicos'],
+                ['eoYFZdG0KVI', 'plataforma', 'Como fazer relatórios avançados'],
+                ['v0iu584YpmQ', 'plataforma', 'Despesas, serviços e manutenção'],
+                ['_Myu84LVlNA', 'plataforma', 'Como alterar dados do veículo'],
+                ['zhSFHX6RIK0', 'frotas', 'Cercas virtuais'],
+                ['QZBn-bajvec', 'frotas', 'Como criar limite de velocidade usando cercas virtuais'],
+                ['siGg6aXh6rQ', 'frotas', 'Como criar despesas para seu veículo na plataforma'],
+                ['H7c7pS7gfKU', 'frotas', 'Como realizar a manutenção do seu veículo?'],
+                ['r35J4su4o9w', 'bloqueio', 'Como usar o bloqueio e a âncora no app'],
+                ['dE5DGijpdR4', 'bloqueio', 'Bloqueio, desbloqueio e relatório de entrega de SMS'],
+                ['R8mdYgE4XdA', 'financeiro', 'Como se cadastrar no financeiro'],
+                ['hYGCvyJkwLo', 'financeiro', 'Como gerar e pagar a fatura'],
+                ['EZ8Hual-0iI', 'financeiro', 'Como pegar a fatura direto pelo aplicativo'],
+            ];
+
+            foreach ($videos as $i => [$codigo, $categoria, $titulo]) {
+                Video::create([
+                    'codigo' => $codigo,
+                    'categoria' => $categoria,
+                    'titulo' => $titulo,
+                    'ordem' => $i + 1,
+                    'ativa' => true,
+                ]);
             }
         }
 

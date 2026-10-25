@@ -16,6 +16,7 @@ use App\Models\Testimonial;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
+use App\Models\Video;
 use App\Models\Visit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -80,6 +81,7 @@ class PaginasDoPainelTest extends TestCase
             'admin.conteudo.depoimentos.edit' => ['depoimento' => Testimonial::firstOrFail()],
             'admin.conteudo.faqs.edit' => ['faq' => Faq::firstOrFail()],
             'admin.conteudo.paginas.edit' => ['pagina' => Page::firstOrFail()],
+            'admin.conteudo.videos.edit' => ['video' => Video::firstOrFail()],
             'admin.leads.show' => ['lead' => Lead::firstOrFail()],
             'admin.pedidos.show' => ['pedido' => Order::firstOrFail()],
             'admin.usuarios.edit' => ['user' => $this->admin],

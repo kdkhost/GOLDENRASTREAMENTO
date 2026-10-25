@@ -107,6 +107,7 @@
                 <h5>Suporte</h5>
                 <a href="{{ $golden['portal_url'] }}">Área do cliente</a>
                 <a href="{{ route('site.faq') }}">Dúvidas frequentes</a>
+                <a href="{{ route('site.videos') }}">Vídeos tutoriais</a>
                 <a href="{{ route('site.contato') }}">Fale conosco</a>
                 <a href="{{ route('site.privacidade') }}">Privacidade (LGPD)</a>
                 <p style="font-size:.8rem;margin-top:.6rem;color:var(--muted)">Chips M2M: {{ implode(', ', $golden['parceiros']) }}<br>Pagamento: {{ implode(' ou ', $golden['pagamentos']) }}</p>

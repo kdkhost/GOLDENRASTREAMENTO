@@ -5,6 +5,44 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.22.0] - 2026-10-24
+
+### Adicionado
+- **A galeria de vídeos tutoriais do site antigo voltou.** `/videos` lista os
+  tutoriais do aplicativo, da plataforma, das frotas, do bloqueio e das faturas,
+  com as categorias no alto da página e o player abrindo na mesma tela — sem
+  levar o visitante para fora do site.
+- **Admin → Conteúdo → Vídeos tutoriais.** Quem administra cola o link que copiou
+  do YouTube (`watch`, `youtu.be`, `shorts`, `embed`, `live` ou os onze caracteres
+  sozinhos) e o sistema guarda só o código; a miniatura, o endereço de assistir e o
+  player saem dele. O mesmo código não entra duas vezes na galeria, e o link colado
+  continua na tela quando o código não é encontrado.
+- Tabela `videos` (migration `2026_10_24_000004_cria_a_galeria_de_videos`) e os
+  24 tutoriais reais do site antigo já entram semeados, sem numeração de passo e
+  com os títulos corrigidos.
+
+### Detalhes
+- As categorias vivem em `config('golden.video_categorias')` — rótulo, ícone e cor
+  (`tons_status.video`) de uma fonte só, como os kits, os segmentos e os canais.
+- A galeria é servida do cache `golden.videos_site`: abrir `/videos` não consulta o
+  banco, e gravar no painel derruba o cache na hora. Filtro por categoria é link
+  verdadeiro (`?categoria=frotas`), então funciona sem JavaScript e é rastreável.
+- O `<iframe>` do YouTube (endereço `youtube-nocookie.com`) só entra no DOM quando o
+  visitante abre o vídeo, e sai quando fecha — esconder o modal deixaria o áudio
+  tocando. Sem JavaScript o cartão segue sendo um link para o YouTube.
+- O modal fica em `z-index:1080`: acima da gaveta do menu e do botão ao topo,
+  abaixo da camada do toastr, para o aviso nunca sumir atrás do vídeo. Abertura e
+  fechamento simétricos, `Esc` fecha, o foco entra no botão de fechar e volta para o
+  cartão, e a navegação por `Tab` fica dentro da caixa (`aria-modal`).
+- Cada cartão anuncia o passo "Abriu um tutorial em vídeo" na jornada (`video` em
+  `config('golden.rastreio.eventos')`), medido pelo farol próprio.
+- A home ganhou só o link para a galeria na seção de dúvidas, sem repetir os
+  cartões; o rodapé e o menu institucional também apontam para `/videos`.
+- Testes novos em `tests/Feature/GaleriaDeVideosTest.php` (11 casos: normalização do
+  link, vídeo repetido, erro em português, galeria sem player, filtro, vídeo oculto,
+  invalidação do cache e a home sem seção duplicada). Suíte completa: 267 testes,
+  2.932 asserções.
+
 ## [2.21.4] - 2026-10-24
 
 ### Corrigido

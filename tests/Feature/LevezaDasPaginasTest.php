@@ -49,6 +49,7 @@ class LevezaDasPaginasTest extends TestCase
             '/planos',
             '/como-funciona',
             '/faq',
+            '/videos',
             '/contato',
             '/privacidade',
             '/p/sobre',

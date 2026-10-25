@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VideoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalChamadoController;
@@ -44,6 +45,7 @@ Route::get('/para-quem', [PageController::class, 'segmentos'])->name('site.segme
 Route::get('/planos', [PageController::class, 'planos'])->name('site.planos');
 Route::get('/como-funciona', [PageController::class, 'comoFunciona'])->name('site.como-funciona');
 Route::get('/faq', [PageController::class, 'faq'])->name('site.faq');
+Route::get('/videos', [PageController::class, 'videos'])->name('site.videos');
 Route::get('/contato', [PageController::class, 'contato'])->name('site.contato');
 Route::get('/privacidade', [PageController::class, 'privacidade'])->name('site.privacidade');
 
@@ -307,6 +309,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
             Route::get('/{faq}/editar', [FaqController::class, 'edit'])->name('edit');
             Route::post('/{faq}', [FaqController::class, 'update'])->name('update');
             Route::delete('/{faq}', [FaqController::class, 'destroy'])->name('destroy');
+        });
+        Route::prefix('videos')->name('videos.')->group(function () {
+            Route::get('/', [VideoController::class, 'index'])->name('index');
+            Route::get('/novo', [VideoController::class, 'create'])->name('create');
+            Route::post('/', [VideoController::class, 'store'])->name('store');
+            Route::get('/{video}/editar', [VideoController::class, 'edit'])->name('edit');
+            Route::post('/{video}', [VideoController::class, 'update'])->name('update');
+            Route::delete('/{video}', [VideoController::class, 'destroy'])->name('destroy');
         });
     });
 

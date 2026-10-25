@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Faq;
 use App\Models\Page;
 use App\Models\Testimonial;
+use App\Models\Video;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PageController extends Controller
@@ -64,6 +66,29 @@ class PageController extends Controller
         return view('site.contato', [
             'kits' => config('golden.kits'),
             'perfis' => config('golden.perfis'),
+        ]);
+    }
+
+    /**
+     * A galeria inteira vem do cache e o filtro é feito sobre o array: trocar de categoria
+     * não consulta o banco, e a contagem de cada chip sai da mesma passada.
+     */
+    public function videos(Request $request): View
+    {
+        $todos = Video::paraSite();
+        $atual = (string) $request->query('categoria');
+
+        $contagem = [];
+        foreach ($todos as $video) {
+            $contagem[$video['categoria']] = ($contagem[$video['categoria']] ?? 0) + 1;
+        }
+
+        return view('site.videos', [
+            'videos' => $atual === '' ? $todos : array_values(array_filter($todos, fn (array $v) => $v['categoria'] === $atual)),
+            'todos' => count($todos),
+            'contagem' => $contagem,
+            'atual' => $atual,
+            'categorias' => Video::categorias(),
         ]);
     }
 

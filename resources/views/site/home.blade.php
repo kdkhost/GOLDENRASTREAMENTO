@@ -211,6 +211,7 @@
             <h2>Perguntas que mais recebemos.</h2>
             <p class="lead-sub">Tire suas dúvidas sobre o funcionamento, instalação, planos e muito mais.</p>
             <p><a href="{{ route('site.faq') }}" class="btn btn-gold" data-track="internal_link" data-cta="home_faq">Ver todas as perguntas →</a></p>
+            <p><a href="{{ route('site.videos') }}" class="btn btn-ghost" data-track="internal_link" data-cta="home_videos">Ver os vídeos tutoriais →</a></p>
         </div>
         <div class="faq">
             @foreach(array_slice($faq, 0, 5) as $f)

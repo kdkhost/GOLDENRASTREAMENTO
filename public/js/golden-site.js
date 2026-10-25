@@ -354,6 +354,72 @@
     });
   }
 
+  /* ---------- Galeria de vídeos: o player só entra no DOM quando o visitante abre ---------- */
+  function initVideos() {
+    var modal = document.getElementById('videoModal');
+    var cards = document.querySelectorAll('.video-card[data-video]');
+    if (!modal || !cards.length) return;
+
+    var titulo = document.getElementById('videoModalTitulo');
+    var player = modal.querySelector('.video-player');
+    var yt = modal.querySelector('.video-modal-yt');
+    var botaoFechar = modal.querySelector('.video-modal-fechar');
+    var ultimoCard = null;
+
+    function abrir(card) {
+      ultimoCard = card;
+      titulo.textContent = card.getAttribute('data-titulo') || 'Tutorial em vídeo';
+      yt.href = card.getAttribute('href');
+      var iframe = document.createElement('iframe');
+      // autoplay dentro do modal: o visitante já disse que quer ver este vídeo ao clicar.
+      iframe.src = 'https://www.youtube-nocookie.com/embed/' + card.getAttribute('data-video') + '?autoplay=1&rel=0';
+      iframe.title = titulo.textContent;
+      iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+      iframe.setAttribute('allowfullscreen', '');
+      player.replaceChildren(iframe);
+      modal.classList.add('aberta');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('video-aberto');
+      botaoFechar.focus();
+    }
+
+    function fecharModal() {
+      if (!modal.classList.contains('aberta')) return;
+      modal.classList.remove('aberta');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('video-aberto');
+      // Esvaziar o player é o que corta o áudio: só esconder o modal deixaria o iframe tocando.
+      player.replaceChildren();
+      if (ultimoCard) ultimoCard.focus();
+    }
+
+    cards.forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        // Com qualquer tecla modificada o visitante quer a aba nova — deixa o link seguir.
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        abrir(card);
+      });
+    });
+
+    modal.querySelectorAll('[data-video-close]').forEach(function (b) {
+      b.addEventListener('click', fecharModal);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') fecharModal();
+    });
+
+    // aria-modal sem armadilha de foco jogaria o visitante para trás do véu.
+    modal.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var focos = modal.querySelectorAll('.video-modal-caixa a[href], .video-modal-caixa button');
+      var primeiro = focos[0], ultimo = focos[focos.length - 1];
+      if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
+    });
+  }
+
   /* ---------- CTAs com rastreamento ---------- */
   function initCtas() {
     document.querySelectorAll('[data-track]').forEach(function (el) {
@@ -396,7 +462,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initPrefetch(); initCtas(); initFarol();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initVideos(); initPrefetch(); initCtas(); initFarol();
     track('page_view', { page: location.pathname });
   });
 })();

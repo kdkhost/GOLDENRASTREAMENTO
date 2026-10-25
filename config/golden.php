@@ -127,6 +127,11 @@ return [
             'alt' => 'Atendente da Golden respondendo dúvidas de clientes',
             'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
         ],
+        'hero_videos' => [
+            'pagina' => 'Vídeos tutoriais', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
+            'alt' => 'Cliente assistindo a um tutorial do aplicativo Golden no celular',
+            'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
+        ],
         'hero_privacidade' => [
             'pagina' => 'Política de Privacidade', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
             'alt' => 'Escudo de proteção sobre dados do veículo',
@@ -175,6 +180,12 @@ return [
             'eyebrow' => null,
             'titulo' => 'Perguntas que mais recebemos',
             'subtitulo' => 'Tire suas dúvidas sobre funcionamento, instalação, planos e muito mais.',
+        ],
+        'videos' => [
+            'rota' => 'site.videos', 'nome' => 'Vídeos tutoriais', 'rotulo' => 'Vídeos',
+            'eyebrow' => null,
+            'titulo' => 'Aprenda a usar a Golden em vídeo',
+            'subtitulo' => 'Tutoriais curtos do aplicativo, da plataforma, das cercas virtuais e das faturas.',
         ],
         'contato' => [
             'rota' => 'site.contato', 'nome' => 'Contato', 'rotulo' => 'Contato',
@@ -234,6 +245,12 @@ return [
         'movimento' => ['entrada' => 'green', 'saida' => 'red', 'ajuste' => 'gold'],
         // Selo de cada fotografia do site (SiteContentController::imagens): qual arquivo está no ar.
         'slot_imagem' => ['enviada' => 'gold', 'pacote' => 'neutral', 'ausente' => 'neutral'],
+        // Categoria da galeria de vídeos (config 'video_categorias'): o mesmo tom veste o selo
+        // do painel e o ponto de cor do cartão no site.
+        'video' => [
+            'aplicativo' => 'blue', 'plataforma' => 'teal', 'frotas' => 'violet',
+            'bloqueio' => 'amber', 'financeiro' => 'green',
+        ],
         // Origem da visita/lead, resolvida por Atribuidor::classificar() a partir das chaves
         // de 'canais' logo abaixo. O tom é o mesmo no cartão de atribuição e na ficha do lead.
         'canal' => [
@@ -369,6 +386,7 @@ return [
             'form_inicio' => ['rotulo' => 'Começou o formulário', 'icone' => 'fa-keyboard'],
             'lead' => ['rotulo' => 'Cadastro enviado', 'icone' => 'fa-user-plus'],
             'kit' => ['rotulo' => 'Escolheu um kit', 'icone' => 'fa-boxes-stacked'],
+            'video' => ['rotulo' => 'Abriu um tutorial em vídeo', 'icone' => 'fa-play'],
             'sacola' => ['rotulo' => 'Adicionou à sacola', 'icone' => 'fa-basket-shopping'],
             'checkout' => ['rotulo' => 'Foi ao checkout', 'icone' => 'fa-credit-card'],
             'pedido' => ['rotulo' => 'Pedido criado', 'icone' => 'fa-circle-check'],
@@ -519,6 +537,22 @@ return [
         ['icone' => 'fa-chart-line', 'titulo' => 'Comece a usar', 'texto' => 'Ative e acompanhe tudo pela plataforma.'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Categorias da galeria de vídeos
+    |--------------------------------------------------------------------------
+    | Uma régua só para o filtro da página pública, o seletor do painel e o rótulo
+    | que aparece no cartão. A chave é o valor gravado em videos.categoria: trocar o
+    | 'rotulo' é seguro, trocar a chave deixa órfãos os vídeos já cadastrados.
+    */
+    'video_categorias' => [
+        'aplicativo' => ['rotulo' => 'Aplicativo no celular', 'icone' => 'fa-mobile-screen-button'],
+        'plataforma' => ['rotulo' => 'Plataforma no computador', 'icone' => 'fa-laptop'],
+        'frotas' => ['rotulo' => 'Frotas e carros de aluguel', 'icone' => 'fa-truck'],
+        'bloqueio' => ['rotulo' => 'Bloqueio e âncora', 'icone' => 'fa-lock'],
+        'financeiro' => ['rotulo' => 'Financeiro e faturas', 'icone' => 'fa-file-invoice-dollar'],
+    ],
+
     // Menu do site (header + gaveta mobile). Itens com 'grupo' recebem filhos
     // montados pelo AppServiceProvider: 'loja' usa as categorias do catálogo e
     // 'institucional' usa as páginas publicadas no CMS. 'conta' não tem rota fixa:
@@ -570,6 +604,7 @@ return [
             ['titulo' => 'Imagens do site', 'rota' => 'admin.conteudo.imagens.index', 'prefixo' => 'admin.conteudo.imagens.', 'icone' => 'fa-image'],
             ['titulo' => 'Textos das páginas', 'rota' => 'admin.conteudo.textos.index', 'prefixo' => 'admin.conteudo.textos.', 'icone' => 'fa-heading'],
             ['titulo' => 'Depoimentos', 'rota' => 'admin.conteudo.depoimentos.index', 'prefixo' => 'admin.conteudo.depoimentos.', 'icone' => 'fa-quote-left'],
+            ['titulo' => 'Vídeos tutoriais', 'rota' => 'admin.conteudo.videos.index', 'prefixo' => 'admin.conteudo.videos.', 'icone' => 'fa-play'],
             ['titulo' => 'FAQs', 'rota' => 'admin.conteudo.faqs.index', 'prefixo' => 'admin.conteudo.faqs.', 'icone' => 'fa-circle-question'],
         ]],
 

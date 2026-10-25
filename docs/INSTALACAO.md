@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.21.4
+- **Versão:** 2.22.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -765,7 +765,62 @@ existiam recebem `fonte = 'site'` pelo próprio default da coluna.
 
 ---
 
-## 12. Retorno e confirmação: uma camada só
+## 12. Vídeos tutoriais na galeria do site
+
+A seção de vídeos do site antigo volta como página própria: `/videos`, com o
+cartaz editável do CMS, o filtro por categoria e o player abrindo na mesma tela.
+O conteúdo é a tabela `videos`; cada linha é um tutorial do YouTube.
+
+| Coluna | O que guarda |
+| --- | --- |
+| `titulo` | o nome do tutorial, até 160 caracteres |
+| `codigo` | os **11 caracteres** do YouTube — únicos, e é deles que saem miniatura, link e player |
+| `categoria` | uma das chaves de `config('golden.video_categorias')` |
+| `descricao` | opcional, até 500 caracteres |
+| `ordem` | define a sequência na galeria e na listagem do painel |
+| `ativa` | desligada esconde o vídeo do site sem apagar o registro |
+
+### Cadastrar pelo painel
+
+*Conteúdo → Vídeos tutoriais → Novo vídeo*. No campo **Link ou código do vídeo**
+cola-se exatamente o que o navegador copia — `watch?v=`, `youtu.be`, `shorts/`,
+`embed/`, `live/` ou o código sozinho. O sistema extrai o código de 11 caracteres
+antes de gravar; se não houver código ali, a mensagem diz isso em português e o
+texto colado continua no campo para corrigir. O mesmo código não entra duas vezes.
+A miniatura que o site vai mostrar aparece no card da direita, antes de salvar.
+
+Categorias, rótulos, ícones e cores ficam em dois lugares do mesmo arquivo
+(`config/golden.php`): `video_categorias` e `tons_status.video`. Criar uma
+categoria nova é acrescentar uma linha em cada bloco — não há tabela de categorias
+nem second CRUD para manter.
+
+### Como a página serve
+
+`Video::paraSite()` monta a galeria inteira no cache `golden.videos_site`, então
+abrir `/videos` não faz SELECT; gravar, editar ou excluir no painel derruba o
+cache na hora (`CachesContent`). O filtro por categoria é link verdadeiro
+(`?categoria=frotas`): funciona sem JavaScript, é indexável e não precisa de
+biblioteca de filtragem no cliente.
+
+O `<iframe>` só existe depois que o visitante abre um cartão, e usa
+`youtube-nocookie.com` (nada é gravado em quem só passou os olhos pela galeria).
+Fechar o modal esvazia o player — é isso que corta o áudio. Cada clique conta
+"Abriu um tutorial em vídeo" na jornada do visitante (evento `video` de
+`config('golden.rastreio.eventos')`).
+
+A galeria tem cartaz próprio (`hero_videos`), entrada no menu institucional, no
+rodapé e um link na seção de dúvidas da home — a home não repete os cartões.
+
+### Migração e seed novas
+
+`2026_10_24_000004_cria_a_galeria_de_videos` cria a tabela com índice único em
+`codigo` e índices em `(ativa, ordem)` e `categoria`. É aditiva e tem `down()`. O
+`CmsSeeder` insere os 24 tutoriais reais do site antigo só quando a tabela está
+vazia, então resemear não duplica nada.
+
+---
+
+## 13. Retorno e confirmação: uma camada só
 
 Toda resposta do sistema ao usuário — o que deu certo, o que impediu a ação e a
 pergunta antes de um ato destrutivo — sai por um único lugar:
@@ -817,7 +872,7 @@ Instalou e ainda apareceu `validation.required`? É cache de view antigo:
 
 ---
 
-## 13. Backup e restauração
+## 14. Backup e restauração
 
 ```bash
 # banco
@@ -839,7 +894,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 14. Problemas comuns
+## 15. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -855,7 +910,7 @@ ele, os dados criptografados e as sessões não voltam.
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/email.log`; depois configurar SMTP |
-| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 12) |
+| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 13) |
 | `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço que não existe fora do exemplo (domínio sem MX, como `@exemplo.com.br`) | esperado em conta de demonstração com e-mail fictício; o aviso à equipe saiu, o que não existe é a caixa de exemplo. Troque o `email_portal` da ficha por um endereço real e o ciclo fecha |
 | Falha de login no SMTP com senha certa no `.env` | `MAIL_PASSWORD` sem aspas e com `#` | escreva `MAIL_PASSWORD="..."` — sem aspas o `#` vira comentário |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
@@ -871,7 +926,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 15. Segurança
+## 16. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -904,7 +959,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 16. Checklist depois de instalar
+## 17. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
