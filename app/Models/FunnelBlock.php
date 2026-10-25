@@ -20,6 +20,9 @@ class FunnelBlock extends Model
     /** Grava na mesma chave da página: mexer num bloco muda o que o site serve. */
     protected array $cacheKeys = ['golden.paginas_funil'];
 
+    /** Os tipos que deslizam na tela: é por eles que a página carrega o Swiper. */
+    public const CARROSSEIS = ['beneficios', 'prova'];
+
     protected $fillable = [
         'funnel_page_id', 'tipo', 'titulo', 'texto', 'corpo', 'imagem', 'imagem_alt',
         'itens', 'cta_texto', 'cta_destino', 'cta2_texto', 'cta2_destino', 'limite_em',
@@ -183,6 +186,99 @@ class FunnelBlock extends Model
     public function imagemUrl(): ?string
     {
         return ConteudoSite::urlCaminho($this->imagem);
+    }
+
+    /**
+     * A prova social da faixa. Vêm primeiro os depoimentos aprovados da plataforma — eles
+     * trazem a foto, a nota e o selo do Google — e depois os digitados aqui que ainda não
+     * estão na lista. O nome decide a duplicidade, para a mesma pessoa não aparecer duas
+     * vezes na mesma campanha.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function depoimentos(int $limite = 12): array
+    {
+        $saindo = [];
+        $nomes = [];
+
+        foreach (Testimonial::aprovadosParaSite($limite) as $d) {
+            $nome = trim((string) $d['nome']);
+            $chave = self::nomeChave($nome);
+
+            // A mesma pessoa pode estar aprovada duas vezes na plataforma (pelo painel e
+            // pelo portal dela); na faixa ela aparece uma vez só, a que veio primeiro.
+            if ($nome === '' || trim((string) $d['texto']) === '' || in_array($chave, $nomes, true)) {
+                continue;
+            }
+
+            $nomes[] = $chave;
+            $saindo[] = [
+                'nome' => $nome,
+                'papel' => $d['papel'] ?: $d['cidade'],
+                'texto' => $d['texto'],
+                'nota' => $d['nota'],
+                'avatar' => $d['avatar'],
+                'iniciais' => $d['iniciais'],
+                'google' => ($d['fonte'] ?? 'site') === 'google',
+            ];
+
+            if (count($saindo) >= $limite) {
+                return $saindo;
+            }
+        }
+
+        foreach ($this->itens() as $item) {
+            $nome = trim((string) ($item['nome'] ?? ''));
+            $chave = self::nomeChave($nome);
+
+            if ($nome === '' || in_array($chave, $nomes, true)) {
+                continue;
+            }
+
+            $nomes[] = $chave;
+            $saindo[] = [
+                'nome' => $nome,
+                'papel' => $item['papel'] ?? null,
+                'texto' => (string) ($item['texto'] ?? ''),
+                'nota' => $item['nota'] ?? null,
+                'avatar' => self::fotoDigitada($item['avatar'] ?? null),
+                'iniciais' => self::iniciais($nome),
+                'google' => false,
+            ];
+
+            if (count($saindo) >= $limite) {
+                break;
+            }
+        }
+
+        return $saindo;
+    }
+
+    /** O nome sem espaço, acento nem pontuação: serve para comparar quem já foi citado. */
+    private static function nomeChave(string $nome): string
+    {
+        return (string) preg_replace('/\P{L}/u', '', mb_strtolower(trim($nome)));
+    }
+
+    private static function iniciais(string $nome): string
+    {
+        $partes = preg_split('/\s+/', trim($nome)) ?: [];
+
+        return mb_strtoupper(mb_substr($partes[0] ?? 'G', 0, 1).mb_substr($partes[1] ?? '', 0, 1));
+    }
+
+    /** O que foi digitado no campo pode ser um endereço completo ou um caminho do painel. */
+    private static function fotoDigitada(?string $valor): ?string
+    {
+        $valor = trim((string) $valor);
+
+        if ($valor === '') {
+            return null;
+        }
+
+        return preg_match('#^https?://#i', $valor) === 1
+            ? $valor
+            : ConteudoSite::urlCaminho($valor);
     }
 
     /** Primeira imagem do funil, para a OG da página quando ela não tem cartaz próprio. */

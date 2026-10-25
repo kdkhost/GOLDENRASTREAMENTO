@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\FunnelBlock;
 use App\Models\FunnelPage;
 use App\Models\Lead;
+use App\Models\Testimonial;
 use App\Models\User;
 use App\Models\Visit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -229,6 +231,138 @@ class PaginaDeFunilTest extends TestCase
         $css = file_get_contents(public_path('css/golden-funil.css'));
         $this->assertStringContainsString('.f-conteudo .f-foto{position:absolute;inset:0', $css);
         $this->assertStringContainsString('.f-conteudo.com-foto::before', $css);
+    }
+
+    /**
+     * O vídeo toca na própria faixa. Não há modal, não há marca do YouTube no quadro e o
+     * botão direito morre no vidro nosso — os únicos controles que existem são play,
+     * pause e volume daqui de baixo, mais o fechar do quadro solto.
+     */
+    public function test_o_video_toca_na_faixa_sem_a_marca_do_youtube(): void
+    {
+        $html = $this->get('/c/frota-j16')->assertOk()->getContent();
+
+        $this->assertStringContainsString('class="f-video-slot" data-video-id="OhtdphIxdf0"', $html);
+        $this->assertStringContainsString('class="f-video-cartaz"', $html);
+        $this->assertStringContainsString('<div class="f-video-yt"><div class="f-video-quadro"></div></div>', $html);
+        $this->assertStringContainsString('class="f-video-vidro"', $html);
+        $this->assertStringContainsString('data-acao="tocar"', $html);
+        $this->assertStringContainsString('data-acao="mudo"', $html);
+        $this->assertStringContainsString('data-acao="volume"', $html);
+        $this->assertStringContainsString('data-acao="fechar"', $html);
+
+        // O modal da galeria é de outra superfície: aqui não há nada que abra sobre a página.
+        $this->assertStringNotContainsString('videoModal', $html);
+        $this->assertStringNotContainsString('f-video-abrir', $html);
+
+        $js = file_get_contents(public_path('js/golden-funil.js'));
+        $this->assertStringContainsString("'https://www.youtube-nocookie.com'", $js);
+        $this->assertStringContainsString('controls: 0', $js);
+        $this->assertStringContainsString('disablekb: 1', $js);
+        $this->assertStringContainsString("addEventListener('contextmenu'", $js);
+        // O player só é pedido no primeiro toque em assistir.
+        $this->assertStringContainsString('comAYouTube(function () {', $js);
+    }
+
+    /**
+     * O quadro solta da faixa ao rolar para baixo e volta ao lugar de origem ao rolar para
+     * cima, sempre pelo centro da tela. O centro é o que a regra CSS garante: nenhum
+     * ancestral do slot pode reter transform, porque transform: none preso no keyframe
+     * final faria da seção o bloco de contenção do position:fixed e o atiraria para fora.
+     */
+    public function test_a_secao_de_abertura_nao_retido_transform_e_deixa_o_quadro_flutuar(): void
+    {
+        $css = file_get_contents(public_path('css/golden-site.css'));
+
+        $this->assertStringContainsString(
+            'main>section{animation:pageIn .34s cubic-bezier(.22,.61,.36,1) backwards}', $css);
+        $this->assertStringNotContainsString('main>section{animation:pageIn .34s cubic-bezier(.22,.61,.36,1) both}', $css);
+
+        $funil = file_get_contents(public_path('css/golden-funil.css'));
+        $this->assertStringContainsString('.f-video-player.flutuante{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)', $funil);
+    }
+
+    /** Benefícios: linha única na tela larga, um por vez e sentido reverso no celular. */
+    public function test_os_beneficios_sao_uma_linha_no_notebook_e_carrossel_no_celular(): void
+    {
+        $html = $this->get('/c/frota-j16')->assertOk()->getContent();
+
+        $this->assertStringContainsString('class="carrossel f-ben-carro"', $html);
+        $this->assertStringContainsString('data-rotulo="benefício"', $html);
+        $this->assertStringContainsString('data-sentido="reverso"', $html);
+        $this->assertStringContainsString('"1100":{"slidesPerView":4', $html);
+        $this->assertStringContainsString('<article class="f-ben">', $html);
+
+        // Sem a fileira de controles: a faixa desliza sozinha e o dedo a segura.
+        $ben = explode('class="carrossel f-ben-carro"', $html)[1];
+        $this->assertStringNotContainsString('carro-ctl', substr($ben, 0, strpos($ben, '</section>')));
+
+        $css = file_get_contents(public_path('css/golden-site.css'));
+        $this->assertStringContainsString('.carrossel.travado .carro-ctl{display:none}', $css);
+    }
+
+    /** A prova social é o carrossel da casa vestido de depoimento, com avatar e controles. */
+    public function test_a_prova_social_e_carrossel_com_avatar_e_controle(): void
+    {
+        Testimonial::create([
+            'nome' => 'Rita Rota', 'cidade' => 'Três Pontas', 'texto' => 'Equipamento firme.', 'nota' => 5,
+            'fonte' => 'google', 'externo_id' => 'rev-funil', 'avatar' => 'site/depoimentos/rita.jpg', 'aprovado' => true,
+        ]);
+        Storage::disk('public')->put('site/depoimentos/rita.jpg', 'foto');
+
+        $html = $this->get('/c/frota-j16')->assertOk()->getContent();
+
+        $this->assertStringContainsString('class="carrossel f-prova-carro"', $html);
+        $this->assertStringContainsString('data-rotulo="depoimento"', $html);
+        $this->assertStringContainsString('class="depo-card"', $html);
+        $this->assertStringContainsString('class="avatar"', $html);
+        $this->assertStringContainsString('Rita Rota', $html);
+        $this->assertStringContainsString('site/depoimentos/rita.jpg', $html);
+        $this->assertStringContainsString('class="swiper-pagination carro-dots"', $html);
+        $this->assertStringContainsString('class="carro-nav carro-prev"', $html);
+        $this->assertStringContainsString('fa-brands fa-google', $html);
+    }
+
+    /** Os aprovados da plataforma entram primeiro e o que foi digitado no bloco não repete ninguém. */
+    public function test_o_carrossel_mistra_os_aprovados_sem_repetir_nome(): void
+    {
+        Testimonial::create([
+            'nome' => 'Douglas', 'cidade' => 'Três Pontas', 'texto' => 'Atendimento top.', 'nota' => 5,
+            'fonte' => 'site', 'aprovado' => true,
+        ]);
+
+        $bloco = $this->campanha->blocks()->where('tipo', 'prova')->firstOrFail();
+        $bloco->update(['itens' => "Douglas|cliente|Duplicado de quem já está aprovado.\nSeu Novo|empresa|Texto novo."]);
+
+        $itens = $bloco->depoimentos();
+        $nomes = array_column($itens, 'nome');
+
+        $this->assertContains('Douglas', $nomes);
+        $this->assertContains('Seu Novo', $nomes);
+        $this->assertSame(count($nomes), count(array_unique($nomes)), 'Ninguém pode aparecer duas vezes.');
+        $this->assertSame(1, array_count_values($nomes)['Douglas'], 'Aprovado duas vezes na plataforma é um card só.');
+        $this->assertCount(4, $itens, 'Três aprovados únicos mais o digitado novo.');
+    }
+
+    /** O Swiper é da casa inteira, mas a campanha que não desliza não paga por ele. */
+    public function test_o_swiper_so_entrega_na_campanha_que_tem_carrossel(): void
+    {
+        $this->get('/c/frota-j16')->assertOk()
+            ->assertSee('vendor/swiper/swiper-bundle.min.js', false)
+            ->assertSee('vendor/swiper/swiper-bundle.min.css', false);
+
+        $simples = FunnelPage::create([
+            'nome' => 'Campanha sem faixa', 'slug' => 'sem-faixa', 'status' => 'publicada',
+            'titulo' => 'Só o essencial',
+        ]);
+        $simples->blocks()->create(['tipo' => 'hero', 'titulo' => 'Abertura', 'ordem' => 1, 'ativa' => true]);
+        $simples->blocks()->create(['tipo' => 'formulario', 'titulo' => 'Cadastre-se', 'ordem' => 2, 'ativa' => true]);
+
+        $this->assertFalse($simples->temCarrossel());
+        $this->assertTrue($this->campanha->temCarrossel());
+        $this->get('/c/sem-faixa')->assertOk()
+            ->assertDontSee('vendor/swiper/swiper-bundle.min.js', false)
+            ->assertDontSee('vendor/swiper/swiper-bundle.min.css', false);
     }
 
     public function test_o_bloco_guarda_so_os_campos_que_o_tipo_declara(): void

@@ -49,6 +49,8 @@
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-funil.css') }}?v={{ filemtime(public_path('css/golden-funil.css')) }}">
+    {{-- O bloco que desliza puxa o Swiper; os outros blocos deixam a página leve. --}}
+    @stack('styles')
 
     {{-- Os pixels são da página, não do site inteiro: cada campanha measure só o que
          aconteceu nela. A barra de consentimento está na tela e o rodapé leva à política. --}}
@@ -102,7 +104,8 @@
 @include('partials.to-top')
 @include('site.partials.cookie-bar')
 @include('partials.avisos', ['confirmacoes' => false])
-@include('site.partials.video-modal')
+{{-- Sem o modal de vídeo da galeria: aqui o player toca na própria faixa (bloco de vídeo),
+     então não há nada que abra em cima da página. --}}
 
 @php
     // O que o golden-site.js precisa saber para medir a página: o endereço do farol e as
@@ -122,6 +125,8 @@
 <script>window.GOLDEN = @json($medicao);</script>
 <script src="{{ asset('js/golden-site.js') }}?v={{ filemtime(public_path('js/golden-site.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
+{{-- O player embutido e os carrosséis dos blocos carregam o que só esta página usa. --}}
+@stack('scripts')
 {!! $pagina->codigo_body !!}
 </body>
 </html>

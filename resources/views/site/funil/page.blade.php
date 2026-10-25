@@ -4,6 +4,17 @@
     @foreach($pagina->esquemas() as $esquema)
     <script type="application/ld+json">{!! json_encode($esquema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     @endforeach
+
+    @if($pagina->temCarrossel())
+    {{-- O Swiper é da casa inteira, mas só entra na campanha que tem faixa deslizante: sem
+         ele os cards ficam abertos em flex-wrap e a página continua legível. --}}
+    @push('styles')
+    <link rel="stylesheet" href="{{ asset('vendor/swiper/swiper-bundle.min.css') }}?v={{ filemtime(public_path('vendor/swiper/swiper-bundle.min.css')) }}">
+    @endpush
+    @push('scripts')
+    <script src="{{ asset('vendor/swiper/swiper-bundle.min.js') }}?v={{ filemtime(public_path('vendor/swiper/swiper-bundle.min.js')) }}"></script>
+    @endpush
+    @endif
 @endsection
 
 @section('content')

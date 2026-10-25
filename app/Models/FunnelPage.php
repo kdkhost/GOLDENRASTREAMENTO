@@ -192,6 +192,21 @@ class FunnelPage extends Model
         return $this->blocks->filter(fn (FunnelBlock $b) => $b->ativa && in_array($b->tipo, $tipos, true))->values()->all();
     }
 
+    /**
+     * Alguma faixa desta página desliza. É o que decide carregar o Swiper: o arquivo tem
+     * corpo, e a campanha que abre no clique do anúncio precisa chegar leve.
+     */
+    public function temCarrossel(): bool
+    {
+        foreach ($this->blocosParaSite() as $bloco) {
+            if (in_array($bloco->tipo, FunnelBlock::CARROSSEIS, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** O primeiro bloco deste tipo — é o que a página usa para o que não vem preenchido. */
     public function bloco(string $tipo): ?FunnelBlock
     {

@@ -278,7 +278,7 @@ class DepoimentosDasTresOrigensTest extends TestCase
 
         $this->get(route('site.home'))
             ->assertOk()
-            ->assertSee('js-depoimentos')
+            ->assertSee('js-carrossel')
             ->assertSee('Bom demais.')
             ->assertSee('storage/site/depoimentos/joao.jpg')
             ->assertSee('Cliente de longa data.')

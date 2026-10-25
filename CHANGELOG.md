@@ -5,6 +5,68 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.25.0] - 2026-10-25
+
+### Adicionado
+- **O vídeo da campanha toca na própria página.** O bloco "Vídeo de vendas" do funil
+  abria o modal da galeria, que é da superfície do site: na página de campanha ele
+  devolvia a marca e as informações do YouTube por cima do conteúdo. Agora o quadro
+  nasce na própria faixa, com a API montando o iframe em `.f-video-quadro` dentro de
+  `youtube-nocookie.com` com `controls: 0`, `disablekb: 1`, `fs: 0`, `rel: 0`,
+  `modestbranding: 1` e `playsinline: 1`, coberto por um **vidro** nosso que fica com
+  o clique e com o **botão direito**. Os controles que existem são os da casa — tocar/
+  pausar, mudo e a régua de volume — mais o fechar, que só aparece com o quadro solto.
+  A API do YouTube só é pedida no primeiro toque em assistir.
+- **O quadro flutua com a rolagem, sempre pelo centro.** Passou do vídeo ao rolar para
+  baixo, ele se desprende da faixa e fica fixo **no centro da tela** (nunca no canto);
+  a rolagem devolveu a faixa à vista, ele volta ao lugar de origem **e pausa** — pausa
+  do percurso, não do visitante — e rolar para baixo outra vez o solta **retomando do
+  ponto em que parou**. Terminou, ou o visitante fechou, volta ao cartaz e para no zero.
+- **Carrossel compartilhado do site.** `initDepoimentos` virou `initCarrosseis` em
+  `public/js/golden-site.js`: um `div.carrossel` + `.swiper.js-carrossel` é agora o
+  único jeito de fazer fileira deslizante, no site e no funil. O ritmo, o rótulo para o
+  leitor de tela e os breakpoints vêm dos atributos `data-avanco`, `data-rotulo`,
+  `data-sentido` e `data-passos` do próprio elemento; a regra de deslizar fica em um
+  lugar só. Avanço automático **para ao segurar** no celular e **ao passar o mouse** no
+  desktop, e a fila de controles some quando não há para onde ir
+  (`.carrossel.travado .carro-ctl{display:none}`).
+- **A prova social do funil é o carrossel com avatar.** `FunnelBlock::depoimentos()`
+  coloca na frente os **depoimentos aprovados da plataforma** — com cidade ou papel,
+  nota em estrelas, foto quando existe (senão as iniciais) e o selo do Google para os
+  importados — e soma, sem repetir ninguém, o que for digitado no próprio bloco. O campo
+  **Foto do depoimento** entrou nas colunas do tipo no painel.
+
+### Alterado
+- **Benefícios: linha única no notebook, um por vez no celular.** Os quatro cards que
+  quebravam 3 + 1 viraram a mesma fileira deslizante: até **4 por vez** a partir de
+  1100 px, dois a partir de 640 px, **um por vez** abaixo disso, com arraste para
+  qualquer lado, **sentido reverso** e 4,2 s de avanço. Cards iguais em altura, ícone,
+  título e texto, e o hover que levanta o card voltou.
+- **Campanha centralizada na tela larga.** A partir de 721 px os títulos, os resumos, a
+  contagem regressiva e as chamadas de **Benefícios**, **Prova social** e **Urgência**
+  ficam no centro — a contagem da urgência não anda mais solta à esquerda com vão morto
+  ao lado. No celular tudo continua alinhado à esquerda.
+- **O Swiper só é chamado por quem desliza.** `FunnelPage::temCarrossel()` decide, na
+  view, se a folha e o script (154 KB de JS) entram nos `@stack` da carcaça do funil.
+  Campanha sem faixa deslizante continua sem um byte de Swiper, e o carrossel é
+  self-hosted em `public/vendor/swiper/` — nada de CDN no caminho.
+- **`rewind`, não `loop`.** Com poucos slides o `loop` do Swiper duplica o miolo da
+  lista e reclama no console; o `rewind` volta ao começo sem inventar depoimento e
+  funciona com qualquer número de cards por vez.
+
+### Corrigido
+- **A animação de abertura prendia o vídeo fora da tela.** `main>section` entrava com
+  `animation: pageIn … both`, e o `both` retém o último keyframe para sempre — inclusive
+  o `transform`. Uma seção com `transform` (mesmo o `matrix(1,0,0,1,0,0)` da identidade)
+  vira o bloco de contenção dos descendentes `position: fixed`, então o quadro flutuante
+  se media pela seção, não pela janela, e aparecia acima da tela. A folha agora usa
+  `backwards`: o estado final do keyframe já é o padrão do elemento, nada fica retido e
+  o centro volta a ser o centro da janela. Há teste travando essa regra.
+- **Depoimento aprovado duas vezes era um card só.** A mesclagem comparava o digitado do
+  bloco com os aprovados, mas não os aprovados entre si; a mesma pessoa aprovada pelo
+  painel e pelo portal aparecia repetida na mesma faixa. A comparação de nome
+  (sem espaço, acento nem pontuação) agora vale para as duas origens.
+
 ## [2.24.0] - 2026-10-25
 
 ### Adicionado

@@ -362,30 +362,94 @@
     });
   }
 
-  /* ---------- Depoimentos: carrossel arrastável (1 por vez em telas menores) ---------- */
-  function initDepoimentos() {
-    var swiperEl = document.querySelector('.js-depoimentos');
-    if (!swiperEl || typeof window.Swiper === 'undefined') return;
-    var caixa = swiperEl.closest('.depo');
+  /* ---------- Carrosséis: um init para toda lista que desliza ----------
+     A marcação é sempre a mesma (.carrossel > .swiper > .swiper-wrapper > .swiper-slide,
+     com os opcionais .carro-dots / .carro-prev / .carro-next na caixa). O que muda entre um
+     carrossel e outro vem dos atributos do próprio .js-carrossel, para a regra ficar em um
+     lugar só:
 
-    new window.Swiper(swiperEl, {
-      slidesPerView: 1,
-      spaceBetween: 16,
-      grabCursor: true,
-      simulateTouch: true,
-      touchRatio: 1.2,
-      threshold: 5,
-      watchOverflow: true,
-      rewind: true,
-      speed: semMovimento ? 0 : 600,
-      keyboard: { enabled: true, onlyInViewport: true },
-      a11y: { prevSlideMessage: 'Depoimento anterior', nextSlideMessage: 'Próximo depoimento' },
-      autoplay: semMovimento ? false : { delay: 5500, disableOnInteraction: false, pauseOnMouseEnter: true },
-      pagination: { el: caixa.querySelector('.depo-dots'), clickable: true },
-      navigation: { prevEl: caixa.querySelector('.depo-prev'), nextEl: caixa.querySelector('.depo-next') },
-      breakpoints: {
-        768: { slidesPerView: 2, spaceBetween: 24 }
+       data-avanco   ms entre um slide e o próximo; ausente = não avança sozinho
+       data-sentido  'reverso' para o avanço andar para trás
+       data-passos   JSON dos breakpoints, no formato do Swiper
+
+     Sem o Swiper carregado a lista continua legível: o CSS dela própria abre os slides em
+     flex-wrap, então nenhuma tela depende do script para mostrar o conteúdo. */
+  function initCarrosseis() {
+    if (typeof window.Swiper === 'undefined') return;
+
+    document.querySelectorAll('.js-carrossel').forEach(function (el) {
+      if (el.swiper) return;
+
+      var caixa = el.closest('.carrossel') || el.parentElement;
+      var passos;
+      try {
+        passos = JSON.parse(el.getAttribute('data-passos') || 'null');
+      } catch (e) {
+        passos = null;
       }
+      passos = passos || {};
+
+      var avanco = parseInt(el.getAttribute('data-avanco') || '0', 10);
+      // O nome do que desliza sai do próprio carrossel: o leitor de tela ouve
+      // "Depoimento anterior" na fila de depoimentos e "Benefício anterior" na de cards.
+      var rotulo = el.getAttribute('data-rotulo') || 'item';
+      var dots = caixa.querySelector('.carro-dots');
+      var anterior = caixa.querySelector('.carro-prev');
+      var proximo = caixa.querySelector('.carro-next');
+      var andando = avanco > 0 && el.querySelectorAll('.swiper-slide').length > 1;
+
+      var carrossel = new window.Swiper(el, {
+        slidesPerView: 1,
+        spaceBetween: 16,
+        grabCursor: true,
+        simulateTouch: true,
+        touchRatio: 1.2,
+        threshold: 5,
+        watchOverflow: true,
+        // rewind, e não loop: com rewind o Swiper não duplica slides, então a fila serve
+        // igual na tela em que tudo cabe (fica parada) e na estreita (volta ao fim ao
+        // chegar no começo) sem o aviso de "slides insuficientes para o modo loop".
+        rewind: true,
+        speed: semMovimento ? 0 : 600,
+        keyboard: { enabled: true, onlyInViewport: true },
+        a11y: { prevSlideMessage: rotulo + ' anterior', nextSlideMessage: 'Próximo ' + rotulo },
+        autoplay: (!andando || semMovimento) ? false : {
+          delay: avanco,
+          disableOnInteraction: false,
+          // No notebook basta passar o mouse para a fila parar de andar.
+          pauseOnMouseEnter: true,
+          reverseDirection: el.getAttribute('data-sentido') === 'reverso'
+        },
+        pagination: dots ? { el: dots, clickable: true } : false,
+        navigation: (anterior && proximo) ? { prevEl: anterior, nextEl: proximo } : false,
+        breakpoints: passos
+      });
+
+      // Travado = nada a deslizar nesta largura (os cards todos cabem em uma linha). A
+      // caixa recebe a classe para os pontos sumirem, e o avanço automático se desliga:
+      // sem espaço para andar ele só ficaria batendo no fim da fila. Ao reduzir a janela,
+      // o resize reavalia e a fila volta a andar sozinha.
+      function travado() {
+        var parado = carrossel.isLocked === true;
+        caixa.classList.toggle('travado', parado);
+        if (!parado) return;
+        if (carrossel.autoplay) carrossel.autoplay.stop();
+      }
+      function solto() {
+        if (carrossel.isLocked === true) return;
+        if (andando && !semMovimento && carrossel.autoplay) carrossel.autoplay.start();
+      }
+      carrossel.on('resize', function () { travado(); solto(); });
+      travado();
+
+      // No celular "segurar" é o gesto de pausa: o dedo parado congela o avanço e ele só
+      // volta quando solta. O hover do desktop já está coberto pelo pauseOnMouseEnter.
+      el.addEventListener('touchstart', function () {
+        if (carrossel.autoplay) carrossel.autoplay.stop();
+      }, { passive: true });
+      el.addEventListener('touchend', function () {
+        solto();
+      }, { passive: true });
     });
   }
 
@@ -536,7 +600,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initDepoimentos(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initCarrosseis(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol();
     track('page_view', { page: location.pathname });
   });
 })();

@@ -175,8 +175,9 @@
         <span class="eyebrow">Depoimentos</span>
         <h2>Quem confia, recomenda.</h2>
         <p class="lead-sub">Avaliações reais de clientes Golden Rastreamento. Segure e arraste para ver mais.</p>
-        <div class="depo">
-            <div class="swiper js-depoimentos">
+        <div class="depo carrossel">
+            <div class="swiper js-carrossel" data-rotulo="depoimento" data-avanco="5500"
+                data-passos='@json(['768' => ['slidesPerView' => 2, 'spaceBetween' => 24]])'>
                 <div class="swiper-wrapper">
                     @foreach($depoimentos as $d)
                     <div class="swiper-slide">
@@ -193,10 +194,10 @@
                     @endforeach
                 </div>
             </div>
-            <div class="depo-ctl">
-                <button type="button" class="depo-nav depo-prev" aria-label="Depoimento anterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
-                <div class="swiper-pagination depo-dots"></div>
-                <button type="button" class="depo-nav depo-next" aria-label="Próximo depoimento"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+            <div class="carro-ctl">
+                <button type="button" class="carro-nav carro-prev" aria-label="Depoimento anterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                <div class="swiper-pagination carro-dots"></div>
+                <button type="button" class="carro-nav carro-next" aria-label="Próximo depoimento"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
             </div>
         </div>
     </div>

@@ -652,7 +652,9 @@ return [
                 'papel' => 'Cidade ou papel',
                 'texto' => 'Depoimento',
                 'nota' => 'Nota de 1 a 5',
+                'avatar' => 'Foto (URL ou caminho)',
             ],
+            'dica' => 'Os depoimentos aprovados no painel entram na faixa automaticamente, com foto e selo quando têm; o que você digitar aqui soma, sem repetir quem já veio de lá.',
         ],
         'video' => [
             'rotulo' => 'Vídeo de vendas', 'icone' => 'fa-play',

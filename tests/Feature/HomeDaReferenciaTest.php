@@ -34,7 +34,7 @@ class HomeDaReferenciaTest extends TestCase
         'kit-tag',          // kits com o do meio destacado
         'checks',           // equipamento J16 com as verificações
         'steps',            // como funciona
-        'js-depoimentos',   // depoimentos
+        'js-carrossel',     // depoimentos
         'cta-foto',         // chamada final sobre a estrada
     ];
 

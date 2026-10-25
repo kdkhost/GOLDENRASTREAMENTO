@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.24.0
+- **Versão:** 2.25.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -913,6 +913,74 @@ fica uniforme, porque a coluna é estreita demais para um degradê lateral. Por 
 o campo se chama **Foto de fundo** e a dica pede paisagem (1600 × 900 px). Sem
 foto, o bloco é texto sobre a pele da página.
 
+### O vídeo da campanha toca na própria página
+
+O bloco **Vídeo de vendas** não abre modal nem leva ninguém para o YouTube: ele toca
+na faixa. Ao clicar em assistir, a API do YouTube entra em cena (só então — até ali
+a página não tem um byte de terceiros no caminho crítico) e monta o iframe com
+`controls: 0`, `disablekb: 1`, `fs: 0`, `rel: 0`, `modestbranding: 1` e o endereço
+`youtube-nocookie.com`. Sobre o quadro há um **vidro** nosso, transparente, que fica
+com o clique e com o botão direito — é o que devolve ao visitante um menu vazio em
+vez do menu do YouTube. Os únicos controles que existem são os da casa, embaixo do
+quadro: **tocar/pausar, mudo e a régua de volume**; e o **fechar**, que só aparece
+com o quadro solto.
+
+A rolagem manda no vídeo:
+
+- passou do quadro ao rolar para baixo → ele se desprende da faixa e **flutua no
+  centro da tela**, continua de onde estava e ganha o botão de fechar;
+- voltou com a faixa à vista → ele **volta ao lugar de origem e pausa**. Essa pausa
+  é do percurso, não do visitante, então rolar para baixo de novo o solta outra vez
+  **retomando do ponto em que ficou**;
+- o vídeo terminou, ou o visitante fechou → o quadro volta ao cartaz e para no zero.
+
+Duas coisas sustentam esse comportamento e valem conferir antes de mexer na folha:
+
+- o centro é `position: fixed` com `top/left: 50%` e `translate(-50%, -50%)`.
+  **Nenhum ancestral pode reter `transform`** — por isso a animação de abertura das seções
+  (`main>section`, em `golden-site.css`) usa `backwards`, não `both`: o estado final
+  já é o padrão do elemento. Com `both` o `transform` do keyframe ficava preso na
+  seção, a seção virava o bloco de contenção do fixo e o quadro ia para fora da tela;
+- o iframe entra no `.f-video-quadro`, nunca no `.f-video-yt`: a API troca o nó pelo
+  iframe e não repassa a classe dele.
+
+### Os carrosséis da campanha
+
+**Benefícios** e **Prova social** são a mesma fileira do site vestido de card:
+`.carrossel` + `.swiper.js-carrossel`, com o comportamento em um lugar só
+(`initCarrosseis`, em `public/js/golden-site.js`). O que muda por faixa são os
+*breakpoints* e o ritmo, declarados no `data-passos` da view:
+
+| Faixa | Celular | Tablet (≥640/760) | Notebook (≥1100) | Avanço |
+| --- | --- | --- | --- | --- |
+| Benefícios | 1 por vez | 2 por vez | **4 por vez, linha única** | 4,2 s, **sentido reverso** |
+| Prova social | 1 por vez | 2 por vez | até 3 por vez | 5,5 s |
+
+- **sentido reverso** é o `data-sentido="reverso"` do bloco; o **pause ao segurar** no
+  celular é o `touchstart`/`touchend` do carrossel compartilhado, e **ao passar o
+  mouse** é o `pauseOnMouseEnter` — os dois já vinham do site;
+- quando tudo cabe na tela, a fileira está **travada** (`isLocked`): ela para de andar
+  e a fileira de controles some (`.carrossel.travado .carro-ctl{display:none}`), para
+  não oferecer navegação a quem não tem para onde ir;
+- **não há `loop`**, e sim `rewind`: com poucos slides o `loop` duplica o miolo e
+  reclama no console; o `rewind` volta ao início sem inventar item;
+- na tela larga (≥721 px) os títulos, os resumos, a contagem regressiva e as chamadas
+  de **Benefícios**, **Prova social** e **Urgência** ficam **centralizados**; no
+  celular seguem alinhados à esquerda.
+
+A prova social não depende do que alguém digitar no bloco: `FunnelBlock::depoimentos()`
+põe na frente os **depoimentos aprovados da plataforma** (nome, cidade/papel, nota,
+foto quando há e o selo do Google para os importados) e soma, sem repetir ninguém, os
+itens digitados no próprio bloco. O nome decide a duplicidade — inclusive quando a
+mesma pessoa foi aprovada duas vezes. Para a faixa ficar cheia, **aprove ao menos
+cinco depoimentos** em *Admin → Conteúdo → Depoimentos* (ou importe os do Google com
+`php artisan depoimentos:google`, que pede a `GOOGLE_PLACES_API_KEY` no `.env`); o
+sistema não inventa avaliação.
+
+O Swiper (154 KB de JS) é da casa inteira, mas **só é chamado pela campanha que tem
+faixa deslizante**: `FunnelPage::temCarrossel()` decide, na view, se a folha e o
+script entram nos `@stack` da carcaça. Campanha sem carrossel não paga por ele.
+
 ### A tecla de ar da campanha
 
 Na listagem e no contador de cada campanha há um botão de ligar e desligar. Ele não
@@ -1241,6 +1309,16 @@ continua visível para você pelo painel ou SSH.
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`
       no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
       cadastro na tela da campanha (seção 13)
+- [ ] Vídeo da campanha: tocar em assistir abre o quadro **na própria página**, sem marca do
+      YouTube, sem a barra dele e sem menu de botão direito; rolar para baixo o solta **no
+      centro da tela**, rolar para cima devolve ao lugar de origem pausado, e rolar para
+      baixo de novo retoma do ponto em que parou (seção 13)
+- [ ] Carrosséis da campanha: no notebook os benefícios ficam em **linha única** e a prova
+      social em até três por vez, com os títulos centralizados; no celular um por vez,
+      arrastando para qualquer lado, parado ao segurar (seção 13)
+- [ ] Depoimentos: aprovar **pelo menos cinco** em *Conteúdo → Depoimentos* para a faixa de
+      prova social encher; sem `GOOGLE_PLACES_API_KEY` no `.env`, o importador do Google
+      não roda — e o sistema não inventa avaliação (seção 13)
 - [ ] Portal: criar conta em `/portal/cadastro` sobre uma ficha que já existe no CRM e conferir que ela herda os pedidos de convidado
 - [ ] Portal: entrar com o `email_portal` (não o e-mail da ficha), abrir um chamado e respondê-lo do painel — a conversa tem de ser a mesma nas duas telas
 - [ ] Portal: anexar o PDF de um contrato assinado e baixá-lo pelo portal; com status `rascunho` ele não pode aparecer na lista
