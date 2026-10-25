@@ -37,17 +37,10 @@
     var vidro = slot.querySelector('.f-video-vidro');
     var botaoTocar = player.querySelector('[data-acao="tocar"]');
     var botaoMudo = player.querySelector('[data-acao="mudo"]');
-    var botaoFechar = player.querySelector('[data-acao="fechar"]');
     var regua = player.querySelector('[data-acao="volume"]');
     var icone = botaoTocar.querySelector('i');
 
     var inst = null;
-    var iniciado = false;
-    var encerrado = false;
-    // Pausa manual é a que o visitante fez no nosso botão. A pausa automática de voltar ao
-    // lugar não entra aqui — é justamente o que permite retomar de onde parou ao rolar de novo.
-    var pausaManual = false;
-    var flutuando = false;
 
     function tocando() {
       return !!(inst && inst.getPlayerState && inst.getPlayerState() === window.YT.PlayerState.PLAYING);
@@ -68,34 +61,17 @@
       if (!inst) return;
       if (tocando()) {
         inst.pauseVideo();
-        pausaManual = true;
       } else {
         inst.playVideo();
-        pausaManual = false;
       }
     }
 
-    function flutuar(deve) {
-      if (flutuando === deve) return;
-      flutuando = deve;
-      player.classList.toggle('flutuante', deve);
-    }
-
+    // O vídeo que terminou volta ao cartaz e para no zero: é o que devolve a faixa ao estado
+    // de antes e deixa assistir de novo com um toque.
     function voltarParaOCartaz() {
-      flutuar(false);
       player.hidden = true;
       cartaz.hidden = false;
       if (inst && inst.seekTo) inst.seekTo(0, true);
-    }
-
-    // Fechar é um pedido do visitante, não um pausa de percurso: o quadro volta ao cartaz,
-    // para o zero, e fica parado até ele tocar de novo — rolar a página não o solta outra vez.
-    function fechar() {
-      if (inst && inst.pauseVideo) inst.pauseVideo();
-      iniciado = false;
-      encerrado = true;
-      pausaManual = false;
-      voltarParaOCartaz();
     }
 
     cartaz.addEventListener('click', function () {
@@ -104,7 +80,6 @@
 
       comAYouTube(function () {
         if (inst) {
-          encerrado = false;
           inst.playVideo();
 
           return;
@@ -135,19 +110,7 @@
               pintar();
             },
             onStateChange: function (e) {
-              var estado = window.YT.PlayerState;
-
-              if (e.data === estado.ENDED) {
-                encerrado = true;
-                iniciado = false;
-                pausaManual = false;
-                voltarParaOCartaz();
-              }
-
-              if (e.data === estado.PLAYING) {
-                iniciado = true;
-                encerrado = false;
-              }
+              if (e.data === window.YT.PlayerState.ENDED) voltarParaOCartaz();
 
               pintar();
             }
@@ -157,7 +120,6 @@
     });
 
     botaoTocar.addEventListener('click', alternar);
-    botaoFechar.addEventListener('click', fechar);
     // O vidro é a área do vídeo em si: tocar ali também é play/pause, como em qualquer player.
     vidro.addEventListener('click', alternar);
 
@@ -182,28 +144,6 @@
         return false;
       });
     });
-
-    if (!('IntersectionObserver' in window)) return;
-
-    new IntersectionObserver(function (entradas) {
-      var visivel = entradas[0].isIntersecting;
-
-      if (visivel) {
-        // Voltou ao lugar de origem: para. A pausa é do movimento, não do visitante, então
-        // a próxima vez que ele rolar para fora o vídeo retoma do ponto em que ficou.
-        if (flutuando) {
-          flutuar(false);
-          if (inst && !pausaManual) inst.pauseVideo();
-        }
-
-        return;
-      }
-
-      if (!iniciado || encerrado || pausaManual) return;
-
-      flutuar(true);
-      if (inst) inst.playVideo();
-    }, { threshold: 0.4 }).observe(slot);
   }
 
   function iniciar() {

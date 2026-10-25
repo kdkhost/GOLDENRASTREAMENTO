@@ -236,7 +236,7 @@ class PaginaDeFunilTest extends TestCase
     /**
      * O vídeo toca na própria faixa. Não há modal, não há marca do YouTube no quadro e o
      * botão direito morre no vidro nosso — os únicos controles que existem são play,
-     * pause e volume daqui de baixo, mais o fechar do quadro solto.
+     * pause e volume daqui de baixo.
      */
     public function test_o_video_toca_na_faixa_sem_a_marca_do_youtube(): void
     {
@@ -249,11 +249,12 @@ class PaginaDeFunilTest extends TestCase
         $this->assertStringContainsString('data-acao="tocar"', $html);
         $this->assertStringContainsString('data-acao="mudo"', $html);
         $this->assertStringContainsString('data-acao="volume"', $html);
-        $this->assertStringContainsString('data-acao="fechar"', $html);
 
         // O modal da galeria é de outra superfície: aqui não há nada que abra sobre a página.
         $this->assertStringNotContainsString('videoModal', $html);
         $this->assertStringNotContainsString('f-video-abrir', $html);
+        // Nem o quadro que se solta da faixa e flutua sobre ela: ficou fora do lugar e saiu.
+        $this->assertStringNotContainsString('f-video-fechar', $html);
 
         $js = file_get_contents(public_path('js/golden-funil.js'));
         $this->assertStringContainsString("'https://www.youtube-nocookie.com'", $js);
@@ -262,24 +263,24 @@ class PaginaDeFunilTest extends TestCase
         $this->assertStringContainsString("addEventListener('contextmenu'", $js);
         // O player só é pedido no primeiro toque em assistir.
         $this->assertStringContainsString('comAYouTube(function () {', $js);
+        $this->assertStringNotContainsString('flutuante', $js);
+        $this->assertStringNotContainsString('IntersectionObserver', $js);
+
+        $css = file_get_contents(public_path('css/golden-funil.css'));
+        $this->assertStringNotContainsString('flutuante', $css);
     }
 
     /**
-     * O quadro solta da faixa ao rolar para baixo e volta ao lugar de origem ao rolar para
-     * cima, sempre pelo centro da tela. O centro é o que a regra CSS garante: nenhum
-     * ancestral do slot pode reter transform, porque transform: none preso no keyframe
-     * final faria da seção o bloco de contenção do position:fixed e o atiraria para fora.
+     * A entrada das seções não pode reter transform: o último keyframe preso no elemento
+     * faria da seção o bloco de contenção de qualquer position:fixed que more nela.
      */
-    public function test_a_secao_de_abertura_nao_retido_transform_e_deixa_o_quadro_flutuar(): void
+    public function test_a_abertura_das_secoes_nao_retido_transform(): void
     {
         $css = file_get_contents(public_path('css/golden-site.css'));
 
         $this->assertStringContainsString(
             'main>section{animation:pageIn .34s cubic-bezier(.22,.61,.36,1) backwards}', $css);
         $this->assertStringNotContainsString('main>section{animation:pageIn .34s cubic-bezier(.22,.61,.36,1) both}', $css);
-
-        $funil = file_get_contents(public_path('css/golden-funil.css'));
-        $this->assertStringContainsString('.f-video-player.flutuante{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)', $funil);
     }
 
     /** Benefícios: linha única na tela larga, um por vez e sentido reverso no celular. */

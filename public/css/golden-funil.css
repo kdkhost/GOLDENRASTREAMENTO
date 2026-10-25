@@ -113,14 +113,6 @@ body.funil .f-hero h1{color:#fff;font-size:clamp(2.2rem,5.4vw,3.7rem);margin-bot
 .f-video-botao{flex:none;width:38px;height:38px;border:0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14);color:#fff;font-size:.92rem;cursor:pointer;transition:background .2s ease,transform .2s ease}
 .f-video-botao:hover{background:var(--gold);color:#241a06;transform:scale(1.06)}
 .f-video-volume{flex:0 1 132px;height:4px;accent-color:var(--gold);cursor:pointer}
-/* O fechar só existe quando o quadro está solto: no lugar de origem ele é a própria faixa
-   da página, e quem quer vê-lo embora basta rolar de volta. */
-.f-video-fechar{position:absolute;top:10px;right:10px;z-index:4;display:none;width:34px;height:34px;border:0;border-radius:50%;place-items:center;background:rgba(9,12,15,.62);color:#fff;font-size:.85rem;cursor:pointer;transition:background .2s ease}
-.f-video-fechar:hover{background:var(--gold);color:#241a06}
-/* Solto na tela: o mesmo player, agora fixo no centro da viewport — nunca no canto, para
-   não cobrir o botão do WhatsApp nem a barra de navegação do celular. */
-.f-video-player.flutuante{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(92vw,960px);height:auto;aspect-ratio:16/9;z-index:900;border-radius:16px;box-shadow:0 40px 90px -30px rgba(0,0,0,.85)}
-.f-video-player.flutuante .f-video-fechar{display:grid}
 
 /* ---------- Urgência ---------- */
 .f-urgencia .wrap>h2{margin-bottom:.35em}
@@ -225,8 +217,5 @@ body.funil.pele-claro{
   .f-video-slot{margin-top:24px;border-radius:14px}
   .f-video-cartaz,.f-video-player{border-radius:14px}
   .f-video-cartaz-play{width:62px;height:62px;font-size:1.15rem}
-  /* Flutuando no celular o quadro fica do tamanho da coluna, centralizado na vertical:
-     mais largo que isso invade o polegar e o botão do WhatsApp. */
-  .f-video-player.flutuante{width:min(94vw,560px);border-radius:12px}
   .f-acoes .btn{width:100%}
 }

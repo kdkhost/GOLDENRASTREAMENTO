@@ -472,10 +472,9 @@ body.nav-open .nav-toggle .icon-close{opacity:1;transform:none}
 .nav-drawer,.nav-backdrop,.drawer-head,.drawer-cta,.drawer-foot{display:none}
 
 /* ===== Abertura de página e voltar ao topo ===== */
-/* backwards, e não both: o estado final já é o padrão do elemento, então nada fica
-   retido depois da entrada. With "both" o transform do keyframe permanecia no fim e
-   transform: none vira bloco de contenção — o player flutuante do funil (position:fixed)
-   passava a se posicionar pela seção, não pela viewport, e ia para fora da tela. */
+/* backwards, e não both: o estado final do keyframe já é o padrão do elemento, então nada
+   fica retido depois da entrada. Um transform preso no fim faria da seção o bloco de
+   contenção de qualquer position:fixed dentro dela. */
 @keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 main>section{animation:pageIn .34s cubic-bezier(.22,.61,.36,1) backwards}
 main>section:nth-child(2){animation-delay:.05s}

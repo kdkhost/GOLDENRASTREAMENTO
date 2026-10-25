@@ -5,6 +5,25 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.25.1] - 2026-10-25
+
+### Removido
+- **O quadro que flutuava sobre a página.** Na 2.25.0 o vídeo da campanha se soltava da
+  faixa ao rolar e ficava fixo no centro da tela, voltava ao lugar de origem pausado quando
+  a rolagem devolvia a faixa, e ganhava um botão de fechar. Não ficou bom: o retângulo
+  grande no meio da tela tapa a chamada da campanha justamente na hora em que o visitante
+  está lendo a oferta, e o "voltar e pausar" confundia mais do que ajudava. O vídeo agora
+  **fica onde a faixa o pôs** — rolar não o solta, não pausa e não retoma nada.
+  Foram junto o `IntersectionObserver`, a classe `.flutuante`, o `.f-video-fechar` e as
+  regras de CSS do quadro fixo.
+- O que a 2.25.0 trouxe de vídeo **continua valendo**: tocar na própria página, sem modal,
+  sem a marca e sem a barra do YouTube (`youtube-nocookie` + `controls: 0` + o vidro que
+  fica com o clique e com o botão direito), os controles da casa (tocar/pausar, mudo e a
+  régua de volume) e o retorno ao cartaz quando o vídeo termina. A correção do
+  `animation-fill-mode` (`both` → `backwards` em `main>section`) fica: reter `transform`
+  na seção é o tipo de armadilha que engole qualquer `position: fixed` dentro dela, e há
+  teste travando a regra.
+
 ## [2.25.0] - 2026-10-25
 
 ### Adicionado

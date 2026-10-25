@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.25.0
+- **Versão:** 2.25.1
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -922,25 +922,16 @@ a página não tem um byte de terceiros no caminho crítico) e monta o iframe co
 `youtube-nocookie.com`. Sobre o quadro há um **vidro** nosso, transparente, que fica
 com o clique e com o botão direito — é o que devolve ao visitante um menu vazio em
 vez do menu do YouTube. Os únicos controles que existem são os da casa, embaixo do
-quadro: **tocar/pausar, mudo e a régua de volume**; e o **fechar**, que só aparece
-com o quadro solto.
+quadro: **tocar/pausar, mudo e a régua de volume**. O vídeo fica onde a faixa o pôs —
+não se solta da página ao rolar — e ao terminar volta ao cartaz e para no zero, pronto
+para assistir de novo com um toque.
 
-A rolagem manda no vídeo:
+Duas coisas valem conferir antes de mexer na folha:
 
-- passou do quadro ao rolar para baixo → ele se desprende da faixa e **flutua no
-  centro da tela**, continua de onde estava e ganha o botão de fechar;
-- voltou com a faixa à vista → ele **volta ao lugar de origem e pausa**. Essa pausa
-  é do percurso, não do visitante, então rolar para baixo de novo o solta outra vez
-  **retomando do ponto em que ficou**;
-- o vídeo terminou, ou o visitante fechou → o quadro volta ao cartaz e para no zero.
-
-Duas coisas sustentam esse comportamento e valem conferir antes de mexer na folha:
-
-- o centro é `position: fixed` com `top/left: 50%` e `translate(-50%, -50%)`.
-  **Nenhum ancestral pode reter `transform`** — por isso a animação de abertura das seções
-  (`main>section`, em `golden-site.css`) usa `backwards`, não `both`: o estado final
-  já é o padrão do elemento. Com `both` o `transform` do keyframe ficava preso na
-  seção, a seção virava o bloco de contenção do fixo e o quadro ia para fora da tela;
+- a entrada das seções (`main>section`, em `golden-site.css`) usa `backwards`, não
+  `both`: o estado final do keyframe já é o padrão do elemento, e um `transform` preso
+  no fim faria da seção o bloco de contenção de qualquer `position: fixed` que morasse
+  nela;
 - o iframe entra no `.f-video-quadro`, nunca no `.f-video-yt`: a API troca o nó pelo
   iframe e não repassa a classe dele.
 
@@ -1310,9 +1301,8 @@ continua visível para você pelo painel ou SSH.
       no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
       cadastro na tela da campanha (seção 13)
 - [ ] Vídeo da campanha: tocar em assistir abre o quadro **na própria página**, sem marca do
-      YouTube, sem a barra dele e sem menu de botão direito; rolar para baixo o solta **no
-      centro da tela**, rolar para cima devolve ao lugar de origem pausado, e rolar para
-      baixo de novo retoma do ponto em que parou (seção 13)
+      YouTube, sem a barra dele e sem menu de botão direito; sobem play/pause, mudo e volume
+      da casa, o quadro fica na faixa (não flutua) e ao terminar volta ao cartaz (seção 13)
 - [ ] Carrosséis da campanha: no notebook os benefícios ficam em **linha única** e a prova
       social em até três por vez, com os títulos centralizados; no celular um por vez,
       arrastando para qualquer lado, parado ao segurar (seção 13)

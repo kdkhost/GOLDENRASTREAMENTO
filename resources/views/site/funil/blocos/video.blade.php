@@ -2,8 +2,7 @@
     Vídeo da campanha. Toca na própria página, sem o cartaz do YouTube: o iframe entra sem
     controles e coberto por um vidro, porque clique e botão direito que caem na superfície do
     YouTube trazem de volta a marca e o menu dele. O único controle que existe é o daqui em
-    baixo — play, pause e volume — mais o fechar que só aparece quando o quadro está solto na
-    tela. O resto do comportamento (o desprendimento ao rolar) está em public/js/golden-funil.js.
+    baixo — play, pause e volume. O resto do comportamento está em public/js/golden-funil.js.
 --}}
 @php $codigo = \App\Models\Video::codigoDe($b->cta_destino); @endphp
 @if($codigo)
@@ -36,9 +35,6 @@
                     </button>
                     <input type="range" class="f-video-volume" data-acao="volume" min="0" max="100" step="1" value="80" aria-label="Volume do vídeo">
                 </div>
-                <button type="button" class="f-video-fechar" data-acao="fechar" aria-label="Fechar o vídeo">
-                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                </button>
             </div>
         </div>
     </div>
