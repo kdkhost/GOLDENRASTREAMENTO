@@ -41,6 +41,11 @@ body.funil #formulario{scroll-margin-top:84px}
 .f-rodape .fine{color:#7f8b98}
 .f-rodape a{color:#c4ccd4;text-decoration:underline;text-underline-offset:3px}
 .f-rodape a:hover{color:var(--gold-soft)}
+/* Mesma assinatura do rodapé do site, no mesmo canto. O link do funil vem sublinhado por
+   regra, e ela ganharia do estilo da assinatura só pela ordem de carregamento. */
+.f-rodape-baixo{display:flex;justify-content:flex-end;margin-top:14px}
+.f-rodape .foot-dev a{text-decoration:none}
+.f-rodape .foot-dev a:hover{text-decoration:underline}
 
 /* ---------- Herói ---------- */
 .f-hero{position:relative;overflow:hidden;padding:clamp(64px,9vw,110px) 0 clamp(56px,7vw,86px);background:linear-gradient(160deg,var(--dark),var(--dark-2))}

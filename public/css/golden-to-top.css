@@ -1,14 +1,26 @@
 /* Botão "voltar ao topo" com anel que preenche conforme a página desce e esvazia ao subir.
    Compartilhado entre o site e o painel: cada tema só ajusta a posição e as cores por variáveis. */
+
+/* Altura que o selo do reCAPTCHA toma no pé da tela: o Google o fixa a 14px da borda,
+   com 60px de altura, e dá a ele um z-index que nenhum botão nosso alcança. Em vez de
+   brigar pelo canto, os flutuantes sobem exatamente quando o selo está na página — o que
+   também deixa o selo inteiro visível, como exigem as regras do serviço. */
+:root{
+  --flutuante-gap:22px;
+  --selo-recaptcha:74px;
+  --flutuante-bottom:var(--flutuante-gap);
+}
+body:has(.grecaptcha-badge){--flutuante-bottom:calc(var(--selo-recaptcha) + var(--flutuante-gap))}
+
 .to-top{
   --to-top-size:52px;
   --to-top-accent:var(--gold,#e0a33e);
   --to-top-track:color-mix(in srgb, var(--to-top-accent) 22%, transparent);
   --to-top-face:rgba(18,22,26,.9);
-  position:fixed;bottom:22px;right:22px;z-index:1050;
+  position:fixed;bottom:var(--flutuante-bottom);right:22px;z-index:1050;
   width:var(--to-top-size);height:var(--to-top-size);padding:0;border:0;background:transparent;cursor:pointer;
   opacity:0;transform:translateY(10px) scale(.85);pointer-events:none;
-  transition:opacity .28s cubic-bezier(.22,.61,.36,1),transform .28s cubic-bezier(.22,.61,.36,1)}
+  transition:opacity .28s cubic-bezier(.22,.61,.36,1),transform .28s cubic-bezier(.22,.61,.36,1),bottom .28s cubic-bezier(.22,.61,.36,1)}
 .to-top.show{opacity:1;transform:none;pointer-events:auto}
 .to-top svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .to-top circle{fill:none;stroke-width:3}
@@ -21,7 +33,9 @@
 .to-top:focus-visible{outline:2px solid var(--to-top-accent);outline-offset:3px}
 
 @media(max-width:640px){
-  .to-top{--to-top-size:46px;bottom:16px}
+  /* No celular o recuo do canto encolhe e o stack inteiro acompanha o mesmo token. */
+  :root{--flutuante-gap:16px}
+  .to-top{--to-top-size:46px}
   .to-top-face{inset:5px;font-size:.9rem}
 }
 

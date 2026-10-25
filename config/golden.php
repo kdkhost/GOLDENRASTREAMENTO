@@ -9,6 +9,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Crédito de desenvolvimento
+    |--------------------------------------------------------------------------
+    | Quem construiu o sistema, assinado no rodapé. É daqui que a view puxa o
+    | nome e os endereços: nada de URL escrita dentro do Blade. Os mesmos dados
+    | estão em composer.json (autores), para o pacote e o site dizerem o mesmo.
+    */
+    'credito' => [
+        'desenvolvedor' => 'Marcelo',
+        'site' => 'https://kdkhost.com.br',
+        'agencia' => 'KDKHOST',
+        'agencia_site' => 'https://kdkhost.com.br',
+        'email' => 'contato@kdkhost.com.br',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Imagens do site (CMS)
     |--------------------------------------------------------------------------
     | Cada fotografia exposta no site é um "slot" daqui, organizado por página.

@@ -426,13 +426,19 @@ body.video-aberto{overflow:hidden}
 /* .site-footer a é display:block para as colunas de link do site; na barra inferior os
    links são um texto corrido e o mesmo display empilha cada um na sua linha. */
 .foot-bottom a{display:inline;margin:0;color:inherit}
+/* A assinatura de quem fez o sistema fecha a barra pelo canto direito: a margem automática
+   dela come o espaço sobrando, então os dois textos continuam encostados à esquerda. */
+.foot-dev{margin-left:auto;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.foot-dev i{color:var(--gold);font-size:.78rem}
+.foot-dev a{display:inline;margin:0;color:var(--gold);text-decoration:none}
+.foot-dev a:hover{text-decoration:underline;text-underline-offset:3px}
 
 /* WhatsApp flutuante */
 /* Botão flutuante + caixa multicanal de WhatsApp (padrão foco7) */
-.wa-float{position:fixed;right:22px;bottom:22px;z-index:70;width:58px;height:58px;border:2px solid rgba(255,255,255,.22);border-radius:50%;
+.wa-float{position:fixed;right:22px;bottom:var(--flutuante-bottom);z-index:70;width:58px;height:58px;border:2px solid rgba(255,255,255,.22);border-radius:50%;
   background:#25d366;color:#fff;display:grid;place-items:center;font-size:1.7rem;cursor:pointer;text-decoration:none;
   box-shadow:0 12px 28px -10px rgba(37,211,102,.7);
-  transition:transform .3s cubic-bezier(.22,.61,.36,1),background .2s ease,box-shadow .3s ease,opacity .2s ease}
+  transition:transform .3s cubic-bezier(.22,.61,.36,1),background .2s ease,box-shadow .3s ease,opacity .2s ease,bottom .28s cubic-bezier(.22,.61,.36,1)}
 .wa-float::before{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(37,211,102,.5);
   animation:wa-ring 2.4s ease-out infinite}
 @keyframes wa-ring{0%{transform:scale(.95);opacity:.75}60%{transform:scale(1.16);opacity:0}100%{transform:scale(.95);opacity:0}}
@@ -445,7 +451,7 @@ body.video-aberto{overflow:hidden}
   opacity:0;transform:translateX(8px);pointer-events:none;transition:opacity .24s ease,transform .24s cubic-bezier(.22,.61,.36,1)}
 .wa-float:hover .wa-tip,.wa-float:focus-visible .wa-tip{opacity:1;transform:none}
 
-.wa-popup{position:fixed;right:22px;bottom:92px;z-index:70;width:352px;max-width:calc(100vw - 32px);
+.wa-popup{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + 70px);z-index:70;width:352px;max-width:calc(100vw - 32px);
   max-height:calc(100vh - 124px);display:flex;flex-direction:column;
   border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#171d23,var(--dark-2));border:1px solid rgba(224,163,62,.22);
   box-shadow:0 26px 60px -24px rgba(0,0,0,.9);transform-origin:bottom right;
@@ -632,10 +638,10 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .kits .kit.feature{order:0}
   .foot-grid{grid-template-columns:1fr}
   .cookie{right:16px}
-  .wa-float{width:52px;height:52px;font-size:1.5rem;right:16px;bottom:16px}
+  .wa-float{width:52px;height:52px;font-size:1.5rem;right:16px}
   .to-top{right:80px}
   .wa-tip{display:none}
-  .wa-popup{right:16px;bottom:80px}
+  .wa-popup{right:16px;bottom:calc(var(--flutuante-bottom) + 64px)}
   .wa-body{max-height:min(46vh,360px)}
   .depo-card{padding:22px}
   /* No celular o modal é a tela: sem moldura e na largura total, o 16:9 fica do tamanho

@@ -120,6 +120,7 @@
         <div class="foot-bottom">
             <span>© {{ date('Y') }} {{ $golden['marca']['nome'] }}. Todos os direitos reservados.</span>
             <span>A Golden não presta vigilância humana, pronta resposta nem seguro.</span>
+            @include('partials.desenvolvedor')
         </div>
     </div>
 </footer>

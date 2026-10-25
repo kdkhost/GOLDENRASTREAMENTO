@@ -158,6 +158,7 @@ class AppServiceProvider extends ServiceProvider
 
         return $this->site = [
             'marca' => config('golden.marca'),
+            'credito' => config('golden.credito'),
             'whatsapp' => $whatsapp,
             'whatsapp_url' => wa_url(null, $whatsapp),
             'whatsapp_box' => [

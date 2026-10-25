@@ -5,6 +5,26 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.26.0] - 2026-10-25
+
+### Adicionado
+- **A assinatura de quem fez o sistema**, no canto direito do rodapé: o nome do desenvolvedor
+  e a agência, cada um com o próprio link. Vive em `config('golden.credito')` — a mesma fonte
+  dos autores do `composer.json`, que um teste compara com a tela para o site não desmentir o
+  pacote. O rodapé do site e o da página de campanha incluem o mesmo parcial
+  (`partials.desenvolvedor`); nenhum dos dois escreve URL.
+- **Uma régua só para o canto direito.** A distância do pé da tela virou o token
+  `--flutuante-bottom` (em `golden-to-top.css`, carregado por site, funil, portal e painel), e
+  WhatsApp flutuante, caixa multicanal e "voltar ao topo" passam a obedecê-lo.
+
+### Corrigido
+- **Os flutuantes não ficam mais atrás do selo do reCAPTCHA.** O selo é fixo, senta no pé da
+  tela com 60 px de altura e tem precedência sobre qualquer `z-index` nosso, então o botão do
+  WhatsApp e o do topo desapareciam atrás dele numa página com captcha. Com
+  `body:has(.grecaptcha-badge)`, a régua do canto ganha os 74 px do selo e o stack inteiro
+  sobe junto, animado; sem captcha, nada muda e o canto continua encostado na borda. O selo
+  não é escondido — as regras do serviço exigem que ele apareça.
+
 ## [2.25.4] - 2026-10-25
 
 ### Corrigido

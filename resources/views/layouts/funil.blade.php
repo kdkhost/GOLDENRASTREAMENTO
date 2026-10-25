@@ -96,6 +96,7 @@
         <p><b>{{ $golden['marca']['nome'] }}</b> — {{ $golden['marca']['slogan'] }}. {{ $golden['endereco'] }}, {{ $golden['cidade_uf'] }}.</p>
         @if($pagina->nota_legal)<p class="fine">{{ $pagina->nota_legal }}</p>@endif
         <p class="fine">A Golden não presta vigilância humana, pronta resposta nem seguro. <a href="{{ route('site.privacidade') }}">Política de Privacidade</a> · {{ $golden['email'] }}</p>
+        <div class="f-rodape-baixo">@include('partials.desenvolvedor')</div>
     </div>
 </footer>
 
