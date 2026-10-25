@@ -5,6 +5,27 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.25.4] - 2026-10-25
+
+### Corrigido
+- **O instalador funciona num servidor limpo.** Ele gerava a `APP_KEY` antes de instalar as
+  dependências; num clone onde o sistema nunca esteve, o `artisan` nem começa sem o `vendor/`,
+  e a instalação morria no terceiro passo com um erro mudo. Agora o `composer install` vem
+  primeiro (e é pulado quando o `vendor/` já existe, que é o caso do deploy do dia a dia).
+- **A queda do Composer.** O download usava `copy()` do PHP, que depende de `allow_url_fopen` —
+  desligado por padrão no EasyApache. Numa conta de cPanel o arquivo não vinha e o instalador
+  seguia adiante apontando para um `.phar` inexistente. Passa a baixar com `curl`, com o `copy()`
+  como plano B.
+- **A versão impressa na tela** (`instalador v2.12.0`) estava presa a uma entrega antiga; agora
+  acompanha a versão do sistema.
+
+### Adicionado
+- **`--estatico=ARQUIVO`**, repetível, no instalador. Ao substituir um site que já estava no ar,
+  alguma URL antiga costuma continuar citada em algum lugar — a política de privacidade de um app
+  publicado na Play Store é o caso real desta entrega. A opção escreve, no `.htaccess` gerado, uma
+  regra que serve o arquivo da raiz na URL de origem, antes da reescrita para dentro de `public/`.
+  O instalador recusa nome com caractere de regex e exige que o arquivo exista na raiz.
+
 ## [2.25.3] - 2026-10-25
 
 ### Adicionado

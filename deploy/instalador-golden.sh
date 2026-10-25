@@ -15,7 +15,7 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$RAIZ"
 
-VERSAO="2.12.0"
+VERSAO="2.25.4"
 
 URL=""
 PHP_BIN="${PHP_BIN:-}"
@@ -35,6 +35,9 @@ LIMPAR_BANCO=""
 AMBIENTE=production
 DEBUG=false
 HTACCESS=1
+# Arquivos que já estão na raiz do domínio e precisam continuar acessíveis pela
+# mesma URL (política de privacidade citada num app, por exemplo). Repetível.
+ESTATICOS=()
 SEM_CACHE=0
 BACKUP=1
 PHP_WEB="${GOLDEN_PHP_WEB:-}"
@@ -98,6 +101,12 @@ Comportamento
                             instalador pergunta antes de mexer em qualquer dado.
   --dev                     APP_ENV=local e APP_DEBUG=true (só para testes).
   --sem-htaccess            não escreve o .htaccess de proteção na raiz.
+  --estatico=ARQUIVO        deixa um arquivo que já está na raiz do domínio
+                            acessível pela mesma URL, sem passar pelo Laravel.
+                            Use ao substituir um site antigo cuja URL ainda é
+                            citada em algum lugar (política de privacidade de um
+                            app, por exemplo). Repita a opção para cada arquivo;
+                            o arquivo precisa existir na raiz.
   --sem-cache               não gera cache de config/rotas/views.
   --sem-backup              não tirar cópia do banco antes de limpar as tabelas.
   --php-web=ea-php83        grava no .htaccess a versão de PHP que serve a web.
@@ -153,6 +162,8 @@ while [ $# -gt 0 ]; do
     --limpar-banco) LIMPAR_BANCO=1; shift ;;
     --dev) AMBIENTE=local; DEBUG=true; shift ;;
     --sem-htaccess) HTACCESS=0; shift ;;
+    --estatico) ESTATICOS+=("${2:-}"); shift 2 ;;
+    --estatico=*) ESTATICOS+=("${1#*=}"); shift ;;
     --sem-cache) SEM_CACHE=1; shift ;;
     --sem-backup) BACKUP=0; shift ;;
     --php=*) PHP_BIN="${1#*=}"; shift ;;
@@ -174,6 +185,15 @@ case "$BANCO" in
   mysql|sqlite) ;;
   *) erro "Banco '$BANCO' não suportado. Use mysql ou sqlite." ;;
 esac
+
+# O nome do --estatico vira regex dentro do .htaccess: só letra, número, ponto,
+# travessão e barra de pastas — e o arquivo precisa existir na raiz, senão a
+# regra ficaria apontando para o nada.
+for estatico in ${ESTATICOS[@]+"${ESTATICOS[@]}"}; do
+  printf '%s' "$estatico" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]*$' \
+    || erro "--estatico inválido ('$estatico'). Informe o caminho a partir da raiz, ex.: privacidade.html."
+  [ -f "$estatico" ] || erro "--estatico: não há arquivo '$estatico' na raiz do projeto."
+done
 
 # ---------------------------------------------------------------------------
 # 1. Requisitos
@@ -221,10 +241,16 @@ if [ -z "$COMPOSER_BIN" ]; then
   elif [ -f composer.phar ]; then
     COMPOSER_BIN="$PHP_BIN composer.phar"
   else
-    passo "Composer não encontrado — baixando o instalador oficial"
-    "$PHP_BIN" -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');" \
-      && "$PHP_BIN" /tmp/composer-setup.php --quiet --install-dir="$HOME/bin" --filename=composer.phar \
-      && rm -f /tmp/composer-setup.php
+    passo "Composer não encontrado — baixando o executável oficial"
+    mkdir -p "$HOME/bin"
+    # O download vai pelo curl quando ele existe: em conta de hospedagem com
+    # allow_url_fopen desligado (padrão no EasyApache) o copy() do PHP falha em
+    # silêncio e o instalador continuaria apontando para um phar que não está lá.
+    if command -v curl >/dev/null 2>&1; then
+      rodar curl -sSfL https://getcomposer.org/composer-stable.phar -o "$HOME/bin/composer.phar"
+    else
+      rodar "$PHP_BIN" -r "copy('https://getcomposer.org/composer-stable.phar', getenv('HOME').'/bin/composer.phar');"
+    fi
     COMPOSER_BIN="$PHP_BIN $HOME/bin/composer.phar"
   fi
 fi
@@ -312,16 +338,20 @@ define LOG_LEVEL "$([ "$AMBIENTE" = production ] && echo warning || echo debug)"
 chmod 600 .env
 ok ".env escrito com permissão 600 (banco: $BANCO, ambiente: $AMBIENTE)"
 
+# As dependências vêm antes da chave: sem o vendor/ o artisan nem começa, e num
+# clone limpo do repositório (o caso de um servidor onde o sistema nunca esteve)
+# o instalador pararia na primeira linha do passo seguinte.
+passo "Instalando as dependências (sem as de desenvolvimento)"
+if [ -f vendor/autoload.php ]; then
+  aviso "O vendor/ já existe — pulando o composer install (é o que o deploy usa no dia a dia)."
+else
+  rodar $COMPOSER_BIN install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+  ok "Dependências instaladas"
+fi
+
 passo "Gerando a chave da aplicação"
 rodar "$PHP_BIN" artisan key:generate --force --quiet
 ok "APP_KEY definida"
-
-# ---------------------------------------------------------------------------
-# 4. Dependências
-# ---------------------------------------------------------------------------
-passo "Instalando as dependências (sem as de desenvolvimento)"
-rodar $COMPOSER_BIN install --no-dev --prefer-dist --optimize-autoloader --no-interaction
-ok "Dependências instaladas"
 
 # ---------------------------------------------------------------------------
 # 5. Banco
@@ -455,12 +485,26 @@ Options -Indexes -MultiViews
   # Pastas de código-fonte. O storage não entra aqui: o que o público alcança é o
   # link public/storage, e todo pedido já é reescrito para dentro de public/.
   RewriteRule ^(app|bootstrap|config|database|resources|routes|tests)(/|$) - [F,L]
+PROTECAO
+
+  if [ ${#ESTATICOS[@]} -gt 0 ]; then
+    {
+      printf '\n  # Arquivos que o domínio já tinha e precisam continuar na mesma URL.\n'
+      printf '  # Vêm antes da reescrita para public/ e são servidos como estão.\n'
+      for estatico in "${ESTATICOS[@]}"; do
+        printf '  RewriteRule ^%s$ - [L]\n' "${estatico//./\\.}"
+      done
+    } >> .htaccess
+    ok ".htaccess: $(IFS=,; echo "${ESTATICOS[*]}") mantidos na URL de origem"
+  fi
+
+  cat >> .htaccess <<'ENTRADA'
 
   # Toda requisição entra pela pasta public, que tem o front controller
   RewriteCond %{REQUEST_URI} !^/public/
   RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
-PROTECAO
+ENTRADA
   ok ".htaccess: -Indexes, bloqueio de .env/.git/logs e reescrita para public/"
 
   if [ -n "$PHP_WEB" ]; then

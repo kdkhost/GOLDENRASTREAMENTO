@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.25.3
+- **Versão:** 2.25.4
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -148,6 +148,7 @@ digitado.
 | `--sem-backup` | não tira cópia do banco antes de limpar |
 | `--dev` | `APP_ENV=local` e `APP_DEBUG=true` (nunca em produção) |
 | `--sem-htaccess` | não escreve o `.htaccess` de proteção da raiz |
+| `--estatico=ARQUIVO` | mantém, na URL de origem, um arquivo que já está na raiz do domínio — repetível. É o que preserva a política de privacidade citada num app quando o Golden substitui um site antigo |
 | `--sem-cache` | não gera cache de configuração, rotas e views |
 | `--php=`, `--composer=` | força o binário quando há mais de uma versão no servidor |
 | `--php-web=ea-php83` | grava no `.htaccess` o handler do PHP que serve a web (CloudLinux/LiteSpeed) |
@@ -202,6 +203,44 @@ Para restaurar a cópia depois:
 ```bash
 gunzip < ../backup-banco-nome-20261023-1130.sql.gz | mysql -u USUARIO -p NOME_DO_BANCO
 ```
+
+---
+
+## 3.1 Trocar de domínio, ou substituir um site que já está no ar
+
+Mudar de domínio não é configuração do sistema: o endereço público entra por
+`--url=` e nada mais. O que muda é a ordem dos passos, porque existe um site
+antigo morando naquela pasta.
+
+1. **Cópia antes de encostar.** Compactar a pasta inteira do domínio para fora do
+   docroot (`~/backups-antes-do-golden/`, permissão `600`) e dumpar o banco que o
+   site antigo usa — as credenciais estão no próprio arquivo de conexão dele.
+   Nada é removido sem essa cópia conferida (contar arquivos e tabelas, não só
+   rodar o comando).
+2. **Retirar, não apagar.** Mover o conteúdo para uma pasta fora do docroot
+   preserva a volta atrás imediata. Ficam no lugar só o `.well-known` (renovação
+   do certificado) e os arquivos marcados com `--estatico=`.
+3. **Criar banco e usuário** pelo painel ou pela API da conta. Numa conta
+   cPanel sem privilégio de `CREATE USER`, o caminho é a API do próprio painel:
+   criar o banco, criar o usuário e dar o privilégio com
+   `Mysql::set_privileges_on_database` (argumentos `database`, `user`,
+   `privileges=ALL PRIVILEGES`). Conferir com `show grants` antes de instalar.
+4. **Instalar** com o endereço novo e a página antiga preservada:
+
+```bash
+bash deploy/instalador-golden.sh --url=https://novodominio.com.br \
+  --php=/opt/cpanel/ea-php83/root/usr/bin/php --php-web=ea-php83 \
+  --nome=usuario_banco --usuario=usuario_banco --estatico=privacidade.html
+```
+
+5. **Levar os dados** do outro domínio: dump do banco antigo (com
+   `--no-tablespaces` no cliente MySQL 8.4), importar sobre o banco novo e copiar
+   `storage/app/public` — as imagens enviadas não viajam pelo dump. Um dump não
+   atravessa de uma conta cPanel para outra (as pastas são `750`); ele precisa
+   ser empurrado por quem tem as duas sessões.
+6. **Refazer o resto do ambiente**: `storage:link`, caches, a linha de cron do
+   agendador apontando para a pasta nova e a caixa de e-mail de disparo, que é do
+   domínio e precisa ser criada de novo.
 
 ---
 
