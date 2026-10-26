@@ -5,6 +5,16 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.27.1] - 2026-10-25
+
+### Corrigido
+- **Os seis cartões de resumo do Google Ads respiram.** Com a linha dividida em seis colunas,
+  cada cartão ficava com ~120 px em tela de 1440 px e o rótulo em caixa alta — que por decisão da
+  2.26.2 pode quebrar linha — se partia no meio ("49.1 00 / IMPRESS ÕES", "R$ 3.98 3,60 / CUSTO").
+  A grade passou a `col-12 col-sm-6 col-lg-4`: três por linha no desktop, dois no tablet, um no
+  celular, com o número e o rótulo inteiros. O remédio é a largura, não a tipografia: o rótulo
+  continua grande e em caixa alta, e nenhuma palavra volta a ser cortada ao meio.
+
 ## [2.27.0] - 2026-10-25
 
 ### Adicionado

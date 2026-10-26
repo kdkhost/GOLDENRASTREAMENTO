@@ -164,23 +164,23 @@
 
     @if ($resumo)
         <div class="row g-3 mb-3">
-            <div class="col-6 col-lg-2">
+            <div class="col-12 col-sm-6 col-lg-4">
                 <x-admin.stat :label="$rotulos['impressoes']" :value="number_format($resumo['impressoes'], 0, ',', '.')" icon="fa-eye" tone="blue" pequeno />
             </div>
-            <div class="col-6 col-lg-2">
+            <div class="col-12 col-sm-6 col-lg-4">
                 <x-admin.stat :label="$rotulos['cliques']" :value="number_format($resumo['cliques'], 0, ',', '.')" icon="fa-hand-pointer" tone="teal" pequeno
                     :hint="'CPC médio '.brl($resumo['cpc_medio_centavos'])" />
             </div>
-            <div class="col-6 col-lg-2">
+            <div class="col-12 col-sm-6 col-lg-4">
                 <x-admin.stat :label="$rotulos['custo']" :value="brl($resumo['custo_centavos'])" icon="fa-sack-dollar" tone="gold" pequeno />
             </div>
-            <div class="col-6 col-lg-2">
+            <div class="col-12 col-sm-6 col-lg-4">
                 <x-admin.stat :label="$rotulos['conversoes']" :value="number_format($resumo['conversoes'], 0, ',', '.')" icon="fa-circle-check" tone="green" pequeno />
             </div>
-            <div class="col-6 col-lg-2">
+            <div class="col-12 col-sm-6 col-lg-4">
                 <x-admin.stat label="CTR médio" :value="$resumo['ctr'].'%'" icon="fa-percent" tone="violet" pequeno />
             </div>
-            <div class="col-6 col-lg-2">
+            <div class="col-12 col-sm-6 col-lg-4">
                 <x-admin.stat :label="$rotulos['roas']"
                     :value="$resumo['roas'] === null ? '—' : number_format($resumo['roas'], 2, ',', '.').'×'"
                     icon="fa-arrow-trend-up" tone="amber" pequeno
