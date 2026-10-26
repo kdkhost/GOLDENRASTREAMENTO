@@ -201,6 +201,59 @@ class GuiaDoPainelTest extends TestCase
         $this->assertStringNotContainsString('guia-chamada mt-1', $guia);
     }
 
+    /**
+     * Consultar não pode custar a tela que estava aberta: o guia é a única página do painel que
+     * abre em outra aba, tanto pelo item da barra lateral quanto pela linha do cabeçalho.
+     */
+    public function test_o_guia_abre_em_outra_aba(): void
+    {
+        $this->actingAs(User::where('email', 'admin@golden.com.br')->firstOrFail());
+
+        $painel = $this->get(route('admin.dashboard'))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression(
+            '/<a href="'.preg_quote(route('admin.guia.index'), '/').'"[^>]*target="_blank" rel="noopener"/',
+            $painel,
+            'O Guia de uso da barra lateral voltou a abrir na mesma aba.'
+        );
+
+        $leads = $this->get(route('admin.leads.index'))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression(
+            '/class="guia-chamada mt-1"[^>]*target="_blank" rel="noopener"/',
+            $leads,
+            'O "Como usar esta tela" voltou a levar a pessoa para fora da tela que ela estava preenchendo.'
+        );
+    }
+
+    /**
+     * O guia troca de seção no lugar: o índice manda, o painel da direita obedece, e a janela não
+     * se mexe. O teste não roda JavaScript — ele trava o contrato que o script e a folha precisam
+     * manter para o comportamento não regredir em silêncio.
+     */
+    public function test_o_guia_troca_a_secao_sem_rolar_a_pagina(): void
+    {
+        $html = $this->actingAs(User::where('email', 'admin@golden.com.br')->firstOrFail())
+            ->get(route('admin.guia.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-guia-conteudo', $html,
+            'O painel da leitura perdeu o gancho que o script usa para trocar a seção.');
+        $this->assertStringContainsString('data-alvo="', $html,
+            'O índice perdeu o gancho que liga cada item à sua seção.');
+
+        $script = file_get_contents(base_path('public/js/golden-guia.js'));
+        $this->assertStringContainsString('preventDefault', $script,
+            'O clique no índice voltou a seguir a âncora e a rolar a página.');
+        $this->assertStringContainsString('replaceState', $script,
+            'O endereço voltou a ser trocado por âncora; é a âncora que faz a janela pular.');
+
+        $folha = file_get_contents(base_path('public/css/golden-guia.css'));
+        $this->assertStringContainsString('data-pronta', $folha,
+            'Sem a marca de pronto, as seções empilhadas aparecem antes do script escondê-las.');
+        $this->assertStringContainsString('overflow-y:auto', $folha,
+            'O painel da leitura perdeu a rolagem própria — a página inteira voltaria a rolar.');
+    }
+
     public function test_o_guia_cita_cada_credencial_que_a_tela_pede(): void
     {
         $secao = GuiaPainel::secao('google-ads');

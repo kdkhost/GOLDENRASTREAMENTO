@@ -3,6 +3,30 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.34.0] - 2026-10-26
+
+### Alterado
+- **O guia de uso abre em outra aba e vira um painel de uma seção.** O item **Guia de uso** da
+  barra lateral, o link **Como usar esta tela** do cabeçalho de cada tela e o botão **Guia do
+  painel** do aviso de crons passaram a abrir `/admin/guia` em `target="_blank"`: consultar a
+  documentação não custa mais a tela que estava aberta. A aparência é a mesma — a busca e o
+  índice continuam na coluna da esquerda, presa à tela como uma barra lateral —, mas a direita
+  deixou de ser a lista das 30 seções empilhadas: clicar num item do índice troca o cartão da
+  leitura por aquela seção, com o título do grupo no alto, e **não rola a página**. O corpo do
+  cartão ganha rolagem própria (altura medida do topo do painel ao rodapé) e o endereço passa a
+  carregar `#secao` por `history.replaceState`, que troca o endereço sem pedir ao navegador que
+  role até a âncora. O `#secao` continua valendo como link direto: o atalho de cada tela abre o
+  guia já na seção certa, e recarregar mantém a seção aberta.
+- **A busca escolhe o que abrir, em vez de despejar tudo.** Digitar filtra o índice como antes —
+  sem acento, "contrato" acha "Contratos" — e abre a primeira seção que casa; sem resultado, o
+  índice avisa e a leitura fica onde estava. Endereço com `?busca=…` chega já filtrado.
+- **No celular o guia continua navegável.** Como não existe "à direita" numa tela estreita, o
+  índice ganhou altura própria (rola por dentro) e a seção escolhida é trazida para a tela
+  depois da troca. A transição de cartão respeita `prefers-reduced-motion`.
+- `GuiaDoPainelTest` (16) ganhou a aba própria do guia e o contrato do painel que troca de seção
+  sem rolar a página; os contratos de markup que já existiam (ids únicos, sem numeração,
+  `guia-chamada` em Leads e ausente no guia, `#google-ads` no HTML do Google Ads) seguem iguais.
+
 ## [2.33.0] - 2026-10-26
 
 ### Adicionado

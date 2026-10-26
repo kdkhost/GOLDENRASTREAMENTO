@@ -21,7 +21,7 @@
             este é um diagnóstico diferente de "a tarefa falhou".
         @endif
     </span>
-    <a href="{{ route('admin.guia.index') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-book me-1"></i> Guia do painel</a>
+    <a href="{{ route('admin.guia.index') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="fas fa-book me-1"></i> Guia do painel</a>
 </div>
 
 <div class="row g-3 mb-3">

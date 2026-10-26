@@ -382,7 +382,7 @@ a dimensão ideal.
   esconde o que é só do administrador: os dois grupos restritos inteiros e o catálogo dentro de
   Vendas. Fora dos grupos, soltos no topo e no fim da coluna, ficam *Dashboard*, *Notificações* e
   *Guia de uso* — o sino é de cada pessoa, e o guia é consulta, não área do sistema: o vendedor lê
-  o mesmo texto do administrador.
+  o mesmo texto do administrador, em outra aba, sem perder a tela em que estava.
 - **Dashboard**: KPIs (total, novos, taxa de conversão, receita fechada), funil visual,
   gráfico de leads nos últimos 30 dias, **conversão por campanha**, leads recentes e uma
   linha **"Módulos integrados"** (clientes, produtos, pedidos/faturamento, páginas) com o
@@ -394,9 +394,8 @@ a dimensão ideal.
 - **Campanhas**: cadastro manual + criação automática por UTM, com métricas por campanha.
 - **Google Ads**: a métrica real das campanhas do anunciante dentro do painel, com OAuth por
   usuário, sincronização em fila e prévia do anúncio responsivo — seção *Google Ads* abaixo.
-- **Guia de uso** (`/admin/guia`): a documentação do sistema dentro do sistema, com busca,
-  âncora por seção e o link "Como usar esta tela" no cabeçalho de cada tela — seção
-  *Guia de uso* abaixo.
+- **Guia de uso** (`/admin/guia`): a documentação do sistema dentro do sistema, aberta em outra
+  aba, com busca, índice lateral e uma seção por vez — seção *Guia de uso* abaixo.
 - **Auditoria**: trilha de ações administrativas (login, mudança de funil, exportação,
   configuração, cadastros de produto/página/pedido…), apenas para admin.
 - **Usuários & permissões**: perfis `admin`, `vendedor`, `visualizador` com middleware
@@ -547,17 +546,25 @@ a dimensão ideal.
   (`texto`, `passos`, `lista`, `codigo`, `tabela`, `aviso`) e `**negrito**` / `` `código` ``
   inline; passo nenhum com número — a ordem já está na lista.
 - **30 seções em 7 grupos** (Começando, Comercial, Vendas, Atendimento, Conteúdo do site, Portal
-  do cliente, Sistema), da rotina do dia ao diagnóstico do servidor. A busca da coluna esquerda
-  normaliza acento ("contrato" acha "Contratos"), esconde o que não casa e deixa marcada a seção
-  por onde a rolagem passa.
-- **A instrução onde a dúvida acontece**: `admin/partials/ajuda-rota.blade.php`, incluído no
-  cabeçalho do layout, mostra "Como usar esta tela" em todas as telas que têm seção — um
-  `@include` cobre as ~20 views sem editar nenhuma, e a rota sem seção não oferece link.
+  do cliente, Sistema), da rotina do dia ao diagnóstico do servidor. O índice fica na coluna da
+  esquerda, como a barra lateral, e o painel da direita mostra **uma seção por vez**: clicar troca
+  o conteúdo sem rolar a página, e o `#secao` no endereço continua abrindo direto nela. A busca
+  normaliza acento ("contrato" acha "Contratos"), esconde o que não casa e abre a primeira seção
+  que casa.
+- **Abre em outra aba, sem sair do que se estava fazendo**: o item da barra lateral, o link "Como
+  usar esta tela" (`admin/partials/ajuda-rota.blade.php`, incluído no cabeçalho do layout) e o
+  botão "Guia do painel" do aviso de crons têm `target="_blank"` — o `@include` cobre as ~20 views
+  sem editar nenhuma, e a rota sem seção não oferece link. O guia é a única tela do painel que se
+  abre assim: é consulta, não navegação.
+- **O clique não rola a janela**: `golden-guia.js` marca a seção ativa, mede a altura que sobra na
+  tela e dá ao painel rolagem própria (o corpo do cartão rola por dentro); o endereço muda por
+  `history.replaceState`, sem âncora — âncora é justamente o que faz a janela pular. No celular,
+  onde não existe "à direita", o painel é trazido para a tela depois da troca.
 - **Aberto a quem opera o painel**: vendedor, visualizador e admin lêem o mesmo texto; não há
   versão "só do administrador" da documentação.
-- Testes: `tests/Feature/GuiaDoPainelTest.php` (14) — conferem cada rota citada, cada item do menu
-  com seção, cada tom de aviso no dark e no light, e o cartão que nasce aberto quando falta
-  credencial do Google Ads.
+- Testes: `tests/Feature/GuiaDoPainelTest.php` (16) — conferem cada rota citada, cada item do menu
+  com seção, cada tom de aviso no dark e no light, a aba própria do guia, o painel de uma seção
+  por vez e o cartão que nasce aberto quando falta credencial do Google Ads.
 
 ### Portal do cliente (`/portal`) — a casa do cliente sem pedir nada à equipe
 - **É o mesmo painel, com a porta do cliente**: a barra lateral, o tema claro/escuro, os
@@ -668,7 +675,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (462 testes, 5.488 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (464 testes, 5.499 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.33.0
+- **Versão:** 2.34.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -1382,10 +1382,11 @@ com um navegador comum, e `/admin/assistente/conversas` com `admin@golden.com.br
 ## 14. Guia de uso dentro do painel
 
 O painel documenta a si mesmo. **Guia de uso** é a última linha da barra lateral — item solto, fora
-dos grupos, porque é consulta e não área do sistema — e abre `/admin/guia` para qualquer papel que
-entra no painel: vendedor, visualizador e administrador leem o mesmo texto. Não há pacote extra,
-tabela nova nem comando de instalação; a rota está no grupo `admin` com `auth`, e todo o conteúdo vem
-de um arquivo de configuração.
+dos grupos, porque é consulta e não área do sistema — e abre `/admin/guia` **em outra aba** para
+qualquer papel que entra no painel: vendedor, visualizador e administrador leem o mesmo texto. É a
+única tela do painel que se abre assim, e de propósito: consultar não pode custar o formulário que
+se estava preenchendo. Não há pacote extra, tabela nova nem comando de instalação; a rota está no
+grupo `admin` com `auth`, e todo o conteúdo vem de um arquivo de configuração.
 
 ### O que tem dentro
 
@@ -1398,9 +1399,16 @@ auditoria, ambiente, diagnóstico).
 
 Cada seção tem resumo, blocos e — quando documenta uma tela — o botão **Abrir a tela**, que só
 aparece para rota registrada: guia apontando para rota renomeada é guia desmentido pelo sistema. A
-coluna da esquerda lista as seções por grupo; a busca ignora acento ("contrato" acha "Contratos"),
-esconde o que não casa e some com o título do grupo que ficou vazio; a rolagem marca sozinha a seção
-por onde a pessoa passa.
+coluna da esquerda é o índice, presa à tela como uma barra lateral; a da direita mostra **uma seção
+por vez**, a que foi clicada. O clique troca o cartão da leitura e **não rola a página**: o corpo do
+cartão tem rolagem própria, e o endereço ganha `#secao` por `history.replaceState` — trocar o
+endereço sem pedir ao navegador que role até a âncora. O `#secao` no endereço continua valendo, e
+é ele que o link **Como usar esta tela**, no alto de cada tela, usa para abrir já na seção certa.
+
+A busca ignora acento ("contrato" acha "Contratos"), esconde o que não casa, some com o título do
+grupo que ficou vazio e abre a primeira seção que casa; sem resultado, o índice avisa e a leitura
+continua onde estava. No celular, onde não existe "à direita", o índice ganha altura própria e rola
+por dentro, e a seção aberta é trazida para a tela depois do clique.
 
 ### Seis tipos de bloco
 
@@ -1905,9 +1913,9 @@ continua visível para você pelo painel ou SSH.
       conferir em `/admin/google-ads/criativo` que um título de 31 caracteres fica vermelho
 - [ ] Google Ads sem credencial: a mesma tela deve listar **qual** variável falta em vez de
       quebrar, e nenhum token de desenvolvedor aparece no HTML nem no log
-- [ ] Guia de uso: **Guia de uso** na barra lateral abre as 30 seções, a busca acha "contrato"
-      sem acento, e cada tela com seção mostra a linha **Como usar esta tela** caindo na
-      âncora certa (seção 14)
+- [ ] Guia de uso: **Guia de uso** na barra lateral abre em outra aba, o índice à esquerda abre
+      uma seção por vez à direita sem rolar a página, a busca acha "contrato" sem acento, e cada
+      tela com seção mostra a linha **Como usar esta tela** caindo na seção certa (seção 14)
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`
       no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
       cadastro na tela da campanha (seção 13)

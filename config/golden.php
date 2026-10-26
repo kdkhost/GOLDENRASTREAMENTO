@@ -800,8 +800,10 @@ return [
         ]],
 
         // O guia fica solto, fora de grupo e depois de tudo: é consulta, não área do sistema, e
-        // quem é vendedor lê o mesmo texto do administrador.
-        ['titulo' => 'Guia de uso', 'rota' => 'admin.guia.index', 'prefixo' => 'admin.guia.', 'icone' => 'fa-circle-question'],
+        // quem é vendedor lê o mesmo texto do administrador. Abre em outra aba porque é o tipo de
+        // página que fica aberta ao lado do sistema — consultar não pode custar a tela que se
+        // estava usando.
+        ['titulo' => 'Guia de uso', 'rota' => 'admin.guia.index', 'prefixo' => 'admin.guia.', 'icone' => 'fa-circle-question', 'externo' => true],
     ],
 
     // Menu do portal do cliente. Mesma árvore, mesmo renderizador (MenuPainel + a sidebar do

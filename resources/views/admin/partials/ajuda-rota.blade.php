@@ -10,7 +10,8 @@
     $secaoGuia = \App\Support\GuiaPainel::secaoDaRota(optional(request()->route())->getName());
 @endphp
 @if ($secaoGuia)
-    <a class="guia-chamada mt-1" href="{{ route('admin.guia.index') }}#{{ $secaoGuia['id'] }}">
+    {{-- Outra aba: a pessoa lê a explicação sem perder o formulário que estava preenchendo. --}}
+    <a class="guia-chamada mt-1" href="{{ route('admin.guia.index') }}#{{ $secaoGuia['id'] }}" target="_blank" rel="noopener">
         <i class="fas fa-circle-question" aria-hidden="true"></i>
         <span>Como usar esta tela</span>
     </a>

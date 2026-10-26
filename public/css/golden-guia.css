@@ -4,16 +4,18 @@
 | Cor só por token de golden-theme.css: nada aqui escreve hexadecimal, então o cartão, o passo a
 | passo e o aviso trocam de tom junto com o tema claro e escuro escolhido no cabeçalho.
 |
-| O desenho é o do resto do painel — um cartão por grupo, com o índice à esquerda — mas a leitura
-| obedece a uma medida: parágrafo, lista e passo param em ~70 caracteres, porque texto que corre de
-| margem a margem em tela larga cansa e ninguém lê. Tabela e código são a exceção: esses usam a
-| largura inteira do cartão, que é onde as colunas cabem.
+| O desenho é o do resto do painel — um cartão por grupo, com o índice à esquerda, como a sidebar
+| do sistema. A diferença é que a direita mostra uma seção por vez: clicar no índice troca o
+| cartão da leitura, em vez de rolar uma lista longa. A leitura obedece a uma medida — parágrafo,
+| lista e passo param em ~70 caracteres, porque texto que corre de margem a margem em tela larga
+| cansa e ninguém lê. Tabela e código são a exceção: esses usam a largura inteira do cartão, que é
+| onde as colunas cabem.
 */
 
 /* ---------- A coluna da esquerda: busca + índice ---------- */
 
 .guia-lado{position:static}
-.guia-nav{display:flex;flex-direction:column;gap:2px}
+.guia-nav{position:relative;display:flex;flex-direction:column;gap:2px}
 .guia-nav-grupo{font:600 .68rem/1.4 var(--font-head);letter-spacing:.08em;text-transform:uppercase;color:var(--t-neutral-fg);margin:.75rem 0 .25rem}
 .guia-nav-grupo:first-child{margin-top:0}
 .guia-nav-link{display:flex;align-items:center;gap:.5rem;padding:.32rem .5rem;border-radius:var(--radius-md);color:var(--bs-body-color);text-decoration:none;font-size:.86rem;line-height:1.35}
@@ -24,15 +26,31 @@
 /* O aviso de "nenhum resultado" é o estado vazio da busca, no mesmo lugar da lista. */
 .guia-nav-vazio{font-size:.82rem;color:var(--t-neutral-fg);margin:.5rem 0 0}
 
-/* ---------- O cartão de cada grupo ---------- */
+/* A nota que fecha o índice: a mesma origem do link do cabeçalho e do cartão do Google Ads. No
+   rodapé do cartão da esquerda, ela fica onde a leitura termina sem competir com o menu. */
+.guia-fim{margin:.75rem 0 0;padding-top:.6rem;border-top:1px solid var(--bs-border-color);line-height:1.5;font-size:.76rem;color:var(--bs-secondary-color)}
 
-.guia-grupo.card{margin:0 0 1rem}
+/* ---------- O painel da direita: uma seção por vez ---------- */
+
+.guia-conteudo{min-width:0}
+.guia-conteudo .guia-grupo.card{margin:0}
 .guia-grupo .card-body{padding:.35rem 1rem 1rem}
+
+/* Antes do script, a direita mostra só a primeira seção: a página não abre como uma lista de
+   trinta seções para colapsar em seguida, e um endereço com #secao não encontra âncora visível
+   para onde pular. Depois do script, `is-ativa` escolhe o cartão e a seção. */
+.guia-conteudo:not([data-pronta]) .guia-grupo:not(:first-child),
+.guia-conteudo:not([data-pronta]) .guia-grupo:first-child .guia-secao:not(:first-child),
+.guia-conteudo[data-pronta] .guia-grupo:not(.is-ativa),
+.guia-conteudo[data-pronta] .guia-secao:not(.is-ativa){display:none}
+
+@keyframes guia-entra{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- A seção ---------- */
 
 .guia-secao{padding:1.05rem 0;border-bottom:1px solid var(--bs-border-color);scroll-margin-top:5.5rem}
 .guia-secao:first-child{padding-top:.35rem}
 .guia-secao:last-child{border-bottom:0;padding-bottom:0}
-.guia-secao--oculta{display:none}
 .guia-secao-cabeca{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.35rem .75rem}
 .guia-secao-titulo{display:flex;align-items:center;gap:.4rem;margin:0;font-size:1.05rem;font-weight:700;color:var(--bs-body-color);min-width:0;overflow-wrap:anywhere}
 .guia-abrir{white-space:nowrap;flex:none}
@@ -43,8 +61,7 @@
 .guia-subtitulo,
 .guia-passos,
 .guia-lista,
-.guia-aviso,
-.guia-fim{max-width:70ch}
+.guia-aviso{max-width:70ch}
 
 .guia-resumo{color:var(--bs-body-color);font-weight:500;margin:.35rem 0 .65rem}
 .guia-texto{margin:0 0 .75rem;line-height:1.6}
@@ -91,16 +108,21 @@
 .guia-aviso--red{border-left-color:var(--t-red-fg);background:var(--t-red-bg)}
 .guia-aviso--neutral{border-left-color:var(--t-neutral-fg);background:var(--t-neutral-bg)}
 
-.guia-fim{margin:1rem 0 0;padding-top:.75rem;border-top:1px solid var(--bs-border-color);line-height:1.55;font-size:.82rem;color:var(--bs-secondary-color)}
-
 /*
 | A chamada discreta no alto de cada tela: um link pequeno, do peso do texto secundário, que
-| leva à seção do guia documentando aquela página. Não é botão nem faixa — é uma dica de rodapé
-| de cabeçalho, e some quando a tela não tem seção.
+| leva à seção do guia documentando aquela página, em outra aba. Não é botão nem faixa — é uma
+| dica de rodapé de cabeçalho, e some quando a tela não tem seção.
 */
 .guia-chamada{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;color:var(--t-neutral-fg);text-decoration:none;white-space:nowrap}
 .guia-chamada:hover{color:var(--t-gold-fg)}
 .guia-chamada i{font-size:.85rem}
+
+@media (max-width:991.98px){
+    /* No celular o índice é uma lista longa acima do texto. Com altura própria, o menu rola por
+       dentro e o cartão da leitura começa logo abaixo do índice — em vez de trinta seções de
+       distância. */
+    .guia-nav{max-height:50vh;overflow-y:auto;overscroll-behavior:contain}
+}
 
 @media (min-width:992px){
     /* A coluna da esquerda acompanha a leitura e cabe na tela: o cartão inteiro não passa do
@@ -110,4 +132,17 @@
     .guia-lado .card{max-height:calc(100vh - 2rem);display:flex;flex-direction:column}
     .guia-lado .card-body{display:flex;flex-direction:column;min-height:0}
     .guia-nav{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+
+    /* O script mede a altura que sobra na tela — do topo do cartão ao rodapé do painel — e a usa
+       dos dois lados. Com isso o índice cabe sem cortar e a leitura ganha rolagem própria: trocar
+       de seção rola o texto por dentro, nunca a janela. */
+    .guia-medido .guia-lado .card{max-height:var(--guia-altura)}
+
+    .guia-conteudo[data-pronta]{height:var(--guia-altura, calc(100vh - 2rem));display:flex;flex-direction:column}
+    .guia-conteudo[data-pronta] .guia-grupo.is-ativa{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;margin:0;animation:guia-entra .18s ease-out}
+    .guia-conteudo[data-pronta] .guia-grupo.is-ativa > .card-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+}
+
+@media (prefers-reduced-motion:reduce){
+    .guia-conteudo[data-pronta] .guia-grupo.is-ativa{animation:none}
 }
