@@ -19,13 +19,17 @@ use Illuminate\Console\Command;
  * Falta credencial — no banco ou no ambiente —, o comando devolve falha antes de enfileirar
  * qualquer coisa:
  * um agendamento que dispara jobs fadados ao erro é a receita para encher `google_ads_api_logs`
- * e a caixa de entrada de todo mundo de madrugada.
+ * e a caixa de entrada de todo mundo de madrugada. Com `--agendamento`, porém, a falta de
+ * credencial é o estado normal de uma instalação que ainda não conectou conta nenhuma: aí vira
+ * aviso e saída limpa, porque um cron que escreve ERROR no log a cada quinze minutos faz a equipe
+ * parar de ler o log — e o log é onde se vê o erro de verdade.
  */
 class SyncGoogleAdsCommand extends Command
 {
     protected $signature = 'google-ads:sync
                             {--dias= : Janela em dias (o padrão é golden_ads.dias_padrao)}
-                            {--conta= : Só a conta com este id (para testar uma conexão)}';
+                            {--conta= : Só a conta com este id (para testar uma conexão)}
+                            {--agendamento : Rodado pelo cron: credencial ausente é aviso, não falha}';
 
     protected $description = 'Enfileirar a sincronização da métrica de todas as contas de Google Ads conectadas';
 
@@ -42,8 +46,16 @@ class SyncGoogleAdsCommand extends Command
         $faltantes = GoogleAdsService::credenciaisFaltantes();
 
         if ($faltantes->isNotEmpty()) {
-            $this->error('Faltam as credenciais do Google Ads: '.$faltantes->implode(', ')
-                .'. Preencha na tela '.ChavesDeIntegracao::CAMINHO_NO_PAINEL.' do painel (ou, em último caso, no .env deste servidor).');
+            $mensagem = 'Faltam as credenciais do Google Ads: '.$faltantes->implode(', ')
+                .'. Preencha na tela '.ChavesDeIntegracao::CAMINHO_NO_PAINEL.' do painel (ou, em último caso, no .env deste servidor).';
+
+            if ($this->option('agendamento')) {
+                $this->warn($mensagem);
+
+                return self::SUCCESS;
+            }
+
+            $this->error($mensagem);
 
             return self::FAILURE;
         }

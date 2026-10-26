@@ -5,6 +5,16 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.32.1] - 2026-10-26
+
+### Corrigido
+- **O cron do Google Ads parou de gritar num log que ninguém lê.** `google-ads:sync` sem
+  credenciais devolvia falha também quando era o agendamento quem chamava, e o `schedule:run`
+  gravava um `production.ERROR` a cada quinze minutos — numa instalação que ainda não conectou
+  conta nenhuma, que é o estado normal. Chamado à mão continua falhando alto, com a lista do que
+  falta e o endereço da tela; pelo cron (`--agendamento`) é aviso e saída limpa, porque log cheio
+  de falso erro é o jeito certo de fazer a equipe parar de ler o log.
+
 ## [2.32.0] - 2026-10-26
 
 ### Adicionado

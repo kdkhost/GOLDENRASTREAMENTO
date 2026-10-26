@@ -127,6 +127,28 @@ class ConexaoGoogleAdsTest extends TestCase
         $this->assertDatabaseCount('google_ads_accounts', 0);
     }
 
+    public function test_o_cron_sem_credencial_avisa_em_vez_de_gritar_no_log(): void
+    {
+        config([
+            'google_ads.developer_token' => null,
+            'services.google_ads.client_id' => null,
+            'services.google_ads.client_secret' => null,
+        ]);
+
+        $falta = 'Faltam as credenciais do Google Ads: GOOGLE_ADS_DEVELOPER_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET.';
+
+        // Chamado à mão: a pessoa quer a lista do que falta e um código de falha.
+        $this->artisan('google-ads:sync')
+            ->expectsOutputToContain($falta)
+            ->assertExitCode(1);
+
+        // Chamado pelo agendamento: conta nenhuma conectada é o estado normal de uma instalação
+        // nova, e um ERROR a cada quinze minutos faz a equipe parar de ler o log.
+        $this->artisan('google-ads:sync --agendamento')
+            ->expectsOutputToContain($falta)
+            ->assertExitCode(0);
+    }
+
     public function test_o_callback_guarda_a_conta_com_o_token_cifrado_e_pede_a_primeira_sincronizacao(): void
     {
         $this->mockarSocialite($this->usuarioAutorizado('1//04token-de-renovacao'));

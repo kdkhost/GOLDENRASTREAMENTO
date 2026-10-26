@@ -32,7 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // A métrica do Google Ads tem meia hora de vida no cache e o painel só lê de lá.
         // Quinze minutos mantém a janela sempre preenchida para quem abre a tela, sem
         // dobrar as chamadas: o comando só enfileira, quem fala com o Google é a fila.
-        $schedule->command('google-ads:sync')->everyFifteenMinutes()->withoutOverlapping();
+        // `--agendamento` porque conta ainda não conectada não é erro de cron — é a instalação
+        // esperando o dono preencher a chave, e o log precisa continuar legível.
+        $schedule->command('google-ads:sync --agendamento')->everyFifteenMinutes()->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
