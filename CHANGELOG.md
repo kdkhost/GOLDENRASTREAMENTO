@@ -3,6 +3,18 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.35.1] - 2026-10-26
+
+### Alterado
+- **O modal dos servidores mostra o nome, não o endereço.** As linhas com
+  `app1.goldenrastreamento.com.br` e `134.209.82.248:8082` saíram dos cartões de **Servidor 1**
+  e **Servidor 2**: ficou só o nome de cada um, e o endereço continua na própria ligação, em
+  nova aba. A frase de apoio passou a convidar a escolher o servidor em vez de "abrir o
+  endereço".
+- **O botão dourado do cabeçalho agora diz Rastreamento.** **Falar com especialista** deu
+  lugar a **Rastreamento**, no topo e na gaveta; a aparência dourada e o modal que ele abre
+  não mudaram. O caminho de contato continua dentro do modal.
+
 ## [2.35.0] - 2026-10-26
 
 ### Alterado

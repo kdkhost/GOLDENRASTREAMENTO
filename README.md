@@ -573,9 +573,10 @@ a dimensão ideal.
   árvore do menu, lida de `config/golden.menu_portal` pelo mesmo `MenuPainel::montar()`, com
   as bolhas contando os pedidos e chamados **daquela ficha**.
 - **As portas de entrada ficam no cabeçalho do site**: o ícone de login abre o submenu com
-  *Painel do cliente* e *Financeiro antigo*, e o botão **Falar com especialista** abre o modal
-  com os dois servidores de rastreamento — cada endereço externo se troca em *Sistema →
-  Configurações → Acessos externos do site* (banco vence `config/golden.acessos`).
+  *Painel do cliente* e *Financeiro antigo*, e o botão **Rastreamento** abre o modal com os
+  dois servidores — na tela aparece só o nome de cada um, o endereço fica na própria ligação.
+  Cada endereço externo se troca em *Sistema → Configurações → Acessos externos do site*
+  (banco vence `config/golden.acessos`).
 - **Seis telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
   *Pedidos* (linha do tempo da jornada e os documentos do pedido), *Chamados*, *Contratos*
   com o PDF, *Meus dados* e *Deixar um depoimento*.
@@ -679,7 +680,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (468 testes, 5.551 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (468 testes, 5.555 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

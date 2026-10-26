@@ -523,7 +523,7 @@ return [
                     'Rastreamento — ligar ou desligar a medição própria e as etiquetas externas: Google Analytics (`ga_measurement_id`), Meta Pixel e GTM. Deixar tudo vazio é legítimo: a atribuição do sistema não depende de nenhum dos três.',
                     'WhatsApp — a caixa multicanal do botão flutuante: título, subtítulo e um número por canal, cada um ligável separadamente.',
                     'Loja — liga e desliga a vitrine, e guarda frete, corte do frete grátis, retirada, chave Pix e o e-mail que recebe o alerta de venda.',
-                    'Acessos externos do site — o financeiro antigo e os dois servidores de rastreamento, para onde levam o submenu do ícone de login e o botão **Falar com especialista** no cabeçalho do site. O portal do cliente não aparece aqui: é rota interna e acompanha a sessão.',
+                    'Acessos externos do site — o financeiro antigo e os dois servidores de rastreamento, para onde levam o submenu do ícone de login e o botão **Rastreamento** no cabeçalho do site. O portal do cliente não aparece aqui: é rota interna e acompanha a sessão.',
                     'Chaves de integração — Google Ads, Avaliações do Google e o servidor de disparo. É o que se preenche nesta tela, nunca no `.env`: o valor grava no banco (cifrado quando é segredo) e vale na hora, sem limpar configuração nem reiniciar o servidor.',
                 ]],
             ],

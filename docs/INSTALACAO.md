@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.35.0
+- **Versão:** 2.35.1
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -425,9 +425,10 @@ rode os três de novo (ou `php artisan optimize:clear` e recarregue).
 - Portal do cliente: `https://seudominio.com.br/portal/entrar` — ninguém precisa
   criar conta no painel; o auto-cadastro reaproveita a ficha do CRM (seção 10).
 - Acessos de quem já é cliente: o ícone de login no topo do site abre o portal e o
-  financeiro antigo; o botão **Falar com especialista** abre os dois servidores de
-  rastreamento. Os três endereços externos se trocam em **Sistema → Configurações →
-  Acessos externos do site** (o que a tela grava fica no banco e vence o `config`).
+  financeiro antigo; o botão **Rastreamento** abre os dois servidores — na tela aparece
+  só o nome de cada um, o endereço fica na ligação. Os três endereços externos se trocam
+  em **Sistema → Configurações → Acessos externos do site** (o que a tela grava fica no
+  banco e vence o `config`).
 - Troque a senha padrão assim que entrar, e remova o usuário de demonstração
   (`vendedor@golden.com.br`) se não for usar.
 

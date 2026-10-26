@@ -56,7 +56,7 @@
                 <span class="cart-count" data-cart-count @if($golden['carrinho_itens'] <= 0) hidden @endif>{{ $golden['carrinho_itens'] }}</span>
             </a>
             @endif
-            <button type="button" class="btn btn-gold btn-sm nav-especialista" data-acesso-plataformas aria-haspopup="dialog" aria-controls="acessoPlataformas">Falar com especialista</button>
+            <button type="button" class="btn btn-gold btn-sm nav-especialista" data-acesso-plataformas aria-haspopup="dialog" aria-controls="acessoPlataformas">Rastreamento</button>
             <button class="nav-toggle" id="navToggle" type="button" aria-label="Abrir menu" aria-controls="navDrawer" aria-expanded="false">
                 <i class="fa-solid fa-bars icon-open"></i>
                 <i class="fa-solid fa-xmark icon-close"></i>
@@ -75,7 +75,7 @@
         <button type="button" class="drawer-close" data-nav-close aria-label="Fechar menu"><i class="fa-solid fa-xmark"></i></button>
     </div>
     @include('site.partials.nav-links', ['escopo' => 'gaveta'])
-    <button type="button" class="btn btn-gold btn-sm drawer-cta" data-acesso-plataformas aria-haspopup="dialog" aria-controls="acessoPlataformas">Falar com especialista</button>
+    <button type="button" class="btn btn-gold btn-sm drawer-cta" data-acesso-plataformas aria-haspopup="dialog" aria-controls="acessoPlataformas">Rastreamento</button>
     <div class="drawer-foot">
         <a href="{{ $golden['whatsapp_url'] }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:var(--gold)"></i> {{ $golden['telefone'] }}</a><br>
         <a href="mailto:{{ $golden['email'] }}"><i class="fa-solid fa-envelope" style="color:var(--gold)"></i> {{ $golden['email'] }}</a>

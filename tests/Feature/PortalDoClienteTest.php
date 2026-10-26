@@ -525,9 +525,16 @@ class PortalDoClienteTest extends TestCase
         // O botão dourado continua botão, com a mesma classe de sempre: o clique abre o modal.
         $this->assertStringContainsString('class="btn btn-gold btn-sm nav-especialista" data-acesso-plataformas', $html);
         $this->assertStringContainsString('class="btn btn-gold btn-sm drawer-cta" data-acesso-plataformas', $html);
+        $this->assertStringContainsString('aria-controls="acessoPlataformas">Rastreamento</button>', $html);
         $this->assertStringContainsString('id="acessoPlataformas"', $html);
         $this->assertStringContainsString('href="'.config('golden.acessos.servidor_1').'" target="_blank" rel="noopener"', $html);
         $this->assertStringContainsString('href="'.config('golden.acessos.servidor_2').'" target="_blank" rel="noopener"', $html);
+
+        // O modal mostra só o nome do servidor: o endereço fica na própria ligação, não na tela.
+        $modal = Str::before(Str::after($html, 'id="acessoPlataformas"'), 'class="acesso-ajuda"');
+        $this->assertStringContainsString('<span class="acesso-opcao-texto"><b>Servidor 1</b></span>', $modal);
+        $this->assertStringContainsString('<span class="acesso-opcao-texto"><b>Servidor 2</b></span>', $modal);
+        $this->assertStringNotContainsString('<small', $modal);
     }
 
     public function test_os_enderecos_de_acesso_sao_trocados_no_painel_e_o_site_obedece(): void

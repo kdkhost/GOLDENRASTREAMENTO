@@ -15,7 +15,7 @@
             <span class="acesso-selo"><i class="fa-solid fa-satellite-dish" aria-hidden="true"></i></span>
             <div class="acesso-titulos">
                 <h3 id="acessoPlataformasTitulo">Acessar a plataforma</h3>
-                <p>Cada servidor é uma plataforma diferente. Abra o endereço que a sua instalação usa.</p>
+                <p>Cada servidor é uma plataforma diferente. Escolha o da sua instalação.</p>
             </div>
             <button type="button" class="acesso-fechar" data-acesso-fechar aria-label="Fechar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
@@ -23,16 +23,9 @@
         <div class="acesso-opcoes">
             @foreach($servidores as $servidor)
                 @continue(blank($servidor['url']))
-                @php
-                    $partes = parse_url($servidor['url']);
-                    $dominio = ($partes['host'] ?? $servidor['url']) . (isset($partes['port']) ? ':'.$partes['port'] : '');
-                @endphp
                 <a class="acesso-opcao" href="{{ $servidor['url'] }}" target="_blank" rel="noopener">
                     <span class="acesso-opcao-icone"><i class="fa-solid {{ $servidor['icone'] }}" aria-hidden="true"></i></span>
-                    <span class="acesso-opcao-texto">
-                        <b>{{ $servidor['titulo'] }}</b>
-                        <small>{{ $dominio }}</small>
-                    </span>
+                    <span class="acesso-opcao-texto"><b>{{ $servidor['titulo'] }}</b></span>
                     <span class="acesso-opcao-abrir">Abrir <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span>
                 </a>
             @endforeach
