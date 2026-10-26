@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ConhecimentoController;
 use App\Http\Controllers\Admin\ContractController;
 use App\Http\Controllers\Admin\ConversaController;
+use App\Http\Controllers\Admin\CronController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Admin\GoogleAdsCampanhaController;
 use App\Http\Controllers\Admin\GoogleAdsController;
 use App\Http\Controllers\Admin\GuiaController;
 use App\Http\Controllers\Admin\LeadController as AdminLeadController;
+use App\Http\Controllers\Admin\NotificacaoController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ProductController;
@@ -208,6 +210,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     // O guia de uso, aberto para qualquer papel: quem atende lead também precisa consultar
     // como o sistema funciona, e não há nada aqui que um vendedor não possa ler.
     Route::get('/guia', [GuiaController::class, 'index'])->name('guia.index');
+
+    // Central de notificações: o sino do topo e a página dedicada. Cada pessoa só enxerga as
+    // suas — a regra é do controller (e da linha por destinatário), não do middleware.
+    Route::prefix('notificacoes')->name('notificacoes.')->group(function () {
+        Route::get('/', [NotificacaoController::class, 'index'])->name('index');
+        Route::get('/preferencias', [NotificacaoController::class, 'preferencias'])->name('preferencias');
+        Route::post('/preferencias', [NotificacaoController::class, 'salvarPreferencias'])->name('preferencias.salvar');
+        // Antes do {notificacao}: "sino" é um segmento só e cairia no parâmetro do id.
+        Route::get('/sino', [NotificacaoController::class, 'sino'])->middleware('throttle:60,1')->name('sino');
+        Route::post('/lidas', [NotificacaoController::class, 'lidas'])->name('lidas');
+        Route::get('/{notificacao}', [NotificacaoController::class, 'show'])->whereNumber('notificacao')->name('show');
+        Route::delete('/{notificacao}', [NotificacaoController::class, 'destroy'])->whereNumber('notificacao')->name('destroy');
+    });
 
     // Envios dos campos de arrastar-e-soltar (imagem, vídeo, documento) do painel.
     Route::post('/uploads', [UploadController::class, 'store'])->middleware('throttle:40,1')->name('uploads.store');
@@ -413,6 +428,20 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
             Route::post('/{video}', [VideoController::class, 'update'])->name('update');
             Route::delete('/{video}', [VideoController::class, 'destroy'])->name('destroy');
         });
+    });
+
+    // Agenda do painel (somente admin). A hospedagem tem UMA linha de crontab; o resto da
+    // agenda mora aqui, com histórico e botão de rodar agora.
+    Route::prefix('crons')->name('crons.')->middleware('role:admin')->group(function () {
+        Route::get('/', [CronController::class, 'index'])->name('index');
+        Route::get('/nova', [CronController::class, 'create'])->name('create');
+        Route::post('/', [CronController::class, 'store'])->name('store');
+        Route::get('/{tarefa}', [CronController::class, 'show'])->whereNumber('tarefa')->name('show');
+        Route::get('/{tarefa}/editar', [CronController::class, 'edit'])->whereNumber('tarefa')->name('edit');
+        Route::post('/{tarefa}', [CronController::class, 'update'])->whereNumber('tarefa')->name('update');
+        Route::post('/{tarefa}/alternar', [CronController::class, 'toggle'])->whereNumber('tarefa')->name('toggle');
+        Route::post('/{tarefa}/executar', [CronController::class, 'executar'])->whereNumber('tarefa')->name('executar');
+        Route::delete('/{tarefa}', [CronController::class, 'destroy'])->whereNumber('tarefa')->name('destroy');
     });
 
     // Auditoria, usuários e configurações (somente admin)

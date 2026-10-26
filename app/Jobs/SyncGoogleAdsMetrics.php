@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\GoogleAdsAccount;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Support\GoogleAdsCache;
+use App\Support\Notifica;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
@@ -98,6 +99,19 @@ class SyncGoogleAdsMetrics implements ShouldQueue
         if ($dono !== null && $dono->email !== null && $dono->email !== '') {
             Mail::to($dono->email)->queue(new ContaGoogleAdsDesconectada($conta, $dono));
         }
+
+        Notifica::disparar(
+            'ads_desconectado',
+            'A conta de Google Ads '.$conta->customer_id.' pede reconexão',
+            $motivo.' O painel continua mostrando a última métrica sincronizada, marcada como parada.',
+            null,
+            [
+                'conta_id' => $conta->id,
+                'customer_id' => $conta->customer_id,
+                'motivo' => $motivo,
+            ],
+            'ads_desconectado:'.$conta->id,
+        );
 
         Activity::log(
             'google_ads_desconectada',

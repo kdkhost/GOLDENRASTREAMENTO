@@ -195,7 +195,7 @@ return [
                     'Pausar e ativar campanha têm confirmação antes e passam por uma operação simulada (`validate_only`) antes da escrita de verdade.',
                 ]],
                 ['tipo' => 'tabela', 'cabecalho' => ['O que a tela diz', 'O que fazer'], 'linhas' => [
-                    ['A integração ainda não tem credenciais', 'Faltam valores; o cartão lista quais e leva direto a Configurações → Chaves de integração.'],
+                    ['Ligar o Google Ads — o cartão de abertura', 'Ele diz quantas chaves faltam, lista os nomes e leva direto a Configurações → Chaves de integração; com as chaves no lugar, o mesmo cartão oferece "Conectar conta Google Ads".'],
                     ['Carregando… por mais de dois minutos', 'Veja se o cron do agendador está ativo e se a fila anda: php artisan queue:work --stop-when-empty.'],
                     ['A última sincronização não terminou', 'O cartão marca desde quando e o motivo; "Tentar de novo" enfileira outra.'],
                     ['Conta desconectada, com e-mail para o dono', 'O Google recusou a credencial — token revogado ou senha da conta alterada. Reconecte pela tela.'],
@@ -492,6 +492,25 @@ return [
         /* ---------------------------------------------------------------- Sistema */
 
         [
+            'id' => 'notificacoes',
+            'grupo' => 'Sistema',
+            'titulo' => 'Central de notificações',
+            'icone' => 'fa-bell',
+            'rota' => 'admin.notificacoes.index',
+            'resumo' => 'O que o sistema precisa contar à equipe: o sino do topo, a página com o histórico e uma ficha para cada aviso.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'Cada aviso nasce de um fato do sistema — chamado aberto, resposta do cliente, pedido pago, tarefa do cron que falhou — e chega para quem tem acesso ao painel. O sino do topo mostra o que ainda não foi lido; abrir a notificação a retira do sino e a mantém na página Notificações, com o histórico inteiro.'],
+                ['tipo' => 'lista', 'itens' => [
+                    'O sino consulta a central de tempos em tempos e fica quieto quando a aba está escondida — nada de requisição em segundo plano à toa.',
+                    'Cada aviso tem a própria ficha: a mensagem inteira, os dados que a geraram e o botão que leva ao registro de origem — o chamado, o pedido, a campanha, a tarefa do cron.',
+                    'Marcar como lidas limpa o sino de uma vez, sem apagar nada: o que foi lido continua listado, com a data da leitura.',
+                    'Preferências — cada tipo de aviso pode ser desligado, e o tipo desligado não gera aviso para quem desligou. O administrador define também por quantos dias a central guarda uma notificação e quando ela passa a vencida.',
+                ]],
+                ['tipo' => 'aviso', 'tom' => 'blue', 'conteudo' => 'A central é o canal de dentro do painel, e não substitui o e-mail: o mesmo fato que vira notificação é o que entra na fila para o destinatário. Desligar o aviso aqui silencia o sino, não a caixa de entrada.'],
+            ],
+        ],
+
+        [
             'id' => 'configuracoes',
             'grupo' => 'Sistema',
             'titulo' => 'Configurações',
@@ -506,6 +525,26 @@ return [
                     'Loja — liga e desliga a vitrine, e guarda frete, corte do frete grátis, retirada, chave Pix e o e-mail que recebe o alerta de venda.',
                     'Chaves de integração — Google Ads, Avaliações do Google e o servidor de disparo. É o que se preenche nesta tela, nunca no `.env`: o valor grava no banco (cifrado quando é segredo) e vale na hora, sem limpar configuração nem reiniciar o servidor.',
                 ]],
+            ],
+        ],
+
+        [
+            'id' => 'crons',
+            'grupo' => 'Sistema',
+            'titulo' => 'Crons e a agenda',
+            'icone' => 'fa-clock',
+            'rota' => 'admin.crons.index',
+            'resumo' => 'A agenda do sistema configurada pela tela: a hospedagem tem uma linha só, e é daqui que sai o que ela executa.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'O servidor tem **uma** linha no cron da hospedagem, e ela não muda: chama `php artisan schedule:run` a cada minuto. O que roda depois disso é decidido nesta tela — incluir, editar, pausar, excluir e rodar agora, sem tocar no cPanel.'],
+                ['tipo' => 'lista', 'itens' => [
+                    'Cada tarefa escolhe um comando registrado no `artisan` e uma frequência — de minuto a minuto, de hora em hora, diária, semanal ou mensal. As flags ficam num campo separado e voltam a compor a mesma linha de comando.',
+                    'O histórico guarda cada execução com origem, duração, saída e erro — o botão Rodar agora deixa o mesmo rastro do cron, mudando só a origem.',
+                    'Uma tarefa pausada sai da agenda na hora. Ligar "uma por vez" impede que a execução de hoje encontre a de ontem ainda rodando.',
+                    'As tarefas que o sistema traz prontas podem ser pausadas e reagendadas, mas não apagadas: apagar o worker da fila é o jeito mais silencioso de perder todo e-mail do portal, porque nada quebra — só para de sair.',
+                    'A batida do agendador fica no topo da tela. Se o cron da hospedagem parar, é ali que o aviso aparece antes de qualquer tarefa atrasar.',
+                ]],
+                ['tipo' => 'aviso', 'tom' => 'amber', 'conteudo' => 'O comando de fila não aceita Rodar agora: ele prende a tela por dezenas de segundos para fazer o que o próprio minuto faria. Espere a volta seguinte ou rode `queue:work --stop-when-empty` pelo terminal.'],
             ],
         ],
 
@@ -613,7 +652,9 @@ return [
         'admin.conteudo.depoimentos.' => 'depoimentos',
         'admin.conteudo.videos.' => 'videos',
         'admin.conteudo.faqs.' => 'faqs',
+        'admin.notificacoes.' => 'notificacoes',
         'admin.settings.' => 'configuracoes',
+        'admin.crons.' => 'crons',
         'admin.usuarios.' => 'usuarios',
         'admin.activities.' => 'auditoria',
     ],

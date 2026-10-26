@@ -9,6 +9,7 @@ use App\Models\Lead;
 use App\Models\LeadStatusHistory;
 use App\Models\Visit;
 use App\Services\Assistente\Atendedor;
+use App\Support\Notifica;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -52,6 +53,24 @@ class LeadService
         ]);
 
         Activity::log('lead_criado', "Lead {$lead->name} capturado (".Atribuidor::rotuloCanal($lead->canal).')', $lead);
+        Notifica::disparar(
+            'lead_novo',
+            'Lead novo: '.($lead->name ?: 'sem nome').($lead->phone ? ' · '.$lead->phone : ''),
+            'Canal: '.Atribuidor::rotuloCanal($lead->canal)
+                .($lead->utm_source ? ' · origem: '.$lead->utm_source : '')
+                .($lead->message ? ' · assunto: '.Str::limit($lead->message, 90, '') : ''),
+            (string) $lead->id,
+            [
+                'lead_id' => $lead->id,
+                'nome' => $lead->name,
+                'email' => $lead->email,
+                'telefone' => $lead->phone,
+                'canal' => $lead->canal,
+                'utm_source' => $lead->utm_source,
+                'campanha' => $lead->campaign?->name,
+            ],
+            'lead_novo:'.$lead->id,
+        );
 
         return $lead;
     }

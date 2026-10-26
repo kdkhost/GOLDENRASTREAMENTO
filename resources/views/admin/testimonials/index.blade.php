@@ -11,7 +11,7 @@
 <form method="POST" action="{{ route('admin.conteudo.depoimentos.importar') }}" class="d-inline">
     @csrf
     <button type="submit" class="btn btn-sm btn-outline-secondary"
-        title="{{ $google_configurado ? 'Ler as avaliações do perfil no Google e atualizar as que já estão aqui' : 'Faltam GOOGLE_BUSINESS_ACCOUNT, GOOGLE_BUSINESS_LOCATION e GOOGLE_BUSINESS_TOKEN no .env' }}">
+        title="{{ $google_configurado ? 'Ler as avaliações do perfil no Google e atualizar as que já estão aqui' : 'Falta configurar: '.implode('; ', $google_faltantes) }}">
         <i class="fa-brands fa-google me-1"></i> Atualizar do Google
     </button>
 </form>
@@ -30,9 +30,11 @@
 @if(!$google_configurado)
 <div class="alert alert-secondary py-2 small">
     <i class="fa-brands fa-google me-1" aria-hidden="true"></i>
-    A leitura das avaliações do Google usa três chaves do <code>.env</code>:
-    <code>GOOGLE_BUSINESS_ACCOUNT</code>, <code>GOOGLE_BUSINESS_LOCATION</code> e <code>GOOGLE_BUSINESS_TOKEN</code>.
-    Enquanto elas não existirem, o botão "Atualizar do Google" e o <code>php artisan depoimentos:google</code> avisam em vez de chamar a API.
+    A leitura das avaliações do Google usa três chaves — conta do Business Profile, local e token de acesso.
+    Falta {{ count($google_faltantes) === 1 ? 'o campo' : 'os campos' }}:
+    <strong>{{ implode('; ', $google_faltantes) }}</strong>.
+    <a href="{{ $google_chaves_em }}" class="ms-1">Preencher em Configurações → Chaves de integração</a>.
+    Enquanto isso, o botão "Atualizar do Google" e o <code>php artisan depoimentos:google</code> avisam em vez de chamar a API.
 </div>
 @endif
 

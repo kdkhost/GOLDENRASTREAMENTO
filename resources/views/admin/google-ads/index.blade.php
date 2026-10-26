@@ -9,8 +9,6 @@
 
 @section('styles')
 <link rel="stylesheet" href="{{ asset('css/golden-ads.css') }}?v={{ filemtime(public_path('css/golden-ads.css')) }}">
-{{-- O cartão "Como configurar" desta tela desenha blocos do guia — a mesma folha, o mesmo texto. --}}
-<link rel="stylesheet" href="{{ asset('css/golden-guia.css') }}?v={{ filemtime(public_path('css/golden-guia.css')) }}">
 @endsection
 
 @section('content')

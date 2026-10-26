@@ -13,8 +13,9 @@ use Illuminate\Console\Command;
  * chama o mesmo DepoimentosDoGoogle::importar().
  *
  * A leitura depende de um perfil verificado há mais de 60 dias e de um token aprovado na
- * API do Google; enquanto as três chaves não tiverem valor — no banco, pela tela, ou no
- * `.env` —, o comando explica o que falta em vez de falhar com o erro da API.
+ * API do Google; enquanto as três chaves não tiverem valor na tela de chaves do painel (ou,
+ * como plano de fundo, no `.env`), o comando explica o que falta em vez de falhar com o erro
+ * da API.
  */
 class ImportarDepoimentosDoGoogle extends Command
 {
@@ -27,11 +28,15 @@ class ImportarDepoimentosDoGoogle extends Command
     public function handle(): int
     {
         if (! DepoimentosDoGoogle::configurado()) {
-            $this->error('A importação do Google não está configurada. Faltam as três chaves — preencha na tela '
-                .ChavesDeIntegracao::CAMINHO_NO_PAINEL.' → Avaliações do Google (ou, em último caso, no .env deste servidor):');
-            $this->line('  GOOGLE_BUSINESS_ACCOUNT=<accounts/ID-do-perfil>');
-            $this->line('  GOOGLE_BUSINESS_LOCATION=<locations/ID-da-unidade>');
-            $this->line('  GOOGLE_BUSINESS_TOKEN=<bearer de uma conta que administra o perfil>');
+            $this->warn('A leitura das avaliações do Google ainda não está configurada. Falta:');
+
+            foreach (ChavesDeIntegracao::grupos()['avaliacoes']['campos'] as $campo) {
+                $gravada = filled(ChavesDeIntegracao::vigente($campo['chave']));
+
+                $this->line('  '.$campo['label'].' ('.$campo['ambiente'].') — '.($gravada ? 'com valor' : 'sem valor'));
+            }
+
+            $this->line('Preencha em '.ChavesDeIntegracao::CAMINHO_NO_PAINEL.' → Avaliações do Google.');
 
             return self::FAILURE;
         }

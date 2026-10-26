@@ -292,6 +292,9 @@ return [
             'aberta' => 'blue', 'aguardando_equipe' => 'amber',
             'resolvida' => 'green', 'fechada' => 'neutral',
         ],
+        // Tarefa agendada (CronTarefa::STATUS): o mesmo selo veste a listagem, a ficha da tarefa
+        // e o histórico de execuções. Rodando agora é azul porque ainda não há resultado a dar.
+        'cron' => ['nunca' => 'neutral', 'sucesso' => 'green', 'falha' => 'red', 'executando' => 'blue'],
         // Origem da visita/lead, resolvida por Atribuidor::classificar() a partir das chaves
         // de 'canais' logo abaixo. O tom é o mesmo no cartão de atribuição e na ficha do lead.
         'canal' => [
@@ -750,6 +753,10 @@ return [
     'menu_painel' => [
         ['titulo' => 'Dashboard', 'rota' => 'admin.dashboard', 'prefixo' => 'admin.dashboard', 'icone' => 'fa-gauge-high'],
 
+        // O sino tem bolha própria e a página é de cada pessoa: por isso fica solta, logo
+        // depois do Dashboard, e não dentro de um grupo (que no menu é área, não caixa de entrada).
+        ['titulo' => 'Notificações', 'rota' => 'admin.notificacoes.index', 'prefixo' => 'admin.notificacoes.', 'icone' => 'fa-bell', 'bolha' => 'notificacoes_novas', 'tom' => 'gold'],
+
         ['titulo' => 'Comercial', 'icone' => 'fa-chart-simple', 'filhos' => [
             ['titulo' => 'Leads', 'rota' => 'admin.leads.index', 'prefixo' => 'admin.leads.', 'icone' => 'fa-user-plus', 'bolha' => 'leads_novos', 'tom' => 'gold'],
             ['titulo' => 'Clientes', 'rota' => 'admin.clientes.index', 'prefixo' => 'admin.clientes.', 'icone' => 'fa-users'],
@@ -787,6 +794,7 @@ return [
 
         ['titulo' => 'Sistema', 'icone' => 'fa-gear', 'admin' => true, 'filhos' => [
             ['titulo' => 'Configurações', 'rota' => 'admin.settings.index', 'prefixo' => 'admin.settings.', 'icone' => 'fa-sliders'],
+            ['titulo' => 'Crons', 'rota' => 'admin.crons.index', 'prefixo' => 'admin.crons.', 'icone' => 'fa-clock', 'bolha' => 'crons_com_falha', 'tom' => 'red'],
             ['titulo' => 'Usuários', 'rota' => 'admin.usuarios.index', 'prefixo' => 'admin.usuarios.', 'icone' => 'fa-user-shield'],
             ['titulo' => 'Auditoria', 'rota' => 'admin.activities.index', 'prefixo' => 'admin.activities.', 'icone' => 'fa-shield-halved'],
         ]],
@@ -825,13 +833,16 @@ return [
     |--------------------------------------------------------------------------
     | Depoimentos do Google Business Profile
     |--------------------------------------------------------------------------
-    | As três peças vêm do .env da instalação — nunca do banco e nunca do
-    | repositório: ACCOUNT é `accounts/<id>` (ou o resource completo), LOCATION
-    | é `locations/<id>` e TOKEN é o Bearer de uma conta que administra o perfil
-    | (Business Profile API v4, escopo mybusiness.businessinformation). Sem elas
-    | o painel mostra "não configurado" e a importação não roda; os depoimentos
-    | digitados no painel e enviados pelo portal seguem funcionando, e o
-    | carrossel mescla as fontes que existirem.
+    | As três peças são gravadas em Sistema → Configurações → Chaves de integração,
+    | no grupo "Avaliações do Google" — o `.env` abaixo é só o plano de fundo de
+    | quem ainda não preencheu a tela, e o banco passa na frente dele a cada
+    | requisição (ChavesDeIntegracao::aplicar()). ACCOUNT é `accounts/<id>` (ou o
+    | resource completo), LOCATION é `locations/<id>` e TOKEN é o Bearer de uma
+    | conta que administra o perfil (Business Profile API v4, escopo
+    | mybusiness.businessinformation). Sem as três o painel mostra "não
+    | configurado" e a importação não roda; os depoimentos digitados no painel e
+    | enviados pelo portal seguem funcionando, e o carrossel mescla as fontes que
+    | existirem.
     */
     'google_business' => [
         'account' => env('GOOGLE_BUSINESS_ACCOUNT', ''),

@@ -19,6 +19,19 @@
 .ads-faltas li{display:flex;gap:.4rem;align-items:baseline;color:var(--t-amber-fg)}
 .ads-faltas li code{color:var(--bs-body-color)}
 
+/* O cartão de arranque da tela: a etapa (símbolo) e o que ela pede. Sem numeração — o ícone
+   já diz se está feita ou pendente, e a cor sai dos tokens do tema. */
+.ads-passos{display:flex;flex-direction:column;gap:1rem}
+.ads-passos li{display:flex;gap:.85rem;align-items:flex-start}
+.ads-passos__marca{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none;
+    background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color);color:var(--bs-secondary-color)}
+.ads-passos li.is-feito .ads-passos__marca{background:var(--t-green-bg);border-color:transparent;color:var(--t-green-fg)}
+.ads-passos li.is-pendente .ads-passos__marca{background:var(--t-amber-bg);border-color:transparent;color:var(--t-amber-fg)}
+
+/* O painel lateral do cartão de arranque: mesmo tom terciário dos cartões internos do painel. */
+.ads-painel{background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color);border-radius:var(--radius-md);padding:1rem}
+.ads-painel__titulo{font-weight:700;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:var(--bs-secondary-color);margin-bottom:.65rem}
+
 /* O cartão da conta conectada usa o mesmo ícone redondo dos cartões de resumo. */
 .ads-conta .icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:1.3rem;flex:none}
 

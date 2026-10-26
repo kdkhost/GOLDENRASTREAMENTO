@@ -9,6 +9,7 @@ use App\Models\ConversaMensagem;
 use App\Models\Lead;
 use App\Models\Setting;
 use App\Services\Atribuidor;
+use App\Support\Notifica;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -175,6 +176,23 @@ final class Atendedor
     private static function escalar(Conversa $conversa, string $motivo, ConversaMensagem $pergunta): void
     {
         $conversa->escalar($motivo);
+
+        // O sino é o único aviso que chega mesmo sem SMTP: a conversa já está esperando na caixa
+        // do painel, e é ali que a equipe a encontra quando abre o sistema.
+        Notifica::disparar(
+            'conversa_escalada',
+            'Conversa esperando a equipe: '.($conversa->nome ?: 'visitante do site'),
+            $pergunta->textoVisivel(),
+            (string) $conversa->id,
+            [
+                'conversa_id' => $conversa->id,
+                'motivo' => $motivo,
+                'visitante' => $conversa->nome,
+                'canal' => $conversa->canal,
+                'pagina' => $conversa->pagina,
+            ],
+            'conversa_escalada:'.$conversa->id,
+        );
 
         $destino = Setting::get('contato_email', (string) config('golden.email'));
 

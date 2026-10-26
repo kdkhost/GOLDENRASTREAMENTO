@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Models\StockMovement;
 use App\Services\Rastreio;
 use App\Support\Carrinho;
+use App\Support\Notifica;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -346,9 +347,31 @@ class StoreController extends Controller
     /**
      * E-mails transacionais da venda. Um servidor de SMTP fora do ar nunca pode anular um
      * pedido já gravado — por isso tudo aqui é registrado e seguido em frente.
+     *
+     * O sino entra aqui, e não no lugar do e-mail: a loja pode estar sem SMTP no ar e a equipe
+     * ainda precisa ver o pedido assim que abre o painel.
      */
     private function avisar(Order $pedido): void
     {
+        Notifica::disparar(
+            'pedido_novo',
+            'Pedido '.$pedido->numero.' · '.$pedido->nome,
+            'Pedido de '.($pedido->nome ?: 'cliente da loja').' ('.$pedido->email.') no valor de '
+                .brl((int) $pedido->total_cents).'. Pagamento por '
+                .(Order::PAGAMENTOS[$pedido->pagamento] ?? $pedido->pagamento)
+                .', entrega em '.$pedido->cidade.'/'.$pedido->uf.'.',
+            (string) $pedido->id,
+            [
+                'pedido_id' => $pedido->id,
+                'numero' => $pedido->numero,
+                'nome' => $pedido->nome,
+                'email' => $pedido->email,
+                'total' => brl((int) $pedido->total_cents),
+                'pagamento' => $pedido->pagamento,
+            ],
+            'pedido_novo:'.$pedido->id,
+        );
+
         try {
             Mail::to($pedido->email)->queue(new PedidoRecebido($pedido));
 

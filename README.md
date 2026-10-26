@@ -380,8 +380,9 @@ a dimensão ideal.
   em si — `/admin/leads/12` acende *Leads* pelo prefixo da rota e já chega com **Comercial** aberto
   (o grupo herda o dourado, sem a barra, para não haver duas marcas na mesma coluna). `admin:true`
   esconde o que é só do administrador: os dois grupos restritos inteiros e o catálogo dentro de
-  Vendas. Fora dos grupos, soltos no topo e no fim da coluna, ficam *Dashboard* e *Guia de uso* —
-  consulta, não área do sistema, e o vendedor lê o mesmo guia do administrador.
+  Vendas. Fora dos grupos, soltos no topo e no fim da coluna, ficam *Dashboard*, *Notificações* e
+  *Guia de uso* — o sino é de cada pessoa, e o guia é consulta, não área do sistema: o vendedor lê
+  o mesmo texto do administrador.
 - **Dashboard**: KPIs (total, novos, taxa de conversão, receita fechada), funil visual,
   gráfico de leads nos últimos 30 dias, **conversão por campanha**, leads recentes e uma
   linha **"Módulos integrados"** (clientes, produtos, pedidos/faturamento, páginas) com o
@@ -449,9 +450,10 @@ a dimensão ideal.
   do `public/js/golden-site.js` (CTA, telefone, WhatsApp, e-mail, link externo, início de
   formulário, kit, sacola, checkout, pedido) com `fetch(..., credentials:'same-origin')`.
   Nada de terceiro na frente do cadastro.
-- **Retenção**: `php artisan rastreio:podar` (agendado semanalmente em
-  `bootstrap/app.php`) apaga o que passou de `golden.rastreio.dias_retencao`, junto com os
-  eventos — sem depender do *cascade* do banco.
+- **Retenção**: `php artisan rastreio:podar` apaga o que passou de
+  `golden.rastreio.dias_retencao`, junto com os eventos — sem depender do *cascade* do banco. O
+  comando é uma das tarefas semeadas da agenda do painel (*Sistema → Crons*), toda terça às 03:30:
+  nada de agendamento escrito no `bootstrap/app.php`.
 - **Trava de tamanho**: toda coluna recebe `Str::limit` no serviço, porque o SQLite ignora
   comprimento de `varchar` e o MySQL devolve *Data too long* no tráfego real.
 - Testes: `tests/Feature/AtribuicaoDeOrigemTest.php` (20).
@@ -495,13 +497,56 @@ a dimensão ideal.
   nunca aparece em view, JSON ou log.
 - Testes: `tests/Feature/ConexaoGoogleAdsTest.php` (12).
 
+### Central de crons (`/admin/crons`) — a hospedagem com uma linha, a agenda no painel
+- **Uma crontab, para sempre**: a hospedagem tem só `* * * * * php artisan schedule:run`. O que
+  roda depois dela está na tabela `cron_tarefas` e se edita em *Sistema → Crons* — incluir, editar,
+  pausar, excluir e **Rodar agora**, sem SSH e sem cPanel.
+- **Quatro tarefas semeadas** pela migration: drenar a fila de envios (todo minuto), sincronizar o
+  Google Ads (quinze em quinze), podar o registro de tráfego (terça, 03:30) e podar as notificações
+  lidas (de hora em hora). São marcadas como `sistema`: pausam e mudam de frequência, mas não se
+  apagam — apagar o worker da fila é perder todo e-mail do portal em silêncio.
+- **Frequência por preset**, não por expressão digitada: `config/cron.php` guarda as opções, e
+  `CronTarefa::resolverExpressao()` monta `30 03 * * *` a partir de preset + hora + dia, com zero à
+  esquerda; a expressão fica na tabela como espelho, para a listagem ler sem calcular.
+- **Comando com três barreiras**: lista negra (`tinker`, `migrate`, `db:wipe`, `key:generate`…),
+  sintaxe sem shell (`;`, `&&`, pipe, redirecionamento) e o registro do `artisan` — comando que não
+  existe devolve erro de digitação, não tarefa fantasma. "Rodar agora" recusa `queue:work`,
+  `queue:listen` e `queue:restart`, que são a própria fila.
+- **Histórico e diagnóstico**: `cron_execucoes` guarda início, fim, duração, saída, erro e se veio
+  do agendamento ou do botão (com o usuário). O topo da tela mostra o **batimento** do agendador
+  em cache (`golden.cron_batida`, tolerância de 120 s) — "sem batida há duas horas" é a crontab
+  arrancada, diagnóstico diferente de "a tarefa falhou". `notificacoes:apodrecer` ainda avisa, uma
+  vez por dia, a tarefa ativa que passou da própria tolerância.
+- Testes: `tests/Feature/CentralDeCronsTest.php` (15).
+
+### Central de notificações (`/admin/notificacoes`) — o sino, a página e a ficha
+- **Uma linha por destinatário**: cada pessoa tem as suas notificações e o próprio `lida_em`. Abrir
+  a ficha é o que tira o aviso do sino — de quem abriu, e de mais ninguém. Ficha e exclusão de
+  notificação alheia respondem 404. A central é aberta a todos os papéis do painel.
+- **Três superfícies e um formato**: o sino no topo (primeira pintura no servidor,
+  `admin/partials/sino`; depois `public/js/admin-notificacoes.js` consulta o JSON `no-store` a cada
+  45 s com a aba visível e 5 min escondida), a página com KPIs, filtros e paginação, e a ficha
+  dinâmica com a mensagem, os dados etiquetados e o botão **Abrir o registro**.
+- **Catálogo em `config/notificacoes.php`**: dez tipos (lead, pedido, chamado aberto e respondido,
+  depoimento, conversa escalada, conta do portal, Google Ads desconectado, cron falho e agenda sem
+  batimento), cada um com rótulo, ícone, tom, audiência e rota de destino. Tipo novo entra sem
+  migration e sem view.
+- **Um ponto de disparo**: `App\Support\Notifica::disparar()` cria uma linha por destinatário ativo,
+  respeita a preferência de cada um, deduplica por `chave` (única por pessoa) e devolve só o que
+  entrou agora. O e-mail continua saindo exatamente de onde sempre saiu — desligar o sino não
+  silencia a caixa de entrada.
+- **Preferências e prazos**: cada pessoa desliga o tipo que não quer no sino; o administrador
+  define a retenção do que foi lido (30 dias) e o vencimento do que não foi (15 dias), gravados em
+  `settings` e aplicados por `notificacoes:apodrecer`, que também apara o histórico da agenda.
+- Testes: `tests/Feature/CentralDeNotificacoesTest.php` (16).
+
 ### Guia de uso (`/admin/guia`) — a documentação dentro do sistema
 - **O texto vive numa fonte só**: `config/guia_painel.php`, lido por `App\Support\GuiaPainel`.
   A tela do guia, o cartão dobrável da tela de Google Ads e a linha do cabeçalho consomem os
   mesmos blocos, então a documentação e a tela não podem se desmentir. Seis tipos de bloco
   (`texto`, `passos`, `lista`, `codigo`, `tabela`, `aviso`) e `**negrito**` / `` `código` ``
   inline; passo nenhum com número — a ordem já está na lista.
-- **25 seções em 7 grupos** (Começando, Comercial, Vendas, Atendimento, Conteúdo do site, Portal
+- **27 seções em 7 grupos** (Começando, Comercial, Vendas, Atendimento, Conteúdo do site, Portal
   do cliente, Sistema), da rotina do dia ao diagnóstico do servidor. A busca da coluna esquerda
   normaliza acento ("contrato" acha "Contratos"), esconde o que não casa e deixa marcada a seção
   por onde a rolagem passa.
@@ -589,7 +634,11 @@ app/
   Services/GoogleAds/GoogleAdsService.php # cliente, GAQL, micros→reais, enums traduzidos
   Support/GoogleAdsCache.php             # a janela de 30 min que a tela lê
   Support/GuiaPainel.php                 # lê config/guia_painel.php: seções, grupo de cada rota
+  Support/Agendador.php                  # lê cron_tarefas e registra no schedule: batida e histórico
+  Support/Notifica.php                   # disparar(): uma linha por destinatário, com deduplicação
+  Models/  CronTarefa, CronExecucao, Notificacao, NotificacaoPreferencia
   Console/Commands/PodarRastreio.php     # rastreio:podar, a retenção do registro
+  Console/Commands/PodarNotificacoes.php # notificacoes:apodrecer: poda das duas centrais
   Console/Commands/SyncGoogleAdsCommand.php # google-ads:sync, a cada 15 min
   Support/Carrinho.php                   # sacola em sessão, sobre o catálogo em cache
   Support/Envio.php                      # regras e gravação dos campos de arrastar-e-soltar
@@ -598,6 +647,8 @@ app/
 config/golden.php                        # conteúdo do site + contatos reais
 config/google_ads.php                    # credenciais, escopos, travas do RSA, janelas de métrica
 config/guia_painel.php                   # o texto do Guia de uso: seções, blocos, rota de cada uma
+config/cron.php                          # presets de frequência, comandos sugeridos e recusados
+config/notificacoes.php                  # o catálogo dos avisos: tipo, ícone, tom, audiência, rota
 config/envios.php                        # formatos, limite, pasta e dimensão de cada campo de envio
 database/migrations/                     # leads/campanhas + CRM + ERP + CMS + portal (chamados, contratos)
 database/seeders/                        # Database, Catalog, Cms, Crm, Orders
@@ -606,6 +657,8 @@ deploy/atualiza-golden.sh                # git pull + composer + migrate + cache
 docs/INSTALACAO.md                       # guia completo em português (PDF: docs/gerar-pdf.py)
 resources/views/{layouts,site,site/store,mail,auth,admin,portal}
 public/{css,js,img}                      # tema do site e do painel; golden-upload.* e golden-to-top.*
+tests/Feature/CentralDeCronsTest.php     # agenda no painel, validação de comando, histórico e batida
+tests/Feature/CentralDeNotificacoesTest.php # sino, leitura por destinatário, preferências e prazos
 tests/Feature/AtribuicaoDeOrigemTest.php # origem de cada clique, jornada, farol e poda
 tests/Feature/FluxoDaLojaTest.php        # vitrine -> sacola -> checkout -> pedido -> painel
 tests/Feature/PortalDoClienteTest.php    # auto-cadastro, duas sessões, chamado, contrato, recuperação
@@ -615,7 +668,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (236 testes, 1.681 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (462 testes, 5.488 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

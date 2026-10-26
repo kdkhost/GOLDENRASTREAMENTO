@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Mail\DepoimentoRecebido;
 use App\Models\Activity;
 use App\Models\Testimonial;
+use App\Support\Notifica;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -64,6 +65,20 @@ class PortalDepoimentoController extends PortalBaseController
 
         Activity::log('portal_depoimento_enviado', "Depoimento de {$depoimento->nome} enviado pelo portal.", $depoimento, por: $cliente->nome);
         $this->avisarEquipe(new DepoimentoRecebido($depoimento));
+
+        Notifica::disparar(
+            'depoimento_novo',
+            'Depoimento novo de '.$cliente->nome.' ('.\str_repeat('★', (int) $depoimento->nota).')',
+            $depoimento->texto,
+            (string) $depoimento->id,
+            [
+                'depoimento_id' => $depoimento->id,
+                'nome' => $depoimento->nome,
+                'cliente_id' => $cliente->id,
+                'nota' => $depoimento->nota,
+            ],
+            'depoimento_novo:'.$depoimento->id,
+        );
 
         return redirect()->route('portal.depoimento')
             ->with('success', 'Obrigada! Seu depoimento foi enviado para a equipe e aparece no site assim que for aprovado.');

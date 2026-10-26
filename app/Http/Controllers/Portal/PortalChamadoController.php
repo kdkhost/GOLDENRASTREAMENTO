@@ -8,6 +8,7 @@ use App\Mail\ChamadoResposta;
 use App\Models\Activity;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
+use App\Support\Notifica;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -74,6 +75,22 @@ class PortalChamadoController extends PortalBaseController
         $this->avisarEquipe(new ChamadoEquipe($chamado));
         $this->avisarCliente(new ChamadoRecebido($chamado));
 
+        Notifica::disparar(
+            'chamado_aberto',
+            'Chamado '.$chamado->numero.' aberto por '.$this->cliente()->nome,
+            $chamado->assunto.' · prioridade '.mb_strtolower(Ticket::PRIORIDADES[$chamado->prioridade] ?? $chamado->prioridade).'. '.$dados['corpo'],
+            (string) $chamado->id,
+            [
+                'chamado_id' => $chamado->id,
+                'numero' => $chamado->numero,
+                'assunto' => $chamado->assunto,
+                'cliente' => $this->cliente()->nome,
+                'cliente_id' => $this->cliente()->id,
+                'prioridade' => $chamado->prioridade,
+            ],
+            'chamado_aberto:'.$chamado->id,
+        );
+
         return redirect()->route('portal.chamados.show', $chamado)
             ->with('success', "Chamado {$chamado->numero} aberto. A equipe responde por aqui e por e-mail.");
     }
@@ -109,6 +126,22 @@ class PortalChamadoController extends PortalBaseController
             route('admin.chamados.show', $chamado),
             'O cliente respondeu este chamado no portal.'
         ));
+
+        // Sem chave de repetição: cada resposta do cliente é um fato novo, e engolir a segunda
+        // porque a primeira tinha o mesmo título seria esconder a conversa.
+        Notifica::disparar(
+            'chamado_respondido',
+            'Resposta de '.$this->cliente()->nome.' no chamado '.$chamado->numero,
+            $dados['corpo'],
+            (string) $chamado->id,
+            [
+                'chamado_id' => $chamado->id,
+                'numero' => $chamado->numero,
+                'assunto' => $chamado->assunto,
+                'cliente' => $this->cliente()->nome,
+                'cliente_id' => $this->cliente()->id,
+            ],
+        );
 
         return redirect()->route('portal.chamados.show', $chamado)
             ->with('success', 'Sua mensagem foi enviada.');

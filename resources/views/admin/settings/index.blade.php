@@ -134,7 +134,7 @@
 
         <div class="row g-3">
             @foreach (\App\Support\ChavesDeIntegracao::grupos() as $id => $grupo)
-                <div class="col-12 col-xl-4">
+                <div class="col-12 col-xl-4" id="chaves-{{ $id }}">
                     <x-admin.card :title="$grupo['rotulo']" :icon="$grupo['icone']" :descricao="$grupo['descricao']">
                         <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3">
                             @csrf

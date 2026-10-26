@@ -224,30 +224,22 @@ class GuiaDoPainelTest extends TestCase
         $this->assertStringContainsString('/auth/google-ads/callback', $texto);
     }
 
-    public function test_o_cartao_de_passo_a_passo_abre_quando_falta_credencial(): void
+    public function test_a_tela_do_google_ads_aponta_o_guia_em_vez_de_repiti_lo(): void
     {
         config(['google_ads.developer_token' => null, 'services.google_ads.client_id' => null, 'services.google_ads.client_secret' => null]);
 
-        $semCredencial = $this->actingAs(User::where('email', 'vendedor@golden.com.br')->firstOrFail())
+        $html = $this->actingAs(User::where('email', 'vendedor@golden.com.br')->firstOrFail())
             ->get(route('admin.google-ads.index'))
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('Como configurar', $semCredencial);
-        $this->assertStringContainsString('class="collapse show"', $semCredencial,
-            'Sem credencial nenhuma, o passo a passo precisa nascer aberto — é o passo em que a pessoa está.');
-        $this->assertStringContainsString('data-bs-toggle="collapse"', $semCredencial);
-
-        config([
-            'google_ads.developer_token' => 'token',
-            'services.google_ads.client_id' => 'cliente',
-            'services.google_ads.client_secret' => 'segredo',
-        ]);
-
-        $comCredencial = $this->get(route('admin.google-ads.index'))->assertOk()->getContent();
-        $this->assertStringContainsString('Como configurar', $comCredencial);
-        $this->assertStringNotContainsString('class="collapse show"', $comCredencial,
-            'Com a conta configurada o passo a passo tem de ficar recolhido: a tela é de métrica, não de manual.');
+        // A tela de métrica não vira manual: o texto do guia mora na tela do guia, e o cabeçalho
+        // leva até a seção certa. O cartão de abertura diz o que falta, sem despejar o passo a passo.
+        $this->assertStringContainsString('Ligar o Google Ads', $html);
+        $this->assertStringContainsString('Como usar esta tela', $html);
+        $this->assertStringContainsString(route('admin.guia.index').'#google-ads', $html);
+        $this->assertStringNotContainsString('Quatro passos que só existem no Google', $html);
+        $this->assertStringNotContainsString('data-bs-toggle="collapse"', $html);
     }
 
     public function test_a_tela_carrega_a_folha_e_o_script_do_guia(): void

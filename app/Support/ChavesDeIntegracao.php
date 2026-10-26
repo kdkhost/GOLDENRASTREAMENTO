@@ -159,6 +159,28 @@ class ChavesDeIntegracao
                         'opcional' => true,
                         'dica' => 'Bearer de OAuth de uma conta que administra essa ficha. Renove quando expirar.',
                     ],
+                    [
+                        'chave' => 'google_business_limite',
+                        'config' => 'golden.google_business.limite',
+                        'ambiente' => 'GOOGLE_BUSINESS_LIMITE',
+                        'label' => 'Avaliações por rodada',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1', 'max:50'],
+                        'placeholder' => '50',
+                        'dica' => 'A API entrega até 50 por página — 50 já lê o perfil inteiro de uma vez.',
+                    ],
+                    [
+                        'chave' => 'google_business_nota_minima',
+                        'config' => 'golden.google_business.nota_minima',
+                        'ambiente' => 'GOOGLE_BUSINESS_NOTA_MINIMA',
+                        'label' => 'Nota mínima para virar depoimento',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1', 'max:5'],
+                        'placeholder' => '4',
+                        'dica' => 'Nota baixa é chamado, não vitrine: de 4 para cima entra no carrossel.',
+                    ],
                 ],
             ],
 
@@ -720,6 +742,23 @@ class ChavesDeIntegracao
         return collect(self::grupos()['google-ads']['campos'])
             ->filter(fn (array $campo): bool => blank(self::vigente($campo['chave'])))
             ->reject(fn (array $campo): bool => (bool) ($campo['opcional'] ?? false))
+            ->map(fn (array $campo): string => $campo['label'].' ('.$campo['ambiente'].')')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * As chaves das avaliações do Google que ainda não têm valor.
+     *
+     * Aqui não há `reject` de opcional como no Google Ads: as três são opcionais para *salvar*
+     * — o painel aceita meia configuração enquanto a pessoa procura o número da ficha — mas
+     * nenhuma leitura acontece sem conta, local e token. Quem chama usa a lista para dizer
+     * exatamente o que falta, em vez de mandar procurar três nomes no `.env`.
+     */
+    public static function faltantesDasAvaliacoes(): array
+    {
+        return collect(self::grupos()['avaliacoes']['campos'])
+            ->filter(fn (array $campo): bool => blank(self::vigente($campo['chave'])))
             ->map(fn (array $campo): string => $campo['label'].' ('.$campo['ambiente'].')')
             ->values()
             ->all();

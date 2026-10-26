@@ -69,6 +69,10 @@ class PortalDoCliente
         $ficha->documento ??= $documento ?: null;
         $ficha->tipo = Customer::tipoPorDocumento($ficha->documento);
         $ficha->email_portal = $email;
+
+        // A primeira chave é o que interessa ao painel: quem já tinha conta e só entrou de novo
+        // não abre chamado nenhum na central. Por isso a leitura acontece antes da senha nova.
+        $primeiraChave = $ficha->password === null;
         $ficha->password = $dados['password'];
 
         if (! $ficha->telefone && ! empty($dados['telefone'])) {
@@ -76,6 +80,23 @@ class PortalDoCliente
         }
 
         $ficha->save();
+
+        if ($primeiraChave) {
+            Notifica::disparar(
+                'conta_portal',
+                'Conta do portal aberta: '.$ficha->nome,
+                $email.($ficha->documento ? ' · documento '.$ficha->documento : '')
+                    .' — a ficha já aparece em Clientes.',
+                (string) $ficha->id,
+                [
+                    'cliente_id' => $ficha->id,
+                    'nome' => $ficha->nome,
+                    'email' => $email,
+                    'documento' => $ficha->documento,
+                ],
+                'conta_portal:'.$ficha->id,
+            );
+        }
 
         return $ficha;
     }

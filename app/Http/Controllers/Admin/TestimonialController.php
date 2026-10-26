@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Testimonial;
-use App\Support\ChavesDeIntegracao;
 use App\Support\DepoimentosDoGoogle;
 use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +29,8 @@ class TestimonialController extends Controller
             'depoimentos' => $this->query($request)->with('customer')->paginate(itens_por_pagina())->withQueryString(),
             'fontes' => Testimonial::FONTES,
             'google_configurado' => DepoimentosDoGoogle::configurado(),
+            'google_faltantes' => DepoimentosDoGoogle::faltantes(),
+            'google_chaves_em' => route('admin.settings.index').'#chaves-avaliacoes',
             'pendentes' => Testimonial::where('aprovado', false)->count(),
         ]);
     }
@@ -172,8 +173,7 @@ class TestimonialController extends Controller
         $limite = min(50, max(1, (int) config('golden.google_business.limite', 50)));
 
         if (! DepoimentosDoGoogle::configurado()) {
-            return back()->with('error', 'Faltam as chaves das avaliações do Google (GOOGLE_BUSINESS_ACCOUNT, GOOGLE_BUSINESS_LOCATION e GOOGLE_BUSINESS_TOKEN). Preencha em '
-                .ChavesDeIntegracao::CAMINHO_NO_PAINEL.' → Avaliações do Google.');
+            return back()->with('error', DepoimentosDoGoogle::avisoDeConfiguracao());
         }
 
         try {

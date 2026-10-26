@@ -9,50 +9,84 @@
     de um formulário GET: trocar de período pode exigir sincronização, e um <form> de HTML puro só
     conseguiria pedir isso recarregando a página inteira.
 
+    Antes da primeira conta conectada a tela é uma só: o cartão que diz o que falta e leva ao
+    lugar certo. O passo a passo completo não é despejado aqui — o cabeçalho já traz "Como usar
+    esta tela", que abre a seção do guia, escrita uma vez só.
+
     Um <div> só envolve tudo porque o Livewire exige uma única raiz por componente.
 --}}
 <div>
-@if (! $configurado)
-    <x-admin.card title="A integração ainda não tem credenciais" icon="fa-key"
-        descricao="Faltam valores para o painel. Nenhuma chamada ao Google é feita enquanto faltar um deles.">
-        <p class="mb-2">
-            @can('admin')
-                Preencha em <a href="{{ route('admin.settings.index') }}#chaves">Configurações → Chaves de integração</a>.
-            @else
-                Peça ao administrador que preencha em Configurações → Chaves de integração.
-            @endcan
-            O <code>.env</code> deste servidor entra só como plano de fundo, para o que o banco não tiver:
-        </p>
-        <ul class="ads-faltas list-unstyled mb-0">
-            @foreach ($credenciais_faltando as $nome)
-                <li><code>{{ $nome }}</code></li>
-            @endforeach
-        </ul>
-        <p class="form-hint mt-3 mb-0">
-            O token de desenvolvedor nasce na conta MCC do Google (Ferramentas e configurações → API do Google Ads)
-            e é segredo: nunca aparece nesta tela, em JSON ou em log.
-        </p>
-    </x-admin.card>
-@endif
-
 @if ($conta === null)
-    <x-admin.card title="Nenhuma conta de Google Ads conectada" icon="fa-plug"
-        descricao="{{ $configurado ? 'Cada usuário conecta a própria conta; o administrador opera as da equipe.' : 'Conecte depois de preencher as credenciais acima.' }}">
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            @if ($configurado)
-                <a href="{{ route('google-ads.redirect') }}" class="btn btn-golden">
-                    <i class="fas fa-google me-1" aria-hidden="true"></i> Conectar conta Google Ads
-                </a>
-            @endif
-            <a href="{{ route('admin.google-ads.criativo') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-wand-magic-sparkles me-1" aria-hidden="true"></i> Escrever um anúncio sem conectar
-            </a>
+    <x-admin.card title="Ligar o Google Ads" icon="fa-brands fa-google"
+        descricao="Depois de ligado, esta tela mostra impressões, cliques, custo, conversões e ROAS das campanhas — lidos da cache que a fila preenche.">
+        <div class="row g-4 align-items-start">
+            <div class="col-12 col-lg-7">
+                <ul class="ads-passos list-unstyled mb-0">
+                    <li class="{{ $configurado ? 'is-feito' : 'is-pendente' }}">
+                        <span class="ads-passos__marca"><i class="fas {{ $configurado ? 'fa-check' : 'fa-key' }}" aria-hidden="true"></i></span>
+                        <div>
+                            <div class="fw-semibold">Credenciais da API</div>
+                            @if ($configurado)
+                                <div class="small text-secondary">Token de desenvolvedor e aplicação OAuth preenchidos.</div>
+                            @else
+                                <div class="small text-secondary">
+                                    Falta{{ count($credenciais_faltando) === 1 ? '' : 'm' }}
+                                    {{ count($credenciais_faltando) }}
+                                    {{ count($credenciais_faltando) === 1 ? 'campo' : 'campos' }} — veja ao lado.
+                                    @can('admin')
+                                        Quem preenche é a tela de chaves, não o servidor.
+                                    @else
+                                        Peça ao administrador para preencher.
+                                    @endcan
+                                </div>                            @endif
+                        </div>
+                    </li>
+                    <li>
+                        <span class="ads-passos__marca"><i class="fas fa-plug" aria-hidden="true"></i></span>
+                        <div>
+                            <div class="fw-semibold">Conta do anunciante</div>
+                            <div class="small text-secondary">
+                                O Google pergunta em qual conta você entra e quais permissões dá ao painel.
+                                Para nós ele só lê; campanha só pausa ou reativa com confirmação.
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-12 col-lg-5">
+                <div class="ads-painel">
+                    @if (! $configurado)
+                        <div class="ads-painel__titulo">O que falta preencher</div>
+                        <ul class="ads-faltas list-unstyled mb-3">
+                            @foreach ($credenciais_faltando as $nome)
+                                <li><i class="fas fa-circle-dot" aria-hidden="true"></i> <code>{{ $nome }}</code></li>
+                            @endforeach
+                        </ul>
+                        @can('admin')
+                            <a href="{{ route('admin.settings.index') }}#chaves-google-ads" class="btn btn-golden btn-sm w-100">
+                                <i class="fas fa-key me-1" aria-hidden="true"></i> Abrir as chaves de integração
+                            </a>
+                        @else
+                            <div class="small text-secondary">As chaves ficam com o administrador.</div>
+                        @endcan
+                    @else
+                        <div class="ads-painel__titulo">Tudo pronto para conectar</div>
+                        <p class="small text-secondary mb-3">
+                            A conta aparece aqui com o nome, o número e a moeda que o Google devolver.
+                        </p>
+                        <a href="{{ route('google-ads.redirect') }}" class="btn btn-golden btn-sm w-100">
+                            <i class="fa-brands fa-google me-1" aria-hidden="true"></i> Conectar conta Google Ads
+                        </a>
+                    @endif
+                </div>
+            </div>
         </div>
     </x-admin.card>
 @else
     <div class="card shadow-sm mb-3 ads-conta">
         <div class="card-body d-flex flex-wrap align-items-center gap-3">
-            <div class="icon tone-gold"><i class="fab fa-google" aria-hidden="true"></i></div>
+            <div class="icon tone-gold"><i class="fa-brands fa-google" aria-hidden="true"></i></div>
             <div class="flex-grow-1 overflow-hidden">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <span class="fw-bold">{{ $conta->nomeTela() }}</span>
@@ -162,7 +196,7 @@
                     <div class="fw-semibold">Carregando…</div>
                     <div class="small text-secondary">
                         A métrica destes {{ $dias }} dias está sendo sincronizada em segundo plano.
-                        Esta tela se sozinha se atualiza assim que os números chegam — nada aqui espera pelo Google.
+                        Esta tela se atualiza sozinha assim que os números chegam — nada aqui espera pelo Google.
                     </div>
                 </div>
             </div>
@@ -198,7 +232,7 @@
 
     <x-admin.table
         :headers="[$rotulos['campanha'], $rotulos['status'], 'center:'.$rotulos['impressoes'], 'center:'.$rotulos['cliques'], 'center:CTR', 'end:CPC', 'end:'.$rotulos['custo'], 'center:'.$rotulos['conversoes'], 'end:'.$rotulos['valor_conversoes'], 'end:'.$rotulos['roas'], 'end:Ações']"
-        :empty="$carregando ? 'Os números chegaram assim que a fila terminar.' : 'Nenhuma campanha com esse filtro.'"
+        :empty="$carregando ? 'Os números chegam assim que a fila terminar.' : 'Nenhuma campanha com esse filtro.'"
         :paginator="$campanhas">
         @foreach ($campanhas as $c)
             <tr>
@@ -242,13 +276,4 @@
         @endforeach
     </x-admin.table>
 @endif
-
-{{-- O passo a passo mora na própria tela, onde a dúvida aparece: fechado quando a conta já está
-     conectada, aberto quando falta credencial — que é exatamente o momento em que ele serve. O
-     texto é o da seção "google-ads" do guia; um partial só, duas telas. --}}
-@include('admin.guia.partials.cartao', [
-    'secaoGuia' => 'google-ads',
-    'tituloCartao' => 'Como configurar — os quatro passos no Google, as chaves no painel e o comando',
-    'abertoGuia' => ! $configurado,
-])
 </div>

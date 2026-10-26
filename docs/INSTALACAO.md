@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.25.4
+- **Versão:** 2.33.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -520,8 +520,8 @@ no servidor (banco, chave da aplicação, fila, fuso).
 | `GOLDEN_WHATSAPP` | `5519997101483` | botão de WhatsApp do site |
 | `GOLDEN_EMAIL` | endereço comercial | aparece no site e nos avisos |
 | `GOLDEN_TRACKING_ENABLED` | `0` ou `1` | liga a consulta de rastreio |
-| `GOOGLE_BUSINESS_ACCOUNT`, `GOOGLE_BUSINESS_LOCATION`, `GOOGLE_BUSINESS_TOKEN` | do seu perfil | depoimentos do Google com avatar; sem eles o importador só avisa (seção 11) |
-| `GOOGLE_BUSINESS_LIMITE`, `GOOGLE_BUSINESS_NOTA_MINIMA` | `50`, `4` | até quantas avaliações ler e a nota mínima aceita |
+| `GOOGLE_BUSINESS_ACCOUNT`, `GOOGLE_BUSINESS_LOCATION`, `GOOGLE_BUSINESS_TOKEN` | do seu perfil | depoimentos do Google com avatar; **preencha na tela** (seção 11), o `.env` é só plano de fundo |
+| `GOOGLE_BUSINESS_LIMITE`, `GOOGLE_BUSINESS_NOTA_MINIMA` | `50`, `4` | quantas avaliações ler por rodada e a nota mínima aceita; também ajustáveis na tela |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | da sua MCC | token de desenvolvedor da API; **segredo da aplicação**, nunca sai para a tela (seção 9.1) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | do Google Cloud | app OAuth da tela de consentimento; o painel conecta conta por conta com eles |
 | `GOOGLE_REDIRECT_URI` | `${APP_URL}/auth/google-ads/callback` | tem de ser o URI cadastrado no Google, endereço exato |
@@ -630,8 +630,9 @@ php artisan rastreio:podar            # usa golden.rastreio.dias_retencao (365 d
 php artisan rastreio:podar --dias=90  # período menor, quando preciso
 ```
 
-A poda roda toda terça às 03:30 pelo agendador do Laravel (`bootstrap/app.php`), que
-precisa de **uma** linha no cron da hospedagem (cPanel → *Tarefas de Cron*):
+A poda é uma tarefa da agenda do painel (`Sistema → Crons`), semeada na instalação para
+toda terça às 03:30. O agendador do Laravel lê a tabela `cron_tarefas` e precisa de **uma**
+linha no cron da hospedagem (cPanel → *Tarefas de Cron*):
 
 ```
 * * * * * cd ~/public_html && /opt/cpanel/ea-php83/root/usr/bin/php artisan schedule:run >> /dev/null 2>&1
@@ -643,10 +644,11 @@ velho). Para descobrir o certo no seu servidor: `ea-php83 -r 'echo PHP_VERSION;'
 rodado à mão — só não se auto-agenda.
 
 **A mesma linha de cron também drena a fila de e-mails.** Todo aviso do portal (chamado
-aberto, resposta da equipe, recibo, link de recuperação de senha) entra em fila, e o
-agendador dispara `queue:work --stop-when-empty --max-time=50` a cada minuto. Numa hospedagem
-sem esse cron as mensagens ficam paradas na tabela `jobs` e o cliente espera um e-mail que
-nunca sai. Para conferir à mão:
+aberto, resposta da equipe, recibo, link de recuperação de senha) entra em fila, e a tarefa
+**Drenar a fila de envios** — uma das quatro que a instalação semeia — dispara
+`queue:work --stop-when-empty --max-time=50` a cada minuto. Numa hospedagem sem esse cron as
+mensagens ficam paradas na tabela `jobs` e o cliente espera um e-mail que nunca sai. Para
+conferir à mão:
 
 ```bash
 php artisan queue:work --stop-when-empty   # consome o que está preso e sai
@@ -933,8 +935,8 @@ prefere o servidor, as mesmas chaves existem no `.env` como plano de fundo:
 | Conta do Business Profile | `GOOGLE_BUSINESS_ACCOUNT` | o ID da conta, `accounts/123456789` (ou só `123456789`) |
 | Local (ficha) | `GOOGLE_BUSINESS_LOCATION` | o ID da unidade, `locations/987654321` (ou só `987654321`) |
 | Token de acesso | `GOOGLE_BUSINESS_TOKEN` | o Bearer de OAuth — expira e precisa ser renovado |
-| — | `GOOGLE_BUSINESS_LIMITE` | avaliações lidas por rodada (padrão `50`) |
-| — | `GOOGLE_BUSINESS_NOTA_MINIMA` | nota mínima que vira depoimento (padrão `4`) |
+| Avaliações por rodada | `GOOGLE_BUSINESS_LIMITE` | avaliações lidas por rodada (padrão `50`) |
+| Nota mínima para virar depoimento | `GOOGLE_BUSINESS_NOTA_MINIMA` | nota mínima que vira depoimento (padrão `4`) |
 
 Com elas preenchidas:
 
@@ -951,16 +953,14 @@ contagem `sem_texto`), nem quem está abaixo de `GOOGLE_BUSINESS_NOTA_MINIMA` �
 nota baixa é chamado, não vitrine. E o importado que a equipe desligou no painel
 **não reacende** na rodada seguinte.
 
-Sem as chaves nada quebra: o comando e o botão explicam quais três variáveis faltam
-em vez de chamar a API no escuro. Quando o token expira, o painel devolve o aviso
+Sem as chaves nada quebra: o comando e o botão dizem **qual campo falta** e apontam a
+tela de Chaves de integração, em vez de chamar a API no escuro. Quando o token expira,
+o painel devolve o aviso
 vermelho com a resposta do Google e a linha `depoimentos_google_recusados` fica em
 *Auditoria*. Para manter o carrossel fresco sem ninguém precisando lembrar, o
-`schedule` pode chamar o comando uma vez por semana:
-
-```bash
-# cPanel → Cron Jobs, uma vez por semana
-cd /home/USUARIO/public_html && php artisan depoimentos:google --limite=50 >> storage/logs/depoimentos-google.log 2>&1
-```
+comando vira uma tarefa da agenda do painel — **Sistema → Crons**, botão *Nova tarefa*, comando
+`depoimentos:google --limite=50` e frequência semanal. Nada é escrito na crontab da hospedagem:
+a única linha dela é a do `schedule:run` (seção 9), e a agenda lê a tabela `cron_tarefas` (seção 15).
 
 ### Depoimento escrito pelo cliente
 
@@ -1028,7 +1028,7 @@ para a última real em vez de erro ou tela em branco, e o pager carrega a catego
 escolhida em cada link.
 
 O pager do site é um view próprio (`resources/views/pagination/site.blade.php`,
-seção 16) porque nem o do Tailwind nem o do painel vestem o CSS do site. As
+seção 18) porque nem o do Tailwind nem o do painel vestem o CSS do site. As
 miniaturas vêm de `i.ytimg.com`, e a página adianta a conexão com `preconnect` —
 só ela, já que é a única que usa.
 
@@ -1389,11 +1389,11 @@ de um arquivo de configuração.
 
 ### O que tem dentro
 
-São 25 seções em 7 grupos, na ordem em que a pessoa encontra a tela: **Começando** (o que é o painel,
+São 27 seções em 7 grupos, na ordem em que a pessoa encontra a tela: **Começando** (o que é o painel,
 a rotina do dia), **Comercial** (leads, clientes, campanhas, atribuição, Google Ads, criativo, funil),
 **Vendas** (loja, pedidos, catálogo), **Atendimento** (chamados, contratos), **Conteúdo do site**
 (páginas, imagens e textos, depoimentos, vídeos, perguntas frequentes), **Portal do cliente** e
-**Sistema** (configurações, usuários, auditoria, ambiente, diagnóstico).
+**Sistema** (notificações, configurações, crons, usuários, auditoria, ambiente, diagnóstico).
 
 Cada seção tem resumo, blocos e — quando documenta uma tela — o botão **Abrir a tela**, que só
 aparece para rota registrada: guia apontando para rota renomeada é guia desmentido pelo sistema. A
@@ -1448,7 +1448,223 @@ crua (`**`, crase).
 
 ---
 
-## 15. Retorno e confirmação: uma camada só
+## 15. Central de crons: a agenda do painel, sem tocar no cPanel
+
+A hospedagem tem **uma** linha de cron registrada, e ela não muda: chama `php artisan
+schedule:run` a cada minuto (seção 9). O que roda depois dela não está escrito no código — está na
+tabela `cron_tarefas` e se edita em **Sistema → Crons**, tela de administrador. Incluir, editar,
+pausar, excluir e **Rodar agora** são gestos do painel; a crontab do servidor não é editada de novo
+durante a vida da instalação. Na barra lateral a linha carrega uma bolha vermelha com o número de
+tarefas em falha.
+
+### As quatro tarefas que a instalação semeia
+
+Migrar sem semear deixaria a fila de e-mails parada em silêncio, então a migration já escreve as
+tarefas que antes estavam fixas em `bootstrap/app.php` — mais a poda das notificações, que é nova:
+
+| Tarefa | Frequência | Comando |
+|---|---|---|
+| Drenar a fila de envios | a cada minuto | `queue:work --stop-when-empty --max-time=50` |
+| Sincronizar o Google Ads | a cada quinze minutos | `google-ads:sync --agendamento` |
+| Podar o registro de tráfego | toda terça, às 03:30 | `rastreio:podar` |
+| Podar as notificações lidas | de hora em hora, no minuto 15 | `notificacoes:apodrecer` |
+
+As quatro nascem marcadas como **sistema**: podem ser pausadas e ter a frequência trocada, mas não
+apagadas. Apagar o worker da fila é o jeito certo de perder todo e-mail do portal sem que nada
+quebre, nada reclame e ninguém receba. Tarefa criada pela equipe, essa sim, se exclui.
+
+A frequência não é escrita à mão. A tela oferece presets — de minuto a minuto até mensal, passando
+por semanal com dia da semana — e `CronTarefa::resolverExpressao()` monta a expressão cron a partir
+de preset + hora + dia, com minuto e hora zero-padded (`03:30` vira `30 03 * * *`, não `30 3`). A
+expressão fica guardada na coluna própria para a listagem ler sem calcular; quem manda continua sendo
+a preset. Tarefa diária sem hora preenchida assume `03:00`, porque tarefa de manutenção é de
+madrugada.
+
+### O que uma tarefa aceita como comando
+
+O campo não é shell. `CronTarefa::erroDoComando()` fecha três portas, e a mensagem diz qual delas:
+
+- **Lista negra** (`config/cron.php`): `tinker`, `migrate` e as variantes de rollback, `db:wipe`,
+  `queue:flush`, `key:generate`, `storage:link`, `app:define-senha`. Nenhum deles pertence a uma
+  agenda automática, e cada um tem o motivo escrito na mensagem em vez de um "não permitido".
+- **Sintaxe**: `;`, `&&`, pipe, redirecionamento, crase e quebra de linha estão fora. As flags
+  aceitam letras, números, travessão, dois-pontos, barra e igual.
+- **O registro do `artisan`**: o nome do comando precisa existir em `Artisan::all()`. Comando
+  digitado errado devolve erro de digitação, não tarefa fantasma que nunca roda.
+
+O select do formulário sugere o caderno de comandos do sistema (fila, Google Ads, podas,
+depoimentos do Google, caches), mas a validação é a mesma para o que for digitado.
+
+**Rodar agora** existe para conferir sem esperar o próximo minuto, e recusa os comandos da fila
+(`queue:work`, `queue:listen`, `queue:restart`): o worker é o mecanismo que executa os jobs, e
+chamá-lo dentro de uma requisição prende a tela por cinquenta segundos para fazer o que o cron já
+faz sozinho. A recusa aparece em toastr com o motivo.
+
+### O que fica registrado
+
+`cron_execucoes` é a caixa-preta: `inicio`, `fim`, `status`, `duracao_ms`, `saida`, `erro`,
+`acionada_por` (`agendamento` ou `painel`) e o `user_id` de quem apertou o botão. A ficha da tarefa
+mostra as vinte últimas execuções; a tarefa guarda apenas o último batimento denormalizado, para a
+listagem ler barato. A saída é cortada em 6.000 caracteres — um `queue:work` falando por cinquenta
+segundos cospe log de cada job, e guardar tudo apagaria o que importa.
+
+Cada tarefa nasce com `sem_sobreposicao`: o agendador registra `withoutOverlapping()`, então a
+execução de agora não começa enquanto a anterior não devolve. Uma linha parada em `executando`
+depois que o processo morreu é fechada como falha no início da execução seguinte, com o motivo
+escrito — histórico com linha aberta para sempre é histórico que ninguém confia.
+
+### O batimento e o diagnóstico que ele separa
+
+O topo da tela mostra se o agendador está vivo. Ele não mede tarefa nenhuma: mede a passagem do
+`schedule:run`, gravando um timestamp em cache a cada minuto (`golden.cron_batida`, tolerância de 120
+segundos). Isso separa dois mundos que parecem iguais de fora:
+
+- **"Sem batida há duas horas"** — a linha da crontab da hospedagem sumiu ou o PHP do caminho mudou.
+  Nenhuma tarefa da agenda roda, inclusive a fila de e-mails.
+- **"Falhou"** — a agenda está viva e *esta* tarefa é que devolveu erro.
+
+Além de responder ao vivo, a poda de notificações faz a ronda: tarefa ativa cujo último batimento
+passou da tolerância da própria preset (o dobro da janela, com folga) gera um aviso de **agenda sem
+batimento**, uma vez por dia por tarefa. É a única forma de saber que a agenda parou sem ninguém
+estar olhando; o próprio cron não pode se vigiar.
+
+### Migração nova
+
+`2026_10_26_100001_creiam_a_central_de_crons` cria `cron_tarefas` e `cron_execucoes`, com índices
+por situação e por histórico e chave única no nome, e semeia as quatro tarefas de sistema. É
+aditiva, tem `down()` e não toca em nenhuma tabela existente.
+
+### Testes
+
+`tests/Feature/CentralDeCronsTest.php` (15) cobre a expressão resolvida a partir do preset, a
+validação dos três casos de comando, o registro do histórico no "Rodar agora", a recusa dos comandos
+da fila, a proteção da tarefa de sistema, a tolerância de cada preset e o aviso de agenda sem
+batimento — além de a tela ser fechada para vendedor.
+
+---
+
+## 16. Central de notificações: o sino, a página e a ficha
+
+Todo aviso que o sistema precisa contar à equipe — lead novo, pedido, chamado aberto, resposta do
+cliente, depoimento novo, conversa escalada, conta do portal, Google Ads desconectado, tarefa do
+cron que falhou, agenda sem batimento — nasce dentro do painel, e não por e-mail. A central tem três
+superfícies e uma regra que organiza todas: **uma linha por destinatário**. Cada pessoa tem as suas,
+com o próprio `lida_em`; abrir uma notificação a tira do sino de quem abriu, e de mais ninguém.
+
+**Notificações** é um item solto da barra lateral, logo depois do Dashboard — o sino tem bolha
+própria e a página é de cada pessoa, então ela não entra num grupo, que no menu é área e não caixa
+de entrada. A rota está no grupo `admin` só com `auth`: vendedor, visualizador e administrador
+recebem e leem. A separação não é de middleware, é da linha: a ficha e a exclusão de notificação
+alheia devolvem 404.
+
+### As rotas
+
+| Rota | Para quê |
+|---|---|
+| `GET /admin/notificacoes` | a página dedicada: KPIs, filtros e histórico |
+| `GET /admin/notificacoes/{id}` | a ficha de cada aviso — e o instante em que ele sai do sino |
+| `POST /admin/notificacoes/lidas` | marcar todas como lidas |
+| `DELETE /admin/notificacoes/{id}` | excluir da própria central |
+| `GET /admin/notificacoes/sino` | o JSON do sino, `no-store`, `throttle:60,1` |
+| `GET` e `POST /admin/notificacoes/preferencias` | o que cada pessoa desliga, e os prazos do administrador |
+
+### O sino
+
+A primeira pintura vem do servidor (`admin/partials/sino.blade.php`); dali em diante
+`public/js/admin-notificacoes.js` consulta o JSON e reconstrói a lista no **mesmo formato** que a
+partial desenhou (`Notificacao::paraSino()`), para a linha não mudar de cara depois da primeira
+atualização. O contador mostra o total e satura em `99+`; o menu mostra oito linhas e manda o resto
+para "Ver todas", porque sino com trinta itens deixa de ser sino.
+
+O intervalo é duplo: 45 segundos com a aba visível, 5 minutos com a aba escondida. Painel aberto
+numa aba de fundo não tem por que bater na porta do servidor. Sem rede, o erro é engolido e o sino
+espera a próxima volta — nada de toastr por causa de um *polling*.
+
+### Ler é o gesto de resolver
+
+A leitura é gravada na abertura da ficha, não num botão: o gesto de ler é o gesto de resolver, e um
+passo a mais transforma o sino numa caixa de entrada que ninguém esvazia. A ficha avisa em uma linha
+o que acabou de acontecer ("Lida agora. Esta notificação saiu do sino — o histórico da central
+continua aqui.") e não reescreve o `lida_em` de quem volta depois. **Marcar todas** esvazia o sino
+de uma vez sem apagar nada: o que foi lido continua listado, com a data da leitura.
+
+A página tem KPIs (novas, lidas, recebidas hoje, vencendo em três dias), filtros por situação, tipo
+e busca no título e no texto, e a mesma paginação de vinte linhas do resto do painel. A ficha —
+`/admin/notificacoes/{id}` — é genérica: mostra a mensagem inteira, o tipo com o selo do tom, as
+datas de recebimento e leitura, o que aconteceu (os dados etiquetados que o aviso carrega) e o botão
+**Abrir o registro**, que leva ao chamado, ao pedido, ao lead ou à tarefa do cron de origem.
+
+### O catálogo
+
+`config/notificacoes.php` é a fonte única: rótulo, ícone FontAwesome, tom, audiência, rota de
+destino e, quando o tipo envelhece rápido, prazo próprio. Um tipo novo de aviso entra por aqui, sem
+migration e sem view — a ficha já sabe montar qualquer tipo a partir do que a linha carrega.
+
+| Tipo | Quem recebe | Abre |
+|---|---|---|
+| `lead_novo` | equipe | ficha do lead |
+| `pedido_novo` | equipe | ficha do pedido |
+| `chamado_aberto` | equipe | chamado |
+| `chamado_respondido` | equipe | chamado |
+| `depoimento_novo` | administrador | fila de depoimentos |
+| `conversa_escalada` | equipe | conversa do assistente |
+| `conta_portal` | administrador | ficha do cliente |
+| `ads_desconectado` | administrador | tela do Google Ads |
+| `cron_falhou` | equipe | ficha da tarefa |
+| `cron_pausado_demais` | administrador | central de crons |
+
+`App\Support\Notifica::disparar()` é o único ponto de disparo. Ele cria **uma linha por destinatário
+ativo**, respeita a preferência de cada um, aceita uma `chave` de deduplicação (única por pessoa e
+por chave, então o mesmo fato visto duas vezes não vira dois avisos) e devolve quantas linhas
+entraram **agora** — o que já estava lá não conta como aviso novo. Os pontos que antes só mandavam
+e-mail passaram a chamar esse serviço; o e-mail continua saindo exatamente de onde sempre saiu.
+
+### Preferências e prazos
+
+Em **Preferências**, cada pessoa desliga o tipo que não quer ver no sino. A linha de preferência só
+existe para o tipo desligado — o padrão é receber —, e religar apaga a linha. Desligar silencia o
+sino de quem desligou, não a caixa de entrada: a central é o canal de dentro do painel e não
+substitui o e-mail.
+
+O administrador define, na mesma tela, dois números globais gravados em `settings`:
+
+- **Retenção** (padrão 30 dias): quanto tempo uma notificação **lida** fica guardada.
+- **Expiração** (padrão 15 dias): quando uma notificação **não lida** vence e sai sozinha.
+
+Os dois aceitam de 1 a 365 dias, valem para a próxima poda sem deploy e ficam registrados em
+*Auditoria* (`notificacoes_preferencias`). O `.env` só serve de plano de fundo quando o banco está
+vazio (`NOTIFICACOES_RETENCAO_DIAS`, `NOTIFICACOES_EXPIRACAO_DIAS`).
+
+### A poda
+
+`php artisan notificacoes:apodrecer` faz três coisas, e é tarefa da agenda semeada de hora em hora:
+
+- apaga o que foi lido além da retenção e o que venceu sem ser lido;
+- apara o histórico da agenda em `cron.historico_por_tarefa` (500 linhas por tarefa — um cron de
+  minuto escreve 1.440 por dia);
+- avisa, uma vez por dia por tarefa, a tarefa ativa que passou da própria tolerância sem batimento.
+
+Notificação que não morre vira sino ignorado: a pessoa aprende a fechar o que nunca vai ler.
+
+### Migração nova
+
+`2026_10_26_100002_creiam_a_central_de_notificacoes` cria `notificacoes` (tipo, título, texto, rota
+e parâmetro, dados em JSON, destinatário, chave de deduplicação, `lida_em`, `expira_em`) e
+`notificacao_preferencias` (destinatário + tipo + `no_painel`, únicos por par). Índices por
+destinatário/situação e por vencimento; a FK do usuário cascateia na exclusão da conta. É aditiva e
+tem `down()`.
+
+### Testes
+
+`tests/Feature/CentralDeNotificacoesTest.php` (16) cobre a linha por destinatário, a audiência de
+cada tipo, a deduplicação pela chave, o silêncio de quem desligou o tipo, a leitura que tira do sino
+sem afetar outra pessoa, o 404 em ficha e exclusão alheias, o JSON do sino (teto, `no-store`,
+formato), a expiração fora do sino, a rota de destino de todo tipo do catálogo, as preferências e os
+prazos globais.
+
+---
+
+## 17. Retorno e confirmação: uma camada só
 
 Toda resposta do sistema ao usuário — o que deu certo, o que impediu a ação e a
 pergunta antes de um ato destrutivo — sai por um único lugar:
@@ -1500,7 +1716,7 @@ Instalou e ainda apareceu `validation.required`? É cache de view antigo:
 
 ---
 
-## 16. Paginação: um view por superfície
+## 18. Paginação: um view por superfície
 
 Toda lista paginada do sistema — as 12 do painel, as interações da ficha do CRM e
 os chamados e pedidos do portal do cliente — sai pelo mesmo
@@ -1552,7 +1768,7 @@ recebe a caixa compartilhada e encolhe até virar um traço dourado em volta do 
 
 ---
 
-## 17. Backup e restauração
+## 19. Backup e restauração
 
 ```bash
 # banco
@@ -1574,7 +1790,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 18. Problemas comuns
+## 20. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -1582,8 +1798,8 @@ ele, os dados criptografados e as sessões não voltam.
 | Site mostra a lista de arquivos e pastas | docroot na raiz sem `.htaccess`, e `Options Indexes` ligado | rode o instalador (ou copie o `.htaccess` da seção 4.7) |
 | `Route [admin.xxx] not defined` ao salvar | cache de rotas velho | `php artisan route:clear && php artisan route:cache` |
 | Página quebra depois de editar um `.php` em `config/` | cache de configuração | `php artisan config:cache` |
-| Lista paginada sai com caixa branca de "Anterior/Próximo", contador em inglês e um ícone SVG do tamanho da tela | o view de paginação do framework (Tailwind) voltou a ser o ativo | confira as duas linhas de `Paginator::defaultView()` no `AppServiceProvider` e rode `php artisan optimize:clear` (seção 16) |
-| Na galeria pública, o número da página atual é um traço dourado apertado em volta do algarismo | o `<span>` da página atual perdeu a classe base `pagina` e não recebe a caixa compartilhada | `resources/views/pagination/site.blade.php` (seção 16) |
+| Lista paginada sai com caixa branca de "Anterior/Próximo", contador em inglês e um ícone SVG do tamanho da tela | o view de paginação do framework (Tailwind) voltou a ser o ativo | confira as duas linhas de `Paginator::defaultView()` no `AppServiceProvider` e rode `php artisan optimize:clear` (seção 18) |
+| Na galeria pública, o número da página atual é um traço dourado apertado em volta do algarismo | o `<span>` da página atual perdeu a classe base `pagina` e não recebe a caixa compartilhada | `resources/views/pagination/site.blade.php` (seção 18) |
 | Ícone sai como quadradinho (□) no lugar do símbolo, em qualquer tela | o CSS de ícone é servido pela casa e chama a fonte por caminho relativo: movido um dos dois, a fonte não é alcançada. A outra causa é o CSS servido por endereço diferente do arquivo, sem `Access-Control-Allow-Origin` na fonte | mantenha `public/css/fontawesome/css/all.min.css` ao lado de `public/css/fontawesome/webfonts/`, e chame o CSS só pelo `partials/icones.blade.php`. `php artisan test --filter=test_os_icones_sao_servidos_pela_casa_e_nao_por_um_cdn` percorre cada caminho declarado no CSS (seção 4.7) |
 | Imagem enviada não aparece | `public/storage` inexistente | `php artisan storage:link` |
 | Imagem enviada existe no servidor e a URL devolve **403** | o `.htaccess` da raiz bloqueia o caminho `/storage` | tire `storage` da regra de pastas de código-fonte (seção 4.7) |
@@ -1593,7 +1809,7 @@ ele, os dados criptografados e as sessões não voltam.
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/email.log`; depois configurar SMTP |
-| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 15) |
+| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 17) |
 | `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço que não existe fora do exemplo (domínio sem MX, como `@exemplo.com.br`) | esperado em conta de demonstração com e-mail fictício; o aviso à equipe saiu, o que não existe é a caixa de exemplo. Troque o `email_portal` da ficha por um endereço real e o ciclo fecha |
 | Falha de login no SMTP com senha certa no `.env` | `MAIL_PASSWORD` sem aspas e com `#` | escreva `MAIL_PASSWORD="..."` — sem aspas o `#` vira comentário |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
@@ -1609,7 +1825,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 19. Segurança
+## 21. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -1642,7 +1858,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 20. Checklist depois de instalar
+## 22. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
@@ -1662,18 +1878,21 @@ continua visível para você pelo painel ou SSH.
       *Voltar* não exclui nem recarrega a lista
 - [ ] Paginação: uma lista com mais de 20 registros (Leads, Vídeos) mostra "1–20 de 45" e os
       números em dourado — nunca caixa branca, nunca "Showing … results", nunca ícone gigante
-      (seção 16)
+      (seção 18)
 - [ ] Paginação pública: `/videos` abre com 12 cartões, o resumo "1–12 de 24 tutoriais" e o
       pager em disco dourado; `?page=99` volta para a última página e o filtro de categoria
-      continua no enlace (seções 12 e 16)
+      continua no enlace (seções 12 e 18)
 - [ ] Entrega estática: `curl -sI https://seudominio.com.br/css/golden-site.css` responde
       `cache-control: public, max-age=31536000`, e o HTML responde `no-cache` (seção 4.7)
 - [ ] Ícones: nenhuma requisição a `cdnjs.cloudflare.com/ajax/libs/font-awesome` no
       carregamento da página, e nenhum quadradinho (□) no lugar de símbolo (seção 4.7)
 - [ ] Tecla de ar: em *Comercial → Marketing (funil)*, pausar a campanha deve devolver 404
       no `/c/...` sem zerar o contador, e uma campanha sem bloco não sobe (seção 13)
-- [ ] Cron do agendador: `php artisan schedule:run` a cada minuto (seção 9 — poda do
-      registro de tráfego **e** fila de e-mails do portal)
+- [ ] Cron do agendador: `php artisan schedule:run` a cada minuto na crontab da hospedagem
+      (seção 9) e **Sistema → Crons** mostrando "Agendador vivo" — as quatro tarefas semeadas
+      ativas, com histórico aparecendo depois da primeira batida (seção 15)
+- [ ] Notificações: o sino no topo conta os avisos da pessoa, a página *Notificações* filtra por
+      situação e tipo, e abrir uma ficha a retira do sino sem apagar o histórico (seção 16)
 - [ ] Fila: abrir um chamado no portal e confirmar que a tabela `jobs` volta a zero no minuto
       seguinte — com `MAIL_MAILER=log`, o texto aparece em `storage/logs/email.log`
 - [ ] Fila com erro: se `failed_jobs` tiver linha, ler o motivo nela, corrigir e rodar
@@ -1685,7 +1904,7 @@ continua visível para você pelo painel ou SSH.
       conferir em `/admin/google-ads/criativo` que um título de 31 caracteres fica vermelho
 - [ ] Google Ads sem credencial: a mesma tela deve listar **qual** variável falta em vez de
       quebrar, e nenhum token de desenvolvedor aparece no HTML nem no log
-- [ ] Guia de uso: **Guia de uso** na barra lateral abre as 25 seções, a busca acha "contrato"
+- [ ] Guia de uso: **Guia de uso** na barra lateral abre as 27 seções, a busca acha "contrato"
       sem acento, e cada tela com seção mostra a linha **Como usar esta tela** caindo na
       âncora certa (seção 14)
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`

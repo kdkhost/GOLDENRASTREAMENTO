@@ -3,7 +3,84 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
-## [Unreleased]
+## [2.33.0] - 2026-10-26
+
+### Adicionado
+- **A central de crons (`Sistema → Crons`).** A agenda do sistema deixou de ser código e virou
+  tela: criar, editar, pausar, excluir e rodar agora, com histórico por execução. A hospedagem
+  continua com **uma** linha no cron, que não muda (`* * * * * … artisan schedule:run`); o que
+  roda depois dela é decidido no painel. A tela abre com quatro tarefas semeadas pela migration —
+  drenar a fila, sincronizar o Google Ads, podar o rastreio e podar as notificações — e mostra no
+  topo a batida do agendador em palavras ("vivo há 40 segundos"): a diferença entre uma tarefa
+  lenta e a crontab arrancada.
+- **A agenda é a fonte, não o espelho.** `Agendador` lê a tabela `cron_tarefas` a cada
+  `schedule:run` e registra no Laravel exatamente as tarefas ativas; pausar tira a tarefa da
+  agenda na hora, sem cache intermediário. Cada execução abre e fecha uma linha em
+  `cron_execucoes` (origem, duração, saída e erro), e a ficha da tarefa mostra as últimas 20. O
+  botão **Rodar agora** grava o mesmo par abrir/fechar, mudando só a origem — e recusa os
+  comandos da fila, que prenderiam a tela por cinquenta segundos para fazer o que o minuto
+  seguinte faria.
+- **O comando é validado como uma linha só.** O select oferece os comandos registrados no
+  `artisan` e as flags ficam num campo separado; juntos passam pela mesma régua
+  (`CronTarefa::erroDoComando()`): nada de `;`, `&&`, pipe, redirecionamento ou crase, e fora da
+  agenda os comandos que apagam dados ou pedem senha (`tinker`, `migrate*`, `db:wipe`,
+  `key:generate`…). As quatro tarefas do sistema podem ser pausadas e reagendadas, mas não
+  apagadas.
+- **A central de notificações.** Um aviso dentro do painel por destinatário — sino no topo com
+  contador, página dedicada (`/admin/notificacoes`), ficha dinâmica para cada aviso
+  (`/admin/notificacoes/{id}`) e a rota `admin.notificacoes.sino` para o sino se atualizar
+  sozinho, com `no-store` e sem consulta com a aba escondida. Abrir a ficha é o gesto de ler: o
+  aviso sai do sino de quem abriu e continua no histórico; o de outra pessoa não abre (404) e não
+  é apagado por ninguém.
+- **O catálogo de tipos em `config/notificacoes.php`** — dez tipos (lead, pedido, chamado aberto
+  e respondido, depoimento, conversa escalada, conta do portal, Google Ads desconectado, cron
+  falhou e agenda sem batimento), cada um com rótulo, ícone, tom, audiência (`equipe` ou
+  `admin`) e prazo próprio. A ficha não conhece tipo nenhum: lê o catálogo e o contexto
+  estruturado, então um tipo novo entra sem migration e sem view.
+- **Preferências por pessoa e prazos por administrador.** A tela
+  `/admin/notificacoes/preferencias` desliga tipo por tipo (a linha só existe para o que foi
+  desligado; o padrão é receber) e, para o administrador, grava no banco a retenção das lidas e
+  o prazo de uma notificação não lida — os mesmos números que `notificacoes:apodrecer` usa na
+  poda.
+- **Um canal a mais, não um canal no lugar do outro.** `Notifica::disparar()` é a única porta de
+  entrada: deduplica por chave (`user_id` + `chave`), respeita a preferência de cada um e nunca
+  derruba o fluxo que a chamou. Os pontos que já avisavam a equipe — lead, pedido, chamado,
+  conversa, conta do portal, Google Ads — passaram a avisar também aqui, e o e-mail continua
+  exatamente onde sempre esteve.
+- **`notificacoes:apodrecer`** faz a limpeza das duas centrais: aposenta notificação lida depois
+  da retenção e não lida que venceu, apara o histórico de execuções no teto por tarefa e acusa em
+  uma linha por dia a tarefa ativa sem batimento (pulando o aviso quando o agendador inteiro
+  está em falta, para não acusar quatro tarefas por causa de uma crontab arrancada).
+- **As duas telas entraram no guia**: seções `crons` e `notificacoes` em Sistema, com o mapa
+  `rotas` apontando `admin.crons.*` e `admin.notificacoes.*` para elas; a linha "Como usar esta
+  tela" chega nelas como em todas as outras.
+
+### Alterado
+- **`/admin/google-ads` refeita na régua do painel.** A tela abria com dois cartões empilhados e,
+  logo abaixo, o texto inteiro do guia despejado — quatro passos, listas e duas tabelas no meio
+  da métrica. Agora ela tem um cartão de abertura só ("Ligar o Google Ads"): o que falta dito em
+  duas linhas, os nomes das chaves no painel lateral e o botão que leva à tela certa. Com a conta
+  conectada, a tela é a de sempre — conta, filtros, seis números e a tabela. O passo a passo
+  continua a um clique, no "Como usar esta tela" do cabeçalho; o cartão dobrável e a folha que o
+  desenhava saíram do projeto, porque a seção do guia já tem tela própria.
+
+### Corrigido
+- **A contagem do disparo só conta o que entrou.** `Notifica::disparar()` devolvia 1 também para
+  o aviso que já existia na chave; agora usa `wasRecentlyCreated`, e quem chama sabe se notificou
+  de novo ou só confirmou o que estava lá.
+- **As credenciais das avaliações do Google deixaram de morar no `.env`.** Conta do Business
+  Profile, local e token já eram graváveis na tela de Chaves de integração — mas a importação
+  recusava com "configure no `.env`", e quem administra o site não tem terminal. Agora a
+  mensagem do comando, do botão "Atualizar do Google" e do aviso da tela de Depoimentos diz
+  **qual campo falta** e leva à tela certa (`Sistema → Configurações → Chaves de integração →
+  Avaliações do Google`, com âncora própria). O `.env` continua como plano de fundo de quem
+  ainda não passou pelo painel.
+- **O grupo "Avaliações do Google" ganhou os dois ajustes que só existiam no `.env`**:
+  quantas avaliações ler por rodada (`50`) e a nota mínima que vira depoimento (`4`) — mesmo
+  validador, mesmo caminho de gravação, nenhuma linha de view nova.
+- **`DepoimentosDoGoogle::configurado()` passou a exigir o token.** Antes ele dizia "configurado"
+  só com conta e local, e o botão caía no erro da API em vez de explicar que faltava a
+  credencial; a conferência agora é a mesma do que a leitura precisa.
 
 ## [2.32.1] - 2026-10-26
 

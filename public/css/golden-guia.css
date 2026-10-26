@@ -102,19 +102,6 @@
 .guia-chamada:hover{color:var(--t-gold-fg)}
 .guia-chamada i{font-size:.85rem}
 
-/*
-| O cartão dobrável que mora dentro de uma tela (o "Como configurar" do Google Ads). O cabeçalho
-| é o botão inteiro, na cor de texto normal, e a seta gira com a mesma curva do resto do painel:
-| o estado vem do aria-expanded que o próprio Bootstrap escreve no gatilho, então nada de
-| JavaScript nosso — abrir e fechar são o mesmo movimento, um do lado do outro.
-*/
-.guia-cartao-cabeca{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem;width:100%;padding:.85rem 1rem;text-align:left;color:var(--bs-body-color);font-weight:600;font-size:.92rem}
-.guia-cartao-cabeca:hover{color:var(--t-gold-fg)}
-.guia-cartao-seta{font-size:.75rem;color:var(--t-neutral-fg);transition:transform .22s var(--ease)}
-.guia-cartao-cabeca[aria-expanded="true"] .guia-cartao-seta{transform:rotate(180deg)}
-.guia-cartao .card-body{max-width:74ch}
-.guia-cartao .card-body .guia-resumo{color:var(--t-neutral-fg);font-weight:500}
-
 @media (min-width:992px){
     /* A coluna da esquerda acompanha a leitura e cabe na tela: o cartão inteiro não passa do
        viewport, e quando o índice é maior que ela, rola sozinho — senão as últimas seções do

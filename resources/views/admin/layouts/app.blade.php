@@ -27,6 +27,7 @@
                 <li class="nav-item d-none d-md-block"><a href="{{ route('site.home') }}" target="_blank" rel="noopener" class="nav-link"><i class="fas fa-up-right-from-square text-gold me-1"></i> Ver site</a></li>
             </ul>
             <ul class="navbar-nav ms-auto align-items-center gap-2">
+                @include('admin.partials.sino')
                 <li class="nav-item">
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" id="adminThemeToggle"><i class="fas fa-moon" id="adminThemeIcon"></i></button>
                 </li>
@@ -103,6 +104,7 @@
 @include('admin.partials.scripts')
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
 <script src="{{ asset('js/golden-upload.js') }}?v={{ filemtime(public_path('js/golden-upload.js')) }}"></script>
+<script src="{{ asset('js/admin-notificacoes.js') }}?v={{ filemtime(public_path('js/admin-notificacoes.js')) }}"></script>
 @yield('scripts')
 @stack('scripts')
 </body>

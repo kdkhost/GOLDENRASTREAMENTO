@@ -5,6 +5,7 @@ use App\Http\Middleware\ControleAcesso;
 use App\Http\Middleware\IdentificadorVisita;
 use App\Http\Middleware\LojaAtiva;
 use App\Http\Middleware\RegistrarRastreio;
+use App\Support\Agendador;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,23 +19,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withSchedule(function (Schedule $schedule): void {
-        // O registro de tráfego cresce com cada visita; sem a poda semanal a tabela
-        // visits/visit_events incha para sempre. A retenção é o dias_retencao do config.
-        $schedule->command('rastreio:podar')->weeklyOn(2, '03:30')->withoutOverlapping();
-
-        // Todo aviso do portal (chamado aberto, resposta da equipe, recibo, link de senha)
-        // entra em fila, e a hospedagem só tem o cron de schedule:run — sem isto o e-mail
-        // espera para sempre na tabela jobs. O --max-time deixa a janela livre antes do
-        // próximo minuto e o withoutOverlapping impede dois workers sobre a mesma fila.
-        $schedule->command('queue:work --stop-when-empty --max-time=50')
-            ->everyMinute()->withoutOverlapping();
-
-        // A métrica do Google Ads tem meia hora de vida no cache e o painel só lê de lá.
-        // Quinze minutos mantém a janela sempre preenchida para quem abre a tela, sem
-        // dobrar as chamadas: o comando só enfileira, quem fala com o Google é a fila.
-        // `--agendamento` porque conta ainda não conectada não é erro de cron — é a instalação
-        // esperando o dono preencher a chave, e o log precisa continuar legível.
-        $schedule->command('google-ads:sync --agendamento')->everyFifteenMinutes()->withoutOverlapping();
+        // A agenda mora na tabela `cron_tarefas`, e a hospedagem continua com a linha única de
+        // sempre: `* * * * * artisan schedule:run`. Registrar a partir do banco é o que faz o
+        // painel ser o dono do relógio sem que ninguém precise editar crontab — o que roda, quando
+        // roda e se pode sobrepor vem da tela Sistema → Crons, com histórico e botão de rodar agora.
+        //
+        // As três tarefas que estavam fixas aqui viraram linhas da migration (a fila, o Google Ads
+        // e a poda de tráfego), e a poda de notificação é a quarta. Uma agenda que só existe em
+        // código é uma agenda que ninguém ajusta sem deploy — e é também uma agenda sem história.
+        Agendador::registrar($schedule);
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

@@ -8,10 +8,12 @@ use App\Models\ConhecimentoItem;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
 use App\Models\Contract;
+use App\Models\CronTarefa;
 use App\Models\Customer;
 use App\Models\Faq;
 use App\Models\FunnelPage;
 use App\Models\Lead;
+use App\Models\Notificacao;
 use App\Models\Order;
 use App\Models\Page;
 use App\Models\Product;
@@ -91,6 +93,20 @@ class PaginasDoPainelTest extends TestCase
             'corpo' => 'Vocês instalam em caminhão?',
         ]);
 
+        // A agenda já vem semeada pela migration; a ficha da tarefa e a da notificação só
+        // precisam existir para as rotas de detalhe terem o que abrir.
+        $tarefa = CronTarefa::firstOrFail();
+        $aviso = Notificacao::create([
+            'tipo' => 'cron_falhou',
+            'titulo' => 'A tarefa "'.$tarefa->nome.'" falhou',
+            'texto' => 'O comando devolveu erro sem escrever saída.',
+            'rota' => 'admin.crons.show',
+            'rota_param' => (string) $tarefa->id,
+            'dados_json' => ['tarefa_id' => $tarefa->id, 'comando' => $tarefa->comando],
+            'user_id' => $this->admin->id,
+            'chave' => 'teste:paginas:notificacao',
+        ]);
+
         $parametros = [
             'admin.assistente.conhecimento.edit' => ['item' => ConhecimentoItem::firstOrFail()],
             'admin.assistente.conversas.show' => ['conversa' => $conversa],
@@ -108,11 +124,14 @@ class PaginasDoPainelTest extends TestCase
             'admin.conteudo.faqs.edit' => ['faq' => Faq::firstOrFail()],
             'admin.conteudo.paginas.edit' => ['pagina' => Page::firstOrFail()],
             'admin.conteudo.videos.edit' => ['video' => Video::firstOrFail()],
+            'admin.crons.edit' => ['tarefa' => $tarefa],
+            'admin.crons.show' => ['tarefa' => $tarefa],
             'admin.funil.blocos.create' => ['pagina' => $funil],
             'admin.funil.blocos.edit' => ['pagina' => $funil, 'bloco' => $funil->blocks()->firstOrFail()],
             'admin.funil.edit' => ['pagina' => $funil],
             'admin.funil.show' => ['pagina' => $funil],
             'admin.leads.show' => ['lead' => Lead::firstOrFail()],
+            'admin.notificacoes.show' => ['notificacao' => $aviso],
             'admin.pedidos.show' => ['pedido' => Order::firstOrFail()],
             'admin.usuarios.edit' => ['user' => $this->admin],
         ];
@@ -187,7 +206,7 @@ class PaginasDoPainelTest extends TestCase
         Conversa::abrir('site', 'https://goldenrastreamento.com.br/planos');
         $this->get('admin/assistente/conversas')->assertOk();
 
-        foreach (['admin/configuracoes', 'admin/usuarios', 'admin/catalogo/produtos', 'admin/conteudo/paginas', 'admin/auditoria', 'admin/funil', 'admin/assistente', 'admin/assistente/conhecimento'] as $pagina) {
+        foreach (['admin/configuracoes', 'admin/usuarios', 'admin/catalogo/produtos', 'admin/conteudo/paginas', 'admin/auditoria', 'admin/funil', 'admin/assistente', 'admin/assistente/conhecimento', 'admin/crons'] as $pagina) {
             $this->get($pagina)->assertForbidden();
         }
     }

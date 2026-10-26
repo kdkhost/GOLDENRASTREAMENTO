@@ -13,7 +13,10 @@ use RuntimeException;
  * A única fonte oficial que devolve a foto de quem avaliou é a Business Profile API v4
  * (`accounts/{a}/locations/{l}/reviews`): o Places API só entrega avaliação para conta
  * Enterprise. Ela exige o recurso completo do perfil e um Bearer token de uma conta que
- * administra esse perfil — as três peças vêm do `.env`, nunca do banco e nunca do repositório.
+ * administra esse perfil. As três peças são gravadas em **Sistema → Configurações → Chaves de
+ * integração → Avaliações do Google**; o `.env` é só o plano de fundo de quem ainda não passou
+ * pela tela, e é o `ChavesDeIntegracao::aplicar()` que põe o banco na frente dele. Nenhuma
+ * mensagem daqui manda editar arquivo de servidor.
  *
  * A importação é idempotente: cada avaliação é guardada pelo `reviewId` em `externo_id`, então
  * rodar de novo atualiza texto, nota e foto em vez de duplicar. Avaliação sem texto não é
@@ -32,9 +35,40 @@ class DepoimentosDoGoogle
     /** A API devolve a nota como enumeração, não como número. */
     private const ESTRELAS = ['ONE' => 1, 'TWO' => 2, 'THREE' => 3, 'FOUR' => 4, 'FIVE' => 5];
 
+    /** O perfil e o token: sem um dos dois a leitura não tem como acontecer. */
     public static function configurado(): bool
     {
-        return static::recurso() !== null;
+        return static::recurso() !== null && static::token() !== '';
+    }
+
+    private static function token(): string
+    {
+        return trim((string) config('golden.google_business.token'));
+    }
+
+    /**
+     * O que falta para a leitura rodar, na linguagem da tela de Configurações — vazio quando
+     * está tudo no lugar.
+     *
+     * @return array<int,string>
+     */
+    public static function faltantes(): array
+    {
+        $faltam = ChavesDeIntegracao::faltantesDasAvaliacoes();
+
+        if ($faltam === [] && static::recurso() === null) {
+            $faltam[] = 'Conta do Business Profile e Local (ficha) precisam ser o número ou o caminho accounts/<id> / locations/<id>';
+        }
+
+        return $faltam;
+    }
+
+    /** A frase de recusa da importação, escrita uma vez só para a tela e para o comando. */
+    public static function avisoDeConfiguracao(): string
+    {
+        return 'A leitura das avaliações do Google ainda não está configurada. Falta: '
+            .implode('; ', static::faltantes()).'. Preencha em '
+            .ChavesDeIntegracao::CAMINHO_NO_PAINEL.' → Avaliações do Google.';
     }
 
     /**
@@ -68,17 +102,12 @@ class DepoimentosDoGoogle
      */
     public static function avaliacoes(?int $limite = null): array
     {
+        if (! static::configurado()) {
+            throw new RuntimeException(static::avisoDeConfiguracao());
+        }
+
         $recurso = static::recurso();
-
-        if ($recurso === null) {
-            throw new RuntimeException('Faltam GOOGLE_BUSINESS_ACCOUNT e GOOGLE_BUSINESS_LOCATION no .env.');
-        }
-
-        $token = trim((string) config('golden.google_business.token'));
-
-        if ($token === '') {
-            throw new RuntimeException('Falta o GOOGLE_BUSINESS_TOKEN no .env — ele é o Bearer de uma conta que administra o perfil.');
-        }
+        $token = static::token();
 
         $limite = max(1, $limite ?? (int) config('golden.google_business.limite', 50));
         $avaliacoes = [];

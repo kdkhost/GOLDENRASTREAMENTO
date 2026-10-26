@@ -6,6 +6,8 @@ use App\Models\Customer;
 use App\Models\Setting;
 use App\Models\Testimonial;
 use App\Models\User;
+use App\Support\ChavesDeIntegracao;
+use App\Support\DepoimentosDoGoogle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -192,13 +194,55 @@ class DepoimentosDasTresOrigensTest extends TestCase
             'golden.google_business.location' => '',
             'golden.google_business.token' => '',
         ]);
+        Setting::esquecerMemoria();
         Http::fake();
 
         $this->artisan('depoimentos:google')
             ->expectsOutputToContain('GOOGLE_BUSINESS_TOKEN')
+            ->expectsOutputToContain(ChavesDeIntegracao::CAMINHO_NO_PAINEL)
             ->assertFailed();
 
         Http::assertNothingSent();
+    }
+
+    public function test_o_aviso_das_avaliacoes_aponta_a_tela_de_chaves_e_nao_o_env(): void
+    {
+        config([
+            'golden.google_business.account' => '',
+            'golden.google_business.location' => '',
+            'golden.google_business.token' => '',
+        ]);
+        Setting::esquecerMemoria();
+
+        $aviso = DepoimentosDoGoogle::avisoDeConfiguracao();
+
+        $this->assertStringContainsString(ChavesDeIntegracao::CAMINHO_NO_PAINEL, $aviso);
+        $this->assertStringContainsString('Token de acesso', $aviso);
+        $this->assertStringNotContainsString('.env', $aviso);
+    }
+
+    public function test_as_chaves_gravadas_no_painel_configuram_a_leitura_sem_tocar_no_env(): void
+    {
+        config([
+            'golden.google_business.account' => '',
+            'golden.google_business.location' => '',
+            'golden.google_business.token' => '',
+        ]);
+        Setting::esquecerMemoria();
+
+        ChavesDeIntegracao::guardar('google_business_account', '1234');
+        ChavesDeIntegracao::guardar('google_business_location', '5678');
+        ChavesDeIntegracao::guardar('google_business_token', 'token-do-painel');
+        ChavesDeIntegracao::aplicar();
+
+        $this->assertSame('banco', ChavesDeIntegracao::origem('google_business_token'));
+        $this->assertSame([], DepoimentosDoGoogle::faltantes());
+        $this->assertSame('accounts/1234/locations/5678', DepoimentosDoGoogle::recurso());
+
+        $this->responderUmaAvaliacao();
+        $this->artisan('depoimentos:google')->assertSuccessful();
+
+        $this->assertTrue(Testimonial::where('externo_id', 'rev-1')->exists());
     }
 
     public function test_o_cliente_ativo_envia_pelo_portal_e_nasce_oculto_assinado_pela_ficha(): void

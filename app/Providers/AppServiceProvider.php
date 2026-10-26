@@ -4,15 +4,19 @@ namespace App\Providers;
 
 use App\Models\Category;
 use App\Models\Conversa;
+use App\Models\CronTarefa;
 use App\Models\Lead;
+use App\Models\Notificacao;
 use App\Models\Order;
 use App\Models\Page;
 use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Support\Agendador;
 use App\Support\Carrinho;
 use App\Support\ChavesDeIntegracao;
 use App\Support\MenuPainel;
+use App\Support\Notifica;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +39,9 @@ class AppServiceProvider extends ServiceProvider
 
     /** @var array<int,array<string,mixed>>|null árvore da sidebar do portal, nesta requisição */
     private ?array $menuPortal = null;
+
+    /** @var array<string,mixed>|null sino do painel já montado nesta requisição */
+    private ?array $sino = null;
 
     public function register(): void
     {
@@ -69,6 +76,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('admin.layouts.app', function ($view) {
+            // O sino primeiro: o contador de não lidas da sidebar vem do mesmo pacote, então
+            // a tela não pergunta duas vezes a mesma coisa.
+            $view->with('sino', $this->sinoDoPainel());
             $view->with('menu_painel', $this->menuDoPainel($this->dadosDoSite()['loja_ativa']));
         });
 
@@ -87,6 +97,7 @@ class AppServiceProvider extends ServiceProvider
             $this->pendencias = null;
             $this->menuPainel = null;
             $this->menuPortal = null;
+            $this->sino = null;
         });
     }
 
@@ -118,6 +129,43 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * O sino do topo: as não lidas desta pessoa, no mesmo formato que a partial e o JSON
+     * compartilham. Montado uma vez por requisição — o contador da sidebar lê o total daqui
+     * em vez de perguntar de novo.
+     */
+    private function sinoDoPainel(): array
+    {
+        if ($this->sino !== null) {
+            return $this->sino;
+        }
+
+        $links = [
+            'url' => route('admin.notificacoes.sino'),
+            'ver_todas' => route('admin.notificacoes.index'),
+            'marcar_todas' => route('admin.notificacoes.lidas'),
+            'preferencias' => route('admin.notificacoes.preferencias'),
+            'intervalo_visivel' => (int) config('notificacoes.sino_intervalo_ms.visivel', 45000),
+            'intervalo_escondida' => (int) config('notificacoes.sino_intervalo_ms.escondida', 300000),
+        ];
+
+        $usuario = auth()->user();
+
+        if ($usuario === null || ! Notifica::centralPronta()) {
+            return $this->sino = ['total' => 0, 'itens' => []] + $links;
+        }
+
+        $novas = Notificacao::para($usuario)->naovistas()->latest();
+        $limite = max(1, (int) config('notificacoes.sino_limite', 8));
+
+        return $this->sino = [
+            'total' => (clone $novas)->count(),
+            'itens' => (clone $novas)->limit($limite)->get()
+                ->map(fn (Notificacao $notificacao): array => $notificacao->paraSino())
+                ->all(),
+        ] + $links;
+    }
+
+    /**
      * Bolhas do portal: o que está esperando no nome desta ficha, não o total da empresa.
      */
     private function pendenciasDoPortal(): array
@@ -141,6 +189,8 @@ class AppServiceProvider extends ServiceProvider
             'pedidos_abertos' => Order::whereIn('status', Order::ABERTOS)->count(),
             'chamados_abertos' => Ticket::whereIn('status', Ticket::ABERTOS)->count(),
             'conversas_aguardando' => Conversa::where('status', 'aguardando_equipe')->count(),
+            'notificacoes_novas' => $this->sinoDoPainel()['total'],
+            'crons_com_falha' => Agendador::agendaPronta() ? CronTarefa::ativas()->comFalha()->count() : 0,
         ];
     }
 
