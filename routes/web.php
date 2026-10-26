@@ -36,6 +36,7 @@ use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalContratoController;
 use App\Http\Controllers\Portal\PortalDepoimentoController;
 use App\Http\Controllers\Portal\PortalPedidoController;
+use App\Http\Controllers\Site\AssistenteController as SiteAssistenteController;
 use App\Http\Controllers\Site\FunnelController;
 use App\Http\Controllers\Site\LeadController as SiteLeadController;
 use App\Http\Controllers\Site\PageController;
@@ -70,6 +71,17 @@ Route::post('/leads', [SiteLeadController::class, 'store'])
 Route::post('/rastreio/evento', [SiteRastreioController::class, 'evento'])
     ->middleware('throttle:120,1')
     ->name('site.rastreio.evento');
+
+// Bolha de atendimento: três endereços JSON para o robô responder no site e no funil. O throttle
+// aperta na fala porque cada uma pode virar uma chamada de IA que cobra por token.
+Route::prefix('assistente')->name('site.assistente.')->group(function () {
+    Route::post('/abrir', [SiteAssistenteController::class, 'abrir'])
+        ->middleware('throttle:30,1')->name('abrir');
+    Route::post('/fala', [SiteAssistenteController::class, 'fala'])
+        ->middleware('throttle:20,1')->name('fala');
+    Route::get('/falas', [SiteAssistenteController::class, 'falas'])
+        ->middleware('throttle:120,1')->name('falas');
+});
 
 /*
 |--------------------------------------------------------------------------

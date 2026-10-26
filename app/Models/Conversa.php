@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\Request;
 
 /**
  * Uma conversa de atendimento no site ou na página de funil.
@@ -19,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Conversa extends Model
 {
+    /** A chave de sessão que amarra o visitante anônimo à conversa em curso. */
+    public const SESSAO = 'assistente_conversa';
+
     public const ESCALAS = [
         'sem_fonte' => 'A máquina não tinha fonte',
         'midia_nao_lida' => 'A mídia não pôde ser lida',
@@ -90,15 +94,33 @@ class Conversa extends Model
         return (string) (self::ESCALAS[$this->escala_motivo] ?? $this->escala_motivo ?? '');
     }
 
-    /** A última fala — é ela que a listagem prévia e o painel de atendimento mostram. */
+    /**
+     * A última fala — é ela que a listagem prévia e o painel de atendimento mostram.
+     *
+     * O `reorder` é obrigatório: a relação `mensagens()` já chega ordenada do mais antigo, porque é
+     * assim que o histórico se pinta na tela, e um `latest()` por cima não desfaz aquele primeiro
+     * critério — ele só empata. Com duas falas em segundos diferentes, "a última" voltava a
+     * saudação, e o assistente parava de responder sem motivo aparente.
+     */
     public function ultimaMensagem(): ?ConversaMensagem
     {
-        return $this->mensagens()->latest('id')->first();
+        return $this->mensagens()->reorder('id', 'desc')->first();
     }
 
     public function scopeEmAtendimento(Builder $query): Builder
     {
         return $query->whereIn('status', ['aberta', 'aguardando_equipe']);
+    }
+
+    /**
+     * A conversa que este visitante trouxe na sessão, se ele já abriu a bolha. É assim que o
+     * cadastro feito no formulário da página encontra a conversa que levou até ele.
+     */
+    public static function naSessao(Request $request): ?self
+    {
+        $id = (int) $request->session()->get(self::SESSAO);
+
+        return $id > 0 ? static::find($id) : null;
     }
 
     /**

@@ -20,6 +20,12 @@
     <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
+    {{-- A bolha do assistente é a única parte do site que precisa de folha própria, e ela só
+         pesa quando o robô vai aparecer: a mesma pergunta decide o estilo, o botão e o script. --}}
+    @php $bolha = \App\Models\Assistente::atendeVisitante('site'); @endphp
+    @if($bolha)
+    <link rel="stylesheet" href="{{ asset('css/golden-assistente.css') }}?v={{ filemtime(public_path('css/golden-assistente.css')) }}">
+    @endif
     @stack('styles')
 
     @if($golden['tracking'])
@@ -127,6 +133,8 @@
 
 @include('site.partials.whatsapp-box')
 
+@include('site.partials.assistente-bolha', ['canal' => 'site', 'bolha' => $bolha])
+
 @include('partials.to-top')
 
 @include('site.partials.cookie-bar')
@@ -135,6 +143,9 @@
 <script>window.GOLDEN = { tracking: {{ $golden['tracking'] ? 'true' : 'false' }}, farol: @json(route('site.rastreio.evento')) };</script>
 <script src="{{ asset('js/golden-site.js') }}?v={{ filemtime(public_path('js/golden-site.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
+@if($bolha)
+<script src="{{ asset('js/golden-assistente.js') }}?v={{ filemtime(public_path('js/golden-assistente.js')) }}"></script>
+@endif
 @stack('scripts')
 </body>
 </html>

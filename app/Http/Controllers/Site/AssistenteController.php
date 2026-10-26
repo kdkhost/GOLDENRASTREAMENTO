@@ -1,0 +1,161 @@
+<?php
+
+namespace App\Http\Controllers\Site;
+
+use App\Models\Assistente;
+use App\Models\Conversa;
+use App\Models\ConversaMensagem;
+use App\Services\Assistente\Atendedor;
+use App\Services\Rastreio;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+
+/**
+ * A bolha de atendimento no site e na página de funil.
+ *
+ * Três endereços JSON e nenhuma página: o robô mora num canto da tela que já existe, então não
+ * faz sentido ele ter URL própria — e o visitante que abre a bolha num funil de anúncio não pode
+ * ser levado para fora dele bem na hora da conversão. O cadastro continua sendo do formulário
+ * que a casa já tem (`site/partials/lead-form`): a bolha leva o visitante até ele e a conversa é
+ * ligada ao lead quando ele preenche, em vez de montar um segundo formulário dentro do balão.
+ *
+ * A conversa vive na sessão. Isso é o que permite ao anônimo continuar a mesma conversa de página a
+ * página sem login e sem cookie de third party, e é também o que impede alguém de bisbilhotar a
+ * fila inteira trocando um id no endereço: sem a sessão, não há conversa para mostrar.
+ *
+ * Ninguém responde a um robô. O índice de origem é o mesmo do resto da casa (`Atribuidor`), e um
+ * user-agent de indexador não abre conversa — o outro jeito é o painel encher de "conversas" que
+ * nenhum humano leu.
+ */
+class AssistenteController extends \App\Http\Controllers\Controller
+{
+    public function __construct(private readonly Rastreio $rastreio) {}
+
+    /** Abre (ou continua) a conversa e devolve o que a bolha precisa pintar. */
+    public function abrir(Request $request): JsonResponse
+    {
+        if (! $this->atende($request)) {
+            return response()->json(['ativo' => false]);
+        }
+
+        $ficha = Assistente::paraABolha();
+        $conversa = $this->conversa($request);
+        $novas = $conversa->mensagens()->where('id', '>', (int) $request->input('de', 0))->get();
+
+        // A saudação é a primeira fala e só existe uma vez: voltar à página não pode repetir o
+        // "olá" na tela de quem já está no meio de uma conversa.
+        if ($novas->isEmpty() && $conversa->mensagens()->count() === 0 && filled($ficha->saudacao)) {
+            $novas = collect([ConversaMensagem::create([
+                'conversa_id' => $conversa->id,
+                'autor' => 'assistente',
+                'tipo' => 'texto',
+                'corpo' => (string) $ficha->saudacao,
+            ])]);
+        }
+
+        return response()->json([
+            'ativo' => true,
+            'conversa' => (int) $conversa->id,
+            'status' => $conversa->status,
+            'falas' => $this->falasParaTela($novas),
+        ]);
+    }
+
+    /** A fala do cliente entra, e a resposta do assistente volta no mesmo pedido. */
+    public function fala(Request $request): JsonResponse
+    {
+        if (! $this->atende($request)) {
+            return response()->json(['ativo' => false], 403);
+        }
+
+        $dados = $request->validate([
+            'texto' => ['required', 'string', 'max:1000'],
+        ], [], ['texto' => 'mensagem']);
+
+        $conversa = $this->conversa($request);
+        $antes = (int) $conversa->mensagens()->max('id');
+
+        Atendedor::dizer($conversa, strip_tags($dados['texto']));
+
+        // Voltam as duas falas — a do cliente e a do assistente — porque é a resposta que pinta a
+        // tela, não o que o navegador achou que ia ser aceito: o texto do cliente passa pelo
+        // aparador e pela régua de tamanho aqui, e o que o cliente lê é o que foi gravado.
+        return $this->novasFalas($conversa, $antes);
+    }
+
+    /** A varredura da bolha aberta: é por ela que a resposta da equipe chega ao cliente. */
+    public function falas(Request $request): JsonResponse
+    {
+        $conversa = Conversa::naSessao($request);
+
+        if (! $conversa) {
+            return response()->json(['ativo' => false]);
+        }
+
+        return $this->novasFalas($conversa, (int) $request->input('de', 0));
+    }
+
+    private function novasFalas(Conversa $conversa, int $de): JsonResponse
+    {
+        return response()->json([
+            'ativo' => true,
+            'conversa' => $conversa->id,
+            'status' => $conversa->status,
+            'falas' => $this->falasParaTela($conversa->mensagens()->where('id', '>', $de)->get()),
+        ]);
+    }
+
+    /**
+     * A fala no tamanho que o navegador pinta. O texto visível é o que a tela mostra — corpo, ou
+     * a transcrição quando o cliente mandou áudio — e nunca sai cru do banco para o HTML.
+     *
+     * @param  iterable<ConversaMensagem>  $falas
+     * @return array<int, array<string, mixed>>
+     */
+    private function falasParaTela(iterable $falas): array
+    {
+        return collect($falas)->map(fn (ConversaMensagem $fala): array => [
+            'id' => (int) $fala->id,
+            'autor' => $fala->autor,
+            'tipo' => $fala->tipo,
+            'assinatura' => $fala->assinatura(),
+            'texto' => $fala->textoVisivel(),
+            'midia' => $fala->midiaUrl(),
+            'midia_nome' => $fala->midia_nome,
+            'audio' => $fala->audioUrl(),
+            'em' => $fala->created_at?->format('H:i'),
+        ])->values()->all();
+    }
+
+    /** O robô atende esta página, para este visitante? É a única porta dos três endpoints. */
+    private function atende(Request $request): bool
+    {
+        return Assistente::atendeVisitante($this->canalDaPagina($request));
+    }
+
+    private function canalDaPagina(Request $request): string
+    {
+        return $request->input('canal') === 'funil' || $request->routeIs('site.funil') ? 'funil' : 'site';
+    }
+
+    /** A conversa da sessão, criando-a quando o visitante fala pela primeira vez. */
+    private function conversa(Request $request): Conversa
+    {
+        $conversa = Conversa::naSessao($request);
+
+        if ($conversa !== null) {
+            return $conversa;
+        }
+
+        $conversa = Conversa::abrir(
+            $this->canalDaPagina($request),
+            Str::limit('/'.ltrim($request->input('pagina', $request->path()), '/'), 190, ''),
+            $this->rastreio->visitaAtual($request)?->id,
+        );
+
+        $request->session()->put(Conversa::SESSAO, $conversa->id);
+
+        return $conversa;
+    }
+}

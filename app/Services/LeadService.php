@@ -8,6 +8,7 @@ use App\Models\FunnelPage;
 use App\Models\Lead;
 use App\Models\LeadStatusHistory;
 use App\Models\Visit;
+use App\Services\Assistente\Atendedor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -35,6 +36,10 @@ class LeadService
         $lead->fill($this->rastreio->atribuicaoParaLead($request, $lead))->save();
 
         $this->vincularCampanha($lead);
+
+        // Havia uma conversa aberta no mesmo navegador? O assistente entrega o histórico para a
+        // equipe junto do cadastro — atendimento e venda ficam na mesma ficha.
+        Atendedor::fezContato($lead, $request);
 
         // O cadastro é o último passo da jornada — entra na linha do tempo da visita.
         $this->rastreio->registrarNaVisita($visita, 'lead', '/leads', null, $lead->kit);

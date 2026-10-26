@@ -48,6 +48,12 @@
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-funil.css') }}?v={{ filemtime(public_path('css/golden-funil.css')) }}">
+    {{-- A bolha do assistente tem folha e script próprios, e só pesam aqui se o robô for
+         aparecer: a mesma pergunta decide o estilo, o botão incluído embaixo e o script. --}}
+    @php $bolha = \App\Models\Assistente::atendeVisitante('funil'); @endphp
+    @if($bolha)
+    <link rel="stylesheet" href="{{ asset('css/golden-assistente.css') }}?v={{ filemtime(public_path('css/golden-assistente.css')) }}">
+    @endif
     {{-- O bloco que desliza puxa o Swiper; os outros blocos deixam a página leve. --}}
     @stack('styles')
 
@@ -101,6 +107,7 @@
 </footer>
 
 @include('site.partials.whatsapp-box')
+@include('site.partials.assistente-bolha', ['canal' => 'funil', 'bolha' => $bolha])
 @include('partials.to-top')
 @include('site.partials.cookie-bar')
 @include('partials.avisos', ['confirmacoes' => false])
@@ -125,6 +132,9 @@
 <script>window.GOLDEN = @json($medicao);</script>
 <script src="{{ asset('js/golden-site.js') }}?v={{ filemtime(public_path('js/golden-site.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
+@if($bolha)
+<script src="{{ asset('js/golden-assistente.js') }}?v={{ filemtime(public_path('js/golden-assistente.js')) }}"></script>
+@endif
 {{-- O player embutido e os carrosséis dos blocos carregam o que só esta página usa. --}}
 @stack('scripts')
 {!! $pagina->codigo_body !!}

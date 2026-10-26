@@ -5,6 +5,48 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.32.0] - 2026-10-26
+
+### Adicionado
+- **A bolha de atendimento no site e no funil.** O robô que existia só dentro do painel agora
+  atende o visitante anônimo: botão flutuante no canto, balão que abre, saudação escrita por ele
+  mesmo, campo de fala e a mesma conversa que a equipe lê em `/admin/assistente/conversas`.
+  A folha (`public/css/golden-assistente.css`) e o script (`public/js/golden-assistente.js`) só
+  entram na página quando o interruptor correspondente está ligado — desligado, não sobra nem um
+  byte de robô no HTML do visitante.
+- **Três endereços JSON** (`POST /assistente/abrir`, `POST /assistente/fala`, `GET /assistente/falas`)
+  com throttle próprio — 20 falas por minuto, porque cada uma pode virar uma chamada de IA que
+  cobra por token. O `canal` (`site` ou `funil`) e a página vêm em toda chamada e ficam gravados
+  na conversa: quando a conversa anônima vira lead, a origem já está registrada.
+- **O `window.GOLDEN_IA`**, impresso pelo partial da bolha, é o contrato entre as duas pontas: o
+  script não sabe nada de IA, só pinta e pergunta; quem decide responder, escalar ou calar é o
+  servidor. Nada do que o visitante digita vira HTML na tela — `textContent`, sempre.
+- **`Assistente::paraABolha()`** — a leitura em cache da ficha (`golden.assistente_bolha`), do
+  mesmo jeito que `Page::paraSite()` serve o rodapé. Nenhuma página pública emite `SELECT` para
+  montar o robô, e desligá-lo no painel vale na hora.
+- **O cadastro amarra a conversa ao lead.** `LeadService::capturar()` avisa o `Atendedor`, que
+  entrega à equipe o resumo do que o visitante já contou — atendimento e venda ficam na mesma
+  ficha, e ninguém reescreve a própria dor.
+- **Sem formulário na página, a bolha leva ao `/contato` da casa** com o resumo da conversa já
+  escrito no campo de mensagem (`?message=`); havendo formulário, ela rola até ele. É a regra da
+  casa: um formulário por assunto, o resto são links.
+
+### Corrigido
+- **O assistente parava de responder depois da saudação.** `Conversa::mensagens()` já chega
+  ordenada do mais antigo (é assim que o histórico se pinta), e um `latest('id')` por cima não
+  desfaz o primeiro critério — só empata. A "última fala" voltava sendo a saudação, o `atender()`
+  desistia em silêncio e a conversa morria sem motivo aparente. Agora é `reorder('id', 'desc')`,
+  nos dois lugares que leram a janela de falas (`Conversa::ultimaMensagem()` e
+  `Atendedor::historico()`), com um teste que viaja no tempo entre as falas para provar que o
+  bug morderia sem o conserto.
+- **O robô nascia mudo numa instalação limpa.** `firstOrCreate` devolve o modelo com os campos que
+  ele mesmo escreveu; os interruptores de atendimento (`ativo`, `no_site`, `no_funil`,
+  `no_chamado`) vêm dos padrões da tabela e não estavam entre eles. Sem o `refresh()` depois de
+  criar, a primeira página os lê como nulos e a bolha não subia em lugar nenhum.
+- **A varredura não martela servidor de hospedagem compartilhada.** Com o balão aberto a resposta
+  chega em cinco segundos; fechado, só quem foi passado para a equipe é varrido, e a cada trinta —
+  e nunca com a aba em segundo plano.
+
 ## [2.31.0] - 2026-10-26
 
 ### Adicionado

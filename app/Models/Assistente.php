@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\CachesContent;
+use App\Services\Atribuidor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * A ficha do assistente: nome, rosto, tom e as regras de conduta que o administrador escreveu.
@@ -14,11 +17,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * `regras` é texto livre e entra na ordem dada à IA tal como foi escrito: quem administra o
  * atendimento é quem escreve, e o sistema não reescreve o que o administrador mandou.
+ *
+ * A página pública lê a ficha por `paraABolha()`, em cache, porque o site inteiro é servido sem
+ * um SELECT por página — o robô não seria a exceção.
  */
 class Assistente extends Model
 {
+    use CachesContent;
+
     /** A regra de `config/envios.php` que valida e guarda o rosto da ficha. */
     public const CAMPO_ENVIO = 'assistente_avatar';
+
+    /** A ficha lida pela bolha do site, derrubada sempre que o painel grava nesta tabela. */
+    protected array $cacheKeys = ['golden.assistente_bolha'];
 
     protected $table = 'assistente';
 
@@ -39,16 +50,26 @@ class Assistente extends Model
         return $this->belongsTo(User::class, 'criado_por');
     }
 
-    /** A ficha, criando-a do padrão se ainda não existe. */
+    /**
+     * A ficha, criando-a do padrão se ainda não existe.
+     *
+     * A releitura depois de criar não é capricho: `firstOrCreate` devolve o modelo com os campos
+     * que ele mesmo escreveu, e os interruptores de atendimento (`ativo`, `no_site`, `no_funil`,
+     * `no_chamado`) não estão entre eles — vêm dos padrões da tabela. Sem o `refresh()`, a
+     * instalação recém-criada não tem os interruptores para ler, e o robô nasceria mudo na
+     * primeira página — inclusive no painel, onde é a mesma ficha.
+     */
     public static function garanta(): self
     {
-        return static::query()->firstOrCreate([], [
+        $ficha = static::query()->firstOrCreate([], [
             'nome' => (string) config('assistente.persona.nome'),
             'cargo' => (string) config('assistente.persona.cargo'),
             'saudacao' => (string) config('assistente.persona.saudacao'),
             'tom' => (string) config('assistente.persona.tom'),
             'regras' => (string) config('assistente.persona.regras'),
         ]);
+
+        return $ficha->wasRecentlyCreated ? $ficha->refresh() : $ficha;
     }
 
     /** Os tons de fala que a tela oferece — a lista vem da config, a view não escreve nenhuma. */
@@ -66,6 +87,33 @@ class Assistente extends Model
     public function atendeEm(string $canal): bool
     {
         return $this->ativo && (bool) $this->{"no_{$canal}"};
+    }
+
+    /**
+     * A ficha como a bolha do site a lê — em cache, porque nenhuma página pública emite SELECT
+     * para montar o rodapé, o menu ou o WhatsApp flutuante, e o robô não seria a exceção.
+     * `CachesContent` derruba a chave quando o painel grava, então desligar a bolha ou trocar o
+     * rosto vale na hora. `garanta()` continua sendo o caminho de quem escreve.
+     */
+    public static function paraABolha(): self
+    {
+        $atributos = Cache::rememberForever('golden.assistente_bolha', function (): array {
+            return static::garanta()->getRawOriginal();
+        });
+
+        return (new static)->newFromBuilder($atributos);
+    }
+
+    /**
+     * A régua da bolha, dita num lugar só: a ficha ligada neste canal e quem abriu a página não
+     * ser um robô de índice. O layout pergunta antes de carregar o estilo e o script da bolha, a
+     * parcial pergunta de novo para desenhar o botão, e o controller de atendimento pergunta uma
+     * terceira vez antes de gastar uma chamada de IA — a tela não é a barreira, o servidor é.
+     */
+    public static function atendeVisitante(string $canal): bool
+    {
+        return static::paraABolha()->atendeEm($canal)
+            && Atribuidor::classificar(null, null, null, null, request()->userAgent())['canal'] !== 'indexador';
     }
 
     /** A voz desta ficha, ou a da casa quando ninguém escolheu. */

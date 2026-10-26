@@ -4,6 +4,10 @@
     detalhes opcionais: o texto do botão ($cta_texto), a linha de confiança abaixo dele
     ($confianca) e a página de campanha que está pedindo o cadastro ($pagina_funil).
     Campos ocultos recebem UTMs e identificadores de clique via JS.
+
+    Nome e mensagem aceitam vir da URL (`?name=&message=`) porque a bolha do assistente, numa página
+    sem formulário, leva o visitante ao /contato resumindo a conversa — é este mesmo campo que
+    recebe o resumo, e ninguém reescreve o que já contou.
 --}}
 @php
     $kits = $kits ?? config('golden.kits');
@@ -14,7 +18,7 @@
 
     <div class="field">
         <label for="leadName">Seu nome</label>
-        <input id="leadName" name="name" type="text" maxlength="90" required placeholder="Como podemos chamar você?">
+        <input id="leadName" name="name" type="text" maxlength="90" required placeholder="Como podemos chamar você?" value="{{ request('name') }}">
     </div>
     <div class="row-2">
         <div class="field">
@@ -56,7 +60,7 @@
     </div>
     <div class="field">
         <label for="leadMessage">Mensagem <span class="fine">(opcional)</span></label>
-        <textarea id="leadMessage" name="message" rows="3" maxlength="1000" placeholder="Conte um pouco sobre a sua operação."></textarea>
+        <textarea id="leadMessage" name="message" rows="3" maxlength="1000" placeholder="Conte um pouco sobre a sua operação.">{{ request('message') }}</textarea>
     </div>
 
     {{-- Honeypot anti-spam --}}
