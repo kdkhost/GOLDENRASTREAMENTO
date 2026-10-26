@@ -1294,6 +1294,89 @@ Ambas são aditivas e têm `down()`. Como todo migration deste projeto, elas
 precisam ser conferidas no **MySQL da hospedagem** antes de dadas por prontas: o
 SQLite dos testes não reclama de comprimento de `varchar`.
 
+## 13.1 O assistente que atende o público
+
+O sistema tem um robô de atendimento com rosto, nome e memória próprios. Ele atende **dentro do
+painel** (três telas no grupo **Atendimento**) e **fora dele**, na bolha que sobe no canto do site e
+de cada página de campanha. Nada dele se configura por arquivo: o que existe é ficha no banco,
+chave no cofre do painel e interruptor na tela.
+
+### As três telas
+
+- **Assistente virtual** (`/admin/assistente`) — a persona: nome, cargo, saudação, tom de fala,
+  regras escritas pelo administrador, o rosto (arrastar e soltar, 96 × 96 px, até 2 MB) e a voz das
+  respostas em áudio. É desta ficha que se monta a ordem que o provedor recebe; as regras entram na
+  ordem exata em que foram escritas, sem reescrita. Quatro interruptores dizem onde ele atende:
+  ligado, no site, na página de funil, no chat do chamado.
+- **O que o assistente sabe** (`/admin/assistente/conhecimento`) — a base de respostas. Um assunto
+  por linha, com resposta, tags, origem e endereço da fonte. A busca é léxica e ponderada
+  (título pesa 3, assuntos 2, corpo 1) sobre o piso `assistente.resposta.minimo_de_fonte`; abaixo
+  do piso a máquina **não responde**, ela chama a equipe. Sem índice vetorial de propósito: na
+  hospedagem compartilhada um atendimento que depende dele é um atendimento que para.
+- **Conversas do site** (`/admin/assistente/conversas`) — a fila dos visitantes anônimos, o
+  equivalente do lado público da fila de chamados. Aberta, aguardando a equipe (âmbar no menu) ou
+  encerrada. Responder aqui assume o fio: a fala sai assinada pelo login da equipe e a máquina sai
+  de cena no resto da conversa — o cliente nunca recebe duas respostas para a mesma pergunta.
+
+### Ligar a inteligência
+
+Em **Sistema → Configurações → Chaves de integração** entram, cifradas no banco, as duas chaves que
+existem hoje: `ASSISTENTE_GEMINI_KEY` e `ASSISTENTE_OPENAI_KEY`. O `.env` é só plano de fundo para
+quando o banco está vazio; gravado pelo painel, manda o banco. Cada capacidade (conversa, visão,
+documento, transcrição, voz) escolhe provedor e modelo na mesma tela.
+
+Um provedor sem chave **não é erro**: a capacidade fica desligada, a ficha do assistente mostra a
+pergunta *"ele consegue responder?"* dizendo qual capacidade está manca, e o atendimento continua
+pelas mãos da equipe. O código nunca sai do sistema por falta de credencial.
+
+### A bolha no site e no funil
+
+O botão flutuante, o balão e a conversa anônima vêm com a página, e a folha
+(`public/css/golden-assistente.css`) e o script (`public/js/golden-assistente.js`) **só entram no
+HTML quando o interruptor do canal está ligado** — desligado, não sobra um byte de robô na página do
+visitante. As três rotas JSON são `POST /assistente/abrir`, `POST /assistente/fala` e
+`GET /assistente/falas`, com throttle de 30, 20 e 120 por minuto e por visitante.
+
+Como se comporta:
+
+- uma conversa por navegador (na sessão), e a saudação é escrita **uma única vez**;
+- com o balão aberto a varredura é de 5 s; fechado, só as conversas passadas para a equipe são
+  varridas, a cada 30 s, e nunca com a aba em segundo plano;
+- **robô de busca não vê a bolha e não abre conversa** — o índice do Google continua recebendo o
+  site, não uma fila de perguntas fictícias;
+- sem fonte confiável, o visitante lê a frase de escalada e a equipe recebe a conversa por e-mail
+  (`contato_email`); nada de preço, prazo ou cobertura inventado;
+- havendo formulário na página, o botão "falar com uma pessoa" rola até ele; não havendo, leva ao
+  `/contato` da casa com o resumo da conversa já escrito no campo de mensagem — um formulário por
+  assunto, o resto são links;
+- o cadastro feito depois da conversa **amarra as duas**: a ficha do lead traz o resumo do que o
+  visitante já contou, com canal e página de origem registrados.
+
+A ficha é lida em cache (`golden.assistente_bolha`), como o rodapé e o menu, porque **nenhuma página
+pública emite `SELECT`** para montar o que está no ar; `CachesContent` derruba a chave no instante em
+que o painel grava, então desligar o robô ou trocar o rosto vale na hora.
+
+### Migração nova
+
+`2026_10_26_000001_creiam_as_tabelas_do_assistente` cria `assistente`,
+`conhecimento_itens`, `conversas`, `conversas_mensagens` e `assistente_api_logs`. É aditiva e tem
+`down()`. Foi conferida no **MySQL da hospedagem** (646 ms, `DONE`) antes desta entrega — o SQLite dos
+testes não reclama de comprimento de `varchar`, e é assim que um migration escapa.
+
+### O que ainda não está no ar
+
+A arquitetura está pronta e testada; estas partes ainda esperam:
+
+- responder dentro do **chat do chamado** (o interruptor `no_chamado` nasce desligado);
+- **áudio, imagem e documento** no chat — transcrever o que chega, ler o que é imagem, responder na
+  voz escolhida — que dependem de chave de visão/transcrição/voz;
+- **aprender da internet** pelo rastejador de domínios permitidos (as páginas lidas chegariam em
+  `conhecimento_itens` com origem, endereço e data);
+- **criar campanha no Google Ads** por pedido direto do administrador.
+
+Para ver localmente: `php artisan serve --host=127.0.0.1 --port=8099`, abrir `/` ou `/c/frota-j16`
+com um navegador comum, e `/admin/assistente/conversas` com `admin@golden.com.br` / `golden123`.
+
 ---
 
 ## 14. Guia de uso dentro do painel
