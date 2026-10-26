@@ -372,12 +372,14 @@ a dimensão ideal.
 
 ### Painel administrativo de leads (`/admin`) — prioridade do briefing
 - **Menu em árvore**: a sidebar vem de `config/golden.php` → `menu_painel` e é montada por
-  `App\Support\MenuPainel`. São quatro grupos (**Comercial**, **Vendas**, **Conteúdo do site**,
-  **Sistema**) com as páginas dentro; o clique abre e fecha o grupo, e o *accordion* do AdminLTE
-  mantém **um só aberto por vez**. Quem fica marcado como ativo é a página em si — `/admin/leads/12`
-  acende *Leads* pelo prefixo da rota e já chega com **Comercial** aberto (o grupo herda o dourado,
-  sem a barra, para não haver duas marcas na mesma coluna). `admin:true` esconde o que é só do
-  administrador: os dois grupos restritos inteiros e o catálogo dentro de Vendas.
+  `App\Support\MenuPainel`. São cinco grupos (**Comercial**, **Vendas**, **Atendimento**,
+  **Conteúdo do site**, **Sistema**) com as páginas dentro; o clique abre e fecha o grupo, e o
+  *accordion* do AdminLTE mantém **um só aberto por vez**. Quem fica marcado como ativo é a página
+  em si — `/admin/leads/12` acende *Leads* pelo prefixo da rota e já chega com **Comercial** aberto
+  (o grupo herda o dourado, sem a barra, para não haver duas marcas na mesma coluna). `admin:true`
+  esconde o que é só do administrador: os dois grupos restritos inteiros e o catálogo dentro de
+  Vendas. Fora dos grupos, soltos no topo e no fim da coluna, ficam *Dashboard* e *Guia de uso* —
+  consulta, não área do sistema, e o vendedor lê o mesmo guia do administrador.
 - **Dashboard**: KPIs (total, novos, taxa de conversão, receita fechada), funil visual,
   gráfico de leads nos últimos 30 dias, **conversão por campanha**, leads recentes e uma
   linha **"Módulos integrados"** (clientes, produtos, pedidos/faturamento, páginas) com o
