@@ -5,6 +5,46 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.30.0] - 2026-10-26
+
+### Mudado
+- **A tela do guia voltou a ser uma tela do painel.** `/admin/guia` era a única tela do sistema
+  desenhada por fora do padrão: texto solto sobre a fundo, sem moldura, com um campo de busca
+  escrito à mão na view e classes utilitárias decidindo peso e espaçamento bloco a bloco. Agora cada
+  grupo é um cartão `x-admin.card` — sete cartões, Começando a Sistema, cada um com o seu ícone — e o
+  índice do lado esquerdo é o cartão "Procurar no guia" como qualquer outro da casa.
+- **O campo de busca é o `x-admin.filter` compartilhado**, com o `id` opcional que o componente
+  ganhou para o script continuar achando o campo. Ganho de tabela: um endereço com `?busca=telefone`
+  chega filtrado, porque o valor vem da URL como em toda listagem do painel.
+- **Um seletor só decide a medida da leitura** (`70ch` para parágrafo, lista, passo, aviso e
+  fechamento). Tabela e bloco de código usam a largura inteira do cartão, que é onde as colunas
+  cabem; `68ch` espalhado em cinco regras virou uma.
+- O peso e o espaço de cada bloco saíram da view e moram na folha: `.guia-secao-titulo` e
+  `.guia-passo-descricao` substituíram `fw-bold text-body` e `small text-secondary`, e
+  `mb-0`/`list-unstyled`/`align-middle` sumiram dos dois templates.
+- **O índice fixo cabe na tela.** Em `col-lg-3` ele era mais alto que o viewport e as últimas seções
+  ficavam fora de alcance para sempre: o cartão passou a ter `max-height:calc(100vh - 2rem)` e a
+  lista rola sozinha (`overflow-y:auto` + `overscroll-behavior:contain`), sem arrastar a página.
+- No navegador, o grupo some **como cartão** quando a busca não deixa seção nenhuma dentro dele, e o
+  rótulo do grupo no índice some junto — antes ficava o título órfão sobre a lista vazia.
+
+### Corrigido
+- **A primeira coluna das tabelas do guia** estava presa em `white-space:nowrap`: a célula mais
+  estreita possible virava a mais larga, e a coluna de texto — que é a que tem frase — era espremida
+  até estourar o cartão em tela estreita. Saiu o `nowrap`, entrou `vertical-align:middle` na folha.
+- O texto de abertura dizia "A barra da esquerda traz cinco grupos". Lido dentro do guia, isso
+  descrevia a tela errada — o índice do guia tem sete grupos, e quem procurava "Portal do cliente"
+  na frase não achava. Diz "O menu lateral", que é do que a frase fala.
+
+### Testado
+- `GuiaDoPainelTest` (14 testes, 555 afirmações) ganhou duas travas sobre a arrumação:
+  *a tela é montada com as peças do painel* — o campo vem de `x-admin.filter`, nenhum `<input>` na
+  view, nenhum dos utilitários que saíram voltou, um cartão por grupo do config e ícone no cabeçalho
+  de cada um; *a folha e o script deixam tudo caber na tela* — sem `nowrap` na tabela, altura máxima
+  e rolagem própria no índice, a medida de leitura escrita uma única vez, nenhum hexadecimal na
+  folha, a busca sem acento intacta no script e os dois escondimentos estruturais (`[data-grupo]` e
+  `[data-nav-grupo]`).
+
 ## [2.29.0] - 2026-10-25
 
 ### Adicionado

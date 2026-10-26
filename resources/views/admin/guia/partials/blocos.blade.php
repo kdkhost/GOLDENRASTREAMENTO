@@ -19,13 +19,13 @@
             @if (isset($bloco['titulo']))
                 <div class="guia-subtitulo">{{ $bloco['titulo'] }}</div>
             @endif
-            <ul class="guia-passos list-unstyled mb-0">
+            <ul class="guia-passos">
                 @foreach ($bloco['itens'] as $passo)
                     <li class="guia-passo">
                         <span class="guia-passo-icone tone-gold"><i class="fas {{ $passo['icone'] }}" aria-hidden="true"></i></span>
                         <span class="guia-passo-texto">
                             <span class="d-block fw-semibold">{{ $passo['titulo'] }}</span>
-                            <span class="d-block small text-secondary">{!! \App\Support\GuiaPainel::inline($passo['texto']) !!}</span>
+                            <span class="d-block guia-passo-descricao">{!! \App\Support\GuiaPainel::inline($passo['texto']) !!}</span>
                         </span>
                     </li>
                 @endforeach
@@ -46,7 +46,7 @@
 
         @case('tabela')
             <div class="table-responsive">
-                <table class="table guia-tabela align-middle mb-0">
+                <table class="table guia-tabela">
                     <thead>
                         <tr>
                             @foreach ($bloco['cabecalho'] as $coluna)

@@ -44,7 +44,7 @@ return [
             'icone' => 'fa-house',
             'resumo' => 'Uma casa só para o comercial, as vendas, o atendimento, o conteúdo do site e o sistema.',
             'blocos' => [
-                ['tipo' => 'texto', 'conteudo' => 'A barra da esquerda traz cinco grupos — Comercial, Vendas, Atendimento, Conteúdo do site e Sistema. Cada grupo abre e fecha; o grupo da página em que você está já nasce aberto, e abrir outro fecha o anterior. Quem é vendedor vê os três primeiros; "Conteúdo do site" e "Sistema" são do administrador.'],
+                ['tipo' => 'texto', 'conteudo' => 'O menu lateral traz cinco grupos — Comercial, Vendas, Atendimento, Conteúdo do site e Sistema. Cada grupo abre e fecha; o grupo da página em que você está já nasce aberto, e abrir outro fecha o anterior. Quem é vendedor vê os três primeiros; "Conteúdo do site" e "Sistema" são do administrador.'],
                 ['tipo' => 'lista', 'itens' => [
                     'Dashboard — o resumo do dia: leads novos, pedidos abertos, chamados abertos, tráfego e vendas.',
                     'Todo lugar é a mesma régua: vinte registros por página, filtro em cima, tabela no meio, paginação embaixo.',

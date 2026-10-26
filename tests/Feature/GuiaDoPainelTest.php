@@ -277,4 +277,74 @@ class GuiaDoPainelTest extends TestCase
         $this->assertStringNotContainsString('`', $visivel, 'O guia mostrou a crase em vez do código.');
         $this->assertMatchesRegularExpression('/[ãçõê]/u', $visivel, 'O guia perdeu os acentos.');
     }
+
+    /**
+     * A tela é uma tela do painel, então ela usa as peças do painel: um cartão por grupo, o campo
+     * de busca compartilhado, e nada escrito à mão dentro da view. Cada classe utilitária solta
+     * (`mb-0`, `fw-bold`, `text-body`) é uma decisão de desenho fora da folha — a mesma regra que
+     * vale para as outras telas e que, somada, fazia o guia parecer outra aplicação.
+     */
+    public function test_a_tela_do_guia_e_montada_com_as_pecas_do_painel(): void
+    {
+        $fonteDaTela = file_get_contents(resource_path('views/admin/guia/index.blade.php'));
+        $fonteDosBlocos = file_get_contents(resource_path('views/admin/guia/partials/blocos.blade.php'));
+
+        $this->assertStringContainsString('<x-admin.filter', $fonteDaTela,
+            'A busca do guia voltou a ser um <input> escrito na view.');
+        $this->assertStringNotContainsString('<input', $fonteDaTela,
+            'Campo desenhado à mão é campo que enjoa quando o padrão dos campos muda.');
+
+        foreach (['mb-0', 'fw-bold', 'text-body', 'list-unstyled', 'align-middle', 'small text-secondary'] as $utilitaria) {
+            $this->assertStringNotContainsString($utilitaria, $fonteDaTela,
+                "A view do guia voltou a decidir espaçamento ou peso com a classe '{$utilitaria}'.");
+            $this->assertStringNotContainsString($utilitaria, $fonteDosBlocos,
+                "O partial de blocos voltou a decidir desenho com a classe '{$utilitaria}'.");
+        }
+
+        $grupos = array_keys(GuiaPainel::porGrupo());
+        $html = $this->actingAs(User::where('email', 'admin@golden.com.br')->firstOrFail())
+            ->get(route('admin.guia.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(count($grupos), substr_count($html, 'data-grupo="1"'),
+            'Cada grupo do guia é um cartão; um a mais ou a menos é a tela fora do passo do config.');
+
+        foreach ($grupos as $grupo) {
+            $this->assertMatchesRegularExpression('/^fa-[a-z0-9-]+$/', (string) GuiaPainel::iconeDoGrupo($grupo),
+                "O cartão do grupo '{$grupo}' ficou sem ícone — seria o único cartão do painel sem.");
+        }
+    }
+
+    /**
+     * O que a arrumação custou a medir e não pode voltar: a primeira coluna da tabela presa em uma
+     * linha só (empurrava o cartão para fora da tela estreita), o índice fixo mais alto que o
+     * viewport (as últimas seções ficavam fora de alcance), e a medida de leitura espalhada bloco a
+     * bloco em vez de um seletor único.
+     */
+    public function test_a_folha_e_o_script_do_guia_deixam_tudo_caber_na_tela(): void
+    {
+        $folha = file_get_contents(base_path('public/css/golden-guia.css'));
+
+        $this->assertDoesNotMatchRegularExpression('/\.guia-tabela[^{]*\{[^}]*white-space\s*:\s*nowrap/', $folha,
+            'A tabela do guia voltou a travar uma célula em linha única e a estourar o cartão no celular.');
+
+        $this->assertStringContainsString('max-height:calc(100vh - 2rem)', $folha,
+            'O índice fixo precisa caber na tela: sem altura máxima, ele rola o texto e nunca chega ao fim.');
+        $this->assertMatchesRegularExpression('/\.guia-nav\{[^}]*overflow-y\s*:\s*auto/', $folha,
+            'Quando o índice é maior que a tela, ele mesmo tem de rolar.');
+
+        $this->assertSame(1, preg_match_all('/max-width\s*:\s*70ch/', $folha),
+            'A medida de leitura é um seletor só; repeti-la é cada bloco escolher a própria largura.');
+        $this->assertDoesNotMatchRegularExpression('/#[0-9a-f]{3,8}\b/i', $folha,
+            'Cor no guia vem de token de golden-theme.css, nunca de hexadecimal.');
+
+        $script = file_get_contents(base_path('public/js/golden-guia.js'));
+        $this->assertStringContainsString('[\u0300-\u036f]', $script,
+            'A busca sem acento é o que faz "notificacao" encontrar "notificação".');
+        $this->assertStringContainsString("querySelectorAll('[data-grupo]')", $script,
+            'O grupo tem de sumir como cartão, não só as seções dele — cartão vazio com título é a tela pela metade.');
+        $this->assertStringContainsString("querySelectorAll('[data-nav-grupo]')", $script,
+            'O título do grupo no índice também sai quando não sobra seção nenhuma dele.');
+    }
 }

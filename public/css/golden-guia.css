@@ -4,32 +4,47 @@
 | Cor só por token de golden-theme.css: nada aqui escreve hexadecimal, então o cartão, o passo a
 | passo e o aviso trocam de tom junto com o tema claro e escuro escolhido no cabeçalho.
 |
-| O desenho é de leitura, não de listagem: coluna da esquerda fixa, texto à direita com medida
-| confortável, e nenhuma linha mais larga que ~68 caracteres — parágrafo que corre de margem a
-| margem em tela larga cansa e ninguém lê.
+| O desenho é o do resto do painel — um cartão por grupo, com o índice à esquerda — mas a leitura
+| obedece a uma medida: parágrafo, lista e passo param em ~70 caracteres, porque texto que corre de
+| margem a margem em tela larga cansa e ninguém lê. Tabela e código são a exceção: esses usam a
+| largura inteira do cartão, que é onde as colunas cabem.
 */
 
+/* ---------- A coluna da esquerda: busca + índice ---------- */
+
 .guia-lado{position:static}
-.guia-nav{display:flex;flex-direction:column;gap:2px;max-height:none}
+.guia-nav{display:flex;flex-direction:column;gap:2px}
 .guia-nav-grupo{font:600 .68rem/1.4 var(--font-head);letter-spacing:.08em;text-transform:uppercase;color:var(--t-neutral-fg);margin:.75rem 0 .25rem}
 .guia-nav-grupo:first-child{margin-top:0}
 .guia-nav-link{display:flex;align-items:center;gap:.5rem;padding:.32rem .5rem;border-radius:var(--radius-md);color:var(--bs-body-color);text-decoration:none;font-size:.86rem;line-height:1.35}
+.guia-nav-link span{min-width:0;overflow-wrap:anywhere}
 .guia-nav-link:hover{background:var(--t-gold-bg)}
 .guia-nav-link.is-ativa{background:var(--t-gold-bg);box-shadow:inset 2px 0 0 var(--t-gold-fg);font-weight:600}
 
 /* O aviso de "nenhum resultado" é o estado vazio da busca, no mesmo lugar da lista. */
-.guia-nav-vazio{font-size:.82rem;color:var(--t-neutral-fg);margin:0}
+.guia-nav-vazio{font-size:.82rem;color:var(--t-neutral-fg);margin:.5rem 0 0}
 
-/* Título de grupo na coluna do texto: uma linha, e o grupo seguinte recomeça com respiro. */
-.guia-grupo{font:600 .74rem/1.4 var(--font-head);letter-spacing:.1em;text-transform:uppercase;color:var(--t-neutral-fg);margin:1.5rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--bs-border-color)}
-.guia-grupo:first-child{margin-top:0}
+/* ---------- O cartão de cada grupo ---------- */
 
-.guia-secao{max-width:68ch;margin:0 0 1.25rem;padding:1rem 0 1.15rem;border-bottom:1px solid var(--bs-border-color);scroll-margin-top:5.5rem}
-.guia-secao:last-of-type{border-bottom:0}
+.guia-grupo.card{margin:0 0 1rem}
+.guia-grupo .card-body{padding:.35rem 1rem 1rem}
+
+.guia-secao{padding:1.05rem 0;border-bottom:1px solid var(--bs-border-color);scroll-margin-top:5.5rem}
+.guia-secao:first-child{padding-top:.35rem}
+.guia-secao:last-child{border-bottom:0;padding-bottom:0}
 .guia-secao--oculta{display:none}
-.guia-secao-cabeca{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem}
-.guia-secao-cabeca h4{font-size:1.05rem}
-.guia-abrir{white-space:nowrap}
+.guia-secao-cabeca{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.35rem .75rem}
+.guia-secao-titulo{display:flex;align-items:center;gap:.4rem;margin:0;font-size:1.05rem;font-weight:700;color:var(--bs-body-color);min-width:0;overflow-wrap:anywhere}
+.guia-abrir{white-space:nowrap;flex:none}
+
+/* A medida da leitura. Um seletor só, para nenhum bloco do partial precisar escolher largura. */
+.guia-resumo,
+.guia-texto,
+.guia-subtitulo,
+.guia-passos,
+.guia-lista,
+.guia-aviso,
+.guia-fim{max-width:70ch}
 
 .guia-resumo{color:var(--bs-body-color);font-weight:500;margin:.35rem 0 .65rem}
 .guia-texto{margin:0 0 .75rem;line-height:1.6}
@@ -38,11 +53,11 @@
 
 /* O passo do guia: ícone no círculo, título em cima, explicação embaixo. Nenhum número — a
    ordem já está na lista, e um "1." sobre uma lista ordenada é enfeite, não orientação. */
-.guia-passos{display:flex;flex-direction:column;gap:.7rem;margin:0 0 .85rem;padding:0}
+.guia-passos{display:flex;flex-direction:column;gap:.7rem;margin:0 0 .85rem;padding:0;list-style:none}
 .guia-passo{display:flex;align-items:flex-start;gap:.65rem}
 .guia-passo-icone{flex:0 0 auto;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;font-size:.8rem}
-.guia-passo-texto{padding-top:1px}
-.guia-passo-texto .text-secondary{line-height:1.55}
+.guia-passo-texto{min-width:0;padding-top:1px}
+.guia-passo-descricao{font-size:.85rem;line-height:1.55;color:var(--bs-secondary-color)}
 
 .guia-lista{margin:0 0 .85rem;padding-left:1.15rem;line-height:1.6}
 .guia-lista li{margin-bottom:.35rem}
@@ -50,15 +65,19 @@
 
 /* O comando, o bloco de .env e a linha de cron: monoespaçados, com rolagem própria e linha sem
    quebra, para o texto copiar igual ao que está escrito. */
-.guia-codigo{background:var(--t-neutral-bg);color:var(--t-neutral-fg);border-left:3px solid var(--t-gold-fg);border-radius:var(--radius-md);padding:.7rem .85rem;margin:0 0 .85rem;font-size:.82rem;line-height:1.6;overflow-x:auto}
+.guia-codigo{background:var(--t-neutral-bg);color:var(--t-neutral-fg);border-left:3px solid var(--t-gold-fg);border-radius:var(--radius-md);padding:.7rem .85rem;margin:0 0 .85rem;font-size:.82rem;line-height:1.6;overflow-x:auto;max-width:100%}
 .guia-codigo code{color:inherit;background:none;padding:0;white-space:pre}
 .guia-codigo:focus-visible{outline:2px solid var(--t-gold-fg);outline-offset:2px}
 
-.guia-tabela{font-size:.88rem}
+/* A tabela do guia é larga por natureza — duas colunas de frase. A primeira não trava mais em
+   uma linha só: `nowrap` empurrava a segunda coluna para dentro de si mesma e a célula estourava
+   o cartão em tela estreita. */
+.guia-tabela{font-size:.88rem;margin-bottom:0}
+.guia-tabela th,.guia-tabela td{vertical-align:middle}
 .guia-tabela th{font:600 .74rem/1.4 var(--font-head);letter-spacing:.05em;text-transform:uppercase;color:var(--t-neutral-fg);border-bottom:2px solid var(--bs-border-color)}
 .guia-tabela td{line-height:1.5}
-.guia-tabela td:first-child{font-weight:600;white-space:nowrap}
-.guia-tabela code{background:var(--t-gold-bg);color:var(--t-gold-fg);border-radius:6px;padding:.1rem .35rem;font-size:.85em}
+.guia-tabela td:first-child{font-weight:600}
+.guia-tabela code{background:var(--t-gold-bg);color:var(--t-gold-fg);border-radius:6px;padding:.1rem .35rem;font-size:.85em;overflow-wrap:anywhere}
 
 /* O que fica marcado à esquerda: o mesmo tratamento do aviso de sincronização, agora com o tom
    vindo do config — o texto escolhe a cor por nome, e o nome resolve no token do tema. */
@@ -72,7 +91,7 @@
 .guia-aviso--red{border-left-color:var(--t-red-fg);background:var(--t-red-bg)}
 .guia-aviso--neutral{border-left-color:var(--t-neutral-fg);background:var(--t-neutral-bg)}
 
-.guia-fim{max-width:68ch;margin:1rem 0 0;padding-top:.75rem;border-top:1px solid var(--bs-border-color);line-height:1.55}
+.guia-fim{margin:1rem 0 0;padding-top:.75rem;border-top:1px solid var(--bs-border-color);line-height:1.55;font-size:.82rem;color:var(--bs-secondary-color)}
 
 /*
 | A chamada discreta no alto de cada tela: um link pequeno, do peso do texto secundário, que
@@ -97,6 +116,11 @@
 .guia-cartao .card-body .guia-resumo{color:var(--t-neutral-fg);font-weight:500}
 
 @media (min-width:992px){
-    /* A coluna da esquerda acompanha a leitura; o resto do painel continua na calha de sempre. */
+    /* A coluna da esquerda acompanha a leitura e cabe na tela: o cartão inteiro não passa do
+       viewport, e quando o índice é maior que ela, rola sozinho — senão as últimas seções do
+       menu ficariam fora de alcance para sempre, grudadas embaixo. */
     .guia-lado{position:sticky;top:1rem}
+    .guia-lado .card{max-height:calc(100vh - 2rem);display:flex;flex-direction:column}
+    .guia-lado .card-body{display:flex;flex-direction:column;min-height:0}
+    .guia-nav{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 }

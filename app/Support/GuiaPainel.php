@@ -15,6 +15,22 @@ namespace App\Support;
 class GuiaPainel
 {
     /**
+     * O ícone de cada grupo do guia. A view não escolhe: um cartão sem ícone seria o único do
+     * painel sem, e a coluna da esquerda já usa o ícone da seção para o leitor se situar.
+     *
+     * @var array<string, string>
+     */
+    private const ICONES_GRUPO = [
+        'Começando' => 'fa-house',
+        'Comercial' => 'fa-briefcase',
+        'Vendas' => 'fa-store',
+        'Atendimento' => 'fa-life-ring',
+        'Conteúdo do site' => 'fa-newspaper',
+        'Portal do cliente' => 'fa-user-tie',
+        'Sistema' => 'fa-sliders',
+    ];
+
+    /**
      * As seções, na ordem em que aparecem na tela.
      *
      * @return array<int, array<string, mixed>>
@@ -22,6 +38,12 @@ class GuiaPainel
     public static function secoes(): array
     {
         return array_values(config('guia_painel.secoes', []));
+    }
+
+    /** O ícone do grupo; nulo para um grupo novo, que a view desenha sem ícone. */
+    public static function iconeDoGrupo(string $grupo): ?string
+    {
+        return self::ICONES_GRUPO[$grupo] ?? null;
     }
 
     /** A seção de um id; nula se o link apontou para algo que não existe. */

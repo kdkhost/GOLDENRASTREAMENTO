@@ -7,9 +7,12 @@
     'col' => 'col-6 col-md-3',
     'placeholder' => null,
     'value' => null,
+    'id' => null,
 ])
 @php
-    $id = 'flt-'.preg_replace('/[^a-z0-9]+/i', '-', $name);
+    // O id vem do nome porque o rótulo e o campo têm de se achar sozinhos; a exceção é o campo que
+    // um script do próprio endereça por id (a busca do guia), que passa o seu.
+    $id = $id ?: 'flt-'.preg_replace('/[^a-z0-9]+/i', '-', $name);
     // O value é o padrão da tela (um período, por exemplo); o query string da URL vence.
     $atual = (string) request()->query($name, (string) $value);
 @endphp
