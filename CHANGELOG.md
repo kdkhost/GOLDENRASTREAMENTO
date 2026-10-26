@@ -5,6 +5,50 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.28.0] - 2026-10-25
+
+### Adicionado
+- **Guia de uso dentro do painel** (`/admin/guia`): 25 seções em 7 grupos — Começando, Comercial,
+  Vendas, Atendimento, Conteúdo do site, Portal do cliente e Sistema — cobrindo cada área do
+  sistema do primeiro login ao diagnóstico. A coluna da esquerda lista as seções por grupo, a busca
+  filtra em português (sem se enganar com acento: "contrato" acha "Contratos") e a seção por onde a
+  rolagem passa fica marcada, sozinha. Quem opera o painel abre o guia pelo mesmo menu que o
+  administrador, com o mesmo texto: não há versão "só para admin" da documentação.
+- **O texto mora num lugar só.** `config/guia_painel.php` é a fonte; `App\Support\GuiaPainel` lê. A
+  tela do guia, o cartão dobrável da tela de Google Ads e o link do cabeçalho consomem os mesmos
+  blocos — o que está escrito no guia é literalmente o que a tela diz, e corrigir um lugar corrige
+  todos. Seis tipos de bloco (`texto`, `passos`, `lista`, `codigo`, `tabela`, `aviso`), `**negrito**`
+  e `` `código` `` inline, nenhum HTML cru no config, e passo nenhum com número: a ordem já está na
+  lista (regra da 2.12.x valendo para a documentação também).
+- **A instrução aparece onde a dúvida acontece.** No cabeçalho de cada tela do painel, uma linha
+  discreta — "Como usar esta tela" — leva direto à âncora da seção que documenta aquela rota
+  (`admin.leads.*` → `#leads`, `admin.google-ads.*` → `#google-ads`). São 20 telas cobertas por um
+  `@include` no layout, sem editar uma linha de cada view; a rota que não tem seção não oferece
+  link, então o guia não promete o que ainda não escreveu.
+- **Google Ads: os quatro passos do Google na própria tela.** O cartão "Como configurar — os quatro
+  passos no Google, o .env e o comando" vive em `admin/google-ads` e no preview de criativo, fechado
+  por padrão, **nascendo aberto quando falta credencial** — quem está no passo que ele explica não
+  precisa procurá-lo. Dentro: conta gerente (MCC), token de desenvolvedor, tela de consentimento com
+  a URI `https://SEU_DOMINIO/auth/google-ads/callback`, ativar a API, as cinco linhas do `.env`,
+  `config:clear`, `google-ads:sync` e a tabela do que fazer quando a tela reclama.
+
+### Testado
+- `GuiaDoPainelTest` (12 testes, 525 asserções) trava a documentação: toda seção tem o que desenhar,
+  **toda rota e prefixo que o guia cita ainda existem** (guia apontando para rota renomeada é guia
+  desmentido pelo sistema), cada item do menu tem seção, cada tom de aviso tem par no dark e no
+  light, nenhum passo voltou a ser numerado, o link do cabeçalho cai na âncora certa, o cartão abre
+  com credencial faltando e fecha com ela presente, e a tela carrega folha e script próprios. A
+  seção do Google Ads nomeia as quatro credenciais que `GoogleAdsService::credenciaisFaltantes()`
+  reclama — o guia não pode ensinar a preencher outra coisa.
+- `ConexaoGoogleAdsTest`: a régua do cartão de espera passou a ser a frase própria dele ("sincronizada
+  em segundo plano") em vez da palavra "Carregando", que o guia agora cita de propósito para a pessoa
+  reconhecer o sintoma. 359 testes, 4.298 asserções verdes.
+
+### Documentado
+- `docs/INSTALACAO.md` ganhou a seção *Guia de uso dentro do painel* (era a 14; as seguintes
+  desceram uma casa) e um apontamento no passo a passo do Google Ads. O README lista as fontes
+  novas na estrutura.
+
 ## [2.27.1] - 2026-10-25
 
 ### Corrigido

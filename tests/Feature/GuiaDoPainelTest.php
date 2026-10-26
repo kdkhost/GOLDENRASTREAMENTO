@@ -1,0 +1,276 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use App\Services\GoogleAds\GoogleAdsService;
+use App\Support\GuiaPainel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
+use Tests\TestCase;
+
+/**
+ * O guia de uso do painel é texto que vira tela, e texto que apodrece em silêncio: a rota muda de
+ * nome, o botão deixa de existir, o passo a passo esquece uma credencial, e a página continua
+ * abrindo bonita dizendo coisa falsa. Estes testes não conferem prosa — conferem se a prosa ainda
+ * fala do sistema que existe.
+ */
+class GuiaDoPainelTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /** Os tipos de bloco que `admin/guia/partials/blocos.blade.php` desenha. */
+    private const TIPOS_DE_BLOCO = ['texto', 'passos', 'lista', 'codigo', 'tabela', 'aviso'];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed();
+    }
+
+    public function test_o_guia_abre_para_quem_operaciona_o_painel(): void
+    {
+        foreach (['admin@golden.com.br', 'vendedor@golden.com.br'] as $email) {
+            $estaTela = $this->actingAs(User::where('email', $email)->firstOrFail())
+                ->get(route('admin.guia.index'))
+                ->assertOk();
+
+            $estaTela->assertSee('Guia de uso')
+                ->assertSee('Google Ads no painel')
+                ->assertSee('Leads: do formulário ao cliente')
+                ->assertSee('Procurar no guia');
+        }
+    }
+
+    public function test_o_guia_aparece_na_barra_lateral_para_todos_os_papeis(): void
+    {
+        foreach (['admin@golden.com.br', 'vendedor@golden.com.br'] as $email) {
+            $this->actingAs(User::where('email', $email)->firstOrFail())
+                ->get(route('admin.dashboard'))
+                ->assertOk()
+                ->assertSee('Guia de uso');
+        }
+    }
+
+    public function test_toda_secao_tem_o_que_desenhar(): void
+    {
+        $ids = [];
+
+        foreach (GuiaPainel::secoes() as $secao) {
+            $id = $secao['id'] ?? null;
+            $this->assertIsString($id, 'Uma seção do guia não tem id — o link do cabeçalho não teria âncora.');
+            $this->assertMatchesRegularExpression('/^[a-z0-9-]+$/', $id, "O id '{$id}' não serve como âncora.");
+            $this->assertNotContains($id, $ids, "A seção '{$id}' aparece duas vezes no guia.");
+            $ids[] = $id;
+
+            $this->assertNotEmpty($secao['grupo'] ?? null, "A seção '{$id}' não tem grupo na coluna da esquerda.");
+            $this->assertMatchesRegularExpression('/^fa-[a-z0-9-]+$/', $secao['icone'] ?? '', "A seção '{$id}' ficou sem ícone.");
+            $this->assertNotEmpty($secao['titulo'] ?? null, "A seção '{$id}' não tem título.");
+            $this->assertNotEmpty($secao['resumo'] ?? null, "A seção '{$id}' não tem resumo — abre a tela sem dizer o que é.");
+            $this->assertNotEmpty($secao['blocos'] ?? [], "A seção '{$id}' chegou à tela sem conteúdo nenhum.");
+
+            foreach ($secao['blocos'] as $bloco) {
+                $this->assertContains($bloco['tipo'] ?? '?', self::TIPOS_DE_BLOCO,
+                    "A seção '{$id}' usa o bloco '{$bloco['tipo']}', que nenhum partial desenha.");
+
+                match ($bloco['tipo']) {
+                    'texto', 'aviso' => $this->assertNotEmpty($bloco['conteudo'] ?? null, "Bloco vazio na seção '{$id}'."),
+                    'lista' => $this->assertNotEmpty($bloco['itens'] ?? [], "Lista vazia na seção '{$id}'."),
+                    'codigo' => $this->assertNotEmpty($bloco['linhas'] ?? [], "Código vazio na seção '{$id}'."),
+                    'tabela' => $this->assertCount(
+                        count($bloco['cabecalho']),
+                        $bloco['linhas'][0],
+                        "A tabela da seção '{$id}' tem linha com número de células diferente do cabeçalho."
+                    ),
+                    'passos' => $this->assertNotEmpty($bloco['itens'] ?? [], "Passo a passo vazio na seção '{$id}'."),
+                    default => null,
+                };
+
+                foreach ($bloco['itens'] ?? [] as $passo) {
+                    if (! is_array($passo)) {
+                        continue;
+                    }
+
+                    $this->assertMatchesRegularExpression('/^fa-[a-z0-9-]+$/', $passo['icone'] ?? '',
+                        "Um passo da seção '{$id}' ficou sem ícone — sem número, é o ícone que o organiza visualmente.");
+                    $this->assertNotEmpty($passo['titulo'] ?? null, "Um passo da seção '{$id}' não tem título.");
+                    $this->assertNotEmpty($passo['texto'] ?? null, "Um passo da seção '{$id}' não explica nada.");
+                }
+            }
+        }
+    }
+
+    public function test_os_passos_do_guia_continuam_sem_numero(): void
+    {
+        $html = $this->actingAs(User::where('email', 'admin@golden.com.br')->firstOrFail())
+            ->get(route('admin.guia.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString('<ol', $html, 'O guia voltou a numerar os passos em lista ordenada.');
+
+        foreach (GuiaPainel::secoes() as $secao) {
+            foreach ($secao['blocos'] as $bloco) {
+                foreach ($bloco['itens'] ?? [] as $passo) {
+                    if (! is_array($passo)) {
+                        continue;
+                    }
+
+                    $this->assertDoesNotMatchRegularExpression(
+                        '/^\s*(\d+[\.\)]|0\d|passo\s*\d+)\s/i',
+                        $passo['titulo'],
+                        "A seção '{$secao['id']}' voltou a começar um passo com número."
+                    );
+                }
+            }
+        }
+    }
+
+    public function test_o_guia_aponta_para_telas_e_rotas_que_ainda_existem(): void
+    {
+        // Coleção associativa: `has()` pergunta pela chave — o nome da rota —, e `keys()` é o que
+        // vira lista para procurar prefixo.
+        $registradas = collect(Route::getRoutes()->getRoutesByName());
+
+        foreach (GuiaPainel::secoes() as $secao) {
+            if (! empty($secao['rota'])) {
+                $this->assertTrue($registradas->has($secao['rota']),
+                    "A seção '{$secao['id']}' oferece 'Abrir a tela' para {$secao['rota']}, que não existe mais.");
+            }
+        }
+
+        foreach (config('guia_painel.rotas') as $prefixo => $id) {
+            $this->assertNotNull(GuiaPainel::secao($id), "O mapa do guia aponta '{$prefixo}' para a seção inexistente '{$id}'.");
+            $this->assertTrue($registradas->keys()->contains(fn (string $nome) => str_starts_with($nome, $prefixo)),
+                "O mapa do guia conhece o prefixo '{$prefixo}', que nenhuma rota sua.");
+        }
+    }
+
+    public function test_cada_item_do_menu_tem_secao_no_guia(): void
+    {
+        $prefixos = array_keys(config('guia_painel.rotas'));
+
+        foreach (config('golden.menu_painel') as $grupo) {
+            foreach (($grupo['filhos'] ?? []) + [$grupo] as $item) {
+                $rota = $item['rota'] ?? null;
+
+                if (! is_string($rota) || ! str_starts_with($rota, 'admin.') || $rota === 'admin.guia.index') {
+                    continue;
+                }
+
+                $coberta = collect($prefixos)->contains(fn (string $p) => str_starts_with($rota, $p));
+                $this->assertTrue($coberta, "O item '{$item['titulo']}' do menu não tem seção no guia.");
+            }
+        }
+    }
+
+    public function test_cada_tom_de_aviso_do_guia_existe_na_folha(): void
+    {
+        $folha = file_get_contents(base_path('public/css/golden-guia.css'));
+
+        foreach (GuiaPainel::secoes() as $secao) {
+            foreach ($secao['blocos'] as $bloco) {
+                if (($bloco['tipo'] ?? '') !== 'aviso') {
+                    continue;
+                }
+
+                $tom = $bloco['tom'] ?? 'amber';
+                $this->assertStringContainsString('.guia-aviso--'.$tom, $folha,
+                    "A seção '{$secao['id']}' pede o aviso '{$tom}', que não existe em golden-guia.css.");
+            }
+        }
+    }
+
+    public function test_a_linha_discreta_do_cabecalho_leva_a_secao_certa(): void
+    {
+        $destaTela = $this->actingAs(User::where('email', 'vendedor@golden.com.br')->firstOrFail())
+            ->get(route('admin.leads.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('guia-chamada', $destaTela, 'A tela de Leads não oferece o guia.');
+        $this->assertStringContainsString('#leads', $destaTela, 'O link de Leads não leva à seção de Leads.');
+
+        // O Google Ads, que tem seção própria e uma dentro da outra, precisa cair cada um na sua.
+        $criativo = $this->get(route('admin.google-ads.criativo'))->assertOk()->getContent();
+        $this->assertStringContainsString('#criativo', $criativo);
+        $this->assertStringNotContainsString('#google-ads"', $criativo);
+
+        // E a própria tela do guia não se oferece.
+        $guia = $this->get(route('admin.guia.index'))->assertOk()->getContent();
+        $this->assertStringNotContainsString('guia-chamada mt-1', $guia);
+    }
+
+    public function test_o_guia_cita_cada_credencial_que_a_tela_pede(): void
+    {
+        $secao = GuiaPainel::secao('google-ads');
+        // Sem JSON_UNESCAPED_SLASHES o json_encode escapa cada barra e a URI de callback
+        // aparece como \/auth\/... — o teste reclamaria de um texto que está certo.
+        $texto = json_encode($secao['blocos'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        foreach (array_keys(GoogleAdsService::CREDENCIAIS) as $nome) {
+            $this->assertStringContainsString($nome, $texto,
+                "A tela reclama de {$nome}, mas o guia ensina a preencher outra coisa.");
+        }
+
+        foreach (['GOOGLE_REDIRECT_URI', 'GOOGLE_ADS_LOGIN_CUSTOMER_ID', 'config:clear', 'google-ads:sync'] as $essencial) {
+            $this->assertStringContainsString($essencial, $texto, "O passo a passo do Google Ads esqueceu '{$essencial}'.");
+        }
+
+        $this->assertStringContainsString('/auth/google-ads/callback', $texto);
+    }
+
+    public function test_o_cartao_de_passo_a_passo_abre_quando_falta_credencial(): void
+    {
+        config(['google_ads.developer_token' => null, 'services.google_ads.client_id' => null, 'services.google_ads.client_secret' => null]);
+
+        $semCredencial = $this->actingAs(User::where('email', 'vendedor@golden.com.br')->firstOrFail())
+            ->get(route('admin.google-ads.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Como configurar', $semCredencial);
+        $this->assertStringContainsString('class="collapse show"', $semCredencial,
+            'Sem credencial nenhuma, o passo a passo precisa nascer aberto — é o passo em que a pessoa está.');
+        $this->assertStringContainsString('data-bs-toggle="collapse"', $semCredencial);
+
+        config([
+            'google_ads.developer_token' => 'token',
+            'services.google_ads.client_id' => 'cliente',
+            'services.google_ads.client_secret' => 'segredo',
+        ]);
+
+        $comCredencial = $this->get(route('admin.google-ads.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('Como configurar', $comCredencial);
+        $this->assertStringNotContainsString('class="collapse show"', $comCredencial,
+            'Com a conta configurada o passo a passo tem de ficar recolhido: a tela é de métrica, não de manual.');
+    }
+
+    public function test_a_tela_carrega_a_folha_e_o_script_do_guia(): void
+    {
+        $html = $this->actingAs(User::where('email', 'admin@golden.com.br')->firstOrFail())
+            ->get(route('admin.guia.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('css/golden-guia.css', $html);
+        $this->assertStringContainsString('js/golden-guia.js', $html);
+        $this->assertStringContainsString('id="guia-busca"', $html);
+        $this->assertStringContainsString('data-secao', $html);
+    }
+
+    public function test_o_texto_do_guia_sai_em_portugues_e_sem_marca_crua(): void
+    {
+        $html = $this->actingAs(User::where('email', 'admin@golden.com.br')->firstOrFail())
+            ->get(route('admin.guia.index'))
+            ->assertOk()
+            ->getContent();
+
+        // O inline desenha `código` e **ênfase**; o que sobrar de marcador é texto que virou marca
+        // por engano — ou marca que veio do config, que é o que não pode.
+        $visivel = strip_tags($html);
+        $this->assertStringNotContainsString('**', $visivel, 'O guia mostrou o asterisco em vez do negrito.');
+        $this->assertStringNotContainsString('`', $visivel, 'O guia mostrou a crase em vez do código.');
+        $this->assertMatchesRegularExpression('/[ãçõê]/u', $visivel, 'O guia perdeu os acentos.');
+    }
+}

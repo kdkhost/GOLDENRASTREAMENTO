@@ -235,4 +235,13 @@
         @endforeach
     </x-admin.table>
 @endif
+
+{{-- O passo a passo mora na própria tela, onde a dúvida aparece: fechado quando a conta já está
+     conectada, aberto quando falta credencial — que é exatamente o momento em que ele serve. O
+     texto é o da seção "google-ads" do guia; um partial só, duas telas. --}}
+@include('admin.guia.partials.cartao', [
+    'secaoGuia' => 'google-ads',
+    'tituloCartao' => 'Como configurar — os quatro passos no Google, o .env e o comando',
+    'abertoGuia' => ! $configurado,
+])
 </div>

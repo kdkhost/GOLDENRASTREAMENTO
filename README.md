@@ -389,6 +389,9 @@ a dimensão ideal.
 - **Campanhas**: cadastro manual + criação automática por UTM, com métricas por campanha.
 - **Google Ads**: a métrica real das campanhas do anunciante dentro do painel, com OAuth por
   usuário, sincronização em fila e prévia do anúncio responsivo — seção *Google Ads* abaixo.
+- **Guia de uso** (`/admin/guia`): a documentação do sistema dentro do sistema, com busca,
+  âncora por seção e o link "Como usar esta tela" no cabeçalho de cada tela — seção
+  *Guia de uso* abaixo.
 - **Auditoria**: trilha de ações administrativas (login, mudança de funil, exportação,
   configuração, cadastros de produto/página/pedido…), apenas para admin.
 - **Usuários & permissões**: perfis `admin`, `vendedor`, `visualizador` com middleware
@@ -485,6 +488,25 @@ a dimensão ideal.
   nunca aparece em view, JSON ou log.
 - Testes: `tests/Feature/ConexaoGoogleAdsTest.php` (12).
 
+### Guia de uso (`/admin/guia`) — a documentação dentro do sistema
+- **O texto vive numa fonte só**: `config/guia_painel.php`, lido por `App\Support\GuiaPainel`.
+  A tela do guia, o cartão dobrável da tela de Google Ads e a linha do cabeçalho consomem os
+  mesmos blocos, então a documentação e a tela não podem se desmentir. Seis tipos de bloco
+  (`texto`, `passos`, `lista`, `codigo`, `tabela`, `aviso`) e `**negrito**` / `` `código` ``
+  inline; passo nenhum com número — a ordem já está na lista.
+- **25 seções em 7 grupos** (Começando, Comercial, Vendas, Atendimento, Conteúdo do site, Portal
+  do cliente, Sistema), da rotina do dia ao diagnóstico do servidor. A busca da coluna esquerda
+  normaliza acento ("contrato" acha "Contratos"), esconde o que não casa e deixa marcada a seção
+  por onde a rolagem passa.
+- **A instrução onde a dúvida acontece**: `admin/partials/ajuda-rota.blade.php`, incluído no
+  cabeçalho do layout, mostra "Como usar esta tela" em todas as telas que têm seção — um
+  `@include` cobre as ~20 views sem editar nenhuma, e a rota sem seção não oferece link.
+- **Aberto a quem opera o painel**: vendedor, visualizador e admin lêem o mesmo texto; não há
+  versão "só do administrador" da documentação.
+- Testes: `tests/Feature/GuiaDoPainelTest.php` (12) — conferem cada rota citada, cada item do menu
+  com seção, cada tom de aviso no dark e no light, e o cartão que nasce aberto quando falta
+  credencial do Google Ads.
+
 ### Portal do cliente (`/portal`) — a casa do cliente sem pedir nada à equipe
 - **É o mesmo painel, com a porta do cliente**: a barra lateral, o tema claro/escuro, os
   treeviews, os *toasts* e os componentes de tela (`x-admin.card|field|table|stat|status`)
@@ -559,6 +581,7 @@ app/
   Services/Rastreio.php                  # grava visita, evento e a atribuição do lead
   Services/GoogleAds/GoogleAdsService.php # cliente, GAQL, micros→reais, enums traduzidos
   Support/GoogleAdsCache.php             # a janela de 30 min que a tela lê
+  Support/GuiaPainel.php                 # lê config/guia_painel.php: seções, grupo de cada rota
   Console/Commands/PodarRastreio.php     # rastreio:podar, a retenção do registro
   Console/Commands/SyncGoogleAdsCommand.php # google-ads:sync, a cada 15 min
   Support/Carrinho.php                   # sacola em sessão, sobre o catálogo em cache
@@ -567,6 +590,7 @@ app/
   Support/helpers.php                    # brl(), loja_ativa(), slugify_pt()
 config/golden.php                        # conteúdo do site + contatos reais
 config/google_ads.php                    # credenciais, escopos, travas do RSA, janelas de métrica
+config/guia_painel.php                   # o texto do Guia de uso: seções, blocos, rota de cada uma
 config/envios.php                        # formatos, limite, pasta e dimensão de cada campo de envio
 database/migrations/                     # leads/campanhas + CRM + ERP + CMS + portal (chamados, contratos)
 database/seeders/                        # Database, Catalog, Cms, Crm, Orders

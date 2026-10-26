@@ -777,6 +777,10 @@ return [
             ['titulo' => 'Usuários', 'rota' => 'admin.usuarios.index', 'prefixo' => 'admin.usuarios.', 'icone' => 'fa-user-shield'],
             ['titulo' => 'Auditoria', 'rota' => 'admin.activities.index', 'prefixo' => 'admin.activities.', 'icone' => 'fa-shield-halved'],
         ]],
+
+        // O guia fica solto, fora de grupo e depois de tudo: é consulta, não área do sistema, e
+        // quem é vendedor lê o mesmo texto do administrador.
+        ['titulo' => 'Guia de uso', 'rota' => 'admin.guia.index', 'prefixo' => 'admin.guia.', 'icone' => 'fa-circle-question'],
     ],
 
     // Menu do portal do cliente. Mesma árvore, mesmo renderizador (MenuPainel + a sidebar do

@@ -221,7 +221,9 @@ class ConexaoGoogleAdsTest extends TestCase
             ->assertSee('R$ 1.234,50')
             // O status vem traduzido: a tabela não mostra enumeração de API.
             ->assertSee('Ativa')
-            ->assertDontSee('Carregando');
+            // A régua do cartão de espera é a frase própria dele, não a palavra "Carregando":
+            // o cartão do guia cita essa palavra de propósito, para a pessoa reconhecer o sintoma.
+            ->assertDontSee('sincronizada em segundo plano');
 
         // O enum da API ainda aparece no HTML — como `value` do filtro e do formulário de
         // escrita, que são os códigos que o Google entende. O que não pode é vir a texto, e é

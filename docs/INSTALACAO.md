@@ -775,6 +775,12 @@ cada uma.
 | "Carregando…" por mais de alguns minutos | O worker não está rodando: `php artisan queue:work --stop-when-empty` à mão e confira o cron do `schedule:run`. |
 | Selo **Desconectada** com motivo | O Google recusou o token de atualização. Reconecte; o histórico sincronizado continua na tela. |
 
+Nada disso precisa ser procurado neste documento enquanto a tela está aberta: os quatro passos, as
+cinco linhas do `.env`, os comandos e esta mesma tabela vivem no cartão dobrável **"Como
+configurar"** da própria tela de Google Ads, que **nasce aberto enquanto faltar credencial** e fica
+fechado quando não há mais o que explicar. O guia inteiro está na barra lateral do painel, em
+**Guia de uso** (seção 14).
+
 ---
 
 ## 10. Portal do cliente
@@ -1010,7 +1016,7 @@ para a última real em vez de erro ou tela em branco, e o pager carrega a catego
 escolhida em cada link.
 
 O pager do site é um view próprio (`resources/views/pagination/site.blade.php`,
-seção 15) porque nem o do Tailwind nem o do painel vestem o CSS do site. As
+seção 16) porque nem o do Tailwind nem o do painel vestem o CSS do site. As
 miniaturas vêm de `i.ytimg.com`, e a página adianta a conexão com `preconnect` —
 só ela, já que é a única que usa.
 
@@ -1278,7 +1284,76 @@ SQLite dos testes não reclama de comprimento de `varchar`.
 
 ---
 
-## 14. Retorno e confirmação: uma camada só
+## 14. Guia de uso dentro do painel
+
+O painel documenta a si mesmo. **Guia de uso** é a última linha da barra lateral — item solto, fora
+dos grupos, porque é consulta e não área do sistema — e abre `/admin/guia` para qualquer papel que
+entra no painel: vendedor, visualizador e administrador leem o mesmo texto. Não há pacote extra,
+tabela nova nem comando de instalação; a rota está no grupo `admin` com `auth`, e todo o conteúdo vem
+de um arquivo de configuração.
+
+### O que tem dentro
+
+São 25 seções em 7 grupos, na ordem em que a pessoa encontra a tela: **Começando** (o que é o painel,
+a rotina do dia), **Comercial** (leads, clientes, campanhas, atribuição, Google Ads, criativo, funil),
+**Vendas** (loja, pedidos, catálogo), **Atendimento** (chamados, contratos), **Conteúdo do site**
+(páginas, imagens e textos, depoimentos, vídeos, perguntas frequentes), **Portal do cliente** e
+**Sistema** (configurações, usuários, auditoria, ambiente, diagnóstico).
+
+Cada seção tem resumo, blocos e — quando documenta uma tela — o botão **Abrir a tela**, que só
+aparece para rota registrada: guia apontando para rota renomeada é guia desmentido pelo sistema. A
+coluna da esquerda lista as seções por grupo; a busca ignora acento ("contrato" acha "Contratos"),
+esconde o que não casa e some com o título do grupo que ficou vazio; a rolagem marca sozinha a seção
+por onde a pessoa passa.
+
+### Seis tipos de bloco
+
+`config/guia_painel.php` é a fonte única, lida por `App\Support\GuiaPainel`. A tela do guia, o cartão
+dobrável do Google Ads e a linha do cabeçalho consomem os mesmos blocos, pelo mesmo partial — o que
+está escrito no guia é literalmente o que a tela diz, e corrigir um lugar corrige todos.
+
+| Bloco | Para quê |
+|---|---|
+| `texto` | um parágrafo; aceita `**negrito**` e `` `código` `` no meio da frase |
+| `passos` | sequência de linhas com ícone, título e explicação — **sem número** |
+| `lista` | itens soltos |
+| `codigo` | comando, linha de `.env`, cron: monoespaçado, rolagem própria, copiável sem quebra |
+| `tabela` | cabeçalho e linhas |
+| `aviso` | a frase marcada à esquerda, com `tom` (`gold`, `teal`, `blue`, `violet`, `green`, `amber`, `red`, `neutral`) |
+
+Nada aqui recebe numeração. Um passo é ícone + título + texto; a ordem já está na lista, e um "1."
+desenhado sobre ela é enfeite, não orientação — a regra que vale para as páginas do site vale para a
+documentação, e um teste não deixa voltar. Os tons de aviso vêm dos tokens do tema, cada claro com
+seu par no escuro.
+
+### A linha discreta em cada tela
+
+No cabeçalho de toda tela que tem seção aparece uma linha discreta — **Como usar esta tela** — que
+leva à âncora certa (`admin.leads.*` → `#leads`, `admin.google-ads.*` → `#google-ads`). As ~20 telas
+do painel estão cobertas por um único `@include('admin.partials.ajuda-rota')` no layout, sem editar
+uma linha de cada view. Quem decide a seção é o mapa `rotas` do mesmo arquivo de configuração, e o
+prefixo mais longo vence quando mais de um cabe: `admin.google-ads.criativo` tem seção própria,
+`admin.google-ads.index` cai na do Google Ads. Rota sem seção não oferece link — a linha não promete
+documento que não foi escrito.
+
+### Escrever no guia
+
+Mexer na documentação é mexer num array PHP, sem tocar em view:
+
+```bash
+$EDITOR config/guia_painel.php          # a fonte única do texto
+php artisan test --filter=GuiaDoPainelTest   # a régua inteira do guia
+```
+
+Uma seção nova precisa de `id` (a âncora usada nos links), `grupo`, `titulo`, `icone` (FontAwesome,
+os mesmos da barra lateral), `resumo`, `blocos` e, se documenta uma tela, `rota`. Os testes reclamam
+de: bloco sem o que desenhar, rota ou prefixo que não existe, número voltando no título de um passo,
+tom de aviso sem par na folha, item do menu sem seção e texto que sobra em inglês ou sai com marca
+crua (`**`, crase).
+
+---
+
+## 15. Retorno e confirmação: uma camada só
 
 Toda resposta do sistema ao usuário — o que deu certo, o que impediu a ação e a
 pergunta antes de um ato destrutivo — sai por um único lugar:
@@ -1330,7 +1405,7 @@ Instalou e ainda apareceu `validation.required`? É cache de view antigo:
 
 ---
 
-## 15. Paginação: um view por superfície
+## 16. Paginação: um view por superfície
 
 Toda lista paginada do sistema — as 12 do painel, as interações da ficha do CRM e
 os chamados e pedidos do portal do cliente — sai pelo mesmo
@@ -1382,7 +1457,7 @@ recebe a caixa compartilhada e encolhe até virar um traço dourado em volta do 
 
 ---
 
-## 16. Backup e restauração
+## 17. Backup e restauração
 
 ```bash
 # banco
@@ -1404,7 +1479,7 @@ ele, os dados criptografados e as sessões não voltam.
 
 ---
 
-## 17. Problemas comuns
+## 18. Problemas comuns
 
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
@@ -1412,8 +1487,8 @@ ele, os dados criptografados e as sessões não voltam.
 | Site mostra a lista de arquivos e pastas | docroot na raiz sem `.htaccess`, e `Options Indexes` ligado | rode o instalador (ou copie o `.htaccess` da seção 4.7) |
 | `Route [admin.xxx] not defined` ao salvar | cache de rotas velho | `php artisan route:clear && php artisan route:cache` |
 | Página quebra depois de editar um `.php` em `config/` | cache de configuração | `php artisan config:cache` |
-| Lista paginada sai com caixa branca de "Anterior/Próximo", contador em inglês e um ícone SVG do tamanho da tela | o view de paginação do framework (Tailwind) voltou a ser o ativo | confira as duas linhas de `Paginator::defaultView()` no `AppServiceProvider` e rode `php artisan optimize:clear` (seção 15) |
-| Na galeria pública, o número da página atual é um traço dourado apertado em volta do algarismo | o `<span>` da página atual perdeu a classe base `pagina` e não recebe a caixa compartilhada | `resources/views/pagination/site.blade.php` (seção 15) |
+| Lista paginada sai com caixa branca de "Anterior/Próximo", contador em inglês e um ícone SVG do tamanho da tela | o view de paginação do framework (Tailwind) voltou a ser o ativo | confira as duas linhas de `Paginator::defaultView()` no `AppServiceProvider` e rode `php artisan optimize:clear` (seção 16) |
+| Na galeria pública, o número da página atual é um traço dourado apertado em volta do algarismo | o `<span>` da página atual perdeu a classe base `pagina` e não recebe a caixa compartilhada | `resources/views/pagination/site.blade.php` (seção 16) |
 | Ícone sai como quadradinho (□) no lugar do símbolo, em qualquer tela | o CSS de ícone é servido pela casa e chama a fonte por caminho relativo: movido um dos dois, a fonte não é alcançada. A outra causa é o CSS servido por endereço diferente do arquivo, sem `Access-Control-Allow-Origin` na fonte | mantenha `public/css/fontawesome/css/all.min.css` ao lado de `public/css/fontawesome/webfonts/`, e chame o CSS só pelo `partials/icones.blade.php`. `php artisan test --filter=test_os_icones_sao_servidos_pela_casa_e_nao_por_um_cdn` percorre cada caminho declarado no CSS (seção 4.7) |
 | Imagem enviada não aparece | `public/storage` inexistente | `php artisan storage:link` |
 | Imagem enviada existe no servidor e a URL devolve **403** | o `.htaccess` da raiz bloqueia o caminho `/storage` | tire `storage` da regra de pastas de código-fonte (seção 4.7) |
@@ -1423,7 +1498,7 @@ ele, os dados criptografados e as sessões não voltam.
 | `500` com `Permission denied` em `storage/` | permissões | `chmod -R 775 storage bootstrap/cache` |
 | `Access denied for user` | usuário sem privilégio no banco | ligar usuário ao banco no painel MySQL |
 | E-mail não sai | `MAIL_MAILER=log` ou credencial errada | conferir `storage/logs/email.log`; depois configurar SMTP |
-| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 14) |
+| Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 15) |
 | `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço que não existe fora do exemplo (domínio sem MX, como `@exemplo.com.br`) | esperado em conta de demonstração com e-mail fictício; o aviso à equipe saiu, o que não existe é a caixa de exemplo. Troque o `email_portal` da ficha por um endereço real e o ciclo fecha |
 | Falha de login no SMTP com senha certa no `.env` | `MAIL_PASSWORD` sem aspas e com `#` | escreva `MAIL_PASSWORD="..."` — sem aspas o `#` vira comentário |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
@@ -1439,7 +1514,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 18. Segurança
+## 19. Segurança
 
 - `.env` com `chmod 600` e fora do git; `APP_DEBUG=false` em produção.
 - Senha do painel forte e única; sem `golden123` em servidor público.
@@ -1472,7 +1547,7 @@ continua visível para você pelo painel ou SSH.
 
 ---
 
-## 19. Checklist depois de instalar
+## 20. Checklist depois de instalar
 
 - [ ] `https://seudominio.com.br` abre e o menu funciona
 - [ ] PHP da web conferido (`_chk.php` temporário, ou o aviso final do instalador)
@@ -1492,10 +1567,10 @@ continua visível para você pelo painel ou SSH.
       *Voltar* não exclui nem recarrega a lista
 - [ ] Paginação: uma lista com mais de 20 registros (Leads, Vídeos) mostra "1–20 de 45" e os
       números em dourado — nunca caixa branca, nunca "Showing … results", nunca ícone gigante
-      (seção 15)
+      (seção 16)
 - [ ] Paginação pública: `/videos` abre com 12 cartões, o resumo "1–12 de 24 tutoriais" e o
       pager em disco dourado; `?page=99` volta para a última página e o filtro de categoria
-      continua no enlace (seções 12 e 15)
+      continua no enlace (seções 12 e 16)
 - [ ] Entrega estática: `curl -sI https://seudominio.com.br/css/golden-site.css` responde
       `cache-control: public, max-age=31536000`, e o HTML responde `no-cache` (seção 4.7)
 - [ ] Ícones: nenhuma requisição a `cdnjs.cloudflare.com/ajax/libs/font-awesome` no
@@ -1515,6 +1590,9 @@ continua visível para você pelo painel ou SSH.
       conferir em `/admin/google-ads/criativo` que um título de 31 caracteres fica vermelho
 - [ ] Google Ads sem credencial: a mesma tela deve listar **qual** variável falta em vez de
       quebrar, e nenhum token de desenvolvedor aparece no HTML nem no log
+- [ ] Guia de uso: **Guia de uso** na barra lateral abre as 25 seções, a busca acha "contrato"
+      sem acento, e cada tela com seção mostra a linha **Como usar esta tela** caindo na
+      âncora certa (seção 14)
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`
       no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
       cadastro na tela da campanha (seção 13)

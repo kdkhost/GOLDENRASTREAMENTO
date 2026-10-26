@@ -1,0 +1,102 @@
+/*
+| Guia de uso do painel.
+|
+| Cor só por token de golden-theme.css: nada aqui escreve hexadecimal, então o cartão, o passo a
+| passo e o aviso trocam de tom junto com o tema claro e escuro escolhido no cabeçalho.
+|
+| O desenho é de leitura, não de listagem: coluna da esquerda fixa, texto à direita com medida
+| confortável, e nenhuma linha mais larga que ~68 caracteres — parágrafo que corre de margem a
+| margem em tela larga cansa e ninguém lê.
+*/
+
+.guia-lado{position:static}
+.guia-nav{display:flex;flex-direction:column;gap:2px;max-height:none}
+.guia-nav-grupo{font:600 .68rem/1.4 var(--font-head);letter-spacing:.08em;text-transform:uppercase;color:var(--t-neutral-fg);margin:.75rem 0 .25rem}
+.guia-nav-grupo:first-child{margin-top:0}
+.guia-nav-link{display:flex;align-items:center;gap:.5rem;padding:.32rem .5rem;border-radius:var(--radius-md);color:var(--bs-body-color);text-decoration:none;font-size:.86rem;line-height:1.35}
+.guia-nav-link:hover{background:var(--t-gold-bg)}
+.guia-nav-link.is-ativa{background:var(--t-gold-bg);box-shadow:inset 2px 0 0 var(--t-gold-fg);font-weight:600}
+
+/* O aviso de "nenhum resultado" é o estado vazio da busca, no mesmo lugar da lista. */
+.guia-nav-vazio{font-size:.82rem;color:var(--t-neutral-fg);margin:0}
+
+/* Título de grupo na coluna do texto: uma linha, e o grupo seguinte recomeça com respiro. */
+.guia-grupo{font:600 .74rem/1.4 var(--font-head);letter-spacing:.1em;text-transform:uppercase;color:var(--t-neutral-fg);margin:1.5rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--bs-border-color)}
+.guia-grupo:first-child{margin-top:0}
+
+.guia-secao{max-width:68ch;margin:0 0 1.25rem;padding:1rem 0 1.15rem;border-bottom:1px solid var(--bs-border-color);scroll-margin-top:5.5rem}
+.guia-secao:last-of-type{border-bottom:0}
+.guia-secao--oculta{display:none}
+.guia-secao-cabeca{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem}
+.guia-secao-cabeca h4{font-size:1.05rem}
+.guia-abrir{white-space:nowrap}
+
+.guia-resumo{color:var(--bs-body-color);font-weight:500;margin:.35rem 0 .65rem}
+.guia-texto{margin:0 0 .75rem;line-height:1.6}
+.guia-texto:last-child{margin-bottom:0}
+.guia-subtitulo{font:600 .78rem/1.4 var(--font-head);letter-spacing:.06em;text-transform:uppercase;color:var(--t-neutral-fg);margin:.9rem 0 .4rem}
+
+/* O passo do guia: ícone no círculo, título em cima, explicação embaixo. Nenhum número — a
+   ordem já está na lista, e um "1." sobre uma lista ordenada é enfeite, não orientação. */
+.guia-passos{display:flex;flex-direction:column;gap:.7rem;margin:0 0 .85rem;padding:0}
+.guia-passo{display:flex;align-items:flex-start;gap:.65rem}
+.guia-passo-icone{flex:0 0 auto;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;font-size:.8rem}
+.guia-passo-texto{padding-top:1px}
+.guia-passo-texto .text-secondary{line-height:1.55}
+
+.guia-lista{margin:0 0 .85rem;padding-left:1.15rem;line-height:1.6}
+.guia-lista li{margin-bottom:.35rem}
+.guia-lista li::marker{color:var(--t-gold-fg)}
+
+/* O comando, o bloco de .env e a linha de cron: monoespaçados, com rolagem própria e linha sem
+   quebra, para o texto copiar igual ao que está escrito. */
+.guia-codigo{background:var(--t-neutral-bg);color:var(--t-neutral-fg);border-left:3px solid var(--t-gold-fg);border-radius:var(--radius-md);padding:.7rem .85rem;margin:0 0 .85rem;font-size:.82rem;line-height:1.6;overflow-x:auto}
+.guia-codigo code{color:inherit;background:none;padding:0;white-space:pre}
+.guia-codigo:focus-visible{outline:2px solid var(--t-gold-fg);outline-offset:2px}
+
+.guia-tabela{font-size:.88rem}
+.guia-tabela th{font:600 .74rem/1.4 var(--font-head);letter-spacing:.05em;text-transform:uppercase;color:var(--t-neutral-fg);border-bottom:2px solid var(--bs-border-color)}
+.guia-tabela td{line-height:1.5}
+.guia-tabela td:first-child{font-weight:600;white-space:nowrap}
+.guia-tabela code{background:var(--t-gold-bg);color:var(--t-gold-fg);border-radius:6px;padding:.1rem .35rem;font-size:.85em}
+
+/* O que fica marcado à esquerda: o mesmo tratamento do aviso de sincronização, agora com o tom
+   vindo do config — o texto escolhe a cor por nome, e o nome resolve no token do tema. */
+.guia-aviso{border-left:4px solid var(--t-amber-fg);background:var(--t-amber-bg);border-radius:var(--radius-md);padding:.7rem .9rem;margin:0 0 .85rem;line-height:1.55}
+.guia-aviso--gold{border-left-color:var(--t-gold-fg);background:var(--t-gold-bg)}
+.guia-aviso--teal{border-left-color:var(--t-teal-fg);background:var(--t-teal-bg)}
+.guia-aviso--blue{border-left-color:var(--t-blue-fg);background:var(--t-blue-bg)}
+.guia-aviso--violet{border-left-color:var(--t-violet-fg);background:var(--t-violet-bg)}
+.guia-aviso--green{border-left-color:var(--t-green-fg);background:var(--t-green-bg)}
+.guia-aviso--amber{border-left-color:var(--t-amber-fg);background:var(--t-amber-bg)}
+.guia-aviso--red{border-left-color:var(--t-red-fg);background:var(--t-red-bg)}
+.guia-aviso--neutral{border-left-color:var(--t-neutral-fg);background:var(--t-neutral-bg)}
+
+.guia-fim{max-width:68ch;margin:1rem 0 0;padding-top:.75rem;border-top:1px solid var(--bs-border-color);line-height:1.55}
+
+/*
+| A chamada discreta no alto de cada tela: um link pequeno, do peso do texto secundário, que
+| leva à seção do guia documentando aquela página. Não é botão nem faixa — é uma dica de rodapé
+| de cabeçalho, e some quando a tela não tem seção.
+*/
+.guia-chamada{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;color:var(--t-neutral-fg);text-decoration:none;white-space:nowrap}
+.guia-chamada:hover{color:var(--t-gold-fg)}
+.guia-chamada i{font-size:.85rem}
+
+/*
+| O cartão dobrável que mora dentro de uma tela (o "Como configurar" do Google Ads). O cabeçalho
+| é o botão inteiro, na cor de texto normal, e a seta gira com a mesma curva do resto do painel:
+| o estado vem do aria-expanded que o próprio Bootstrap escreve no gatilho, então nada de
+| JavaScript nosso — abrir e fechar são o mesmo movimento, um do lado do outro.
+*/
+.guia-cartao-cabeca{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem;width:100%;padding:.85rem 1rem;text-align:left;color:var(--bs-body-color);font-weight:600;font-size:.92rem}
+.guia-cartao-cabeca:hover{color:var(--t-gold-fg)}
+.guia-cartao-seta{font-size:.75rem;color:var(--t-neutral-fg);transition:transform .22s var(--ease)}
+.guia-cartao-cabeca[aria-expanded="true"] .guia-cartao-seta{transform:rotate(180deg)}
+.guia-cartao .card-body{max-width:74ch}
+.guia-cartao .card-body .guia-resumo{color:var(--t-neutral-fg);font-weight:500}
+
+@media (min-width:992px){
+    /* A coluna da esquerda acompanha a leitura; o resto do painel continua na calha de sempre. */
+    .guia-lado{position:sticky;top:1rem}
+}

@@ -79,6 +79,7 @@
                     <div class="col-lg-7">
                         <h3 class="mb-0 fw-bold text-body fs-4">@yield('page_title', 'Painel')</h3>
                         <p class="text-secondary small mb-0">@yield('page_description')</p>
+                        @include('admin.partials.ajuda-rota')
                     </div>
                     <div class="col-lg-5"><div class="page-actions">@yield('page_actions')</div></div>
                 </div>

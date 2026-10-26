@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\FunnelController as AdminFunnelController;
 use App\Http\Controllers\Admin\GoogleAdsAuthController;
 use App\Http\Controllers\Admin\GoogleAdsCampanhaController;
 use App\Http\Controllers\Admin\GoogleAdsController;
+use App\Http\Controllers\Admin\GuiaController;
 use App\Http\Controllers\Admin\LeadController as AdminLeadController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
@@ -188,6 +189,10 @@ Route::prefix('auth/google-ads')->name('google-ads.')->middleware(['auth'])->gro
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
     Route::get('/', fn () => redirect()->route('admin.dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // O guia de uso, aberto para qualquer papel: quem atende lead também precisa consultar
+    // como o sistema funciona, e não há nada aqui que um vendedor não possa ler.
+    Route::get('/guia', [GuiaController::class, 'index'])->name('guia.index');
 
     // Envios dos campos de arrastar-e-soltar (imagem, vídeo, documento) do painel.
     Route::post('/uploads', [UploadController::class, 'store'])->middleware('throttle:40,1')->name('uploads.store');
