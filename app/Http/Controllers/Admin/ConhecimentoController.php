@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\ConhecimentoItem;
+use App\Services\Assistente\Semeador;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -89,6 +90,25 @@ class ConhecimentoController extends Controller
         Activity::log('conhecimento_excluido', 'Um item saiu da base do assistente.');
 
         return back()->with('success', 'O assistente esqueceu este assunto.');
+    }
+
+    /**
+     * O treinamento de fábrica, na mão de quem administra: acrescenta o que falta (produtos,
+     * rastreadores, instalação, plataforma, portal e financeiro) e regrava o catálogo com os
+     * preços de hoje. Nunca sobrescreve um item que a equipe editou — o que já existe fica.
+     */
+    public function semear(Semeador $semeador): RedirectResponse
+    {
+        $contagem = $semeador->conhecimento();
+        $catalogo = $semeador->catalogo();
+
+        Activity::log('conhecimento_semeado', 'A base de fábrica do assistente foi aplicada.');
+
+        $resumo = $contagem['criados'] === 0
+            ? 'A base já estava completa'
+            : $contagem['criados'].' assunto(s) novo(s) na base';
+
+        return back()->with('success', $resumo.($catalogo ? ' e catálogo atualizado com os preços da loja.' : '.'));
     }
 
     /**

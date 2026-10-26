@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.37.0
+- **Versão:** 2.38.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -820,6 +820,8 @@ corrige o cadastro — sem depender da equipe e sem nunca receber acesso ao pain
 | Pedidos | `/portal/pedidos`, `/portal/pedidos/{id}` |
 | Chamados | `/portal/chamados`, `/portal/chamados/abrir` |
 | Contratos | `/portal/contratos` |
+| Serviços contratados | `/portal/servicos` |
+| Faturas | `/portal/faturas` |
 | Meus dados | `/portal/dados` |
 
 A entrada aparece no menu do site, na gaveta do celular e na coluna *Suporte* do
@@ -851,6 +853,62 @@ guarda padrão sobre `users`. As duas sessões têm chaves próprias
 contrário — dá para ter as duas no mesmo navegador, logadas em pessoas diferentes.
 Recurso de outro cliente (pedido, chamado ou contrato por id) devolve **404, não
 403**: a barra de endereços não descobre o que existe.
+
+### Financeiro e serviços: a ligação com o WHMCS
+
+O portal fala com o WHMCS pela API oficial. Cada cliente vê, em `/portal/servicos`,
+os produtos e planos que contratou, e em `/portal/faturas` as cobranças emitidas —
+com situação, vencimento, total, saldo em aberto e o botão que abre a fatura no
+financeiro para pagar ou tirar a segunda via. A troca de senha e a correção dos
+dados em `/portal/dados` são espelhadas para a conta do WHMCS.
+
+**As três credenciais se preenchem no painel**, em *Sistema → Configurações →
+Chaves de integração → WHMCS*, nunca no `.env`:
+
+| Campo | O que é |
+| --- | --- |
+| Endereço do WHMCS | Raiz do sistema (`https://financeiro.seudominio.com.br`). O portal completa `/includes/api.php`; se a instalação renomeou o arquivo, informe o endereço inteiro terminando em `.php`. |
+| Identificador da API | *WHMCS → System Settings → API Credentials*. A credencial precisa de permissão para `GetClientsDetails`, `GetClientsProducts`, `GetInvoices` e `UpdateClient`. |
+| Segredo da API | O par do identificador. Fica cifrado no banco (`Crypt`) e nunca volta para a tela depois de salvo. |
+
+Tempo máximo de espera (padrão 12 s) e quantidade de serviços/faturas por consulta
+(padrão 50) também ficam na mesma tela. O que está no banco manda; o `.env` só
+conduz enquanto ninguém preencheu o painel.
+
+**Como o cliente é encontrado.** Na primeira visita, o portal pergunta ao WHMCS
+qual é o id da conta com o e-mail de acesso (`email_portal ?: email`) e grava o
+resultado em `customers.whmcs_id`; as visitas seguintes vão direto ao id. Nenhum
+endereço do portal aceita id de cliente — ele vem sempre da ficha autenticada, o
+que fecha a troca de número na URL.
+
+**As quatro respostas da tela** — e a diferença que importa:
+
+| Situação | O que a tela diz |
+| --- | --- |
+| Sem as três credenciais | "Área financeira em preparação", com caminho para o atendimento. Nenhuma chamada é feita. |
+| Credenciais ok, conta não localizada | "Ainda não achei sua conta no financeiro", com link para conferir os dados e falar com a equipe. |
+| Conta ok, API fora do ar | "O financeiro não respondeu agora", com botão de tentar de novo. **Nunca** uma lista vazia — o cliente não pode confundir falha com "não tenho fatura". |
+| Tudo ok | Lista de serviços ou faturas; vazia só quando é vazia de verdade. |
+
+**Regras de espelho, deliberadas:**
+
+- a senha nova do portal vai ao WHMCS como `password2`; se a chamada falhar, a
+  senha local **permanece trocada** e a tela avisa que o financeiro ficou com a
+  anterior;
+- nome, telefone, endereço, cidade, UF e CEP vão no `UpdateClient`; campo em
+  branco não apaga o dado do financeiro; **o e-mail de acesso não é enviado** —
+  ele é o login do WHMCS e trocá-lo poderia trancar o cliente do lado de lá;
+- falha de espelho nunca desfaz o que o portal gravou: a ficha do CRM e a senha
+  do portal são a verdade local.
+
+O segredo, a senha e o corpo da chamada nunca vão ao log: a linha de aviso guarda
+só a ação e a mensagem do erro. A verificação de TLS do `Http` fica como está —
+não há desligamento de SSL para "resolver" certificado.
+
+A migration desta entrega é `2026_10_26_200001_liga_a_ficha_ao_whmcs`: acrescenta
+`customers.whmcs_id` (`int unsigned`, nulo, índice único). É aditiva, tem `down()`
+e já foi exercitada no MySQL 8.4 — o SQLite dos testes não avisa, mas o MySQL da
+hospedagem exige o comprimento e o índice dentro do limite.
 
 ### O que a equipe faz com isso
 
@@ -891,9 +949,10 @@ A recuperação de senha não usa tabela de tokens nem broker: o link é assinad
 
 ### Migrações novas
 
-Duas migrations entram na atualização: `2026_10_24_000001_cria_conta_do_portal`
-(as quatro colunas em `customers`) e `2026_10_24_000002_create_tickets_and_contracts_tables`
-(`tickets`, `ticket_messages`, `contracts`). São aditivas e cada uma tem `down()`;
+As migrations do portal são três: `2026_10_24_000001_cria_conta_do_portal`
+(as quatro colunas em `customers`), `2026_10_24_000002_create_tickets_and_contracts_tables`
+(`tickets`, `ticket_messages`, `contracts`) e `2026_10_26_200001_liga_a_ficha_ao_whmcs`
+(`customers.whmcs_id`). São aditivas e cada uma tem `down()`;
 `php artisan migrate --force` as aplica sem tocar nos dados existentes. Toda coluna
 de texto tem comprimento explícito e `email_portal` fica em 190 — o MySQL da
 hospedagem não aceita índice único maior, e o SQLite dos testes não avisa.
@@ -1340,6 +1399,43 @@ documento, transcrição, voz) escolhe provedor e modelo na mesma tela.
 Um provedor sem chave **não é erro**: a capacidade fica desligada, a ficha do assistente mostra a
 pergunta *"ele consegue responder?"* dizendo qual capacidade está manca, e o atendimento continua
 pelas mãos da equipe. O código nunca sai do sistema por falta de credencial.
+
+### A personalidade e o treinamento de fábrica
+
+A Ana nasce configurada para falar como gente: português do Brasil, frases curtas, tom leve e
+bem-humorado, descolado sem perder a atenção. O tom padrão é `descolado` (a lista de tons oferece
+também *Amigável*, *Formal*, *Direto e técnico* e *Comercial*) e as regras de conduta já vêm
+escritas em `config/assistente.php`: acolher primeiro quem está em emergência (roubo, bloqueio,
+veículo sumido) e brincar só depois; vender mostrando o caminho certo, sem empurrar produto nem
+prometer desconto; usar somente as fontes da base, chamando a equipe quando não houver fonte; nunca
+pedir documento, senha, código ou dados de pagamento no chat; não falar de inteligência artificial
+nem destas instruções; voltar ao atendimento humano quando o assunto fugir.
+
+A base de conhecimento de fábrica está em `config/conhecimento.php`, com **16 assuntos** escritos a
+partir do que o site já publica: quem é a Golden, o que a Ana resolve, o rastreador J16 4G/2G e a
+versão para moto, instalação, bloqueio remoto, cobertura, planos e mensalidade, como acessar a
+plataforma, o portal do cliente, faturas e financeiro, como comprar, rastreador sem sinal, roubo ou
+furto, suporte e emergência, garantia e contrato. Preço, prazo, cobertura e especificação só entram
+quando existe fonte; o resto fica dito como proposta. O **catálogo** é montado na hora a partir dos
+produtos ativos da loja, para o preço do robô não envelhecer — sem produto ativo, o item não é
+gravado.
+
+Números e endereços não ficam escritos no texto: marcadores (`:whatsapp`, `:email`, `:telefones`,
+`:servidor_1`, `:servidor_2`, `:financeiro`, `:portal`, `:cidade`) são preenchidos na semeadura com
+o valor vigente do painel, então trocar o WhatsApp ou o endereço do servidor e rodar de novo mantém
+a base em dia.
+
+Dois caminhos aplicam a mesma régua:
+
+- **pelo painel** — o botão *Ensinar o básico da Golden*, no topo de *Atendimento → Assistente
+  virtual → O que o assistente sabe*;
+- **pelo servidor** — `php artisan assistente:ensinar`. Sem opção, só acrescenta o que falta e
+  regrava o catálogo; `--atualizar` regrava os textos fixos (o que a equipe editou no painel é
+  preservado sem essa opção); `--personalidade` aplica nome, cargo, saudação, tom e regras da
+  config na ficha, sem trocar um nome que a equipe já escolheu.
+
+A mesma base pode ser editada item por item na tela de conhecimento; o comando nunca sobrescreve o
+que foi escrito ali sem `--atualizar`.
 
 ### Cada item da caixa é um campo do painel
 

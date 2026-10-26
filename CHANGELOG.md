@@ -3,6 +3,78 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.38.0] - 2026-10-26
+
+### Adicionado
+- **A Ana tem personalidade própria e fala como gente.** A persona de fábrica virou natural,
+  humanizada, atenciosa, dinâmica e bem-humorada: português do Brasil, frases curtas, tom
+  descolado sem clichê de robô. Nasce com o tom **Descolado e bem-humorado** (novo na lista de
+  tons, ao lado de Amigável, Formal, Direto e técnico e Comercial) e com regras que acolhem
+  primeiro quem está em emergência (roubo, bloqueio, veículo sumido), vendem mostrando o caminho
+  sem empurrar produto, usam somente as fontes da base, nunca pedem documento ou senha no chat e
+  chamam a equipe quando o assunto foge.
+- **A base de conhecimento da Golden, pronta para ensinar em um clique.** `config/conhecimento.php`
+  traz **16 assuntos** escritos a partir do que o site já publica: quem é a Golden, o que a Ana
+  resolve, o rastreador J16 4G/2G e a versão para moto, instalação, bloqueio remoto, cobertura,
+  planos e mensalidade, como acessar a plataforma, o portal do cliente, faturas e financeiro, como
+  comprar, rastreador sem sinal, roubo ou furto, suporte e emergência, garantia e contrato. O
+  **catálogo** é montado na hora com os produtos ativos da loja, para o preço do robô não envelhecer.
+- **Números e endereços não ficam escritos no texto.** Marcadores (`:whatsapp`, `:email`,
+  `:telefones`, `:servidor_1`, `:servidor_2`, `:financeiro`, `:portal`, `:cidade`) são preenchidos
+  na semeadura com o valor vigente do painel — trocar o WhatsApp ou o endereço de um servidor e
+  rodar de novo mantém a base em dia.
+- **Dois caminhos para treinar, com a mesma régua.** O comando `php artisan assistente:ensinar`
+  (com `--atualizar` para regravar os textos fixos e `--personalidade` para aplicar a persona) e o
+  botão **Ensinar o básico da Golden**, no topo de *Atendimento → Assistente virtual → O que o
+  assistente sabe*. Nenhum dos dois apaga o que a equipe editou no painel.
+- **Conexão direta com o WHMCS, configurada pelo painel.** O grupo *WHMCS — financeiro e serviços*
+  em *Sistema → Configurações → Chaves de integração* guarda endereço, identificador e segredo
+  (cifrado no banco, nunca devolvido à tela), além do tempo máximo de espera e do limite por
+  consulta. Sem as três peças a integração fica desligada e o portal explica — nenhuma tela cai
+  por falta de credencial.
+- **Duas telas novas no portal, com o grupo Financeiro no menu**: *Meus serviços*
+  (`/portal/servicos`) mostra os produtos contratados, o ciclo, o valor, o próximo vencimento e a
+  situação, com o link que abre o serviço no financeiro; *Minhas faturas* (`/portal/faturas`)
+  mostra emissão, vencimento, situação, total e saldo em aberto, com o botão **Pagar** que leva à
+  fatura. O resumo da fatura em aberto aparece no topo.
+- **A tela distingue falha de vazio.** Sem credencial, conta não encontrada, financeiro fora do ar
+  e lista vazia têm recados diferentes e ações próprias — falha de API nunca vira "você não tem
+  faturas", e o cliente nunca lê o nome de uma variável de ambiente.
+- **A mesma senha e os mesmos dados nos dois lugares.** Trocar a senha no portal grava a mesma
+  senha no WHMCS (`password2`); corrigir nome, telefone, endereço, cidade, UF e CEP espelha no
+  `UpdateClient`, sem o e-mail (é o login do financeiro). Se o espelho falhar, um *toast* avisa e
+  a gravação local continua valendo.
+- `customers.whmcs_id` (`int unsigned`, nulo, único) guarda o id do cliente no financeiro,
+  descoberto pelo e-mail de acesso na primeira visita. O id nunca vem da URL: sai sempre da ficha
+  autenticada.
+- `config/whmcs.php` reúne os mapas de situação de fatura, situação de serviço e ciclo de cobrança
+  traduzidos uma vez só; nenhuma view escreve "Unpaid" nem escolhe cor por conta própria.
+
+### Alterado
+- As tabelas de serviços e faturas do portal foram compactadas para o celular: o ciclo desceu para
+  baixo do valor, a emissão virou a linha de apoio do número da fatura, o saldo ficou sob o total e
+  o link de cada serviço virou um ícone com rótulo de acessibilidade. As cinco colunas cabem na
+  tela sem esconder o botão de pagar.
+- A ficha *Meus dados* ganhou a linha **Financeiro** (ligado, aguardando configuração ou com o
+  caminho das faturas) e o aviso de que a mesma senha passa a valer no financeiro.
+- O portal passou de seis para oito telas; o rodapé do guia e a documentação acompanham.
+
+### Documentado
+- `docs/INSTALACAO.md` (10 e 13.1) descreve as credenciais do WHMCS, as permissões
+  `GetClientsDetails`, `GetClientsProducts`, `GetInvoices` e `UpdateClient`, as quatro respostas da
+  tela, as regras de espelho, a personalidade de fábrica, os 16 assuntos e o comando de
+  treinamento. A versão do documento subiu para 2.38.0 e o PDF foi regerado.
+- O guia do painel ganhou a seção de treinamento e o tom padrão na ficha do assistente.
+
+### Testado
+- `TreinamentoDoAssistenteTest` (5) cobre a base inteira com o catálogo, a persona aplicada, a
+  segunda rodada que não apaga o texto editado, o `--atualizar`, os marcadores do painel e o botão
+  da tela.
+- `WhmcsDoPortalTest` (10) cobre os quatro estados, as duas listas, a descoberta do id pelo e-mail,
+  o espelho de dados e de senha, a falha do espelho e o segredo cifrado.
+- Suíte inteira em **496 testes e 5.813 asserções**; a migration `2026_10_26_200001_liga_a_ficha_ao_whmcs`
+  foi exercitada no MySQL 8.4 antes da entrega.
+
 ## [2.37.0] - 2026-10-26
 
 ### Adicionado

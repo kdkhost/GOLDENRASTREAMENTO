@@ -580,9 +580,10 @@ a dimensão ideal.
   Cada endereço externo se troca em *Sistema → Configurações → Acessos externos do site*
   (banco vence `config/golden.acessos`), junto do nome e do ícone de cada servidor; os
   rótulos do botão, do submenu e do modal ficam no cartão *Textos dos acessos*.
-- **Seis telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
+- **Oito telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
   *Pedidos* (linha do tempo da jornada e os documentos do pedido), *Chamados*, *Contratos*
-  com o PDF, *Meus dados* e *Deixar um depoimento*.
+  com o PDF, *Meus serviços* e *Minhas faturas* (direto do financeiro, quando o WHMCS está
+  ligado), *Meus dados* e *Deixar um depoimento*.
 - **Auto-cadastro que não duplica ficha**: `App\Support\PortalDoCliente` procura em
   `customers` primeiro pelo documento (normalizado, com ou sem máscara) e depois pelo
   e-mail; achou, entrega a senha à ficha existente — entre candidatas, a que tem mais
@@ -600,6 +601,15 @@ a dimensão ideal.
   `contrato_documento`), e o status controla a leitura — **rascunho é invisível para o
   cliente**, inclusive no download, que passa por `/portal/contratos/{id}/arquivo` em vez de
   URL pública de `/storage`.
+- **Financeiro e serviços pelo WHMCS** (`config/whmcs.php`, `App\Services\Whmcs\Cliente`):
+  *Meus serviços* (`/portal/servicos`) e *Minhas faturas* (`/portal/faturas`) leem a API do
+  financeiro com o id do cliente guardado em `customers.whmcs_id` — descoberto pelo e-mail na
+  primeira visita e nunca aceito pela URL. A tela distingue **sem credencial**, **conta não
+  encontrada**, **financeiro fora do ar** e **lista vazia**, para falha de API nunca virar
+  "você não tem faturas". Senha e dados corrigidos no portal são espelhados (`UpdateClient`,
+  sem o e-mail, que é o login do financeiro); se o espelho falhar, um *toast* avisa e a
+  gravação local continua valendo. As três credenciais ficam em *Sistema → Configurações →
+  Chaves de integração → WHMCS* (segredo cifrado no banco, `.env` só como plano de fundo).
 - **Recuperação sem broker**: link assinado (`URL::temporarySignedRoute`, 60 minutos), sem
   tabela de tokens, e a mesma frase para e-mail com ou sem conta.
 - **O cliente escreve o próprio depoimento** (*Deixar um depoimento*): só a ficha `ativo`
@@ -683,7 +693,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (478 testes, 5.673 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (496 testes, 5.813 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

@@ -265,6 +265,64 @@ class ChavesDeIntegracao
                 ],
             ],
 
+            'whmcs' => [
+                'rotulo' => 'WHMCS — financeiro e serviços',
+                'icone' => 'fa-file-invoice-dollar',
+                'descricao' => 'Liga o portal do cliente ao financeiro: cada cliente vê os serviços contratados e as faturas, e a troca de senha e os dados cadastrais passam a ser espelhados. Sem as três credenciais, a integração fica desligada e o portal avisa — o código não sai do sistema por falta de chave.',
+                'campos' => [
+                    [
+                        'chave' => 'whmcs_url',
+                        'config' => 'whmcs.url',
+                        'ambiente' => 'WHMCS_URL',
+                        'label' => 'Endereço do WHMCS',
+                        'opcional' => true,
+                        'type' => 'url',
+                        'regras' => ['url', 'max:190'],
+                        'placeholder' => 'https://financeiro.seudominio.com.br',
+                        'dica' => 'Só a raiz do sistema: o painel completa /includes/api.php. Se a instalação renomeou a API, informe o endereço inteiro terminando em .php.',
+                    ],
+                    [
+                        'chave' => 'whmcs_identifier',
+                        'config' => 'whmcs.identifier',
+                        'ambiente' => 'WHMCS_API_IDENTIFIER',
+                        'label' => 'Identificador da API',
+                        'opcional' => true,
+                        'regras' => ['string', 'max:190'],
+                        'dica' => 'Nasce em WHMCS → Configurações do sistema → API: crie uma credencial de API e copie o identificador.',
+                    ],
+                    [
+                        'chave' => 'whmcs_secret',
+                        'config' => 'whmcs.secret',
+                        'ambiente' => 'WHMCS_API_SECRET',
+                        'label' => 'Segredo da API',
+                        'segredo' => true,
+                        'opcional' => true,
+                        'dica' => 'O par do identificador. Fica cifrado no banco e nunca volta para esta tela depois de salvo.',
+                    ],
+                    [
+                        'chave' => 'whmcs_timeout',
+                        'config' => 'whmcs.timeout',
+                        'ambiente' => 'WHMCS_TIMEOUT',
+                        'label' => 'Tempo máximo de espera (segundos)',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:3', 'max:60'],
+                        'placeholder' => '12',
+                        'dica' => 'O portal não pode ficar preso esperando o financeiro. Passado este prazo, a tela diz que está indisponível e o cliente continua com o resto.',
+                    ],
+                    [
+                        'chave' => 'whmcs_limite',
+                        'config' => 'whmcs.limite',
+                        'ambiente' => 'WHMCS_LIMITE',
+                        'label' => 'Serviços e faturas por consulta',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:5', 'max:200'],
+                        'placeholder' => '50',
+                    ],
+                ],
+            ],
+
             'assistente-chaves' => [
                 'rotulo' => 'Assistente — chave de cada provedor',
                 'icone' => 'fa-robot',
@@ -758,6 +816,22 @@ class ChavesDeIntegracao
     public static function faltantesDasAvaliacoes(): array
     {
         return collect(self::grupos()['avaliacoes']['campos'])
+            ->filter(fn (array $campo): bool => blank(self::vigente($campo['chave'])))
+            ->map(fn (array $campo): string => $campo['label'].' ('.$campo['ambiente'].')')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * As três credenciais sem as quais a API do WHMCS não abre a porta. Diferente das outras
+     * listas, aqui não há opcional: endereço, identificador e segredo são todos necessários
+     * para qualquer chamada — a lista serve para a tela dizer o que falta, não para impedir
+     * a gravação de meia configuração enquanto a pessoa procura o valor.
+     */
+    public static function faltantesDoWhmcs(): array
+    {
+        return collect(self::grupos()['whmcs']['campos'])
+            ->filter(fn (array $campo): bool => in_array($campo['chave'], ['whmcs_url', 'whmcs_identifier', 'whmcs_secret'], true))
             ->filter(fn (array $campo): bool => blank(self::vigente($campo['chave'])))
             ->map(fn (array $campo): string => $campo['label'].' ('.$campo['ambiente'].')')
             ->values()

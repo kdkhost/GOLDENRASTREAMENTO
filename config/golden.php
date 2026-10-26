@@ -880,6 +880,11 @@ return [
 
         ['titulo' => 'Contratos', 'rota' => 'portal.contratos', 'prefixo' => 'portal.contratos', 'icone' => 'fa-file-signature'],
 
+        ['titulo' => 'Financeiro', 'icone' => 'fa-file-invoice-dollar', 'filhos' => [
+            ['titulo' => 'Minhas faturas', 'rota' => 'portal.faturas', 'prefixo' => 'portal.faturas', 'icone' => 'fa-receipt'],
+            ['titulo' => 'Meus serviços', 'rota' => 'portal.servicos', 'prefixo' => 'portal.servicos', 'icone' => 'fa-satellite-dish'],
+        ]],
+
         ['titulo' => 'Deixar um depoimento', 'rota' => 'portal.depoimento', 'prefixo' => 'portal.depoimento', 'icone' => 'fa-quote-left'],
 
         ['titulo' => 'Minha conta', 'icone' => 'fa-user-gear', 'filhos' => [

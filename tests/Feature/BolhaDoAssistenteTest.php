@@ -73,7 +73,7 @@ class BolhaDoAssistenteTest extends TestCase
 
         $this->assertStringContainsString('aria-label="Falar com Ana"', $html);
         $this->assertStringContainsString('<b>Ana</b>', $html);
-        $this->assertStringContainsString('Assistente virtual da Golden Rastreamento', $html);
+        $this->assertStringContainsString(config('assistente.persona.cargo'), $html);
         $this->assertStringContainsString('Respondendo agora', $html);
         $this->assertStringContainsString('placeholder="Escreva sua dúvida…"', $html);
         $this->assertStringContainsString('Prefero falar com uma pessoa', $html);

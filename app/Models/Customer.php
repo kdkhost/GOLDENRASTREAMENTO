@@ -20,6 +20,7 @@ class Customer extends Model implements AuthenticatableContract
     public const STATUS = ['prospecto' => 'Prospecto', 'ativo' => 'Ativo', 'inativo' => 'Inativo'];
 
     protected $fillable = [
+        'whmcs_id',
         'nome', 'documento', 'tipo', 'telefone', 'email', 'email_portal', 'password',
         'endereco', 'cidade', 'uf', 'cep',
         'segmento', 'frota_tamanho', 'status', 'owner_id', 'lead_id', 'valor_anual_cents', 'observacoes',
@@ -29,6 +30,7 @@ class Customer extends Model implements AuthenticatableContract
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
+        'whmcs_id' => 'integer',
         'frota_tamanho' => 'integer',
         'valor_anual_cents' => 'integer',
         'password' => 'hashed',

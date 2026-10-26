@@ -37,6 +37,7 @@ use App\Http\Controllers\Portal\PortalContaController;
 use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalContratoController;
 use App\Http\Controllers\Portal\PortalDepoimentoController;
+use App\Http\Controllers\Portal\PortalFinanceiroController;
 use App\Http\Controllers\Portal\PortalPedidoController;
 use App\Http\Controllers\Site\AssistenteController as SiteAssistenteController;
 use App\Http\Controllers\Site\FunnelController;
@@ -156,6 +157,13 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('contratos', [PortalContratoController::class, 'index'])->name('contratos');
         Route::get('contratos/{contrato}/arquivo', [PortalContratoController::class, 'arquivo'])
             ->whereNumber('contrato')->name('contratos.arquivo');
+
+        // Serviços e faturas vêm do WHMCS na hora; o limite segura quem ficar recarregando
+        // uma tela que gasta chamada de API do financeiro.
+        Route::get('servicos', [PortalFinanceiroController::class, 'servicos'])
+            ->middleware('throttle:30,1')->name('servicos');
+        Route::get('faturas', [PortalFinanceiroController::class, 'faturas'])
+            ->middleware('throttle:30,1')->name('faturas');
 
         Route::get('dados', [PortalContaController::class, 'dados'])->name('dados');
         Route::post('dados', [PortalContaController::class, 'salvarDados'])->name('dados.salvar');
@@ -365,6 +373,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::prefix('conhecimento')->name('conhecimento.')->middleware('role:admin')->group(function () {
             Route::get('/', [ConhecimentoController::class, 'index'])->name('index');
             Route::get('/novo', [ConhecimentoController::class, 'create'])->name('create');
+            Route::post('/ensinar', [ConhecimentoController::class, 'semear'])->name('semear');
             Route::post('/', [ConhecimentoController::class, 'store'])->name('store');
             Route::get('/{item}/editar', [ConhecimentoController::class, 'edit'])->name('edit');
             Route::post('/{item}', [ConhecimentoController::class, 'update'])->name('update');

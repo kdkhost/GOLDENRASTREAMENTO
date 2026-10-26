@@ -37,6 +37,16 @@
                 <dt>Cliente desde</dt><dd>{{ $cliente->created_at->format('m/Y') }}</dd>
                 <dt>Último acesso</dt><dd>{{ $cliente->ultimo_acesso_em ? $cliente->ultimo_acesso_em->format('d/m/Y \à\s H:i') : 'Ainda não registrado' }}</dd>
                 <dt>Total investido</dt><dd class="text-gold">{{ brl($total_gasto_cents) }}</dd>
+                <dt>Financeiro</dt>
+                <dd>
+                    @if(! $financeiro['configurado'])
+                        Atendido pela equipe
+                    @elseif($financeiro['ligado'])
+                        <a href="{{ route('portal.faturas') }}">Ligado — ver faturas</a>
+                    @else
+                        <a href="{{ route('portal.faturas') }}">Abrir faturas</a>
+                    @endif
+                </dd>
             </dl>
             <p class="form-hint mt-3 mb-0">Mudar CPF/CNPJ ou o e-mail de acesso é com a equipe, na <a href="{{ route('site.contato') }}">página de contato</a> — é por eles que pedidos e contratos ficam ligados à sua conta.</p>
         </x-admin.card>
@@ -48,6 +58,7 @@
                 <x-admin.field name="password" type="password" label="Senha nova" col="col-12 col-md-6" :required="true" minlength="8"
                     autocomplete="new-password" hint="Mínimo de 8 caracteres." />
                 <x-admin.field name="password_confirmation" type="password" label="Repetir a nova" col="col-12 col-md-6" :required="true" minlength="8" autocomplete="new-password" />
+                <p class="form-hint col-12 mb-0">A mesma senha passa a valer no financeiro da Golden quando ele está ligado ao portal.</p>
                 <div class="col-12">
                     <button type="submit" class="btn btn-outline-secondary"><i class="fas fa-rotate me-1"></i> Trocar a senha</button>
                 </div>
