@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.34.0
+- **Versão:** 2.35.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -424,6 +424,10 @@ rode os três de novo (ou `php artisan optimize:clear` e recarregue).
 - Painel: `https://seudominio.com.br/admin` — login definido na instalação.
 - Portal do cliente: `https://seudominio.com.br/portal/entrar` — ninguém precisa
   criar conta no painel; o auto-cadastro reaproveita a ficha do CRM (seção 10).
+- Acessos de quem já é cliente: o ícone de login no topo do site abre o portal e o
+  financeiro antigo; o botão **Falar com especialista** abre os dois servidores de
+  rastreamento. Os três endereços externos se trocam em **Sistema → Configurações →
+  Acessos externos do site** (o que a tela grava fica no banco e vence o `config`).
 - Troque a senha padrão assim que entrar, e remova o usuário de demonstração
   (`vendedor@golden.com.br`) se não for usar.
 
@@ -520,6 +524,7 @@ no servidor (banco, chave da aplicação, fila, fuso).
 | `GOLDEN_WHATSAPP` | `5519997101483` | botão de WhatsApp do site |
 | `GOLDEN_EMAIL` | endereço comercial | aparece no site e nos avisos |
 | `GOLDEN_TRACKING_ENABLED` | `0` ou `1` | liga a consulta de rastreio |
+| `GOLDEN_FINANCEIRO_URL`, `GOLDEN_SERVIDOR_1_URL`, `GOLDEN_SERVIDOR_2_URL` | do seu ambiente | portas de entrada do cabeçalho do site (financeiro antigo e os dois servidores); **preencha em Sistema → Configurações → Acessos externos do site**, o `.env` é só plano de fundo |
 | `GOOGLE_BUSINESS_ACCOUNT`, `GOOGLE_BUSINESS_LOCATION`, `GOOGLE_BUSINESS_TOKEN` | do seu perfil | depoimentos do Google com avatar; **preencha na tela** (seção 11), o `.env` é só plano de fundo |
 | `GOOGLE_BUSINESS_LIMITE`, `GOOGLE_BUSINESS_NOTA_MINIMA` | `50`, `4` | quantas avaliações ler por rodada e a nota mínima aceita; também ajustáveis na tela |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | da sua MCC | token de desenvolvedor da API; **segredo da aplicação**, nunca sai para a tela (seção 9.1) |

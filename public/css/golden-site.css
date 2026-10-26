@@ -76,6 +76,31 @@ section{padding:84px 0}
 .nav-sub a.active{color:var(--gold-soft);background:rgba(224,163,62,.08)}
 .nav-toggle{display:none;background:none;border:0;color:#fff;font-size:1.5rem;cursor:pointer}
 .nav-cta{display:flex;align-items:center;gap:14px}
+.nav-especialista{font-family:inherit}
+
+/* Conta do cliente: ícone no lugar do texto, com as duas portas num submenu. O hover é do
+   ponteiro; `aberto` é o estado que o teclado e o toque também alcançam. */
+.nav-acesso{position:relative;display:flex}
+.nav-login{display:grid;place-items:center;width:42px;height:42px;border:0;border-radius:12px;background:none;color:#c4ccd4;
+  font-family:inherit;font-size:1.1rem;cursor:pointer;transition:color .2s ease,background .2s ease,transform .2s cubic-bezier(.22,.61,.36,1)}
+.nav-login:hover,.nav-acesso.aberto .nav-login{color:var(--gold);background:rgba(224,163,62,.12);transform:translateY(-1px)}
+.nav-login:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.nav-acesso-menu{position:absolute;top:calc(100% + 14px);right:0;z-index:96;display:flex;flex-direction:column;gap:2px;
+  width:280px;padding:9px;border-radius:15px;background:linear-gradient(180deg,#171d23,var(--dark-2));
+  border:1px solid rgba(224,163,62,.2);box-shadow:0 26px 52px -24px rgba(0,0,0,.9);
+  opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-8px);
+  transition:opacity .2s ease,transform .26s cubic-bezier(.22,.61,.36,1),visibility 0s linear .26s}
+/* A ponte invisível cobre o vão entre o ícone e o menu: sem ela o submenu fecharia no caminho. */
+.nav-acesso-menu::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:14px}
+.nav-acesso.aberto .nav-acesso-menu{opacity:1;visibility:visible;pointer-events:auto;transform:none;
+  transition:opacity .2s ease,transform .26s cubic-bezier(.22,.61,.36,1),visibility 0s}
+.nav-acesso-menu a{display:flex;align-items:center;gap:11px;padding:10px;border-radius:10px;color:#c4ccd4;transition:background .18s ease,color .18s ease}
+.nav-acesso-menu a:hover,.nav-acesso-menu a:focus-visible{background:rgba(224,163,62,.12);color:#fff;outline:0}
+.nav-acesso-icone{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:10px;background:rgba(224,163,62,.12);color:var(--gold);font-size:.9rem}
+.nav-acesso-texto{display:grid;line-height:1.25}
+.nav-acesso-texto b{font-size:.9rem;font-weight:600}
+.nav-acesso-texto small{font-size:.74rem;color:#8a97a4}
+.nav-acesso-seta{margin-left:auto;font-size:.65rem;color:#8a97a4}
 
 /* Sacola do topo */
 .cart-link{position:relative;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;color:#c4ccd4;font-size:1.15rem;
@@ -384,6 +409,40 @@ section{padding:84px 0}
 .video-modal-fechar:hover{background:var(--line);transform:rotate(90deg)}
 body.video-aberto{overflow:hidden}
 
+/* Escolha do servidor de rastreamento. 1085: acima da gaveta do menu (90) e do modal de
+   vídeo (1080), abaixo do toastr (1090) — o aviso nunca fica atrás da escolha. */
+.acesso-modal{position:fixed;inset:0;z-index:1085;display:grid;place-items:center;padding:26px;
+  background:rgba(6,9,12,.84);backdrop-filter:blur(6px);
+  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .28s ease,visibility 0s linear .28s}
+.acesso-modal.aberta{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .28s ease,visibility 0s}
+.acesso-veu{position:absolute;inset:0;border:0;padding:0;background:none;cursor:pointer}
+.acesso-caixa{position:relative;width:min(480px,100%);padding:22px;border-radius:18px;background:var(--paper);
+  box-shadow:0 44px 90px -34px rgba(0,0,0,.85);transform:scale(.94) translateY(16px);
+  transition:transform .34s cubic-bezier(.22,.61,.36,1)}
+.acesso-modal.aberta .acesso-caixa{transform:none}
+.acesso-topo{display:flex;align-items:flex-start;gap:12px}
+.acesso-selo{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:13px;color:#241a06;font-size:1.05rem;
+  background:linear-gradient(135deg,var(--gold),var(--gold-2));box-shadow:0 12px 26px -14px rgba(224,163,62,.8)}
+.acesso-titulos h3{margin:0 0 4px;font-size:1.12rem}
+.acesso-titulos p{margin:0;font-size:.86rem;color:var(--slate);line-height:1.45}
+.acesso-fechar{display:grid;place-items:center;flex:none;width:36px;height:36px;margin-left:auto;border:0;border-radius:50%;
+  background:var(--paper-2);color:var(--ink);font-size:.95rem;cursor:pointer;transition:background .2s,transform .3s cubic-bezier(.22,.61,.36,1)}
+.acesso-fechar:hover{background:var(--line);transform:rotate(90deg)}
+.acesso-opcoes{display:grid;gap:10px;margin-top:18px}
+.acesso-opcao{display:flex;align-items:center;gap:13px;padding:14px;border:1px solid var(--line);border-radius:14px;
+  background:var(--paper-2);transition:border-color .2s ease,background .2s ease,transform .2s ease,box-shadow .2s ease}
+.acesso-opcao:hover,.acesso-opcao:focus-visible{border-color:rgba(224,163,62,.55);background:var(--paper);transform:translateY(-2px);
+  box-shadow:0 18px 34px -24px rgba(18,22,26,.5);outline:0}
+.acesso-opcao-icone{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;
+  background:rgba(224,163,62,.14);color:var(--gold-2);font-size:1rem}
+.acesso-opcao-texto{display:grid;line-height:1.3;min-width:0}
+.acesso-opcao-texto b{font-size:.95rem}
+.acesso-opcao-texto small{font-size:.78rem;color:var(--slate);overflow-wrap:anywhere}
+.acesso-opcao-abrir{margin-left:auto;flex:none;font-size:.75rem;font-weight:700;color:var(--gold-2);letter-spacing:.02em}
+.acesso-ajuda{margin:16px 0 0;font-size:.8rem;color:var(--slate);text-align:center}
+.acesso-ajuda a{color:var(--gold-2);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+body.acesso-aberto{overflow:hidden}
+
 /* Tela cheia deitada, para celular e tablet. O toque que dá play é o mesmo que estica o quadro
    até a janela inteira (`tela-cheia`) e, quando o navegador não atende o pedido nativo — no iOS
    elemento nenhum vai para tela cheia —, a casa gira o próprio quadro (`giro`): 100vh de largura
@@ -645,7 +704,7 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .nav-drawer .nav-sub a:hover{background:rgba(224,163,62,.1);color:#fff}
   .nav-drawer .nav-sub a.active{color:var(--gold-soft);background:rgba(224,163,62,.08)}
 
-  .drawer-cta{display:block;margin-top:20px;text-align:center;
+  .drawer-cta{display:block;width:100%;border:0;cursor:pointer;font-family:inherit;margin-top:20px;text-align:center;
     opacity:0;transform:translateX(-16px);transition:opacity .3s ease .34s,transform .3s ease .34s}
   body.nav-open .drawer-cta{opacity:1;transform:none}
 
@@ -677,6 +736,11 @@ main>section:nth-child(n+4){animation-delay:.14s}
   /* No celular o selo do vidro encolhe com o quadro: continua sendo o play, só que do
      tamanho do polegar. */
   .video-vidro-selo{width:58px;height:58px;margin:-29px 0 0 -29px;font-size:1.05rem}
+  /* A escolha do servidor cabe na largura inteira e perde o "Abrir" escrito: o cartão
+     todo já é o link, e a frase só roubaria o espaço do endereço. */
+  .acesso-modal{padding:16px}
+  .acesso-caixa{padding:18px}
+  .acesso-opcao-abrir{display:none}
 }
 @media(max-width:700px){
   .carro-ctl{margin-top:20px}
@@ -693,6 +757,7 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .to-top,.to-top-face,.cart-link,
   .video-filtro,.video-card,.video-thumb>i,.video-modal,.video-modal-caixa,.video-modal-fechar,
   .video-cartaz-play,.video-vidro,.video-vidro-selo,.video-botao,
+  .nav-acesso-menu,.nav-especialista,.acesso-modal,.acesso-caixa,.acesso-fechar,.acesso-opcao,
   .paginacao-site a,.paginacao-site .pagina,.paginacao-site .pagina-seta,
 
   .wa-float,.wa-popup,.wa-channel,.wa-tip{

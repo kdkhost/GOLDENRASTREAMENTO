@@ -272,7 +272,9 @@
     toggle.addEventListener('click', function () { aberto() ? fechar() : abrir(); });
     if (backdrop) backdrop.addEventListener('click', fechar);
     drawer.querySelectorAll('[data-nav-close]').forEach(function (b) { b.addEventListener('click', fechar); });
-    drawer.addEventListener('click', function (e) { if (e.target.closest('a')) fechar(); });
+    drawer.addEventListener('click', function (e) {
+      if (e.target.closest('a, [data-acesso-plataformas]')) fechar();
+    });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
     estreita.addEventListener('change', function (e) { if (!e.matches) fechar(); });
   }
@@ -892,6 +894,109 @@
     });
   }
 
+  /* ---------- Conta do cliente e servidores de rastreamento ----------
+     Duas portas de entrada, dois gestos: o ícone da conta abre o submenu no hover (e no
+     toque, no celular) com o portal da plataforma e o financeiro antigo; o botão dourado
+     abre o modal que escolhe entre os dois servidores, porque são plataformas diferentes.
+     Um painel suspenso e um modal, nenhum framework: o site não paga por isso. */
+  function initAcesso() {
+    var conta = document.querySelector('[data-acesso]');
+    if (conta) {
+      var botaoConta = conta.querySelector('.nav-login');
+      var menuConta = conta.querySelector('.nav-acesso-menu');
+
+      var contaAberta = function () { return conta.classList.contains('aberto'); };
+      var abrirConta = function () {
+        conta.classList.add('aberto');
+        if (botaoConta) botaoConta.setAttribute('aria-expanded', 'true');
+      };
+      var fecharConta = function () {
+        conta.classList.remove('aberto');
+        if (botaoConta) botaoConta.setAttribute('aria-expanded', 'false');
+      };
+
+      if (botaoConta && menuConta) {
+        // Hover é atalho de quem tem mouse; clique é o caminho do toque e do teclado.
+        // Sem mouse (celular), o navegador ainda dispara mouseenter no toque: escutar
+        // hover só onde ele existe evita abrir e fechar no mesmo gesto.
+        if (!window.matchMedia || window.matchMedia('(hover: hover)').matches) {
+          conta.addEventListener('mouseenter', abrirConta);
+          conta.addEventListener('mouseleave', fecharConta);
+        }
+        conta.addEventListener('focusout', function (e) {
+          if (!(e.relatedTarget instanceof Node) || !conta.contains(e.relatedTarget)) fecharConta();
+        });
+
+        botaoConta.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (contaAberta()) fecharConta(); else abrirConta();
+        });
+
+        document.addEventListener('click', function (e) {
+          if (e.target instanceof Element && !e.target.closest('[data-acesso]')) fecharConta();
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') fecharConta();
+        });
+      }
+    }
+
+    var modal = document.getElementById('acessoPlataformas');
+    var abridores = document.querySelectorAll('[data-acesso-plataformas]');
+    if (!modal || !abridores.length) return;
+
+    var ultimoFoco = null;
+
+    function fechar() {
+      if (!modal.classList.contains('aberta')) return;
+      modal.classList.remove('aberta');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('acesso-aberto');
+      // O abridor da gaveta desaparece junto com ela: sem destino visível, o foco
+      // volta para o botão do menu, que é o que o visitante vê na tela.
+      var destino = ultimoFoco;
+      if (!destino || !destino.getClientRects().length) destino = document.querySelector('.nav-toggle');
+      if (destino && typeof destino.focus === 'function') destino.focus();
+      ultimoFoco = null;
+    }
+
+    function abrir(disparador) {
+      // Quem abre pela gaveta perde o botão quando ela fecha: o retorno do foco
+      // combinado na abertura é o botão do menu, não um elemento saindo da tela.
+      ultimoFoco = disparador && !disparador.closest('.nav-drawer') ? disparador : null;
+      if (!ultimoFoco) ultimoFoco = document.querySelector('.nav-toggle');
+      modal.classList.add('aberta');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('acesso-aberto');
+      var primeiro = modal.querySelector('.acesso-opcao') || modal.querySelector('.acesso-fechar');
+      if (primeiro) primeiro.focus();
+    }
+
+    abridores.forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.preventDefault();
+        abrir(b);
+      });
+    });
+
+    modal.querySelectorAll('[data-acesso-fechar]').forEach(function (b) {
+      b.addEventListener('click', fechar);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') fechar();
+    });
+
+    // aria-modal sem armadilha de foco jogaria o visitante para trás do véu.
+    modal.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var focos = modal.querySelectorAll('.acesso-caixa a[href], .acesso-caixa button');
+      var primeiro = focos[0], ultimo = focos[focos.length - 1];
+      if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
+    });
+  }
+
   /* ---------- CTAs com rastreamento ---------- */
   function initCtas() {
     document.querySelectorAll('[data-track]').forEach(function (el) {
@@ -934,7 +1039,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initWhatsBox(); initCarrosseis(); initVideo(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initAcesso(); initWhatsBox(); initCarrosseis(); initVideo(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol();
     track('page_view', { page: location.pathname });
   });
 })();

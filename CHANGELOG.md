@@ -3,6 +3,36 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.35.0] - 2026-10-26
+
+### Alterado
+- **O cabeçalho do site virou a porta de entrada de quem já é cliente.** O texto **Área do
+  cliente**, que ficava solto entre os links, deu lugar a um **ícone de login** ao lado do
+  carrinho: passar o mouse (ou focar pelo teclado) abre um submenu com **Painel do cliente**
+  — a rota interna do portal, que muda de destino sozinha para quem já entrou — e
+  **Financeiro antigo**, que abre o sistema antigo em outra aba. No celular, onde não há
+  mouse, o ícone alterna o mesmo submenu com um toque, e a gaveta continua mostrando o item
+  em acordeão com as duas portas.
+- **O botão dourado continua botão — e agora abre os servidores.** **Falar com especialista**
+  manteve fonte, gradiente e tamanho, mas deixou de ser link para `/contato`: o clique abre
+  um modal com **Servidor 1** (`app1.goldenrastreamento.com.br`) e **Servidor 2**
+  (`134.209.82.248:8082`), cada um em nova aba, com o endereço à vista para não confundir as
+  duas plataformas. O caminho de contato não se perdeu: o próprio modal oferece **Fale com um
+  especialista**, e o botão da gaveta abre o mesmo modal em vez de duplicar a conversa.
+- **Os três endereços externos se trocam no painel.** *Sistema → Configurações* ganhou o
+  cartão **Acessos externos do site** com financeiro e os dois servidores; o que a tela grava
+  fica no banco e vence `config/golden.acessos`, que só conduz enquanto ninguém salvou. O
+  portal não aparece na lista porque é rota interna e acompanha a sessão do cliente.
+
+### Adicionado
+- **Submenu e modal sem uma requisição a mais.** Ambos são markup, CSS e JS da casa (nada de
+  biblioteca nova): o submenu anima na mesma curva dos demais menus, o modal tranca o corpo,
+  prende o foco, devolve o foco ao botão que o abriu, fecha com `Esc` e com o véu, e os dois
+  respeitam `prefers-reduced-motion`.
+- `PortalDoClienteTest` ganhou o contrato do ícone com as duas portas, do modal com os dois
+  servidores e da troca de endereços pelo painel — inclusive que o texto antigo saiu do topo
+  e que o botão guardou a classe dourada.
+
 ## [2.34.0] - 2026-10-26
 
 ### Alterado

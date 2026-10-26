@@ -215,6 +215,14 @@ class AppServiceProvider extends ServiceProvider
         // Header, gaveta e rodapé compartilham a mesma resposta: para onde a Área do cliente leva.
         $rotaConta = Auth::guard('cliente')->check() ? 'portal.inicio' : 'portal.login';
 
+        // O que aponta para fora do site: portal financeiro antigo e os dois servidores de
+        // rastreamento. O painel grava cada endereço; sem nada gravado, o config conduz.
+        $acessos = [
+            'financeiro_url' => $pegar('acesso_financeiro_url', config('golden.acessos.financeiro')),
+            'servidor_1_url' => $pegar('acesso_servidor_1_url', config('golden.acessos.servidor_1')),
+            'servidor_2_url' => $pegar('acesso_servidor_2_url', config('golden.acessos.servidor_2')),
+        ];
+
         return $this->site = [
             'marca' => config('golden.marca'),
             'credito' => config('golden.credito'),
@@ -236,8 +244,9 @@ class AppServiceProvider extends ServiceProvider
             'parceiros' => config('golden.parceiros_m2m'),
             'loja_ativa' => $lojaAtiva,
             'carrinho_itens' => $lojaAtiva ? Carrinho::daSessao()->totalItens() : 0,
-            'nav' => $this->montarMenu($lojaAtiva, $rotaConta),
+            'nav' => $this->montarMenu($lojaAtiva, $rotaConta, $acessos['financeiro_url']),
             'portal_url' => route($rotaConta),
+            'acessos' => $acessos,
             'tracking' => $pegar('tracking_enabled', '0') === '1',
             'ga_id' => $pegar('ga_measurement_id'),
             'meta_pixel' => $pegar('meta_pixel_id'),
@@ -249,7 +258,7 @@ class AppServiceProvider extends ServiceProvider
      * dinâmicos (categorias da loja, páginas do CMS e a entrada do portal) são
      * resolvidos aqui, para que header e gaveta mobile compartilhem os mesmos itens.
      */
-    private function montarMenu(bool $lojaAtiva, string $rotaConta): array
+    private function montarMenu(bool $lojaAtiva, string $rotaConta, string $financeiroUrl): array
     {
         $rotaAtual = optional(request()->route())->getName() ?: '';
         $paginaAtual = (string) request()->route('slug');
@@ -276,11 +285,14 @@ class AppServiceProvider extends ServiceProvider
         };
 
         $montar = function (array $item, bool $pai = false) use ($bate, $rotaAtual): array {
+            $endereco = fn (array $f) => $f['url'] ?? (isset($f['rota']) ? route($f['rota'], $f['param'] ?? []) : null);
+
             $filhos = collect($item['filhos'] ?? [])
                 ->map(fn ($f) => [
                     'titulo' => $f['titulo'],
-                    'url' => route($f['rota'], $f['param'] ?? []),
-                    'ativo' => $bate($f['rota'], $f['param'] ?? null),
+                    'url' => $endereco($f),
+                    'externo' => (bool) ($f['externo'] ?? false),
+                    'ativo' => isset($f['rota']) ? $bate($f['rota'], $f['param'] ?? null) : false,
                 ])
                 ->all();
 
@@ -291,7 +303,9 @@ class AppServiceProvider extends ServiceProvider
 
             return [
                 'titulo' => $item['titulo'],
-                'url' => isset($item['rota']) ? route($item['rota'], $item['param'] ?? []) : null,
+                'url' => $endereco($item),
+                'externo' => (bool) ($item['externo'] ?? false),
+                'acesso' => (bool) ($item['acesso'] ?? false),
                 'ativo' => $ativo || collect($filhos)->contains('ativo', true),
                 'filhos' => $filhos,
             ];
@@ -299,7 +313,7 @@ class AppServiceProvider extends ServiceProvider
 
         return collect(config('golden.nav'))
             ->reject(fn ($item) => ($item['grupo'] ?? null) === 'loja' && ! $lojaAtiva)
-            ->map(function ($item) use ($montar, $paginas, $rotaConta) {
+            ->map(function ($item) use ($montar, $paginas, $rotaConta, $financeiroUrl) {
                 if (($item['grupo'] ?? null) === 'loja') {
                     $item['rota'] = 'site.loja.index';
                     $item['prefixo'] = 'site.loja.';
@@ -325,6 +339,14 @@ class AppServiceProvider extends ServiceProvider
 
                 if (($item['grupo'] ?? null) === 'conta') {
                     $item['rota'] = $rotaConta;
+                    // No topo o item vira ícone com submenu (ver o partial do cabeçalho); na
+                    // gaveta, o mesmo item abre as duas portas em acordeão. `acesso` é o que
+                    // diz ao partial que esta entrada tem tratamento próprio.
+                    $item['acesso'] = true;
+                    $item['filhos'] = [
+                        ['titulo' => 'Painel do cliente', 'rota' => $rotaConta],
+                        ['titulo' => 'Financeiro antigo', 'url' => $financeiroUrl, 'externo' => true],
+                    ];
                 }
 
                 return $montar($item, true);

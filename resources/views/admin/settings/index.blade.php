@@ -42,6 +42,15 @@
                 </div>
             </x-admin.card>
 
+            <x-admin.card title="Acessos externos do site" icon="fa-arrow-up-right-from-square" class="mt-3"
+                descricao="Para onde levam o submenu da conta e o botão do topo do site. O portal do cliente é rota interna e não aparece aqui.">
+                <div class="row g-3">
+                    <x-admin.field name="acesso_financeiro_url" type="url" label="Financeiro antigo" :value="$settings['acesso_financeiro_url'] ?? config('golden.acessos.financeiro')" maxlength="255" :opcional="true" placeholder="https://financeiro.exemplo.com.br/login" hint="Abre em outra aba, pelo submenu do ícone de login." />
+                    <x-admin.field name="acesso_servidor_1_url" type="url" label="Servidor de rastreamento 1" :value="$settings['acesso_servidor_1_url'] ?? config('golden.acessos.servidor_1')" maxlength="255" :opcional="true" placeholder="https://app1.exemplo.com.br" />
+                    <x-admin.field name="acesso_servidor_2_url" type="url" label="Servidor de rastreamento 2" :value="$settings['acesso_servidor_2_url'] ?? config('golden.acessos.servidor_2')" maxlength="255" :opcional="true" placeholder="http://203.0.113.10:8082/" hint="Cada servidor aparece como uma opção no botão do topo do site." />
+                </div>
+            </x-admin.card>
+
             <x-admin.card title="Medição e consentimento" icon="fa-chart-area" class="mt-3"
                 descricao="Só habilite a coleta depois de publicar a Política de Privacidade e o banner de consentimento.">
                 <div class="row g-3">

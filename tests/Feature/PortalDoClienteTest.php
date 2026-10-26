@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -504,6 +505,56 @@ class PortalDoClienteTest extends TestCase
         $this->actingAs($cliente, 'cliente');
 
         $this->get('/')->assertOk()->assertSee('href="'.route('portal.inicio').'"', false);
+    }
+
+    public function test_o_cabecalho_entrega_a_conta_e_os_dois_servidores_de_rastreamento(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // No topo o texto virou ícone: ele abre o submenu com as duas portas de quem já é
+        // cliente. O portal é rota interna; o financeiro é outro sistema e sai em nova aba.
+        $topo = Str::before(Str::after($html, '<nav class="nav-links"'), '</nav>');
+        $this->assertStringNotContainsString('Área do cliente', $topo);
+
+        $cabecalho = Str::before(Str::after($html, '<div class="nav-cta">'), '<button class="nav-toggle"');
+        $this->assertStringContainsString('class="nav-acesso" data-acesso', $cabecalho);
+        $this->assertStringContainsString('aria-controls="acessoContaMenu"', $cabecalho);
+        $this->assertStringContainsString('href="'.route('portal.login').'"', $cabecalho);
+        $this->assertStringContainsString('href="'.config('golden.acessos.financeiro').'" target="_blank" rel="noopener"', $cabecalho);
+
+        // O botão dourado continua botão, com a mesma classe de sempre: o clique abre o modal.
+        $this->assertStringContainsString('class="btn btn-gold btn-sm nav-especialista" data-acesso-plataformas', $html);
+        $this->assertStringContainsString('class="btn btn-gold btn-sm drawer-cta" data-acesso-plataformas', $html);
+        $this->assertStringContainsString('id="acessoPlataformas"', $html);
+        $this->assertStringContainsString('href="'.config('golden.acessos.servidor_1').'" target="_blank" rel="noopener"', $html);
+        $this->assertStringContainsString('href="'.config('golden.acessos.servidor_2').'" target="_blank" rel="noopener"', $html);
+    }
+
+    public function test_os_enderecos_de_acesso_sao_trocados_no_painel_e_o_site_obedece(): void
+    {
+        $this->actingAs($this->admin)->get(route('admin.settings.index'))->assertOk()
+            ->assertSee('acesso_financeiro_url', false)
+            ->assertSee('acesso_servidor_1_url', false)
+            ->assertSee('acesso_servidor_2_url', false);
+
+        // O banco vence o config: é assim que a troca feita no painel chega ao site.
+        $this->actingAs($this->admin)->post(route('admin.settings.update'), [
+            'site_nome' => 'Golden Rastreamento',
+            'contato_whatsapp' => '(19) 99710-1483',
+            'acesso_financeiro_url' => 'https://financeiro.exemplo.com.br/entrar',
+            'acesso_servidor_1_url' => 'https://servidor-um.exemplo.com.br',
+            'acesso_servidor_2_url' => 'https://servidor-dois.exemplo.com.br:9000/',
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $this->assertDatabaseHas('settings', ['key' => 'acesso_financeiro_url', 'value' => 'https://financeiro.exemplo.com.br/entrar']);
+        $this->assertDatabaseHas('settings', ['key' => 'acesso_servidor_1_url', 'value' => 'https://servidor-um.exemplo.com.br']);
+
+        $this->get('/')->assertOk()
+            ->assertSee('https://financeiro.exemplo.com.br/entrar', false)
+            ->assertSee('https://servidor-um.exemplo.com.br', false)
+            ->assertSee('https://servidor-dois.exemplo.com.br:9000/', false)
+            ->assertDontSee(config('golden.acessos.financeiro'), false)
+            ->assertDontSee(config('golden.acessos.servidor_1'), false);
     }
 
     public function test_o_contrato_publicado_no_painel_chega_ao_portal_com_o_pdf(): void

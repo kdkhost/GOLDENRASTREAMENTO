@@ -228,6 +228,17 @@ return [
     'whatsapp' => env('GOLDEN_WHATSAPP', '5519997101483'),
     'email' => env('GOLDEN_EMAIL', 'comercial@goldenrastreamento.com.br'),
 
+    // As portas de entrada de quem já é cliente: o financeiro antigo, no submenu da conta, e
+    // os dois servidores de rastreamento, no botão do topo. O portal da plataforma é rota
+    // interna (muda de porta sozinho com a sessão) e por isso não aparece aqui. Cada endereço
+    // pode ser trocado em Configurações no painel — o banco vence este arquivo, e o arquivo
+    // só conduz enquanto ninguém gravou nada.
+    'acessos' => [
+        'financeiro' => env('GOLDEN_FINANCEIRO_URL', 'https://financeiro.goldenrastreamento.com.br/login'),
+        'servidor_1' => env('GOLDEN_SERVIDOR_1_URL', 'https://app1.goldenrastreamento.com.br'),
+        'servidor_2' => env('GOLDEN_SERVIDOR_2_URL', 'http://134.209.82.248:8082/'),
+    ],
+
     // Página de listagem do painel: quantos registros cabem em uma página. As 12 listagens
     // paginam por aqui; nenhuma tela escolhe número próprio.
     'itens_por_pagina' => 20,
