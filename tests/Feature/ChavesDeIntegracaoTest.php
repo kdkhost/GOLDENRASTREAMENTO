@@ -121,8 +121,8 @@ class ChavesDeIntegracaoTest extends TestCase
 
     public function test_cada_campo_de_chave_ocupa_a_linha_inteira_do_cartao(): void
     {
-        // Os três cartões lado a lado são estreitos (col-xl-4). Campo dividido em meia coluna
-        // fazia a dica e o nome da variável invadirem o vizinho — a tela ficava ilegível.
+        // Cada grupo é uma aba, e a aba é uma coluna só: campo dividido em meia coluna fazia a
+        // dica e o nome da variável invadirem o vizinho — a tela ficava ilegível.
         foreach (ChavesDeIntegracao::campos() as $campo) {
             $this->assertArrayNotHasKey('col', $campo, "O campo {$campo['chave']} voltou a escolher a própria largura.");
         }

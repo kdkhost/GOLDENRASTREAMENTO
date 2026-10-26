@@ -20,11 +20,24 @@ class SettingController extends Controller
         ]);
     }
 
+    /**
+     * A tela de Configurações é dividida em abas, e cada aba grava só o que mandou.
+     *
+     * `_aba` diz de onde veio o POST: só *Contato e endereço* exige nome do site e WhatsApp
+     * (as outras abas mandam o formulário sem eles), e só *Medição* mexe no interruptor de
+     * coleta — que é checkbox, e checkbox desmarcado não viaja no POST. O que a aba não
+     * manda fica fora do `$data` (o validador não devolve campo ausente), então salvar uma
+     * aba nunca apaga o que está em outra.
+     */
     public function update(Request $request): RedirectResponse
     {
+        $aba = (string) $request->input('_aba');
+        $aba = in_array($aba, ['contato', 'acessos', 'medicao'], true) ? $aba : 'contato';
+        $contato = $aba === 'contato';
+
         $data = $request->validate([
-            'site_nome' => ['required', 'string', 'max:120'],
-            'contato_whatsapp' => ['required', 'string', 'max:32'],
+            'site_nome' => [$contato ? 'required' : 'nullable', 'string', 'max:120'],
+            'contato_whatsapp' => [$contato ? 'required' : 'nullable', 'string', 'max:32'],
             'contato_telefone' => ['nullable', 'string', 'max:60'],
             'contato_email' => ['nullable', 'email', 'max:160'],
             'empresa_endereco' => ['nullable', 'string', 'max:255'],
@@ -54,16 +67,27 @@ class SettingController extends Controller
             'gtm_id' => ['nullable', 'string', 'max:60'],
         ]);
 
-        $data['contato_whatsapp'] = preg_replace('/\D/', '', $data['contato_whatsapp']);
-        $data['tracking_enabled'] = $request->boolean('tracking_enabled') ? '1' : '0';
+        if (isset($data['contato_whatsapp'])) {
+            $data['contato_whatsapp'] = preg_replace('/\D/', '', $data['contato_whatsapp']);
+        }
+
+        if ($aba === 'medicao') {
+            $data['tracking_enabled'] = $request->boolean('tracking_enabled') ? '1' : '0';
+        }
 
         foreach ($data as $chave => $valor) {
             Setting::set($chave, $valor);
         }
 
-        Activity::log('configuracao_salva', 'Configurações do sistema atualizadas.');
+        $rotulos = [
+            'contato' => 'Contato e endereço',
+            'acessos' => 'Acessos do site',
+            'medicao' => 'Medição e consentimento',
+        ];
 
-        return back()->with('success', 'Configurações salvas.');
+        Activity::log('configuracao_salva', 'Configurações de '.$rotulos[$aba].' atualizadas.');
+
+        return back()->with('success', $rotulos[$aba].' salvos.');
     }
 
     /**

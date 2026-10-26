@@ -102,6 +102,7 @@
 @include('partials.to-top')
 
 @include('admin.partials.scripts')
+<script src="{{ asset('js/admin-abas.js') }}?v={{ filemtime(public_path('js/admin-abas.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
 <script src="{{ asset('js/golden-upload.js') }}?v={{ filemtime(public_path('js/golden-upload.js')) }}"></script>
 <script src="{{ asset('js/admin-notificacoes.js') }}?v={{ filemtime(public_path('js/admin-notificacoes.js')) }}"></script>

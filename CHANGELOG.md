@@ -3,6 +3,32 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.39.0] - 2026-10-26
+
+### Adicionado
+- **Configurações em abas: um tipo de configuração por aba.** A tela `/admin/configuracoes`
+  deixou de ser uma lista corrida e passou a ter seis abas — **Contato e endereço**, **Acessos do
+  site**, **Loja virtual**, **WhatsApp**, **Medição** e **Chaves de integração** —, cada uma com o
+  seu próprio conteúdo, o seu botão de salvar no pé e nada de outra aba misturado no meio.
+- **Chaves de integração com uma aba interna por grupo.** Os oito grupos (Google Ads, Avaliações
+  do Google, E-mail de disparo, WHMCS e os quatro do assistente) viraram pílulas dentro da aba de
+  chaves, em grade no computador e em fila com rolagem lateral no celular.
+- **Componente de abas do painel** (`public/js/admin-abas.js`), sem nome de tela dentro: devolve a
+  pessoa à última aba usada, obedece a link com hash (`#chaves-google-ads` abre Chaves → Google
+  Ads, o mesmo endereço que os atalhos do painel já usavam), abre a aba do primeiro campo com erro
+  — senão o motivo da recusa ficava escondido — e rola a barra até a aba aberta quando ela sai do
+  campo de visão no celular.
+- **Cada aba salva só o que mandou.** O formulário leva um `_aba` dizendo de onde veio; o
+  controlador grava apenas os campos presentes no POST. Salvar a aba de acessos não apaga nome do
+  site, WhatsApp nem o interruptor de medição — e o contato continua obrigatório na própria aba.
+
+### Alterado
+- **A aba aberta é dourada nos dois níveis**, com o mesmo par de tokens da marca: a barra de cima
+  é um segmentado com ícone por tipo, e as pílulas internas usam o tom de ouro sobre o fundo do
+  cartão. No tema escuro e no claro a leitura é a mesma, porque nenhuma cor foi escrita à mão.
+- **O botão de salvar mora no pé da aba**, separado do conteúdo por uma linha discreta, em vez de
+  ficar solto depois do último cartão.
+
 ## [2.38.0] - 2026-10-26
 
 ### Adicionado

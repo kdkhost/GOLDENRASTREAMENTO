@@ -52,8 +52,10 @@ class TemasEIconesDoPainelTest extends TestCase
         foreach ($this->viewsDoPainel() as $arquivo) {
             $conteudo = $this->ler($arquivo);
 
+            // A cor é `#` seguido de hex e terminada ali. O `#` de uma âncora ou de um
+            // `data-bs-target="#aba-contato"` não conta: vem grudado em letras e hífen.
             $this->assertDoesNotMatchRegularExpression(
-                '/#[0-9a-fA-F]{3,6}\b/',
+                '/#[0-9a-fA-F]{3,8}(?![0-9A-Za-z_-])/',
                 $conteudo,
                 "{$arquivo} traz cor em hexadecimal; use um token de golden-theme.css."
             );

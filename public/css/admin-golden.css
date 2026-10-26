@@ -184,3 +184,32 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 .sino-quando{font-size:.7rem;color:var(--bs-secondary-color)}
 .sino-vazio{padding:1.4rem .85rem;text-align:center;font-size:.82rem;color:var(--bs-secondary-color)}
 .sino-rodape{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem;padding:.55rem .85rem;background:var(--bs-tertiary-bg);font-size:.78rem}
+
+/* Abas do painel: a barra de cima (um tipo de configuração por aba), as pílulas dos grupos
+   internos e a barra de salvar no pé. Só tokens do tema, então claro e escuro vêm juntos. */
+.abas-barra{margin-bottom:1rem;scroll-margin-top:74px}
+.abas-nav{display:flex;flex-wrap:nowrap;gap:.25rem;margin:0;padding:.3rem;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg);background:var(--bs-body-bg);overflow-x:auto;scrollbar-width:thin}
+.abas-nav .nav-link{display:flex;align-items:center;gap:.45rem;padding:.5rem .8rem;border:1px solid transparent;border-radius:var(--radius-md);color:var(--bs-secondary-color);font-size:.86rem;font-weight:600;white-space:nowrap;transition:background .2s var(--ease),color .2s var(--ease)}
+.abas-nav .nav-link:hover{color:var(--bs-body-color);background:var(--bs-tertiary-bg)}
+.abas-nav .nav-link:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.abas-nav .nav-link i{color:var(--bs-secondary-color);transition:color .2s var(--ease)}
+.abas-nav .nav-link.active{background:var(--t-gold-bg);border-color:transparent;color:var(--t-gold-fg)}
+.abas-nav .nav-link.active i{color:var(--t-gold-fg)}
+
+/* Um grupo por pílula, em grade que se ajusta à largura: rótulo comprido quebra em duas
+   linhas em vez de empurrar os vizinhos. No celular viram uma fila com rolagem lateral. */
+.abas-pilulas{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.35rem;margin:0 0 1rem;padding:0;list-style:none;scroll-margin-top:74px}
+.abas-pilulas .nav-link{display:flex;align-items:center;gap:.5rem;width:100%;height:100%;padding:.55rem .7rem;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-md);background:var(--bs-body-bg);color:var(--bs-body-color);font-size:.84rem;font-weight:600;line-height:1.25;text-align:left}
+.abas-pilulas .nav-link i{flex:none;width:1.1rem;text-align:center;color:var(--bs-secondary-color)}
+.abas-pilulas .nav-link:hover{background:var(--bs-tertiary-bg)}
+.abas-pilulas .nav-link.active{border-color:transparent;background:var(--t-gold-bg);color:var(--t-gold-fg)}
+.abas-pilulas .nav-link.active i{color:var(--t-gold-fg)}
+@media (max-width:767.98px){
+    .abas-pilulas{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:.15rem}
+    .abas-pilulas .nav-item{flex:none}
+    .abas-pilulas .nav-link{white-space:nowrap}
+}
+
+/* O pé de cada aba: o botão de salvar separado do conteúdo por uma linha discreta. */
+.abas-salvar{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;padding-top:1rem;border-top:1px dashed var(--bs-border-color)}
+.abas-aninhadas{margin-top:.25rem}
