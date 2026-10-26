@@ -36,8 +36,11 @@
         <select id="{{ $id }}" name="{{ $name }}" class="{{ $classe }} {{ $attributes->get('class') }}"
             @if($required) required @endif {!! $extra !!}>
             @if($empty !== null)<option value="">{{ $empty }}</option>@endif
-            @foreach($options as $chave => $rotulo)
-                <option value="{{ $chave }}" @selected((string) $atual === (string) $chave)>{{ $rotulo }}</option>
+            {{-- Os nomes abaixo não podem ser $chave: ela guarda a chave pontuada do validador,
+                 e um laço que a reescreve cala o @error() do campo — a caixa fica vermelha e
+                 muda de tamanho, mas ninguém lê o motivo. --}}
+            @foreach($options as $valorOpcao => $rotuloOpcao)
+                <option value="{{ $valorOpcao }}" @selected((string) $atual === (string) $valorOpcao)>{{ $rotuloOpcao }}</option>
             @endforeach
         </select>
     @else

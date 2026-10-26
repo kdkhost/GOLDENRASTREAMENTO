@@ -126,14 +126,14 @@
     </div>
 
     {{-- As credenciais que até aqui só existiam no .env. Um card por grupo, um endpoint só:
-         a tela percorre ChavesDeIntegracao::GRUPOS, então acrescentar uma chave é escrever na
+         a tela percorre ChavesDeIntegracao::grupos(), então acrescentar uma chave é escrever na
          lista — ninguém precisa mexer em view nem em controle para isso aparecer aqui. --}}
     <div class="col-12" id="chaves">
         <h6 class="zone-title"><i class="fas fa-key text-tone-gold" aria-hidden="true"></i> Chaves de integração</h6>
         <p class="form-hint">O que for gravado aqui vale na hora, sem tocar no servidor, e fica cifrado no banco quando é segredo. Campo vazio é o painel se retirando do caminho: o <code>.env</code> deste servidor volta a conduzir aquele valor.</p>
 
         <div class="row g-3">
-            @foreach (\App\Support\ChavesDeIntegracao::GRUPOS as $id => $grupo)
+            @foreach (\App\Support\ChavesDeIntegracao::grupos() as $id => $grupo)
                 <div class="col-12 col-xl-4">
                     <x-admin.card :title="$grupo['rotulo']" :icon="$grupo['icone']" :descricao="$grupo['descricao']">
                         <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3">

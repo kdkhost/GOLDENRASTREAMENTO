@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Assistente\Provedores\Fabrica;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Support\ChavesDeIntegracao;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -238,5 +239,105 @@ class ChavesDeIntegracaoTest extends TestCase
 
         $this->actingAs($vendedor)->get(route('admin.settings.index'))->assertForbidden();
         $this->actingAs($vendedor)->post(route('admin.settings.chaves'), ['grupo' => 'email'])->assertForbidden();
+    }
+
+    /* ------------------------------------------------------------------ Assistente */
+
+    public function test_a_tela_mostra_os_quatro_grupos_do_assistente(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('admin.settings.index'))
+            ->assertOk()
+            ->assertSee('Assistente — chave de cada provedor')
+            ->assertSee('Assistente — modelo por capacidade')
+            ->assertSee('Assistente — o que o chat aceita')
+            ->assertSee('Assistente — aprender da internet')
+            ->assertSee('ASSISTENTE_GEMINI_KEY', false)
+            ->assertSee('ASSISTENTE_MODELO_VISAO', false);
+    }
+
+    public function test_a_tela_so_oferece_o_modelo_que_a_fabrica_sabe_usar(): void
+    {
+        // A lista do seletor e a lista que a chamada de HTTP aceita têm de ser a mesma lista.
+        // Escrita à mão em dois lugares, o painel passaria a oferecer um modelo que morre na API.
+        $campos = collect(ChavesDeIntegracao::grupos()['assistente-modelos']['campos']);
+
+        foreach (array_keys((array) config('assistente.capacidades')) as $capacidade) {
+            $campo = $campos->firstWhere('chave', 'assistente_rodada_'.$capacidade);
+
+            $this->assertNotNull($campo, "A capacidade {$capacidade} ficou sem seletor na tela.");
+            $this->assertSame(Fabrica::opcoesPara($capacidade), $campo['opcoes']);
+        }
+
+        $this->assertSame(Fabrica::opcoesDeVoz(), $campos->firstWhere('chave', 'assistente_voz_padrao')['opcoes']);
+    }
+
+    public function test_o_painel_recusa_o_modelo_que_nao_existe_naquela_capacidade(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('admin.settings.chaves'), [
+                'grupo' => 'assistente-modelos',
+                'assistente_rodada_documento' => 'openai/gpt-4o',
+            ])
+            ->assertSessionHasErrors('assistente_rodada_documento');
+
+        // GPT-4o conversa e vê imagem, mas não lê documento: a recusa protege da escolha muda.
+        $this->assertSame(0, Setting::where('key', 'assistente_rodada_documento')->count());
+    }
+
+    public function test_o_painel_grava_o_interruptor_o_decimal_e_o_inteiro_cada_um_no_seu_tipo(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('admin.settings.chaves'), [
+                'grupo' => 'assistente-chat',
+                'assistente_documento' => '0',
+                'assistente_documento_mb' => '6,5',
+                'assistente_resposta_max' => '700',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        ChavesDeIntegracao::aplicar();
+
+        $this->assertFalse(config('assistente.permissoes.documento'));
+        $this->assertSame(6.5, config('assistente.midia.documento_mb_max'));
+        $this->assertSame(700, config('assistente.resposta.caracteres_max'));
+
+        // "Não" gravado é decisão do painel, e a tela diz isso em vez de "sem valor".
+        $this->assertSame('banco', ChavesDeIntegracao::origem('assistente_documento'));
+    }
+
+    public function test_a_lista_de_enderecos_grava_sem_espaço_sem_repetido_e_le_de_volta_array(): void
+    {
+        ChavesDeIntegracao::guardar('assistente_dominios', ' goldenrastreamento.com.br, blog.golden , goldenrastreamento.com.br ');
+        ChavesDeIntegracao::aplicar();
+
+        $this->assertSame(['goldenrastreamento.com.br', 'blog.golden'], config('assistente.aprendizado.dominios'));
+        $this->assertSame('goldenrastreamento.com.br, blog.golden', ChavesDeIntegracao::vigente('assistente_dominios'));
+    }
+
+    public function test_a_frase_de_erro_usa_o_nome_que_a_tela_mostra(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('admin.settings.chaves'), ['grupo' => 'assistente-chat', 'assistente_documento' => '2'])
+            ->assertSessionHasErrors('assistente_documento');
+
+        // "assistente_documento" é o nome da coluna; o administrador lê "O cliente pode mandar
+        // documento". O rótulo vem de grupos() e o controle só o empresta ao validador.
+        $frase = session('errors')->get('assistente_documento');
+
+        $this->assertSame('O valor escolhido para O cliente pode mandar documento é inválido.', $frase[0]);
+    }
+
+    public function test_o_seletor_nao_perde_a_chave_que_o_validador_usa(): void
+    {
+        $componente = file_get_contents(resource_path('views/components/admin/field.blade.php'));
+
+        // O laço das opções já se chamou `foreach ($options as $chave => $rotulo)`, e $chave é a
+        // variável que guarda a chave pontuada do validador: depois da última <option> ela valia
+        // o valor da opção, o @error() procurava um campo que ninguém digitou e a caixa ficava
+        // vermelha sem uma palavra sobre o motivo.
+        $this->assertStringNotContainsString('as $chave =>', $componente);
+        $this->assertStringContainsString('@foreach($options as $valorOpcao => $rotuloOpcao)', $componente);
     }
 }

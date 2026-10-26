@@ -85,23 +85,41 @@ class SettingController extends Controller
     public function chaves(Request $request): RedirectResponse
     {
         $grupo = $request->input('grupo');
-        $campos = ChavesDeIntegracao::GRUPOS[$grupo]['campos'] ?? null;
+        $definicao = ChavesDeIntegracao::grupos()[$grupo] ?? null;
 
-        if ($campos === null) {
+        if ($definicao === null) {
             return back()->with('error', 'Grupo de chaves desconhecido.');
         }
 
+        $campos = $definicao['campos'];
         $regras = [];
+        $nomes = [];
 
         foreach ($campos as $campo) {
-            // Toda chave admite vazio — é assim que se devolve um valor ao .env. Os campos com
-            // `'regras'` próprios (porta, e-mail, listas fechadas) mandam nelas sozinhos:
-            // somar um `max:255` por cima transformaria "465" em string de 3 caracteres e o
-            // validador acusaria um número que está certo.
-            $regras[$campo['chave']] = array_merge(['nullable'], $campo['regras'] ?? ['string', 'max:255']);
+            // Toda chave admite vazio — é assim que se devolve um valor ao .env. O resto da regra
+            // é de `ChavesDeIntegracao::regras()`, que conhece o tipo e a lista fechada de cada
+            // campo: somar um `max:255` por cima transformaria "465" em string de 3 caracteres e
+            // o validador acusaria um número que está certo.
+            $regras[$campo['chave']] = array_merge(['nullable'], ChavesDeIntegracao::regras($campo));
+
+            // O nome do campo na frase de erro é o rótulo da tela, não o nome da coluna do banco:
+            // "assistente rodada conversa" é o que o validador inventaria sozinho, e ninguém
+            // administra a máquina pelo nome de variável do config.
+            $nomes[$campo['chave']] = $campo['label'];
+
+            // Brasileiro escreve vírgula no megabyte. O validador da framework só conhece o ponto
+            // (`is_numeric('6,5')` é falso), então a vírgula é trocada antes de validar — e o
+            // `cast` float faz o resto na hora de gravar.
+            if (($campo['cast'] ?? null) === 'float') {
+                $decimal = str_replace(',', '.', (string) $request->input($campo['chave'], ''));
+
+                // Vazio continua vazio — nulo, não string vazia, que é o que `nullable` aceita e
+                // o que devolve o valor ao `.env`.
+                $request->merge([$campo['chave'] => $decimal === '' ? null : $decimal]);
+            }
         }
 
-        $dados = $request->validate($regras);
+        $dados = $request->validate($regras, [], $nomes);
         $mexidas = 0;
 
         foreach ($campos as $campo) {
@@ -118,7 +136,7 @@ class SettingController extends Controller
             }
         }
 
-        $rotulo = ChavesDeIntegracao::GRUPOS[$grupo]['rotulo'];
+        $rotulo = $definicao['rotulo'];
         Activity::log('chaves_integracao', "Chaves de integração de {$rotulo} atualizadas ({$mexidas} campo(s) com mudança).");
 
         return back()->with('success', $mexidas === 0
