@@ -3,6 +3,28 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.37.0] - 2026-10-26
+
+### Adicionado
+- **A caixa do WhatsApp inteira agora se edita item por item no painel.** Em
+  *Sistema → Configurações → Botão do WhatsApp no site*, cada item que o visitante lê ganhou o
+  seu campo: título, subtítulo, selo ao lado do ponto verde, dica do botão do canto, rótulo do
+  rodapé e a mensagem que já vai escrita na conversa do rodapé. Em cada canal humano entram
+  nome, descrição, ícone (lista fechada), número próprio, mensagem pronta e o interruptor — o
+  antes/agora do atendente deixa de depender de `config/golden.php`.
+- `config/golden.php` ganhou `whatsapp_box.online`, `whatsapp_box.flutuante`,
+  `whatsapp_box.rodape` e a lista fechada `whatsapp_box.icones`, que a validação e o select do
+  painel compartilham.
+- `CaixaDoWhatsappTest` cobre o campo de cada item no painel, os textos gravados chegando ao
+  site, o canal com número e mensagem próprios, o retorno ao padrão quando o campo fica em
+  branco e a recusa de ícone fora da lista.
+
+### Alterado
+- `AppServiceProvider::montarCanais()` lê ícone e mensagem pronta do banco (antes só nome,
+  descrição, número e interruptor), com qualquer ícone fora da lista voltando ao padrão do canal.
+- O bloco de canais da tela de Configurações virou um cartão por atendente, com todos os
+  campos à vista; o assistente virtual continua apontando para a ficha dele em Atendimento.
+
 ## [2.36.1] - 2026-10-26
 
 ### Alterado

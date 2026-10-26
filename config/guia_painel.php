@@ -523,7 +523,7 @@ return [
                 ['tipo' => 'lista', 'itens' => [
                     'Gerais — nome do site, WhatsApp, telefone, e-mail, endereço, cidade e CEP.',
                     'Rastreamento — ligar ou desligar a medição própria e as etiquetas externas: Google Analytics (`ga_measurement_id`), Meta Pixel e GTM. Deixar tudo vazio é legítimo: a atribuição do sistema não depende de nenhum dos três.',
-                    'WhatsApp — a caixa multicanal do botão flutuante: título, subtítulo e um número por canal, cada um ligável separadamente.',
+                    'WhatsApp — a caixa multicanal do botão flutuante inteira, item por item: título, subtítulo, selo de status, dica do botão, rodapé e mensagem de abertura; e, em cada canal, nome, descrição, ícone, número, mensagem pronta e o interruptor. Campo em branco devolve aquele item ao texto padrão da casa.',
                     'Loja — liga e desliga a vitrine, e guarda frete, corte do frete grátis, retirada, chave Pix e o e-mail que recebe o alerta de venda.',
                     'Acessos externos do site — o financeiro antigo e os dois servidores de rastreamento, para onde levam o submenu do ícone de login e o botão **Rastreamento** no cabeçalho do site. O portal do cliente não aparece aqui: é rota interna e acompanha a sessão.',
                     'Textos dos acessos — o rótulo do botão dourado, o nome do ícone de conta, o título da área do cliente, as duas portas do submenu, o título e a descrição do modal, o nome e o ícone de cada servidor e a frase de ajuda. Tudo em branco volta ao texto padrão da casa.',

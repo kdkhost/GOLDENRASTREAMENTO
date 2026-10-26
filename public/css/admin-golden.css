@@ -149,10 +149,10 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 /* miúdos que aparecem em mais de uma página */
 .avatar-letter{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--t-gold-bg);color:var(--t-gold-fg)}
 .thumb-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none;background:var(--t-gold-bg)}
-.canal-linha{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.35rem .75rem;padding:.4rem 0;border-top:1px solid var(--bs-border-color-translucent)}
-.canal-linha > div:first-child{flex:1 1 11rem}
-.canal-linha small{font-size:.7rem!important}
-.canal-numero{flex:0 0 8.5rem}
+.canal-bloco{margin-top:.7rem;padding:.7rem .8rem 0;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg);background:var(--bs-tertiary-bg)}
+.canal-bloco .form-check{margin-bottom:.3rem}
+.canal-bloco .form-check-label{font-weight:600}
+.canal-bloco small{font-size:.7rem!important}
 
 /* Imagens do site (CMS): um card por slot, com a foto que está no ar na frente.
    Só tokens — o mesmo card serve no tema claro e no escuro. */

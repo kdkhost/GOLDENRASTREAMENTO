@@ -255,6 +255,9 @@ class AppServiceProvider extends ServiceProvider
                 'ativo' => $boxAtivo,
                 'titulo' => $pegar('whatsapp_box_titulo', $box['titulo']),
                 'subtitulo' => $pegar('whatsapp_box_subtitulo', $box['subtitulo']),
+                'online' => $pegar('whatsapp_box_online', $box['online']),
+                'flutuante' => $pegar('whatsapp_box_flutuante', $box['flutuante']),
+                'rodape' => $pegar('whatsapp_box_rodape', $box['rodape']),
                 'abertura' => $pegar('whatsapp_box_abertura', $box['abertura']),
             ],
             'canais' => $canais,
@@ -389,20 +392,26 @@ class AppServiceProvider extends ServiceProvider
     private function montarCanais(): array
     {
         $canais = [];
+        $icones = config('golden.whatsapp_box.icones');
 
         foreach (config('golden.whatsapp_box.canais') as $canal) {
             $id = $canal['id'];
+            $chave = 'whatsapp_canal_'.$id;
 
-            if (Setting::get('whatsapp_canal_'.$id.'_ativo', '1') !== '1') {
+            if (Setting::get($chave.'_ativo', '1') !== '1') {
                 continue;
             }
 
+            // Um ícone fora da lista fechada (ou vazio) volta ao padrão do canal: o painel
+            // é o único que grava, mas a caixa não desenha um <i> que a folha não conhece.
+            $icone = (string) Setting::get($chave.'_icone', $canal['icone']);
+
             $canais[] = [
                 'id' => $id,
-                'icone' => $canal['icone'],
-                'nome' => Setting::get('whatsapp_canal_'.$id.'_nome', $canal['nome']),
-                'desc' => Setting::get('whatsapp_canal_'.$id.'_desc', $canal['desc']),
-                'url' => wa_url($canal['msg'], Setting::get('whatsapp_canal_'.$id.'_numero')),
+                'icone' => array_key_exists($icone, $icones) ? $icone : $canal['icone'],
+                'nome' => Setting::get($chave.'_nome', $canal['nome']),
+                'desc' => Setting::get($chave.'_desc', $canal['desc']),
+                'url' => wa_url(Setting::get($chave.'_msg', $canal['msg']), Setting::get($chave.'_numero')),
             ];
         }
 

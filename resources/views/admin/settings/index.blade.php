@@ -123,21 +123,38 @@
             <form method="POST" action="{{ route('admin.settings.whatsapp') }}" class="row g-3">
                 @csrf
                 <x-admin.switch name="whatsapp_box_ativo" label="Mostrar a caixa multicanal" :checked="$boxAtivo" />
-                <x-admin.field name="whatsapp_box_titulo" label="Título da caixa" :value="$settings['whatsapp_box_titulo'] ?? config('golden.whatsapp_box.titulo')" col="col-6" maxlength="120" :opcional="true" />
-                <x-admin.field name="whatsapp_box_subtitulo" label="Subtítulo" :value="$settings['whatsapp_box_subtitulo'] ?? config('golden.whatsapp_box.subtitulo')" col="col-6" maxlength="180" :opcional="true" />
 
                 <div class="col-12 pt-2">
-                    <span class="form-label">Canais</span>
-                    <div class="form-hint d-block mb-2">O número do canal é opcional: vazio, usa o WhatsApp principal ({{ $numeroPadrao }}).</div>
+                    <span class="form-label">Textos da caixa</span>
+                    <div class="form-hint d-block mb-2">Tudo o que o visitante lê no botão do canto e na caixa aberta. Em branco, vale o texto padrão da casa.</div>
+                </div>
+                <x-admin.field name="whatsapp_box_titulo" label="Título da caixa" :value="$settings['whatsapp_box_titulo'] ?? ''" col="col-12 col-md-7" maxlength="120" :opcional="true" :placeholder="config('golden.whatsapp_box.titulo')" />
+                <x-admin.field name="whatsapp_box_online" label="Selo de status" :value="$settings['whatsapp_box_online'] ?? ''" col="col-12 col-md-5" maxlength="60" :opcional="true" :placeholder="config('golden.whatsapp_box.online')" hint="Ao lado do ponto verde, no topo da caixa." />
+                <x-admin.field name="whatsapp_box_subtitulo" label="Subtítulo" :value="$settings['whatsapp_box_subtitulo'] ?? ''" col="col-12" maxlength="180" :opcional="true" :placeholder="config('golden.whatsapp_box.subtitulo')" />
+                <x-admin.field name="whatsapp_box_flutuante" label="Dica do botão flutuante" :value="$settings['whatsapp_box_flutuante'] ?? ''" col="col-12 col-md-6" maxlength="60" :opcional="true" :placeholder="config('golden.whatsapp_box.flutuante')" hint="Aparece ao passar o mouse no botão do canto." />
+                <x-admin.field name="whatsapp_box_rodape" label="Rodapé da caixa" :value="$settings['whatsapp_box_rodape'] ?? ''" col="col-12 col-md-6" maxlength="80" :opcional="true" :placeholder="config('golden.whatsapp_box.rodape')" hint="O último link, para quem não se encaixa em nenhum canal." />
+                <x-admin.field name="whatsapp_box_abertura" type="textarea" :rows="2" label="Mensagem do rodapé" :value="$settings['whatsapp_box_abertura'] ?? ''" col="col-12" maxlength="300" :opcional="true" :placeholder="config('golden.whatsapp_box.abertura')" hint="Já vai escrita na conversa quando o visitante toca no rodapé." />
+
+                <div class="col-12 pt-2">
+                    <span class="form-label">Atendentes humanos</span>
+                    <div class="form-hint d-block mb-2">Cada canal é um item: nome, descrição, ícone, número e mensagem pronta. O número vazio usa o WhatsApp principal ({{ $numeroPadrao }}); o assistente virtual tem ficha própria em Atendimento → Assistente virtual.</div>
                     @foreach(config('golden.whatsapp_box.canais') as $canal)
-                        @php $chave = 'whatsapp_canal_'.$canal['id']; @endphp
-                        <div class="canal-linha">
-                            <x-admin.switch name="{{ $chave }}_ativo" col="" :checked="($settings[$chave.'_ativo'] ?? '1') === '1'">
-                                <i class="fas {{ $canal['icone'] }} text-gold me-1" aria-hidden="true"></i>{{ $canal['nome'] }}
-                                <span class="d-block text-secondary small">{{ $canal['msg'] }}</span>
+                        @php
+                            $chave = 'whatsapp_canal_'.$canal['id'];
+                            $doBanco = fn ($campo, $padrao) => ($settings[$chave.'_'.$campo] ?? '') !== '' ? $settings[$chave.'_'.$campo] : $padrao;
+                        @endphp
+                        <div class="canal-bloco">
+                            <x-admin.switch name="{{ $chave }}_ativo" :checked="($settings[$chave.'_ativo'] ?? '1') === '1'">
+                                <i class="fas {{ $doBanco('icone', $canal['icone']) }} text-gold me-1" aria-hidden="true"></i>{{ $doBanco('nome', $canal['nome']) }}
+                                <span class="d-block text-secondary small">Ligado na caixa do site</span>
                             </x-admin.switch>
-                            <x-admin.field name="{{ $chave }}_numero" label="Número" col="" class="canal-numero"
-                                :value="$settings[$chave.'_numero'] ?? ''" placeholder="só dígitos" />
+                            <div class="row g-3">
+                                <x-admin.field name="{{ $chave }}_nome" label="Nome do atendente" :value="$settings[$chave.'_nome'] ?? ''" col="col-12 col-md-6" maxlength="60" :opcional="true" :placeholder="$canal['nome']" />
+                                <x-admin.field name="{{ $chave }}_desc" label="Descrição" :value="$settings[$chave.'_desc'] ?? ''" col="col-12 col-md-6" maxlength="120" :opcional="true" :placeholder="$canal['desc']" />
+                                <x-admin.field name="{{ $chave }}_icone" type="select" label="Ícone" :value="$settings[$chave.'_icone'] ?? ''" :options="config('golden.whatsapp_box.icones')" col="col-12 col-md-6" empty="Ícone padrão do canal" :opcional="true" />
+                                <x-admin.field name="{{ $chave }}_numero" label="Número do WhatsApp" :value="$settings[$chave.'_numero'] ?? ''" col="col-12 col-md-6" maxlength="20" :opcional="true" placeholder="só dígitos" hint="Vazio, usa o principal." />
+                                <x-admin.field name="{{ $chave }}_msg" type="textarea" :rows="2" label="Mensagem pronta no WhatsApp" :value="$settings[$chave.'_msg'] ?? ''" col="col-12" maxlength="300" :opcional="true" :placeholder="$canal['msg']" />
+                            </div>
                         </div>
                     @endforeach
                 </div>

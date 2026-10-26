@@ -519,11 +519,27 @@ return [
 
     // Caixa multicanal de WhatsApp do site (botão flutuante). Cada canal abre o
     // wa.me já com a mensagem pronta; 'numero' vazio usa o número principal do
-    // painel. Tudo pode ser sobrescrito em Admin → Configurações.
+    // painel. Cada texto desta caixa — do selo "online" ao rodapé e ao ícone de
+    // cada canal — é sobrescrito em Admin → Configurações → Botão do WhatsApp;
+    // aqui fica o padrão de quem ainda não escreveu nada. 'icones' é a lista
+    // fechada que o select do painel oferece e que a validação aceita.
     'whatsapp_box' => [
         'titulo' => 'Central de Atendimento Golden',
         'subtitulo' => 'Atendimento humano e virtual · escolha o canal',
+        'online' => 'Online agora',
+        'flutuante' => 'Falar no WhatsApp',
+        'rodape' => 'Outro assunto com a Golden →',
         'abertura' => 'Olá, Golden! Vim pelo site e preciso de atendimento.',
+        'icones' => [
+            'fa-shield-halved' => 'Escudo · emergência',
+            'fa-tags' => 'Etiquetas · comercial',
+            'fa-headset' => 'Fone · suporte',
+            'fa-file-invoice-dollar' => 'Fatura · cobrança',
+            'fa-user-tie' => 'Consultor',
+            'fa-location-dot' => 'Localização',
+            'fa-screwdriver-wrench' => 'Manutenção',
+            'fa-circle-question' => 'Dúvidas',
+        ],
         'canais' => [
             [
                 'id' => 'emergencia',

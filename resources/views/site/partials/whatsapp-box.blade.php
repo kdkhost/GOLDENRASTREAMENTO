@@ -8,6 +8,10 @@
     Sem a caixa (interruptor desligado) o botão volta a ser o link direto do WhatsApp, e o
     assistente perde a porta: o layout nem carrega a folha e o script dele. Quando não sobra
     nenhum canal de WhatsApp, o mesmo botão passa a ser a entrada do assistente.
+
+    Nenhum texto daqui mora no HTML: título, subtítulo, selo, dica do botão, rodapé, mensagem de
+    abertura e, canal por canal, nome, descrição, ícone e mensagem vêm de Admin → Configurações
+    (banco), com o padrão de `config('golden.whatsapp_box')` para o campo em branco.
 --}}
 @php
     $box = $golden['whatsapp_box'];
@@ -19,14 +23,14 @@
 
 @if ($box['ativo'] && $atendentes >= 2)
     <button type="button" class="wa-float" id="waFloat" aria-controls="waPopup" aria-expanded="false"
-            aria-label="Abrir canais de atendimento da Golden" title="Central de atendimento pelo WhatsApp">
+            aria-label="Abrir canais de atendimento da Golden" title="{{ $box['flutuante'] }}">
         @if($ia)
             <span class="ia-aviso" data-ia-aviso hidden aria-hidden="true"></span>
         @else
             <span class="wa-badge" aria-hidden="true"></span>
         @endif
         <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-        <span class="wa-tip">Falar no WhatsApp</span>
+        <span class="wa-tip">{{ $box['flutuante'] }}</span>
     </button>
 
     <div class="wa-popup" id="waPopup" role="dialog" aria-label="Canais de atendimento da Golden">
@@ -34,7 +38,7 @@
             <button type="button" class="wa-close" data-wa-close aria-label="Fechar canais de atendimento">
                 <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
-            <span class="wa-online"><i class="fa-solid fa-circle" aria-hidden="true"></i> Online agora</span>
+            <span class="wa-online"><i class="fa-solid fa-circle" aria-hidden="true"></i> {{ $box['online'] }}</span>
             <h6>{{ $box['titulo'] }}</h6>
             <small>{{ $box['subtitulo'] }}</small>
         </div>
@@ -72,7 +76,7 @@
             @endforeach
         </div>
         <a class="wa-other" href="{{ wa_url($box['abertura']) }}" target="_blank" rel="noopener"
-           data-track="whatsapp_click" data-cta="canal_geral">Outro assunto com a Golden →</a>
+           data-track="whatsapp_click" data-cta="canal_geral">{{ $box['rodape'] }}</a>
     </div>
 @elseif ($ia && count($golden['canais']) === 0)
     <button type="button" class="wa-float wa-float-ia" data-ia-abrir aria-controls="iaPainel"
@@ -87,9 +91,9 @@
     </button>
 @else
     <a class="wa-float" href="{{ wa_url($box['abertura']) }}" target="_blank" rel="noopener"
-       aria-label="Falar no WhatsApp" data-track="whatsapp_click" data-cta="float">
+       aria-label="{{ $box['flutuante'] }}" title="{{ $box['flutuante'] }}" data-track="whatsapp_click" data-cta="float">
         <span class="wa-badge" aria-hidden="true"></span>
         <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-        <span class="wa-tip">Falar no WhatsApp</span>
+        <span class="wa-tip">{{ $box['flutuante'] }}</span>
     </a>
 @endif

@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Support\ChavesDeIntegracao;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class SettingController extends Controller
@@ -69,21 +70,50 @@ class SettingController extends Controller
      * Caixa multicanal de WhatsApp do site (botão flutuante). Cada canal pode apontar
      * para outro número; número vazio herda o principal da seção de contato.
      */
+    /**
+     * A caixa multicanal inteira, item por item: os textos do cabeçalho, o selo, a dica do
+     * botão, o rodapé e a mensagem de abertura; e, em cada canal, nome, descrição, ícone,
+     * número, mensagem pronta e o interruptor. Campo vazio apaga a linha do banco e devolve
+     * aquele item ao padrão de `config('golden.whatsapp_box')` — nunca deixa buraco na tela.
+     */
     public function whatsapp(Request $request): RedirectResponse
     {
-        $data = $request->validate([
+        $icones = array_keys(config('golden.whatsapp_box.icones'));
+
+        $regras = [
             'whatsapp_box_titulo' => ['nullable', 'string', 'max:120'],
             'whatsapp_box_subtitulo' => ['nullable', 'string', 'max:180'],
-        ]);
+            'whatsapp_box_online' => ['nullable', 'string', 'max:60'],
+            'whatsapp_box_flutuante' => ['nullable', 'string', 'max:60'],
+            'whatsapp_box_rodape' => ['nullable', 'string', 'max:80'],
+            'whatsapp_box_abertura' => ['nullable', 'string', 'max:300'],
+        ];
+
+        foreach (config('golden.whatsapp_box.canais') as $canal) {
+            $chave = 'whatsapp_canal_'.$canal['id'];
+            $regras[$chave.'_nome'] = ['nullable', 'string', 'max:60'];
+            $regras[$chave.'_desc'] = ['nullable', 'string', 'max:120'];
+            $regras[$chave.'_icone'] = ['nullable', Rule::in($icones)];
+            $regras[$chave.'_numero'] = ['nullable', 'string', 'max:20'];
+            $regras[$chave.'_msg'] = ['nullable', 'string', 'max:300'];
+        }
+
+        $data = $request->validate($regras);
 
         Setting::set('whatsapp_box_ativo', $request->boolean('whatsapp_box_ativo') ? '1' : '0');
-        Setting::set('whatsapp_box_titulo', $data['whatsapp_box_titulo'] ?? '');
-        Setting::set('whatsapp_box_subtitulo', $data['whatsapp_box_subtitulo'] ?? '');
+
+        foreach (['titulo', 'subtitulo', 'online', 'flutuante', 'rodape', 'abertura'] as $campo) {
+            Setting::set('whatsapp_box_'.$campo, trim((string) ($data['whatsapp_box_'.$campo] ?? '')));
+        }
 
         foreach (config('golden.whatsapp_box.canais') as $canal) {
             $chave = 'whatsapp_canal_'.$canal['id'];
             Setting::set($chave.'_ativo', $request->boolean($chave.'_ativo') ? '1' : '0');
-            Setting::set($chave.'_numero', preg_replace('/\D/', '', (string) $request->input($chave.'_numero')));
+            Setting::set($chave.'_numero', preg_replace('/\D/', '', (string) ($data[$chave.'_numero'] ?? '')));
+            Setting::set($chave.'_nome', trim((string) ($data[$chave.'_nome'] ?? '')));
+            Setting::set($chave.'_desc', trim((string) ($data[$chave.'_desc'] ?? '')));
+            Setting::set($chave.'_icone', (string) ($data[$chave.'_icone'] ?? ''));
+            Setting::set($chave.'_msg', trim((string) ($data[$chave.'_msg'] ?? '')));
         }
 
         Activity::log('configuracao_salva', 'Caixa de WhatsApp do site atualizada.');

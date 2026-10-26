@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.36.1
+- **Versão:** 2.37.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -1340,6 +1340,26 @@ documento, transcrição, voz) escolhe provedor e modelo na mesma tela.
 Um provedor sem chave **não é erro**: a capacidade fica desligada, a ficha do assistente mostra a
 pergunta *"ele consegue responder?"* dizendo qual capacidade está manca, e o atendimento continua
 pelas mãos da equipe. O código nunca sai do sistema por falta de credencial.
+
+### Cada item da caixa é um campo do painel
+
+Em **Sistema → Configurações → Botão do WhatsApp no site** está a caixa inteira, item por item, e
+nada dela depende de editar arquivo:
+
+- **Textos da caixa** — título, subtítulo, o selo ao lado do ponto verde (padrão *Online agora*), a
+  dica que aparece ao passar o mouse no botão do canto, o rótulo do rodapé e a mensagem que já vai
+  escrita na conversa quando o visitante toca nele.
+- **Cada canal humano** — interruptor, nome, descrição, ícone (lista fechada em
+  `config/golden.whatsapp_box.icones`), número próprio e a mensagem pronta do `wa.me`. O número em
+  branco usa o WhatsApp oficial; o canal desligado sai da caixa sem deixar espaço.
+- **O assistente virtual** — a linha dele não se edita aqui: nome, cargo, rosto, ícone, selo e dica
+  vivem na ficha de **Atendimento → Assistente virtual**, e a própria tela de Configurações aponta
+  para lá.
+
+Campo em branco apaga a linha do banco e devolve aquele item ao padrão de
+`config/golden.whatsapp_box`; nenhum texto da caixa mora no HTML. O formulário grava tudo de uma
+vez e o site muda na hora, porque a montagem da caixa lê o banco (não o arquivo) e o cache de
+configurações é derrubado a cada gravação.
 
 ### O assistente na caixa do WhatsApp
 
