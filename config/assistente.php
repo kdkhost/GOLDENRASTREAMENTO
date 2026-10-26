@@ -294,11 +294,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Os textos da bolha flutuante
+    | Os textos da bolha de atendimento
     |--------------------------------------------------------------------------
-    | O que o visitante lê no botão e dentro do balão, antes de qualquer resposta. O painel
+    | O que o visitante lê no atendente e dentro do balão, antes de qualquer resposta. O painel
     | edita cada um na ficha; em branco, vale o padrão. `:nome` na dica vira o nome da ficha.
-    | A posição não é escolha: o robô fica logo acima do WhatsApp, no canto do site e do funil.
+    | A posição não é escolha: o assistente é o primeiro atendente da caixa do WhatsApp, e a
+    | conversa abre no lugar da caixa, no canto do site e do funil.
     */
     'bolha' => [
         'dica' => 'Falar com :nome',

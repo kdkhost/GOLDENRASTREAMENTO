@@ -533,8 +533,18 @@ body.acesso-aberto{overflow:hidden}
   opacity:0;transform:translateX(8px);pointer-events:none;transition:opacity .24s ease,transform .24s cubic-bezier(.22,.61,.36,1)}
 .wa-float:hover .wa-tip,.wa-float:focus-visible .wa-tip{opacity:1;transform:none}
 
-/* Acima da bolha do assistente (72): a caixa abre por cima dela em vez de deixá-la
-   aparecendo no meio do painel. */
+/* Sem nenhum canal de WhatsApp, o mesmo botão passa a ser a porta do assistente: a calha é uma
+   só, o que muda é a cor e o rosto de quem atende. */
+.wa-float-ia{background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;
+  box-shadow:0 12px 28px -10px rgba(201,134,42,.75)}
+.wa-float-ia::before{border-color:rgba(224,163,62,.5)}
+.wa-float-ia:hover{background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;
+  box-shadow:0 16px 34px -12px rgba(201,134,42,.9)}
+.wa-float-ia .wa-rosto{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.wa-float-ia[aria-expanded="true"]{background:linear-gradient(135deg,var(--gold),var(--gold-2))}
+
+/* A caixa abre um andar acima do botão. O painel do assistente (76) assume este mesmo lugar
+   quando o atendente virtual é escolhido — a caixa fecha antes, para os dois não se cruzarem. */
 .wa-popup{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + 70px);z-index:74;width:352px;max-width:calc(100vw - 32px);
   max-height:calc(100vh - 124px);display:flex;flex-direction:column;
   border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#171d23,var(--dark-2));border:1px solid rgba(224,163,62,.22);
@@ -565,6 +575,15 @@ body.acesso-aberto{overflow:hidden}
 .wa-channel-info em{display:block;font-style:normal;font-size:.74rem;color:#93a1ae;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wa-channel-arrow{color:#7b8896;font-size:.72rem;transition:color .2s,transform .2s ease}
 .wa-channel:hover .wa-channel-arrow{color:var(--gold);transform:translateX(3px)}
+/* O atendente virtual no meio dos links: um botão com o dourado da casa, porque aquele caminho
+   é a conversa aqui dentro — não uma saída para o WhatsApp. */
+.wa-channel-ia{width:100%;text-align:left;font:inherit;cursor:pointer;
+  background:linear-gradient(135deg,rgba(224,163,62,.16),rgba(224,163,62,.05));border-color:rgba(224,163,62,.3)}
+.wa-channel-ia:hover{background:linear-gradient(135deg,rgba(224,163,62,.24),rgba(224,163,62,.08));border-color:rgba(224,163,62,.5)}
+.wa-channel-ia .wa-channel-icon{background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;overflow:hidden}
+.wa-channel-ia .wa-channel-icon img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.wa-channel-ia .wa-channel-arrow{color:var(--gold)}
+.wa-channel-ia-on{display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:#25d366;vertical-align:middle}
 .wa-other{display:block;padding:11px;text-align:center;font-size:.8rem;font-weight:600;color:var(--gold-soft);
   text-decoration:none;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.08)}
 .wa-other:hover{background:rgba(224,163,62,.1);color:#fff}

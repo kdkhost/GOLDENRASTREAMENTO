@@ -6,6 +6,7 @@ use App\Models\Assistente;
 use App\Models\ConhecimentoItem;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\Assistente\Motor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,15 +40,24 @@ class BolhaDoAssistenteTest extends TestCase
         $this->seed();
     }
 
-    public function test_a_bolha_sobe_na_home_com_a_folha_o_script_e_o_canal_certo(): void
+    public function test_o_assistente_entra_como_atendente_da_caixa_do_whatsapp(): void
     {
         $html = $this->get('/')->assertOk()->getContent();
 
         $this->assertStringContainsString('css/golden-assistente.css?v=', $html);
         $this->assertStringContainsString('js/golden-assistente.js?v=', $html);
-        $this->assertStringContainsString('id="iaFloat"', $html);
+        $this->assertStringContainsString('id="waPopup"', $html);
+        $this->assertStringContainsString('class="wa-channel wa-channel-ia"', $html);
+        $this->assertStringContainsString('data-ia-abrir', $html);
         $this->assertStringContainsString('id="iaPainel"', $html);
-        $this->assertStringContainsString('Ana', $html);
+
+        // O robô é o primeiro atendente da lista: entra antes de qualquer canal do WhatsApp.
+        $this->assertGreaterThan(strpos($html, 'class="wa-body"'), strpos($html, 'data-ia-abrir'));
+        $this->assertLessThan(
+            strpos($html, 'data-cta="canal_emergencia"'),
+            strpos($html, 'data-ia-abrir'),
+            'O assistente ficou depois dos canais do WhatsApp na caixa.'
+        );
 
         $rosto = $this->rostoDaBolha($html);
         $this->assertSame('site', $rosto['canal']);
@@ -57,23 +67,25 @@ class BolhaDoAssistenteTest extends TestCase
     }
 
     /** A ficha que ninguém editou não deixa texto solto no HTML: tudo vem do padrão da casa. */
-    public function test_a_bolha_mostra_os_textos_da_casa_quando_a_ficha_nao_escreveu_nenhum(): void
+    public function test_o_atendente_mostra_os_textos_da_casa_quando_a_ficha_nao_escreveu_nenhum(): void
     {
         $html = $this->get('/')->assertOk()->getContent();
 
         $this->assertStringContainsString('aria-label="Falar com Ana"', $html);
-        $this->assertStringContainsString('<span class="ia-dica">Falar com Ana</span>', $html);
+        $this->assertStringContainsString('<b>Ana</b>', $html);
+        $this->assertStringContainsString('Assistente virtual da Golden Rastreamento', $html);
         $this->assertStringContainsString('Respondendo agora', $html);
         $this->assertStringContainsString('placeholder="Escreva sua dúvida…"', $html);
         $this->assertStringContainsString('Prefero falar com uma pessoa', $html);
         $this->assertStringContainsString('fa-comments', $html);
     }
 
-    /** O painel escreve na ficha e a bolha obedece — inclusive o ícone de quem não tem rosto. */
-    public function test_os_textos_e_o_icone_da_bolha_vem_da_ficha_editada_no_painel(): void
+    /** O painel escreve na ficha e o atendente da caixa obedece — inclusive o ícone sem rosto. */
+    public function test_os_textos_e_o_icone_do_atendente_vem_da_ficha_editada_no_painel(): void
     {
         Assistente::garanta()->update([
             'nome' => 'Bia',
+            'cargo' => 'Consultora de vendas',
             'dica' => 'Conversar com :nome',
             'status' => 'Online agora',
             'placeholder' => 'No que posso ajudar?',
@@ -84,22 +96,55 @@ class BolhaDoAssistenteTest extends TestCase
         $html = $this->get('/')->assertOk()->getContent();
 
         $this->assertStringContainsString('aria-label="Conversar com Bia"', $html);
-        $this->assertStringContainsString('<span class="ia-dica">Conversar com Bia</span>', $html);
+        $this->assertStringContainsString('<b>Bia</b>', $html);
+        $this->assertStringContainsString('Consultora de vendas', $html);
         $this->assertStringContainsString('Online agora', $html);
         $this->assertStringContainsString('placeholder="No que posso ajudar?"', $html);
         $this->assertStringContainsString('>Quero um humano</a>', $html);
         $this->assertStringContainsString('fa-headset', $html);
     }
 
-    /** Ficha desligada: nem o botão, nem a folha, nem o script — a página não paga por nada. */
-    public function test_a_ficha_desligada_tira_o_botao_a_folha_e_o_script_da_pagina(): void
+    /** Sem nenhum canal de WhatsApp, o mesmo botão passa a ser a porta do assistente. */
+    public function test_sem_canal_de_whatsapp_o_botao_do_canto_vira_a_porta_do_assistente(): void
+    {
+        foreach (config('golden.whatsapp_box.canais') as $canal) {
+            Setting::set('whatsapp_canal_'.$canal['id'].'_ativo', '0');
+        }
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('id="waPopup"', $html);
+        $this->assertStringContainsString('wa-float-ia', $html);
+        $this->assertStringContainsString('data-ia-abrir', $html);
+        $this->assertStringContainsString('title="Falar com Ana"', $html);
+        $this->assertStringContainsString('id="iaPainel"', $html);
+    }
+
+    /** Caixa desligada no painel: volta o link direto do WhatsApp e o robô perde a porta. */
+    public function test_a_caixa_desligada_devolve_o_link_direto_e_tira_o_assistente_da_pagina(): void
+    {
+        Setting::set('whatsapp_box_ativo', '0');
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-cta="float"', $html);
+
+        foreach (['data-ia-abrir', 'golden-assistente.css', 'golden-assistente.js', 'GOLDEN_IA'] as $sobras) {
+            $this->assertStringNotContainsString($sobras, $html, "A caixa desligada ainda deixou {$sobras} na página.");
+        }
+    }
+
+    /** Ficha desligada: nem o atendente, nem a folha, nem o script — a caixa segue só com o WhatsApp. */
+    public function test_a_ficha_desligada_tira_o_atendente_a_folha_e_o_script_da_pagina(): void
     {
         Assistente::garanta()->update(['ativo' => false]);
 
         $html = $this->get('/')->assertOk()->getContent();
 
-        foreach (['iaFloat', 'golden-assistente.css', 'golden-assistente.js', 'GOLDEN_IA'] as $sobras) {
-            $this->assertStringNotContainsString($sobras, $html, "A bolha desligada ainda deixou {$sobras} na página.");
+        $this->assertStringContainsString('id="waPopup"', $html);
+
+        foreach (['data-ia-abrir', 'golden-assistente.css', 'golden-assistente.js', 'GOLDEN_IA'] as $sobras) {
+            $this->assertStringNotContainsString($sobras, $html, "A ficha desligada ainda deixou {$sobras} na página.");
         }
     }
 
@@ -110,17 +155,17 @@ class BolhaDoAssistenteTest extends TestCase
 
         Assistente::garanta()->update(['no_funil' => false]);
 
-        $this->assertStringNotContainsString('iaFloat', $this->get('/c/frota-j16')->assertOk()->getContent());
-        $this->assertStringContainsString('iaFloat', $this->get('/')->assertOk()->getContent(),
-            'Desligar o funil também derrubou a bolha do site.');
+        $this->assertStringNotContainsString('data-ia-abrir', $this->get('/c/frota-j16')->assertOk()->getContent());
+        $this->assertStringContainsString('data-ia-abrir', $this->get('/')->assertOk()->getContent(),
+            'Desligar o funil também derrubou o atendente do site.');
     }
 
-    public function test_um_indexador_nao_recebe_o_botao(): void
+    public function test_um_indexador_nao_recebe_o_atendente(): void
     {
         $html = $this->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'])
             ->get('/')->assertOk()->getContent();
 
-        $this->assertStringNotContainsString('iaFloat', $html);
+        $this->assertStringNotContainsString('data-ia-abrir', $html);
         $this->assertStringNotContainsString('golden-assistente.js', $html);
     }
 

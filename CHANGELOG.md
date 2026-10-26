@@ -3,6 +3,35 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.36.1] - 2026-10-26
+
+### Alterado
+- **O assistente virou um dos atendentes da caixa do WhatsApp.** O botão flutuante próprio saiu
+  do canto do site e da página de funil: o robô agora é a primeira linha da caixa multicanal,
+  com o rosto (ou o ícone), o nome e o cargo da ficha. Escolher a linha fecha a caixa e abre a
+  conversa no mesmo lugar, acima do botão do WhatsApp — e abrir a caixa com a conversa aberta
+  fecha a conversa, para os dois painéis não se cobrirem. Os canais humanos continuam embaixo,
+  cada um indo para o `wa.me` com a mensagem pronta.
+- **Sem canal humano, o mesmo botão vira a porta do assistente.** Se todas as linhas de
+  WhatsApp forem desligadas, o botão do canto passa a abrir a conversa, na cor da casa e com o
+  rosto da ficha. Com a caixa desligada em Configurações, o canto volta ao link direto do
+  WhatsApp e o assistente não é carregado — nem folha, nem script.
+- **O nome e o cargo da ficha são os rótulos do atendente na caixa.** O cartão **Bolha de
+  atendimento** em *Atendimento → Assistente virtual* continua editando a dica (o rótulo de
+  acessibilidade da linha e a dica do botão quando ele é o único atendente), o ícone sem rosto,
+  o selo de status, o campo de mensagem e o link para falar com uma pessoa.
+- O aviso dourado de resposta da equipe, antes no botão do robô, agora aparece no botão do
+  WhatsApp: é por ele que o cliente volta à conversa.
+
+### Documentado
+- `docs/INSTALACAO.md` (13.1), o guia do painel e o cartão da ficha descrevem o assistente
+  dentro da caixa, não mais acima dela.
+
+### Testado
+- `BolhaDoAssistenteTest` cobre a linha do assistente como primeiro atendente, o botão único
+  quando não há canal humano, a caixa desligada e a ficha desligada. Suíte inteira em 473
+  testes e 5.613 asserções.
+
 ## [2.36.0] - 2026-10-26
 
 ### Alterado

@@ -48,9 +48,9 @@
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-funil.css') }}?v={{ filemtime(public_path('css/golden-funil.css')) }}">
-    {{-- A bolha do assistente tem folha e script próprios, e só pesam aqui se o robô for
-         aparecer: a mesma pergunta decide o estilo, o botão incluído embaixo e o script. --}}
-    @php $bolha = \App\Models\Assistente::atendeVisitante('funil'); @endphp
+    {{-- O assistente é um dos atendentes da caixa do WhatsApp: a folha e o script dele só
+         pesam quando existe caixa (ou quando ele é o único atendente) e ele atende aqui. --}}
+    @php $bolha = $golden['assistente_na_caixa'] && \App\Models\Assistente::atendeVisitante('funil'); @endphp
     @if($bolha)
     <link rel="stylesheet" href="{{ asset('css/golden-assistente.css') }}?v={{ filemtime(public_path('css/golden-assistente.css')) }}">
     @endif

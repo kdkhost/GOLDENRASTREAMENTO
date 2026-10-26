@@ -522,7 +522,7 @@ return [
     // painel. Tudo pode ser sobrescrito em Admin → Configurações.
     'whatsapp_box' => [
         'titulo' => 'Central de Atendimento Golden',
-        'subtitulo' => 'Atendimento humano · escolha o canal',
+        'subtitulo' => 'Atendimento humano e virtual · escolha o canal',
         'abertura' => 'Olá, Golden! Vim pelo site e preciso de atendimento.',
         'canais' => [
             [

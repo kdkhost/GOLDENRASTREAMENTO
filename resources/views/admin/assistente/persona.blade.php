@@ -43,7 +43,7 @@
             </x-admin.card>
 
             <x-admin.card title="Bolha de atendimento" icon="fa-comment-dots" class="mt-3"
-                descricao="O que o visitante lê na bolha, que fica acima do WhatsApp no canto do site e da página de funil. Em branco vale o padrão da casa.">
+                descricao="O que o visitante lê antes de falar com o assistente, que aparece como um dos atendentes da caixa do WhatsApp, no canto do site e da página de funil. Em branco vale o padrão da casa.">
                 <div class="row g-3">
                     <x-admin.field name="dica" label="Dica ao passar o mouse" :value="$assistente->dica" col="col-12 col-md-6" maxlength="80" :opcional="true"
                         placeholder="Falar com :nome" hint="Use :nome para o nome da ficha." />

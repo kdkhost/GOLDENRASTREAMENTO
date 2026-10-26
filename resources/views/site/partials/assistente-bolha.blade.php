@@ -1,28 +1,26 @@
 {{--
-    A bolha de atendimento com o assistente: um botão no canto e um balão de conversa que fala
-    com o robô. É uma só parcial para o site e para o funil — o que muda é o `$canal`, que o
-    layout passa e que decide tanto o interruptor da ficha (`no_site` / `no_funil`) quanto a
-    origem gravada na conversa. `$bolha` vem do mesmo layout, medido antes de a folha de estilo
-    ser carregada: a pergunta é uma só e não se paga duas vezes por página.
+    A conversa com o assistente virtual: o balão que abre por cima do botão do WhatsApp. O
+    gatilho não mora aqui — é o primeiro atendente da caixa multicanal (`whatsapp-box`), porque
+    o robô não é um botão à parte: ele é um dos atendentes da casa. Esta parcial entrega o
+    painel, a cabeça com o rosto da ficha e o contrato `window.GOLDEN_IA`.
 
-    A bolha não cadastra ninguém. Ela atende e, quando o assunto é proposta, empurra o visitante
-    para o formulário que a página já tem; o cadastro continua tendo uma casa só.
+    É uma só parcial para o site e para o funil — o que muda é o `$canal`, que o layout passa e
+    que decide tanto o interruptor da ficha (`no_site` / `no_funil`) quanto a origem gravada na
+    conversa. `$bolha` já chega resolvido do layout: caixa existente e ficha atendendo aqui.
 
-    O botão só existe se a ficha manda atender neste canal e se quem abriu a página não é um
-    robô de busca: indexador não abre conversa, e o painel encheria de "atendimentos" que
-    nenhum humano leu. O resto da régua — fonte, escalada, teto de caracteres — é do servidor,
-    e o endpoint repete a pergunta antes de gastar uma chamada.
+    A conversa não cadastra ninguém. Ela atende e, quando o assunto é proposta, empurra o
+    visitante para o formulário que a página já tem; o cadastro continua tendo uma casa só.
 
-    Os textos e o ícone (quando não há rosto) vêm da ficha, editável no painel. A bolha ocupa o
-    andar de cima da calha: o WhatsApp continua no pé da tela, e o robô fica logo acima dele.
+    Os textos e o ícone (quando não há rosto) vêm da ficha, editável no painel.
 --}}
 @if($bolha ?? false)
     @php
         $ficha = \App\Models\Assistente::paraABolha();
         $canal = $canal ?? 'site';
 
-        // Endereço do rosto na ficha; sem foto, a bolha desenha o ícone. O mesmo avatar aparece no
-        // topo do balão, porque a conversa tem que continuar com a mesma cara de quem abriu o botão.
+        // Endereço do rosto na ficha; sem foto, o painel mostra só o nome. O mesmo avatar
+        // aparece no atendente da caixa e na cabeça do balão, para a conversa continuar com a
+        // cara de quem abriu a porta.
         $avatar = $ficha->avatarUrl();
         $rosto = [
             'abrir' => route('site.assistente.abrir'),
@@ -33,17 +31,6 @@
             'nome' => (string) $ficha->nome,
         ];
     @endphp
-
-    <button type="button" class="ia-float" id="iaFloat" aria-controls="iaPainel" aria-expanded="false"
-            aria-label="{{ $ficha->textoDica() }}" title="{{ $ficha->textoDica() }}">
-        @if($avatar)
-            <img class="ia-rosto" src="{{ $avatar }}" alt="" width="58" height="58" loading="lazy" decoding="async">
-        @else
-            <i class="fa-solid {{ $ficha->iconeBolha() }}" aria-hidden="true"></i>
-        @endif
-        <span class="ia-aviso" data-ia-aviso hidden aria-hidden="true"></span>
-        <span class="ia-dica">{{ $ficha->textoDica() }}</span>
-    </button>
 
     <div class="ia-painel" id="iaPainel" role="dialog" aria-label="Conversa com {{ $ficha->nome }}">
         <div class="ia-cabeca">

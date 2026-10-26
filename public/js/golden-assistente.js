@@ -1,11 +1,13 @@
-/* Bolha de atendimento — o lado do navegador da conversa com o assistente.
-   Fala com os três endereços JSON (abrir, fala, falas) e não sabe nada de IA: quem decide
-   responder, escalar ou calar é o servidor. Esta folha só pinta e pergunta. */
+/* Atendimento com o assistente — o lado do navegador da conversa.
+   O gatilho é o atendente virtual dentro da caixa do WhatsApp (`[data-ia-abrir]`), não um botão
+   próprio: o robô é um dos atendentes da casa. Fala com os três endereços JSON (abrir, fala,
+   falas) e não sabe nada de IA: quem decide responder, escalar ou calar é o servidor. Esta
+   folha só pinta, pergunta e fecha a caixa quando a conversa abre. */
 (function () {
   'use strict';
 
   var cfg = window.GOLDEN_IA;
-  var botao = document.getElementById('iaFloat');
+  var botao = document.querySelector('[data-ia-abrir]');
   var painel = document.getElementById('iaPainel');
   if (!cfg || !botao || !painel) return;
 
@@ -15,7 +17,9 @@
   var campo = document.getElementById('iaTexto');
   var envio = painel.querySelector('[data-ia-enviar]');
   var saida = painel.querySelector('[data-ia-humano]');
-  var aviso = botao.querySelector('[data-ia-aviso]');
+  var aviso = document.querySelector('[data-ia-aviso]');
+  var caixa = document.getElementById('waPopup');
+  var flutuante = document.getElementById('waFloat');
   var semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var aberto = false;      // o balão está na tela
@@ -115,14 +119,22 @@
   }
 
   function marcaAviso() {
-    aviso.hidden = false;
+    if (aviso) aviso.hidden = false;
+  }
+
+  /* A caixa do WhatsApp e a conversa ocupam o mesmo canto da tela: abrir uma fecha a outra,
+     senão os dois painéis se sobrepõem. */
+  function fechaCaixa() {
+    if (caixa) caixa.classList.remove('show');
+    if (flutuante) flutuante.setAttribute('aria-expanded', 'false');
   }
 
   /* A ficha foi desligada no painel depois de a página ser pintada, ou o servidor disse que este
-     visitante não é gente: a bolha sai de cena inteira, em vez de abrir um balão mudo. */
+     visitante não é gente: o atendente sai da caixa e o balão sai de cena inteiro. */
   function desaparece() {
     botao.hidden = true;
     painel.hidden = true;
+    fechaCaixa();
     paraVarredura();
   }
 
@@ -159,10 +171,11 @@
   /* ---------- abrir e fechar ---------- */
 
   function abre() {
+    fechaCaixa();
     aberto = true;
     painel.classList.add('aberto');
     botao.setAttribute('aria-expanded', 'true');
-    aviso.hidden = true;
+    if (aviso) aviso.hidden = true;
     ajustaVarredura();
 
     if (criada) {
@@ -195,6 +208,9 @@
   botao.addEventListener('click', function () { aberto ? fecha() : abre(); });
   painel.querySelectorAll('[data-ia-fechar]').forEach(function (b) { b.addEventListener('click', fecha); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && aberto) fecha(); });
+  // O golden-site.js avisa quando a caixa do WhatsApp abre: a conversa sai de cena para não
+  // ficar embaixo dela.
+  document.addEventListener('golden:wa-aberto', function () { if (aberto) fecha(); });
 
   /* ---------- a fala do cliente ---------- */
 

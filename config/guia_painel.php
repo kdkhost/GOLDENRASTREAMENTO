@@ -339,7 +339,7 @@ return [
             'titulo' => 'Assistente virtual',
             'icone' => 'fa-robot',
             'rota' => 'admin.assistente.persona',
-            'resumo' => 'O nome, o rosto, o tom e as regras de quem responde na bolha do chat.',
+            'resumo' => 'O nome, o rosto, o tom e as regras de quem atende na caixa do WhatsApp.',
             'blocos' => [
                 ['tipo' => 'texto', 'conteudo' => 'Existe um assistente só, e esta tela edita a ficha dele. O que a máquina recebe como ordem é montado em cima deste preenchimento: nome, cargo, saudação, tom de fala e as regras escritas por você — que entram na ordem exatamente como foram escritas, sem reescrita.'],
                 ['tipo' => 'lista', 'itens' => [
@@ -347,7 +347,7 @@ return [
                     'O rosto entra por arrastar e soltar, quadrado (96 × 96 px). Sem arquivo, o site desenha a inicial do nome, do mesmo jeito do carrossel de depoimentos.',
                     'A voz das respostas em áudio só lista o que os provedores com chave ligada sabem falar; em branco, vale a voz padrão da casa.',
                     'A bolha de atendimento tem texto próprio na mesma ficha: a dica ao passar o mouse (com `:nome`), o selo de status, o texto do campo, o link para falar com uma pessoa e o ícone de quem ainda não tem rosto. Em branco vale o padrão da casa.',
-                    'No canto do site e da página de funil, a bolha do robô fica logo acima do WhatsApp — o WhatsApp continua no pé da tela.',
+                    'No canto do site e da página de funil, o assistente é um dos atendentes da caixa do WhatsApp: ele aparece no topo da lista, com nome, cargo e rosto da ficha, e a escolha dele abre a conversa no próprio site, no lugar da caixa.',
                 ]],
                 ['tipo' => 'aviso', 'tom' => 'gold', 'conteudo' => 'Ficha preenchida não basta: sem chave de provedor em `Sistema → Configurações → Chaves de integração`, o assistente atende pedindo a equipe. O cartão "Ele consegue responder?" diz qual capacidade ainda está manca.'],
             ],

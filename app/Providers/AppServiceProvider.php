@@ -212,6 +212,12 @@ class AppServiceProvider extends ServiceProvider
         $lojaAtiva = $pegar('loja_ativa', '1') === '1';
         $box = config('golden.whatsapp_box');
 
+        // O assistente não tem botão próprio: ele é um dos atendentes da caixa do WhatsApp. A
+        // caixa desligada deixa o botão direto do WhatsApp no lugar, e aí o robô não tem porta —
+        // sem porta, a página nem carrega a folha e o script dele.
+        $boxAtivo = $pegar('whatsapp_box_ativo', '1') === '1';
+        $canais = $this->montarCanais();
+
         // Header, gaveta e rodapé compartilham a mesma resposta: para onde a Área do cliente leva.
         $rotaConta = Auth::guard('cliente')->check() ? 'portal.inicio' : 'portal.login';
 
@@ -246,12 +252,13 @@ class AppServiceProvider extends ServiceProvider
             'whatsapp' => $whatsapp,
             'whatsapp_url' => wa_url(null, $whatsapp),
             'whatsapp_box' => [
-                'ativo' => $pegar('whatsapp_box_ativo', '1') === '1',
+                'ativo' => $boxAtivo,
                 'titulo' => $pegar('whatsapp_box_titulo', $box['titulo']),
                 'subtitulo' => $pegar('whatsapp_box_subtitulo', $box['subtitulo']),
                 'abertura' => $pegar('whatsapp_box_abertura', $box['abertura']),
             ],
-            'canais' => $this->montarCanais(),
+            'canais' => $canais,
+            'assistente_na_caixa' => $boxAtivo || $canais === [],
             'email' => $pegar('contato_email', config('golden.email')),
             'telefone' => $pegar('contato_telefone', implode(' · ', config('golden.contato.telefones'))),
             'endereco' => $pegar('empresa_endereco', config('golden.contato.endereco')),

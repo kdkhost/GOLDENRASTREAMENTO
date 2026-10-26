@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.36.0
+- **Versão:** 2.36.1
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -1306,9 +1306,9 @@ SQLite dos testes não reclama de comprimento de `varchar`.
 ## 13.1 O assistente que atende o público
 
 O sistema tem um robô de atendimento com rosto, nome e memória próprios. Ele atende **dentro do
-painel** (três telas no grupo **Atendimento**) e **fora dele**, na bolha que sobe no canto do site e
-de cada página de campanha. Nada dele se configura por arquivo: o que existe é ficha no banco,
-chave no cofre do painel e interruptor na tela.
+painel** (três telas no grupo **Atendimento**) e **fora dele**, como um dos atendentes da caixa do
+WhatsApp no canto do site e de cada página de campanha. Nada dele se configura por arquivo: o que
+existe é ficha no banco, chave no cofre do painel e interruptor na tela.
 
 ### As três telas
 
@@ -1317,9 +1317,9 @@ chave no cofre do painel e interruptor na tela.
   respostas em áudio. É desta ficha que se monta a ordem que o provedor recebe; as regras entram na
   ordem exata em que foram escritas, sem reescrita. Quatro interruptores dizem onde ele atende:
   ligado, no site, na página de funil, no chat do chamado. O cartão **Bolha de atendimento**, na
-  mesma ficha, edita o que o visitante lê no botão flutuante: a dica ao passar o mouse (aceita
-  `:nome`), o ícone de quem não tem rosto, o selo de status, o texto do campo de mensagem e o
-  link para falar com uma pessoa — em branco, vale o padrão de `config/assistente.php`.
+  mesma ficha, edita o que o visitante lê antes de falar com ele: a dica (aceita `:nome`), o ícone
+  de quem não tem rosto, o selo de status, o texto do campo de mensagem e o link para falar com
+  uma pessoa — em branco, vale o padrão de `config/assistente.php`.
 - **O que o assistente sabe** (`/admin/assistente/conhecimento`) — a base de respostas. Um assunto
   por linha, com resposta, tags, origem e endereço da fonte. A busca é léxica e ponderada
   (título pesa 3, assuntos 2, corpo 1) sobre o piso `assistente.resposta.minimo_de_fonte`; abaixo
@@ -1341,22 +1341,27 @@ Um provedor sem chave **não é erro**: a capacidade fica desligada, a ficha do 
 pergunta *"ele consegue responder?"* dizendo qual capacidade está manca, e o atendimento continua
 pelas mãos da equipe. O código nunca sai do sistema por falta de credencial.
 
-### A bolha no site e no funil
+### O assistente na caixa do WhatsApp
 
-O botão flutuante do assistente ocupa o andar de cima da calha de flutuantes: ele fica logo acima
-do botão do WhatsApp, que continua no pé da tela, e o balão abre a partir dele. O botão flutuante,
-o balão e a conversa anônima vêm com a página, e a folha
+O robô não tem botão próprio: ele é **o primeiro atendente da caixa multicanal do WhatsApp**, no
+canto do site e de cada página de funil. A linha traz o rosto (ou o ícone) da ficha, o nome e o
+cargo; escolhê-la fecha a caixa e abre a conversa no mesmo lugar, acima do botão do WhatsApp. Os
+canais humanos continuam embaixo, cada um indo para o `wa.me` com a mensagem pronta.
+
+A caixa, o balão e a conversa anônima vêm com a página, e a folha
 (`public/css/golden-assistente.css`) e o script (`public/js/golden-assistente.js`) **só entram no
 HTML quando o interruptor do canal está ligado** — desligado, não sobra um byte de robô na página do
-visitante. As três rotas JSON são `POST /assistente/abrir`, `POST /assistente/fala` e
-`GET /assistente/falas`, com throttle de 30, 20 e 120 por minuto e por visitante.
+visitante. Com a caixa desligada em **Configurações**, o canto volta a ser o link direto do
+WhatsApp e o assistente perde a porta. Quando não sobra nenhum canal humano, o mesmo botão passa a
+ser a porta do assistente. As três rotas JSON são `POST /assistente/abrir`, `POST /assistente/fala`
+e `GET /assistente/falas`, com throttle de 30, 20 e 120 por minuto e por visitante.
 
 Como se comporta:
 
 - uma conversa por navegador (na sessão), e a saudação é escrita **uma única vez**;
 - com o balão aberto a varredura é de 5 s; fechado, só as conversas passadas para a equipe são
   varridas, a cada 30 s, e nunca com a aba em segundo plano;
-- **robô de busca não vê a bolha e não abre conversa** — o índice do Google continua recebendo o
+- **robô de busca não vê o atendente e não abre conversa** — o índice do Google continua recebendo o
   site, não uma fila de perguntas fictícias;
 - sem fonte confiável, o visitante lê a frase de escalada e a equipe recebe a conversa por e-mail
   (`contato_email`); nada de preço, prazo ou cobertura inventado;

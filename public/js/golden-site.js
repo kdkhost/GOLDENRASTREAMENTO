@@ -335,6 +335,8 @@
     function abrir() {
       popup.classList.add('show');
       btn.setAttribute('aria-expanded', 'true');
+      // A conversa do assistente mora no mesmo canto: ela fecha ao ouvir este aviso.
+      document.dispatchEvent(new CustomEvent('golden:wa-aberto'));
     }
 
     function fechar() {

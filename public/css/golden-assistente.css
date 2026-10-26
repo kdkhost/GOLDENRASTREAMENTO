@@ -1,46 +1,23 @@
-/* Bolha de atendimento com o assistente — o balão que abre no canto do site e da página de funil.
-   Só carrega onde a bolha existe: layouts/site e layouts/funil. O painel administrativo tem o
-   atendimento do chamado em outra folha (admin-golden.css) e não importa esta. */
+/* Atendimento com o assistente — o balão que abre no canto do site e da página de funil.
+   O gatilho não tem botão próprio: é o atendente virtual dentro da caixa do WhatsApp
+   (whatsapp-box). Esta folha cuida do painel da conversa e do aviso que aparece no botão.
+   Só carrega onde a ficha atende e a caixa existe: layouts/site e layouts/funil. O painel
+   administrativo tem o atendimento do chamado em outra folha (admin-golden.css). */
 
 :root{
-  --ia-altura:58px;
-  --ia-recuo:14px;
-  /* O andar que a bolha ocupa na calha dos flutuantes: ela fica logo acima do WhatsApp, e é o
-     WhatsApp que continua no pé da tela. */
-  --ia-slot:calc(var(--ia-altura) + var(--ia-recuo));
-  --wa-slot:calc(58px + var(--ia-recuo));
   --ia-largura:352px;
 }
 
-.ia-float{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + var(--wa-slot));z-index:72;
-  width:var(--ia-altura);height:var(--ia-altura);padding:0;border:2px solid rgba(255,255,255,.22);border-radius:50%;
-  background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;font-size:1.4rem;cursor:pointer;
-  display:grid;place-items:center;text-decoration:none;
-  box-shadow:0 12px 28px -10px rgba(201,134,42,.75);
-  transition:transform .3s var(--ease,cubic-bezier(.22,.61,.36,1)),box-shadow .3s ease,opacity .2s ease}
-.ia-float:hover{transform:scale(1.07) translateY(-2px);box-shadow:0 16px 34px -12px rgba(201,134,42,.9)}
-.ia-float:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-.ia-float[aria-expanded="true"]{transform:none}
-.ia-float .ia-rosto{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.ia-float[hidden]{display:none}
-
-/* A bolha fechada avisa sozinha: um ponto dourado aparece quando a equipe respondeu enquanto
-   ninguém olhava. Sem ele, o cliente lê "a equipe responde por aqui" e não volta nunca mais. */
-.ia-aviso{position:absolute;top:-1px;right:-1px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;
-  background:var(--gold);color:#241a06;border:2px solid var(--dark,#12161a);font-size:.66rem;font-weight:700;
-  line-height:14px;text-align:center;box-shadow:0 0 0 3px rgba(224,163,62,.22)}
+/* Aviso de resposta da equipe no botão do WhatsApp: aparece quando alguém respondeu enquanto
+   o cliente não olhava. Sem ele, o cliente lê "a equipe responde por aqui" e não volta mais. */
+.ia-aviso{position:absolute;top:-2px;right:-2px;width:14px;height:14px;padding:0;border-radius:50%;
+  background:var(--gold);border:2px solid #fff;box-shadow:0 0 0 3px rgba(224,163,62,.22)}
 .ia-aviso[hidden]{display:none}
 
-.ia-dica{position:absolute;right:calc(var(--ia-altura) + 12px);background:var(--dark,#12161a);color:#fff;
-  font-size:.82rem;font-weight:600;padding:7px 13px;border-radius:20px;white-space:nowrap;
-  border:1px solid rgba(224,163,62,.28);box-shadow:0 6px 18px -8px rgba(0,0,0,.6);
-  opacity:0;transform:translateX(8px);pointer-events:none;
-  transition:opacity .24s ease,transform .24s cubic-bezier(.22,.61,.36,1)}
-.ia-float:hover .ia-dica,.ia-float:focus-visible .ia-dica{opacity:1;transform:none}
-
-/* Carcaça do balão: a mesma pele do box multicanal, para a casa ter uma cara só. */
-.ia-painel{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + var(--wa-slot) + var(--ia-slot));z-index:72;
-  width:var(--ia-largura);max-width:calc(100vw - 32px);max-height:calc(100vh - 190px);
+/* Carcaça do balão: a mesma pele do box multicanal, para a casa ter uma cara só. Sobe no lugar
+   exato da caixa (que fecha ao abrir), um andar acima do botão do WhatsApp. */
+.ia-painel{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + 70px);z-index:76;
+  width:var(--ia-largura);max-width:calc(100vw - 32px);max-height:calc(100vh - 124px);
   display:flex;flex-direction:column;border-radius:18px;overflow:hidden;
   background:linear-gradient(180deg,#171d23,var(--dark-2,#0d1114));border:1px solid rgba(224,163,62,.22);
   box-shadow:0 26px 60px -24px rgba(0,0,0,.9);transform-origin:bottom right;
@@ -113,21 +90,18 @@
 .ia-oculto{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
   clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}
 
-/* A gaveta do menu cobre a tela inteira: os flutuantes saem de cena com ela. */
-body.nav-open .ia-float,body.nav-open .ia-painel{opacity:0;pointer-events:none}
+/* A gaveta do menu cobre a tela inteira: o painel sai de cena com ela. */
+body.nav-open .ia-painel{opacity:0;pointer-events:none}
 
 @media(max-width:640px){
-  :root{--ia-altura:52px;--ia-recuo:12px;--wa-slot:68px}
-  .ia-float,.ia-painel{right:16px}
-  .ia-float{font-size:1.25rem}
-  .ia-dica{display:none}
+  .ia-painel{right:16px;bottom:calc(var(--flutuante-bottom) + 64px)}
 }
 
 /* Em tela deitada o balão não cabe com o resto: vira quase a altura toda e o canto folga. */
 @media(max-height:520px) and (min-width:641px){
-  .ia-painel{max-height:calc(100vh - 180px)}
+  .ia-painel{max-height:calc(100vh - 124px)}
 }
 
 @media(prefers-reduced-motion:reduce){
-  .ia-float,.ia-painel,.ia-enviar,.ia-fechar,.ia-dica,.ia-pontos i{transition:none;animation:none}
+  .ia-painel,.ia-enviar,.ia-fechar,.ia-pontos i{transition:none;animation:none}
 }
