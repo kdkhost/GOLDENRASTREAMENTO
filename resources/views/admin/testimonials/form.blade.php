@@ -12,11 +12,13 @@
 @endsection
 
 @section('content')
-<div class="row g-3">
-    <div class="col-lg-8">
-        <x-admin.card title="Depoimento" icon="fa-quote-left">
-            <form method="POST" action="{{ $editando ? route('admin.conteudo.depoimentos.update', $depoimento) : route('admin.conteudo.depoimentos.store') }}">
-                @csrf
+{{-- O form abraça a linha inteira: o dropzone do avatar vive na coluna da direita e emite um
+     input escondido dentro de si — fora do <form>, o rosto enviado nunca chegaria ao servidor. --}}
+<form method="POST" action="{{ $editando ? route('admin.conteudo.depoimentos.update', $depoimento) : route('admin.conteudo.depoimentos.store') }}">
+    @csrf
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <x-admin.card title="Depoimento" icon="fa-quote-left">
                 <div class="row g-3">
                     <x-admin.field name="nome" label="Nome do cliente" :value="$depoimento->nome" :required="true" col="col-12 col-md-6" maxlength="120" />
                     <x-admin.field name="papel" label="Papel / segmento" :value="$depoimento->papel" col="col-6 col-md-3" maxlength="120" :opcional="true" placeholder="Transportador autônomo" />
@@ -33,36 +35,36 @@
                     <x-admin.switch name="aprovado" label="Aprovado (visível no site)" :checked="$depoimento->aprovado ?? true" col="col-12" />
                 </div>
                 <button class="btn btn-golden"><i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar depoimento' : 'Adicionar depoimento' }}</button>
-            </form>
-        </x-admin.card>
-    </div>
-
-    <div class="col-lg-4">
-        <x-admin.card title="Foto do autor" icon="fa-image"
-            descricao="É o avatar que aparece no carrossel. Sem foto, o site desenha a inicial do nome.">
-            @include('partials.upload', [
-                'campo' => \App\Models\Testimonial::CAMPO_ENVIO,
-                'name' => 'avatar',
-                'valor' => old('avatar', $depoimento->avatar),
-                'dica' => 'Quem traz o depoimento do Google já vem com a foto do perfil — a importação baixa e guarda aqui no disco.',
-            ])
-
-            @if($depoimento->avatarUrl() && ! str_starts_with((string) $depoimento->avatar, 'http'))
-                <p class="form-text mt-2">
-                    <a href="{{ $depoimento->avatarUrl() }}" target="_blank" rel="noopener">
-                        <i class="fas fa-up-right-from-square me-1"></i> Conferir o arquivo publicado
-                    </a>
-                </p>
-            @endif
-        </x-admin.card>
-
-        @if($depoimento->externo_id)
-            <x-admin.card title="Vínculo externo" icon="fa-link" class="mt-3">
-                <p class="small mb-1">Registro lido do Google Business Profile.</p>
-                <code class="small">{{ $depoimento->externo_id }}</code>
-                <p class="form-hint mb-0 mt-2">Reimportar atualiza este texto pela chave — nunca cria um segundo depoimento da mesma avaliação.</p>
             </x-admin.card>
-        @endif
+        </div>
+
+        <div class="col-lg-4">
+            <x-admin.card title="Foto do autor" icon="fa-image"
+                descricao="É o avatar que aparece no carrossel. Sem foto, o site desenha a inicial do nome.">
+                @include('partials.upload', [
+                    'campo' => \App\Models\Testimonial::CAMPO_ENVIO,
+                    'name' => 'avatar',
+                    'valor' => old('avatar', $depoimento->avatar),
+                    'dica' => 'Quem traz o depoimento do Google já vem com a foto do perfil — a importação baixa e guarda aqui no disco.',
+                ])
+
+                @if($depoimento->avatarUrl() && ! str_starts_with((string) $depoimento->avatar, 'http'))
+                    <p class="form-text mt-2">
+                        <a href="{{ $depoimento->avatarUrl() }}" target="_blank" rel="noopener">
+                            <i class="fas fa-up-right-from-square me-1"></i> Conferir o arquivo publicado
+                        </a>
+                    </p>
+                @endif
+            </x-admin.card>
+
+            @if($depoimento->externo_id)
+                <x-admin.card title="Vínculo externo" icon="fa-link" class="mt-3">
+                    <p class="small mb-1">Registro lido do Google Business Profile.</p>
+                    <code class="small">{{ $depoimento->externo_id }}</code>
+                    <p class="form-hint mb-0 mt-2">Reimportar atualiza este texto pela chave — nunca cria um segundo depoimento da mesma avaliação.</p>
+                </x-admin.card>
+            @endif
+        </div>
     </div>
-</div>
+</form>
 @endsection

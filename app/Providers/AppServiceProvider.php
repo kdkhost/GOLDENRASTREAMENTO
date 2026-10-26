@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Category;
+use App\Models\Conversa;
 use App\Models\Lead;
 use App\Models\Order;
 use App\Models\Page;
@@ -139,6 +140,7 @@ class AppServiceProvider extends ServiceProvider
             'leads_novos' => Lead::where('status', 'novo')->count(),
             'pedidos_abertos' => Order::whereIn('status', Order::ABERTOS)->count(),
             'chamados_abertos' => Ticket::whereIn('status', Ticket::ABERTOS)->count(),
+            'conversas_aguardando' => Conversa::where('status', 'aguardando_equipe')->count(),
         ];
     }
 

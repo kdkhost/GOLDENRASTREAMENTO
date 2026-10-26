@@ -331,6 +331,66 @@ return [
             ],
         ],
 
+        /* ---------------------------------------------------------------- Assistente */
+
+        [
+            'id' => 'assistente',
+            'grupo' => 'Atendimento',
+            'titulo' => 'Assistente virtual',
+            'icone' => 'fa-robot',
+            'rota' => 'admin.assistente.persona',
+            'resumo' => 'O nome, o rosto, o tom e as regras de quem responde na bolha do chat.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'Existe um assistente só, e esta tela edita a ficha dele. O que a máquina recebe como ordem é montado em cima deste preenchimento: nome, cargo, saudação, tom de fala e as regras escritas por você — que entram na ordem exatamente como foram escritas, sem reescrita.'],
+                ['tipo' => 'lista', 'itens' => [
+                    'Onde ele atende são quatro interruptores: ligado, no site, na página de funil e no chat do chamado. Desligado daqui, o robô não abre a boca naqueles lugares — e a equipe continua vendo a conversa.',
+                    'O rosto entra por arrastar e soltar, quadrado (96 × 96 px). Sem arquivo, o site desenha a inicial do nome, do mesmo jeito do carrossel de depoimentos.',
+                    'A voz das respostas em áudio só lista o que os provedores com chave ligada sabem falar; em branco, vale a voz padrão da casa.',
+                ]],
+                ['tipo' => 'aviso', 'tom' => 'gold', 'conteudo' => 'Ficha preenchida não basta: sem chave de provedor em `Sistema → Configurações → Chaves de integração`, o assistente atende pedindo a equipe. O cartão "Ele consegue responder?" diz qual capacidade ainda está manca.'],
+            ],
+        ],
+
+        [
+            'id' => 'assistente-conhecimento',
+            'grupo' => 'Atendimento',
+            'titulo' => 'O que o assistente sabe',
+            'icone' => 'fa-book-open',
+            'rota' => 'admin.assistente.conhecimento.index',
+            'resumo' => 'A base que a máquina lê antes de responder — e a prova de onde veio cada resposta.',
+            'blocos' => [
+                ['tipo' => 'passos', 'itens' => [
+                    ['icone' => 'fa-pen', 'titulo' => 'Escreva a resposta, não a pergunta', 'texto' => 'O campo "Resposta" é o texto que a máquina usa como fonte. O "Assunto" é o que a busca interna acha quando o cliente pergunta.'],
+                    ['icone' => 'fa-tags', 'titulo' => 'Ajude a busca com os assuntos', 'texto' => 'Palavras separadas por vírgula: bloqueio, sinal, plataforma, preço. É por elas e pelo título que o item entra na resposta.'],
+                    ['icone' => 'fa-link', 'titulo' => 'Diga a fonte', 'texto' => 'Endereço de onde o texto foi tirado. A equipe lê isto para conferir o que a máquina respondeu.'],
+                ]],
+                ['tipo' => 'lista', 'itens' => [
+                    'Item oculto não entra na resposta — serve para despublicar um preço sem apagar o histórico.',
+                    'O que a leitura automática traz da internet chega aqui com origem, endereço e data de leitura; a chave da fonte impede que a mesma página seja aprendida duas vezes.',
+                    'A busca é feita sobre o texto gravado nesta tela e nas páginas permitidas — nada de índice vetorial, que é o que permite o atendimento funcionar na hospedagem compartilhada.',
+                ]],
+                ['tipo' => 'aviso', 'tom' => 'amber', 'conteudo' => 'Resposta sem fonte é chute. Com o interruptor "Só responder o que tem fonte" ligado, o que não estiver aqui ou nas páginas lidas faz a máquina chamar a equipe em vez de inventar preço, prazo ou cobertura.'],
+            ],
+        ],
+
+        [
+            'id' => 'assistente-conversas',
+            'grupo' => 'Atendimento',
+            'titulo' => 'Conversas do site',
+            'icone' => 'fa-comments',
+            'rota' => 'admin.assistente.conversas.index',
+            'resumo' => 'A fila dos visitantes anônimos que abriram a bolha — o equivalente, no site, da fila de chamados.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'Quem tem conta no portal fala pelo chamado, e aquela fila continua sendo a dos chamados. Esta tela é o outro lado: o visitante que ainda é ninguém para o sistema. A conversa nasce anônima, pode virar lead no meio e virar chamado depois, sempre com o histórico junto.'],
+                ['tipo' => 'lista', 'itens' => [
+                    'Aguardando a equipe é âmbar no menu porque é o que chama gente: a máquina parou por não ter fonte, por não ter conseguido ler a mídia, porque o cliente pediu uma pessoa ou porque nenhum provedor estava ligado.',
+                    'Responder aqui assume a conversa: a fala sai assinada pelo seu login e a máquina sai de cena no resto do fio — o cliente nunca recebe duas respostas da mesma pergunta.',
+                    'Sob a resposta da máquina, a lista de fontes diz item por item de onde ela tirou aquilo.',
+                    'Áudio, imagem e documento aparecem na fala com o que foi transcrito por baixo, quando a transcrição foi ligada na tela de chaves.',
+                ]],
+            ],
+        ],
+
         /* ---------------------------------------------------------------- Conteúdo */
 
         [
@@ -538,6 +598,11 @@ return [
         'admin.pedidos.' => 'pedidos',
         'admin.catalogo.' => 'produtos',
         'admin.chamados.' => 'chamados',
+        // Os três nomes começam com 'admin.assistente.'; o mapa pega o prefixo mais longo,
+        // então cada tela lê a própria seção em vez de cair na ficha.
+        'admin.assistente.persona' => 'assistente',
+        'admin.assistente.conhecimento.' => 'assistente-conhecimento',
+        'admin.assistente.conversas.' => 'assistente-conversas',
         'admin.contratos.' => 'contratos',
         'admin.conteudo.paginas.' => 'paginas',
         'admin.conteudo.imagens.' => 'imagens',

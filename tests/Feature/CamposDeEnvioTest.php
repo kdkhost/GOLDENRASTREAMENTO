@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -261,5 +262,50 @@ class CamposDeEnvioTest extends TestCase
             ->assertSee('PDF / JPG / JPEG / PNG')
             ->assertSee('até 10 MB')
             ->assertSee(\basename($caminho), false);
+    }
+
+    /**
+     * O dropzone emite os inputs escondidos dentro de si mesmo, então só leva o arquivo ao
+     * servidor se estiver dentro do <form> que o salva. Fora, o campo fica bonito e mudo —
+     * era exatamente o que acontecia com a foto do depoimento. A view não dá para conferir
+     * isso pelo navegador: a tela abre, o upload responde, e ninguém vê o silêncio.
+     */
+    public function test_todo_campo_de_arrastar_e_soltar_vive_dentro_do_formulario_que_o_salva(): void
+    {
+        $arquivos = File::allFiles(resource_path('views'));
+        $encontrados = 0;
+
+        foreach ($arquivos as $arquivo) {
+            if ($arquivo->getExtension() !== 'php') {
+                continue;
+            }
+
+            $fonte = (string) file_get_contents($arquivo->getPathname());
+
+            if (! str_contains($fonte, "partials.upload")) {
+                continue;
+            }
+
+            // Comentário não abre formulário: sem esta limpeza, a frase que explica a regra
+            // no próprio blade é contada como tag e a tela falsa passa.
+            $limpa = preg_replace('/\{\{--.*?--\}\}|<!--.*?-->/s', '', $fonte);
+
+            preg_match_all("#@include\(\s*'partials\.upload'#", $limpa, $marcações, PREG_OFFSET_CAPTURE);
+
+            foreach ($marcações[0] as $ocorrencia) {
+                $encontrados++;
+                $antes = substr($limpa, 0, $ocorrencia[1]);
+                $nome = $arquivo->getFilename();
+
+                $this->assertGreaterThan(
+                    preg_match_all('#</form\s*>#i', $antes, $ignoradas),
+                    preg_match_all('#<form(\s|>|/)#i', $antes, $ignoradas),
+                    "O dropzone do arquivo {$nome} está fora do <form>: o arquivo enviado nunca chegaria ao banco."
+                );
+                $this->assertMatchesRegularExpression('#</form\s*>#i', substr($limpa, $ocorrencia[1]), "O formulário que contém o dropzone do arquivo {$nome} nunca é fechado.");
+            }
+        }
+
+        $this->assertSame(10, $encontrados, 'Os campos de arrastar-e-soltar do painel mudaram de quantidade.');
     }
 }

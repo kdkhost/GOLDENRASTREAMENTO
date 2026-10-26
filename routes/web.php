@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Admin\ActivityController;
+use App\Http\Controllers\Admin\AssistenteController;
 use App\Http\Controllers\Admin\AttributionController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ConhecimentoController;
 use App\Http\Controllers\Admin\ContractController;
+use App\Http\Controllers\Admin\ConversaController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController;
@@ -324,6 +327,29 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/{contrato}/editar', [ContractController::class, 'edit'])->name('edit');
         Route::post('/{contrato}', [ContractController::class, 'update'])->name('update');
         Route::delete('/{contrato}', [ContractController::class, 'destroy'])->name('destroy');
+    });
+
+    // Assistente de IA: a ficha e a base são do administrador; a fila de conversas é da equipe
+    // inteira, pelo mesmo critério dos chamados.
+    Route::prefix('assistente')->name('assistente.')->group(function () {
+        Route::get('/', [AssistenteController::class, 'editar'])->name('persona')->middleware('role:admin');
+        Route::post('/', [AssistenteController::class, 'atualizar'])->name('persona.update')->middleware('role:admin');
+
+        Route::prefix('conhecimento')->name('conhecimento.')->middleware('role:admin')->group(function () {
+            Route::get('/', [ConhecimentoController::class, 'index'])->name('index');
+            Route::get('/novo', [ConhecimentoController::class, 'create'])->name('create');
+            Route::post('/', [ConhecimentoController::class, 'store'])->name('store');
+            Route::get('/{item}/editar', [ConhecimentoController::class, 'edit'])->name('edit');
+            Route::post('/{item}', [ConhecimentoController::class, 'update'])->name('update');
+            Route::delete('/{item}', [ConhecimentoController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('conversas')->name('conversas.')->middleware('role:admin,vendedor')->group(function () {
+            Route::get('/', [ConversaController::class, 'index'])->name('index');
+            Route::get('/{conversa}', [ConversaController::class, 'show'])->name('show');
+            Route::post('/{conversa}/resposta', [ConversaController::class, 'responder'])->name('responder');
+            Route::post('/{conversa}/status', [ConversaController::class, 'status'])->name('status');
+        });
     });
 
     // CMS: Páginas / Imagens e textos do site / Depoimentos / FAQs

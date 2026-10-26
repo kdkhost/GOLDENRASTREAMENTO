@@ -124,6 +124,11 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 .msg{border-radius:var(--radius-md);padding:10px 14px;border:1px solid var(--bs-border-color);background:var(--bs-tertiary-bg)}
 .msg.cliente{background:var(--t-gold-bg);border-color:transparent}
 .msg.equipe{background:var(--t-teal-bg);border-color:transparent}
+/* A bolha do site tem quatro autores (ConversaMensagem::autores()): a fala da máquina e o
+   recado do sistema entram com o mesmo par de tokens, azul e neutro, sem cor nova. */
+.msg.assistente{background:var(--t-blue-bg);border-color:transparent}
+.msg.sistema{background:var(--t-neutral-bg);border-color:transparent}
+.msg-fontes{border-top:1px dashed var(--bs-border-color);padding-top:6px}
 
 /* Barra de proporção das tabelas de origem (atribuição): largura vem de --w, cor vem
    do tom do selo da linha — nenhum valor novo, então claro e escuro se ajustam sozinhos. */

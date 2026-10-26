@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Campaign;
 use App\Models\Category;
+use App\Models\ConhecimentoItem;
+use App\Models\Conversa;
+use App\Models\ConversaMensagem;
 use App\Models\Contract;
 use App\Models\Customer;
 use App\Models\Faq;
@@ -71,7 +74,26 @@ class PaginasDoPainelTest extends TestCase
         // A campanha de funil vem semeada: sem ela não haveria bloco nem contador para abrir.
         $funil = FunnelPage::firstOrFail();
 
+        // O assistente também precisa de fila e de base: as duas telas de detalhe (a ficha do
+        // que ele sabe e a conversa do visitante) não abrem sem registro.
+        ConhecimentoItem::create([
+            'titulo' => 'O que faço quando o aparelho fica sem sinal',
+            'corpo' => 'Confira o chip e a alimentação; se persistir, abrimos chamado com a operadora.',
+            'tags' => 'sinal, plataforma',
+            'origem' => 'painel',
+            'ativo' => true,
+        ]);
+        $conversa = Conversa::abrir('site', 'https://goldenrastreamento.com.br/planos');
+        ConversaMensagem::create([
+            'conversa_id' => $conversa->id,
+            'autor' => 'cliente',
+            'tipo' => 'texto',
+            'corpo' => 'Vocês instalam em caminhão?',
+        ]);
+
         $parametros = [
+            'admin.assistente.conhecimento.edit' => ['item' => ConhecimentoItem::firstOrFail()],
+            'admin.assistente.conversas.show' => ['conversa' => $conversa],
             'admin.atribuicao.show' => ['visita' => Visit::latest('id')->firstOrFail()],
             'admin.campanhas.edit' => ['campaign' => Campaign::firstOrFail()],
             'admin.catalogo.categorias.edit' => ['category' => Category::firstOrFail()],
@@ -161,7 +183,11 @@ class PaginasDoPainelTest extends TestCase
             $this->get($pagina)->assertOk();
         }
 
-        foreach (['admin/configuracoes', 'admin/usuarios', 'admin/catalogo/produtos', 'admin/conteudo/paginas', 'admin/auditoria', 'admin/funil'] as $pagina) {
+        // A caixa de entrada é de operação — quem atende é a equipe inteira, como no chamado.
+        Conversa::abrir('site', 'https://goldenrastreamento.com.br/planos');
+        $this->get('admin/assistente/conversas')->assertOk();
+
+        foreach (['admin/configuracoes', 'admin/usuarios', 'admin/catalogo/produtos', 'admin/conteudo/paginas', 'admin/auditoria', 'admin/funil', 'admin/assistente', 'admin/assistente/conhecimento'] as $pagina) {
             $this->get($pagina)->assertForbidden();
         }
     }

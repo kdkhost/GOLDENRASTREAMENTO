@@ -17,6 +17,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Assistente extends Model
 {
+    /** A regra de `config/envios.php` que valida e guarda o rosto da ficha. */
+    public const CAMPO_ENVIO = 'assistente_avatar';
+
     protected $table = 'assistente';
 
     protected $fillable = [
@@ -96,7 +99,7 @@ class Assistente extends Model
         ];
 
         if (filled($this->regras)) {
-            $linhas[] = 'Regras do atendimento:\n'.$this->regras;
+            $linhas[] = "Regras do atendimento:\n".$this->regras;
         }
 
         if ((bool) config('assistente.resposta.so_com_fonte')) {

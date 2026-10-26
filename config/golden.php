@@ -285,6 +285,13 @@ return [
             'ENABLED' => 'green', 'PAUSED' => 'amber', 'REMOVED' => 'red',
             'PENDING' => 'gold', 'PENDING_REVIEW' => 'gold', 'UNREVIEWED' => 'gold', 'DRAFT' => 'neutral',
         ],
+        // Conversa de atendimento do site/funil (Conversa::statuses(), que lê
+        // config('assistente.status_conversa')): o mesmo selo veste a caixa de entrada e a
+        // ficha da conversa. Aguardar a equipe é âmbar porque é o que chama gente.
+        'conversa' => [
+            'aberta' => 'blue', 'aguardando_equipe' => 'amber',
+            'resolvida' => 'green', 'fechada' => 'neutral',
+        ],
         // Origem da visita/lead, resolvida por Atribuidor::classificar() a partir das chaves
         // de 'canais' logo abaixo. O tom é o mesmo no cartão de atribuição e na ficha do lead.
         'canal' => [
@@ -763,6 +770,9 @@ return [
 
         ['titulo' => 'Atendimento', 'icone' => 'fa-headset', 'filhos' => [
             ['titulo' => 'Chamados', 'rota' => 'admin.chamados.index', 'prefixo' => 'admin.chamados.', 'icone' => 'fa-life-ring', 'bolha' => 'chamados_abertos', 'tom' => 'amber'],
+            ['titulo' => 'Conversas do site', 'rota' => 'admin.assistente.conversas.index', 'prefixo' => 'admin.assistente.conversas.', 'icone' => 'fa-comments', 'bolha' => 'conversas_aguardando', 'tom' => 'amber'],
+            ['titulo' => 'Assistente virtual', 'rota' => 'admin.assistente.persona', 'prefixo' => 'admin.assistente.persona', 'icone' => 'fa-robot', 'admin' => true],
+            ['titulo' => 'O que o assistente sabe', 'rota' => 'admin.assistente.conhecimento.index', 'prefixo' => 'admin.assistente.conhecimento.', 'icone' => 'fa-book-open', 'admin' => true],
             ['titulo' => 'Contratos', 'rota' => 'admin.contratos.index', 'prefixo' => 'admin.contratos.', 'icone' => 'fa-file-signature'],
         ]],
 

@@ -5,6 +5,63 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.31.0] - 2026-10-26
+
+### Adicionado
+- **As três telas do assistente no painel** (`/admin/assistente`). A ficha do robô, o que ele
+  sabe e o que ele conversa — cada uma no grupo **Atendimento** do menu, cada uma com o seu
+  "Como usar esta tela" no cabeçalho.
+- **`/admin/assistente` — a persona.** Nome, cargo, saudação, tom de fala, regras próprias, a voz
+  com que ele responde e o rosto dele, desenhado pelo campo de arrastar-e-soltar da casa
+  (`assistente_avatar` em `config/envios.php`: 96 × 96 px, até 2 MB). Quatro interruptores dizem
+  onde ele atende — site, página de funil e chat do chamado — e um cartão ao lado responde a única
+  pergunta que importa antes de ligá-lo: *ele consegue responder?*, listando a capacidade que
+  ainda não tem chave e levando para a tela de chaves em vez de repetir o formulário ali.
+- **`/admin/assistente/conhecimento` — a memória do robô.** Um assunto por linha, com resposta,
+  assuntos (tags), origem e endereço da fonte. É daqui que a `Busca` tira a única resposta que o
+  assistente tem autorização de dar: o que não está nesta lista, ele não inventa. A listagem filtra
+  por busca, origem e situação; a ficha mostra a procedência completa — de onde veio, quando foi
+  lido e quem cadastrou — porque resposta sem procedência é a mesma coisa que chute.
+- **`/admin/assistente/conversas` — a caixa de entrada do atendimento.** Três contadores (abertas,
+  aguardando a equipe, resolvidas), filtro por canal, e a última fala de cada conversa prévia na
+  linha. Dentro dela, o histórico com a fala do cliente, do assistente, da equipe e do sistema
+  lado a lado, cada uma assinada por quem é; o selo do provedor que respondeu, as fontes que a
+  máquina usou (para a equipe conferir, não para crer de cabeça baixa), o arquivo anexado, a caixa
+  de resposta da equipe e o seletor de status.
+- **Bolha de pendência no menu**: o item "Conversas do site" leva o número de conversas
+  `aguardando_equipe`, contado em `AppServiceProvider::pendenciasDoPainel()` — a mesma fonte que
+  alimenta as outras bolhas do painel.
+- **Camada multi-provedor de IA** (`App\Services\Assistente`), que é o chão destas telas: `Motor`
+  é a porta única de toda chamada, `Fabrica` escolhe provedor e modelo *por capacidade* (banco →
+  `.env` → padrão da casa) e nenhum modelo vira HTTP sem estar na lista que a própria tela oferece.
+  Gemini e OpenAI por enquanto; acrescentar um terceiro é uma entrada no config mais uma classe.
+
+### Corrigido
+- **A foto do depoimento nunca chegava ao banco.** O dropzone do avatar vivia na coluna da
+  direita, fora do `<form>` — a tela aceitava o arraste, o upload respondia ok, e o `avatar`
+  simplesmente não estava no POST. O formulário agora abraça a linha inteira, e o mesmo desenho
+  foi conferido em todas as outras nove telas que usam o campo de arrastar-e-soltar.
+- **`Assistente::instrucoes()` mandava o texto com `\n` escrito.** As regras do atendimento
+  chegavam ao provedor como uma linha única com a barra e o nê visíveis, porque as aspas do
+  config eram simples. Agora são aspas duplas de verdade e o teste recusa qualquer barra-n literal.
+- Um POST rejeitado na persona **criava a ficha antes de validar**, deixando uma linha órfã com
+  nome vazio quando o administrador errava o tom ou a voz. A ficha só nasce depois que o `validar()`
+  passa.
+
+### Testado
+- `AssistenteDoPainelTest` (15 testes) trava o que a view não dá para conferir olhando: a ficha
+  nasce dos padrões e é linha única; tom e voz fora da lista são recusados sem gravar nada; o
+  avatar só vale se veio do campo certo e está no disco; campo ausente no POST preserva o rosto e
+  rosto novo apaga o arquivo velho; a ficha lista as capacidades sem chave; referência duplicada de
+  conhecimento é recusada; assumir a conversa pela equipe desliga a máquina; o selo de cada status
+  vem de `config('golden.tons_status')`; e a persona só oferece as vozes que a `Fabrica` sabe usar.
+- `CamposDeEnvioTest` ganhou a trava estrutural que faltava: **todo dropzone vive dentro do
+  próprio `<form>`**, lido na fonte de todas as views. A regra foi validada nos dois sentidos — com
+  a tela consertada o teste passa, e com o `</form>` devolvido para antes da coluna da direita ele
+  falha apontando o arquivo.
+- `PaginasDoPainelTest` abre as cinco rotas novas e confere que o vendedor vê as conversas e não
+  vê a persona nem o conhecimento. Suite completa: 405 testes, 5038 afirmações.
+
 ## [2.30.0] - 2026-10-26
 
 ### Mudado

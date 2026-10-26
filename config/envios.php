@@ -93,4 +93,21 @@ return [
         'dimensao' => '112 × 112 px',
         'proporcao' => '1:1',
     ],
+
+    /*
+    | O rosto do assistente (Admin → Atendimento → Assistente → Ficha). Quadrada de propósito:
+    | a bolha do chat e o avatar da conversa são desenhados em círculo, e um retrato retangular
+    | perderia o rosto na corte. Sem arquivo, a tela desenha a inicial do nome — o mesmo
+    | desenho do carrossel de depoimentos.
+    */
+    'assistente_avatar' => [
+        'tipo' => 'imagem',
+        'pasta' => 'assistente',
+        'titulo' => 'Rosto do assistente',
+        'chamada' => 'Arraste o avatar aqui ou clique para escolher',
+        'formatos' => ['jpg', 'jpeg', 'png', 'webp'],
+        'max_mb' => 2,
+        'dimensao' => '96 × 96 px',
+        'proporcao' => '1:1',
+    ],
 ];
