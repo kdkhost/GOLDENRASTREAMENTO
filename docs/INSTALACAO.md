@@ -1389,11 +1389,12 @@ de um arquivo de configuração.
 
 ### O que tem dentro
 
-São 27 seções em 7 grupos, na ordem em que a pessoa encontra a tela: **Começando** (o que é o painel,
+São 30 seções em 7 grupos, na ordem em que a pessoa encontra a tela: **Começando** (o que é o painel,
 a rotina do dia), **Comercial** (leads, clientes, campanhas, atribuição, Google Ads, criativo, funil),
-**Vendas** (loja, pedidos, catálogo), **Atendimento** (chamados, contratos), **Conteúdo do site**
-(páginas, imagens e textos, depoimentos, vídeos, perguntas frequentes), **Portal do cliente** e
-**Sistema** (notificações, configurações, crons, usuários, auditoria, ambiente, diagnóstico).
+**Vendas** (loja, pedidos, catálogo), **Atendimento** (chamados, contratos e as três telas do
+assistente), **Conteúdo do site** (páginas, imagens e textos, depoimentos, vídeos, perguntas
+frequentes), **Portal do cliente** e **Sistema** (notificações, configurações, crons, usuários,
+auditoria, ambiente, diagnóstico).
 
 Cada seção tem resumo, blocos e — quando documenta uma tela — o botão **Abrir a tela**, que só
 aparece para rota registrada: guia apontando para rota renomeada é guia desmentido pelo sistema. A
@@ -1904,7 +1905,7 @@ continua visível para você pelo painel ou SSH.
       conferir em `/admin/google-ads/criativo` que um título de 31 caracteres fica vermelho
 - [ ] Google Ads sem credencial: a mesma tela deve listar **qual** variável falta em vez de
       quebrar, e nenhum token de desenvolvedor aparece no HTML nem no log
-- [ ] Guia de uso: **Guia de uso** na barra lateral abre as 27 seções, a busca acha "contrato"
+- [ ] Guia de uso: **Guia de uso** na barra lateral abre as 30 seções, a busca acha "contrato"
       sem acento, e cada tela com seção mostra a linha **Como usar esta tela** caindo na
       âncora certa (seção 14)
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`

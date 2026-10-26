@@ -546,7 +546,7 @@ a dimensão ideal.
   mesmos blocos, então a documentação e a tela não podem se desmentir. Seis tipos de bloco
   (`texto`, `passos`, `lista`, `codigo`, `tabela`, `aviso`) e `**negrito**` / `` `código` ``
   inline; passo nenhum com número — a ordem já está na lista.
-- **27 seções em 7 grupos** (Começando, Comercial, Vendas, Atendimento, Conteúdo do site, Portal
+- **30 seções em 7 grupos** (Começando, Comercial, Vendas, Atendimento, Conteúdo do site, Portal
   do cliente, Sistema), da rotina do dia ao diagnóstico do servidor. A busca da coluna esquerda
   normaliza acento ("contrato" acha "Contratos"), esconde o que não casa e deixa marcada a seção
   por onde a rolagem passa.
@@ -555,7 +555,7 @@ a dimensão ideal.
   `@include` cobre as ~20 views sem editar nenhuma, e a rota sem seção não oferece link.
 - **Aberto a quem opera o painel**: vendedor, visualizador e admin lêem o mesmo texto; não há
   versão "só do administrador" da documentação.
-- Testes: `tests/Feature/GuiaDoPainelTest.php` (12) — conferem cada rota citada, cada item do menu
+- Testes: `tests/Feature/GuiaDoPainelTest.php` (14) — conferem cada rota citada, cada item do menu
   com seção, cada tom de aviso no dark e no light, e o cartão que nasce aberto quando falta
   credencial do Google Ads.
 
