@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Testimonial;
+use App\Support\ChavesDeIntegracao;
 use App\Support\DepoimentosDoGoogle;
 use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
@@ -163,15 +164,16 @@ class TestimonialController extends Controller
 
     /**
      * Botão "Atualizar do Google": mesmo caminho do `php artisan depoimentos:google`, só que
-     * disparado da tela. Sem as variáveis do .env ele explica o que falta em vez de chamar a
-     * API no escuro.
+     * disparado da tela. Sem as chaves — no banco ou no ambiente — ele explica o que falta e
+     * aponta a tela em vez de chamar a API no escuro.
      */
     public function importar(Request $request): RedirectResponse
     {
         $limite = min(50, max(1, (int) config('golden.google_business.limite', 50)));
 
         if (! DepoimentosDoGoogle::configurado()) {
-            return back()->with('error', 'A leitura do Google ainda não está configurada no .env: GOOGLE_BUSINESS_ACCOUNT, GOOGLE_BUSINESS_LOCATION e GOOGLE_BUSINESS_TOKEN.');
+            return back()->with('error', 'Faltam as chaves das avaliações do Google (GOOGLE_BUSINESS_ACCOUNT, GOOGLE_BUSINESS_LOCATION e GOOGLE_BUSINESS_TOKEN). Preencha em '
+                .ChavesDeIntegracao::CAMINHO_NO_PAINEL.' → Avaliações do Google.');
         }
 
         try {

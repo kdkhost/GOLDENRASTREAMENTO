@@ -213,9 +213,13 @@ class GuiaDoPainelTest extends TestCase
                 "A tela reclama de {$nome}, mas o guia ensina a preencher outra coisa.");
         }
 
-        foreach (['GOOGLE_REDIRECT_URI', 'GOOGLE_ADS_LOGIN_CUSTOMER_ID', 'config:clear', 'google-ads:sync'] as $essencial) {
+        foreach (['GOOGLE_REDIRECT_URI', 'GOOGLE_ADS_LOGIN_CUSTOMER_ID', 'Chaves de integração', 'google-ads:sync'] as $essencial) {
             $this->assertStringContainsString($essencial, $texto, "O passo a passo do Google Ads esqueceu '{$essencial}'.");
         }
+
+        // Quem administra pela tela não limpa configuração nem reinoda nada: salvar vale na hora.
+        $this->assertStringNotContainsString('config:clear', $texto,
+            'O guia do Google Ads ainda manda limpar a configuração — o painel dispensa isso.');
 
         $this->assertStringContainsString('/auth/google-ads/callback', $texto);
     }

@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\GoogleAdsAccount;
 use App\Models\User;
 use App\Services\GoogleAds\GoogleAdsService;
+use App\Support\ChavesDeIntegracao;
 use App\Support\GoogleAdsCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,8 +32,9 @@ use Throwable;
  */
 class GoogleAdsAuthController extends Controller
 {
-    /** As variáveis de ambiente sem as quais a integração não existe neste servidor. */
-    private const SEM_CREDENCIAL = 'A integração ainda não está configurada neste servidor: faltam %s no ambiente.';
+    /** A frase dita quando falta credencial: nomeia o que falta e diz onde se preenche. */
+    private const SEM_CREDENCIAL = 'Faltam credenciais do Google Ads: %s. Preencha em '
+        .ChavesDeIntegracao::CAMINHO_NO_PAINEL.'.';
 
     public function __construct(private GoogleAdsService $servico) {}
 

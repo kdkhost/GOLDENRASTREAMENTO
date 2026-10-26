@@ -1,8 +1,8 @@
 {{--
     O modal da galeria de tutoriais. É o mesmo player da casa da faixa do funil
     (site.partials.video-player): sem controles do YouTube, com o vidro cobrindo o quadro
-    enquanto o vídeo não toca, e sem autoplay — abrir o tutorial mostra o quadro pronto, e
-    ele só começa no toque do visitante no play.
+    enquanto o vídeo não toca. O card da galeria é o play: um toque abre o quadro e já põe o
+    vídeo rodando — em tela cheia na horizontal quando a tela é de celular ou tablet.
 
     O player só entra em ação quando o visitante abre um vídeo: a página carrega leve e o
     YouTube não grava nada em quem apenas passou os olhos pela galeria.

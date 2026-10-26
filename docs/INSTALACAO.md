@@ -487,6 +487,15 @@ php artisan config:clear && php artisan config:cache
 
 ## 7. Referência do `.env`
 
+**O `.env` é o plano de fundo, não o painel de controle.** Todo valor configurável tem
+lugar nas telas — contato, loja, WhatsApp, medição, SMTP, chaves do Google Ads e do
+Business Profile se preenchem em **Sistema → Configurações** (as credenciais, na seção
+*Chaves de integração*, ao pé da página). O que o painel grava fica no banco de dados,
+cifrado quando é segredo, e passa na frente do ambiente no começo de cada requisição:
+salvou na tela, valeu na hora — sem `config:clear`, sem reiniciar nada. A tabela abaixo
+existe para o que ainda não foi preenchido em lugar nenhum, e para o que só faz sentido
+no servidor (banco, chave da aplicação, fila, fuso).
+
 | Chave | Produção | Observações |
 | --- | --- | --- |
 | `APP_NAME` | `Golden Rastreamento` | nome em e-mails e no painel |
@@ -506,7 +515,7 @@ php artisan config:clear && php artisan config:cache
 | `LOG_CHANNEL` / `LOG_LEVEL` | `stack` / `warning` | log em `storage/logs` |
 | `MAIL_MAILER` | `smtp` | use `log` enquanto não tiver credencial |
 | `MAIL_LOG_CHANNEL` | `email` | para onde o `log` escreve o e-mail (`storage/logs/email.log`) |
-| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION` | do seu servidor de correio | o **código de e-mail está pronto no projeto**; falta só a credencial do servidor |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION` | do seu servidor de correio | o **código de e-mail está pronto no projeto**; a credencial se preenche na tela (seção 7.1), e estas linhas ficam como plano de fundo |
 | `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | `disparos@foco.server-golden.com.br` / `Golden Rastreamento` | remetente dos orçamentos e avisos: caixa de máquina, não o e-mail de uma pessoa |
 | `GOLDEN_WHATSAPP` | `5519997101483` | botão de WhatsApp do site |
 | `GOLDEN_EMAIL` | endereço comercial | aparece no site e nos avisos |
@@ -550,14 +559,18 @@ Três coisas que só aparecem na hora:
   comentário e o `MAIL_PASSWORD` chega vazio ao Laravel — o erro aparece como falha de
   login no SMTP, não como erro de arquivo.
 
-Depois, `MAIL_MAILER=smtp` no `.env` e uma prova curta antes de mexer no site:
+Depois, preencha a caixa em **Sistema → Configurações → Chaves de integração → E-mail de
+disparo** (host, porta, criptografia, usuário, senha e remetente) e escolha "SMTP (servidor de
+correio)" em "Como o sistema envia". A senha cifra no banco e não volta a aparecer na tela.
+Gravou, vale — e uma prova curta antes de mexer no site:
 
 ```php
 Mail::raw('prova', fn ($m) => $m->to('voce@seudominio.com.br')->subject('prova'));
 ```
 
 Se o envio for aceito, a mensagem aparece na caixa de destino; o `queue:work` do cron
-(seção 6) cuida do resto sem intervenção.
+(seção 6) cuida do resto sem intervenção. Escrever as mesmas chaves no `.env` continua
+funcionando, como plano de fundo — é o caminho de quem ainda não abriu o painel.
 
 ---
 
@@ -704,27 +717,25 @@ Nenhum deles é trabalho de código, e sem eles a tela mostra exatamente o que f
      aceita; nada de escopos genéricos do Google.
 4. **Ativar a API do Google Ads** no mesmo projeto (*Biblioteca* → "Google Ads API" → Ativar).
 
-### Variáveis do `.env`
+### As cinco credenciais: a tela, não o arquivo
 
-```
-GOOGLE_ADS_DEVELOPER_TOKEN=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI="${APP_URL}/auth/google-ads/callback"
-GOOGLE_ADS_LOGIN_CUSTOMER_ID=
-GOOGLE_ADS_TRANSPORT=rest
-GOOGLE_ADS_CACHE_STORE=
-GOOGLE_ADS_CACHE_MINUTOS=30
-GOOGLE_ADS_DIAS=30
-```
+Token de desenvolvedor, ID e segredo do cliente OAuth, endereço de volta e MCC se preenchem em
+**Sistema → Configurações → Chaves de integração → Google Ads** (`/admin/configuracoes#chaves`).
+O que for gravado ali entra no banco — os três segredos cifrados, e nenhum deles volta a aparecer
+na tela depois de salvo — e vale na hora: não há `config:clear`, nem `artisan` nem reinício de
+servidor no meio. Os nomes de `.env` continuam existindo como **plano de fundo**, para o campo
+que ninguém preencheu; deixá-los todos em branco no arquivo é o estado normal de uma instalação
+que configura pela tela.
 
-Depois de escrever qualquer uma delas:
+| Na tela | A variável de plano de fundo |
+| --- | --- |
+| Token de desenvolvedor | `GOOGLE_ADS_DEVELOPER_TOKEN` |
+| ID do cliente OAuth | `GOOGLE_CLIENT_ID` |
+| Segredo do cliente OAuth | `GOOGLE_CLIENT_SECRET` |
+| Endereço de volta do OAuth | `GOOGLE_REDIRECT_URI` (`${APP_URL}/auth/google-ads/callback`) |
+| Conta gerente (MCC) | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` — vazio é legítimo |
 
-```bash
-php artisan config:clear && php artisan migrate --force
-```
-
-Duas variáveis existem por causa da hospedagem, e deixar os padrões é o certo nela:
+Restam no arquivo duas linhas de hospedagem, e deixar os padrões é o certo nela:
 
 - **`GOOGLE_ADS_TRANSPORT=rest`** — a biblioteca oficial fala com o Google por gRPC **ou** REST.
   A hospedagem compartilhada não tem root nem `pecl`, então a extensão `grpc` do PHP não entra.
@@ -769,14 +780,14 @@ cada uma.
 
 | O que aparece | O que é |
 |---|---|
-| "A integração ainda não está configurada neste servidor: faltam …" | Variável ausente do `.env`; a lista diz quais. `php artisan config:clear` depois de escrever. |
+| "A integração ainda não tem credenciais: faltam …" | Campo vazio na tela **e** no arquivo; a lista diz quais. Preencha em Sistema → Configurações → Chaves de integração — vale na hora. |
 | "Conectar conta Google Ads" sumiu / erro do OAuth | `GOOGLE_REDIRECT_URI` diferente do URI cadastrado no Google Cloud. |
 | "Este token não alcança nenhuma conta de anunciante" | Consentimento dado sem conta ativa na MCC, ou conta nova com menos de 24 h. Reconecte. |
 | "Carregando…" por mais de alguns minutos | O worker não está rodando: `php artisan queue:work --stop-when-empty` à mão e confira o cron do `schedule:run`. |
 | Selo **Desconectada** com motivo | O Google recusou o token de atualização. Reconecte; o histórico sincronizado continua na tela. |
 
-Nada disso precisa ser procurado neste documento enquanto a tela está aberta: os quatro passos, as
-cinco linhas do `.env`, os comandos e esta mesma tabela vivem no cartão dobrável **"Como
+Nada disso precisa ser procurado neste documento enquanto a tela está aberta: os quatro passos,
+as cinco chaves, os comandos e esta mesma tabela vivem no cartão dobrável **"Como
 configurar"** da própria tela de Google Ads, que **nasce aberto enquanto faltar credencial** e fica
 fechado quando não há mais o que explicar. O guia inteiro está na barra lateral do painel, em
 **Guia de uso** (seção 14).
@@ -913,16 +924,17 @@ gcloud auth application-default login --scopes=https://www.googleapis.com/auth/b
 gcloud auth application-default print-access-token
 ```
 
-As três peças vão no `.env` da instalação — nunca no banco e nunca no repositório,
-que é público:
+As três peças se preenchem em **Sistema → Configurações → Chaves de integração → Avaliações do
+Google**, e vão cifradas ao banco — o token nunca aparece em tela, log nem repositório. Para quem
+prefere o servidor, as mesmas chaves existem no `.env` como plano de fundo:
 
-| Chave | Valor |
-| --- | --- |
-| `GOOGLE_BUSINESS_ACCOUNT` | o ID da conta, `accounts/123456789` (ou só `123456789`) |
-| `GOOGLE_BUSINESS_LOCATION` | o ID da unidade, `locations/987654321` (ou só `987654321`) |
-| `GOOGLE_BUSINESS_TOKEN` | o Bearer de OAuth — expira e precisa ser renovado |
-| `GOOGLE_BUSINESS_LIMITE` | avaliações lidas por rodada (padrão `50`) |
-| `GOOGLE_BUSINESS_NOTA_MINIMA` | nota mínima que vira depoimento (padrão `4`) |
+| Nome na tela | Chave de plano de fundo | Valor |
+| --- | --- | --- |
+| Conta do Business Profile | `GOOGLE_BUSINESS_ACCOUNT` | o ID da conta, `accounts/123456789` (ou só `123456789`) |
+| Local (ficha) | `GOOGLE_BUSINESS_LOCATION` | o ID da unidade, `locations/987654321` (ou só `987654321`) |
+| Token de acesso | `GOOGLE_BUSINESS_TOKEN` | o Bearer de OAuth — expira e precisa ser renovado |
+| — | `GOOGLE_BUSINESS_LIMITE` | avaliações lidas por rodada (padrão `50`) |
+| — | `GOOGLE_BUSINESS_NOTA_MINIMA` | nota mínima que vira depoimento (padrão `4`) |
 
 Com elas preenchidas:
 

@@ -4,6 +4,7 @@ namespace App\Services\GoogleAds;
 
 use App\Models\GoogleAdsAccount;
 use App\Models\GoogleAdsApiLog;
+use App\Support\ChavesDeIntegracao;
 use Google\Ads\GoogleAds\Lib\OAuth2TokenBuilder;
 use Google\Ads\GoogleAds\Lib\V26\GoogleAdsClient;
 use Google\Ads\GoogleAds\Lib\V26\GoogleAdsClientBuilder;
@@ -44,7 +45,14 @@ class GoogleAdsService
     /** Os status que a tela sabe escrever. Remover uma campanha não é ato de painel. */
     public const STATUS_ESCREVEVEIS = ['ENABLED', 'PAUSED'];
 
-    /** O nome de ambiente de cada credencial, para a tela avisar qual falta em vez de só falhar. */
+    /**
+     * Cada credencial com o caminho de `config()` que a entrega e o nome da variável de
+     * ambiente correspondente. A tela não escreve nesses caminhos: quem faz isso é
+     * `ChavesDeIntegracao::aplicar()`, que joga o banco sobre o ambiente no começo da
+     * requisição. Ler `config()` já é, portanto, perguntar «o que o painel definiu e, se ele
+     * não definiu nada, o que o servidor diz» — e é por isto que nenhuma checagem aqui precisa
+     * saber de onde veio o valor.
+     */
     public const CREDENCIAIS = [
         'GOOGLE_ADS_DEVELOPER_TOKEN' => 'google_ads.developer_token',
         'GOOGLE_CLIENT_ID' => 'services.google_ads.client_id',
@@ -69,7 +77,8 @@ class GoogleAdsService
      * Cliente autenticado para uma conta conectada.
      *
      * O token de atualização é o segredo do usuário, lido decifrado do banco pelo cast
-     * `encrypted`; o token de desenvolvedor é o segredo da aplicação, e só vive no ambiente.
+     * `encrypted`; o token de desenvolvedor é o segredo da aplicação, e chega até aqui pelo
+     * painel (banco) ou pelo plano de fundo do ambiente.
      * `login_customer_id` é o MCC, quando existe: ele autoriza a entrada, enquanto o
      * `customer_id` da conta conectada diz de qual conta a consulta responde.
      */
@@ -176,7 +185,9 @@ class GoogleAdsService
 
         if ($desenvolvedor === '') {
             throw new InvalidArgumentException(
-                'Falta o GOOGLE_ADS_DEVELOPER_TOKEN no ambiente do servidor: sem ele o Google não aceita nenhuma chamada. É o token da aplicação, emitido junto com a conta MCC.'
+                'Falta o token de desenvolvedor (GOOGLE_ADS_DEVELOPER_TOKEN), nem no banco nem no ambiente: '.
+                'sem ele o Google não aceita nenhuma chamada. Preencha em '.ChavesDeIntegracao::CAMINHO_NO_PAINEL.
+                '. É o token da aplicação, emitido junto com a conta MCC.'
             );
         }
 
@@ -187,7 +198,7 @@ class GoogleAdsService
             ->withScopes(config('google_ads.escopos'))
             ->build();
 
-        // O MCC entra como `login_customer_id` quando está no ambiente: ele autoriza a entrada,
+        // O MCC entra como `login_customer_id` quando tem valor (no banco ou no ambiente): ele autoriza a entrada,
         // enquanto o `customer_id` da consulta diz de qual conta a resposta fala.
         $mcc = (string) config('google_ads.login_customer_id');
 

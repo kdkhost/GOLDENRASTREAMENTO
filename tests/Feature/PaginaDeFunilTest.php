@@ -281,6 +281,10 @@ class PaginaDeFunilTest extends TestCase
     /**
      * Autoplay nunca, em parte alguma do player: o parâmetro entra desligado, a casa não dá
      * play no pronto do player e o vídeo trocado entre cards entra em cue, não em load.
+     *
+     * O `loadVideoById` existe no arquivo desde que o card da galeria passou a abrir e tocar no
+     * mesmo toque — e ele só pode aparecer aí, na frente do `tocarJa` que aquele clique pôs.
+     * Um segundo `load` fora desse ramo é o vídeo voltando a tocar sozinho.
      */
     public function test_nada_no_player_toca_sozinho(): void
     {
@@ -293,7 +297,38 @@ class PaginaDeFunilTest extends TestCase
         // O play da casa só vem de um toque: o onReady não toca, quem toca é o pedido guardado.
         $this->assertStringContainsString('if (pediuTocar) { pediuTocar = false; inst.playVideo(); }', $js);
         $this->assertStringContainsString('cueVideoById', $js);
-        $this->assertStringNotContainsString('loadVideoById', $js);
+        $this->assertSame(1, substr_count($js, 'loadVideoById'),
+            'Há mais de um load no player: algum deles põe vídeo na tela sem toque pedido.');
+        $this->assertStringContainsString('if (tocarJa) inst.loadVideoById(codigo); else inst.cueVideoById(codigo);', $js);
+    }
+
+    /**
+     * Tela pequena não tem canto para um tutorial de painel miúdo: o toque que dá play é o
+     * mesmo que deita o vídeo. A casa pede tela cheia ao navegador e trava a orientação na
+     * horizontal; onde o pedido é recusado (iOS), o CSS `giro` faz o deitar sozinho, sem
+     * depender da boa vontade de ninguém. E a saída — fechar, Esc ou o «voltar» do Android —
+     * levanta o quadro de volta, porque a tela cheia pode acabar sem passar pela casa.
+     */
+    public function test_no_celular_o_play_deita_o_video_em_tela_cheia_na_horizontal(): void
+    {
+        $js = file_get_contents(public_path('js/golden-site.js'));
+        $css = file_get_contents(public_path('css/golden-site.css'));
+
+        // Uma janela de tela só: 960px é o corte entre o painel que sobra e o que precisa deitar.
+        $this->assertStringContainsString("window.matchMedia('(max-width: 960px)')", $js);
+        $this->assertStringContainsString('palco.requestFullscreen()', $js);
+        $this->assertStringContainsString("orientation.lock('landscape')", $js);
+        // O plano B quando o navegador recusa: a casa gira o próprio quadro.
+        $this->assertStringContainsString("palco.classList.add('giro')", $js);
+        // Play da barra e toque do card passam pelo mesmo deitar.
+        $this->assertStringContainsString("if (!tocando()) deitar();", $js);
+        $this->assertStringContainsString('if (tocarJa) deitar();', $js);
+        // Levantar acontece tanto no fechar do vídeo quanto na saída dada pelo sistema.
+        $this->assertStringContainsString("['fullscreenchange', 'webkitfullscreenchange']", $js);
+
+        $this->assertStringContainsString('.video-modal.tela-cheia .video-slot{', $css);
+        $this->assertStringContainsString('transform:rotate(90deg);transform-origin:left top', $css);
+        $this->assertStringContainsString('.video-slot.tela-cheia{aspect-ratio:auto', $css);
     }
 
     /**

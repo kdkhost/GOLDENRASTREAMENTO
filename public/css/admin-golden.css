@@ -37,6 +37,11 @@
 .app-content textarea.font-monospace{font-size:.85rem;line-height:1.6}
 .app-content .form-check-label{font-size:.86rem}
 
+/* O nome da variável de plano de fundo, ao lado do selo de origem, é longo
+   (GOOGLE_ADS_LOGIN_CUSTOMER_ID) e mora dentro de um cartão estreito. Sem quebrar, ele
+   empurra a linha e invade o vizinho — a tela de chaves deixa de ser legível. */
+.app-content .form-hint code{overflow-wrap:anywhere}
+
 /* Tabelas: cabeçalho discreto e botões de ação compactos. */
 .app-content .table thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;font-weight:700;color:var(--bs-secondary-color);background:var(--bs-tertiary-bg);white-space:nowrap}
 .app-content .table .btn{--bs-btn-padding-y:.18rem;--bs-btn-padding-x:.5rem;--bs-btn-font-size:.76rem}

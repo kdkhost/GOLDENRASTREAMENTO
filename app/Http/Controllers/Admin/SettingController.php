@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Setting;
+use App\Support\ChavesDeIntegracao;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -70,6 +71,59 @@ class SettingController extends Controller
         Activity::log('configuracao_salva', 'Caixa de WhatsApp do site atualizada.');
 
         return back()->with('success', 'Botão de WhatsApp atualizado.');
+    }
+
+    /**
+     * As chaves de integração: o painel grava no banco e o banco passa a mandar.
+     *
+     * Três regras, todas de `ChavesDeIntegracao`, e a tela não inventa nenhuma:
+     * campo vazio apaga a linha do banco (o `.env` volta a conduzir); segredo cifrado nunca
+     * volta para o HTML; e um segredo deixado em branco sem o pedido explícito de apagar fica
+     * como está — porque a caixa nasce vazia de propósito, e tratá-la como "limpar" apagaria
+     * a chave do Google toda vez que alguém salvasse o SMTP.
+     */
+    public function chaves(Request $request): RedirectResponse
+    {
+        $grupo = $request->input('grupo');
+        $campos = ChavesDeIntegracao::GRUPOS[$grupo]['campos'] ?? null;
+
+        if ($campos === null) {
+            return back()->with('error', 'Grupo de chaves desconhecido.');
+        }
+
+        $regras = [];
+
+        foreach ($campos as $campo) {
+            // Toda chave admite vazio — é assim que se devolve um valor ao .env. Os campos com
+            // `'regras'` próprios (porta, e-mail, listas fechadas) mandam nelas sozinhos:
+            // somar um `max:255` por cima transformaria "465" em string de 3 caracteres e o
+            // validador acusaria um número que está certo.
+            $regras[$campo['chave']] = array_merge(['nullable'], $campo['regras'] ?? ['string', 'max:255']);
+        }
+
+        $dados = $request->validate($regras);
+        $mexidas = 0;
+
+        foreach ($campos as $campo) {
+            $chave = $campo['chave'];
+            $apagar = $request->boolean($chave.'_apagar');
+            $valor = trim((string) ($dados[$chave] ?? ''));
+
+            if ($valor === '' && ($campo['segredo'] ?? false) && ! $apagar) {
+                continue;
+            }
+
+            if (ChavesDeIntegracao::guardar($chave, $apagar ? '' : $valor)) {
+                $mexidas++;
+            }
+        }
+
+        $rotulo = ChavesDeIntegracao::GRUPOS[$grupo]['rotulo'];
+        Activity::log('chaves_integracao', "Chaves de integração de {$rotulo} atualizadas ({$mexidas} campo(s) com mudança).");
+
+        return back()->with('success', $mexidas === 0
+            ? "Nada mudou em {$rotulo}."
+            : "{$rotulo}: {$mexidas} campo(s) atualizados. Vale a partir desta tela; o que ficou em branco voltou a obedecer ao .env.");
     }
 
     /** Liga/desliga a loja virtual imediatamente, sem recarregar o formulário. */

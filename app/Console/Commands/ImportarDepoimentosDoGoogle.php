@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Activity;
+use App\Support\ChavesDeIntegracao;
 use App\Support\DepoimentosDoGoogle;
 use Illuminate\Console\Command;
 
@@ -12,8 +13,8 @@ use Illuminate\Console\Command;
  * chama o mesmo DepoimentosDoGoogle::importar().
  *
  * A leitura depende de um perfil verificado há mais de 60 dias e de um token aprovado na
- * API do Google; enquanto o `.env` não tiver as três variáveis, o comando explica o que
- * falta em vez de falhar com o erro da API.
+ * API do Google; enquanto as três chaves não tiverem valor — no banco, pela tela, ou no
+ * `.env` —, o comando explica o que falta em vez de falhar com o erro da API.
  */
 class ImportarDepoimentosDoGoogle extends Command
 {
@@ -26,7 +27,8 @@ class ImportarDepoimentosDoGoogle extends Command
     public function handle(): int
     {
         if (! DepoimentosDoGoogle::configurado()) {
-            $this->error('A importação do Google não está configurada. Faltam no .env da instalação:');
+            $this->error('A importação do Google não está configurada. Faltam as três chaves — preencha na tela '
+                .ChavesDeIntegracao::CAMINHO_NO_PAINEL.' → Avaliações do Google (ou, em último caso, no .env deste servidor):');
             $this->line('  GOOGLE_BUSINESS_ACCOUNT=<accounts/ID-do-perfil>');
             $this->line('  GOOGLE_BUSINESS_LOCATION=<locations/ID-da-unidade>');
             $this->line('  GOOGLE_BUSINESS_TOKEN=<bearer de uma conta que administra o perfil>');

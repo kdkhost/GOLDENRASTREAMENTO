@@ -115,14 +115,14 @@ class ConexaoGoogleAdsTest extends TestCase
         $this->assertStringContainsString('redirect_uri=http://localhost/auth/google-ads/callback', $url);
     }
 
-    public function test_sem_credencial_no_ambiente_o_painel_recusa_e_diz_qual_falta(): void
+    public function test_sem_credencial_o_painel_recusa_e_diz_qual_falta_e_onde_se_preenche(): void
     {
         config(['google_ads.developer_token' => null]);
 
         $this->actingAs($this->admin)
             ->get(route('google-ads.redirect'))
             ->assertRedirect(route('admin.google-ads.index'))
-            ->assertSessionHas('error', 'A integração ainda não está configurada neste servidor: faltam GOOGLE_ADS_DEVELOPER_TOKEN no ambiente.');
+            ->assertSessionHas('error', 'Faltam credenciais do Google Ads: GOOGLE_ADS_DEVELOPER_TOKEN. Preencha em Sistema → Configurações → Chaves de integração.');
 
         $this->assertDatabaseCount('google_ads_accounts', 0);
     }

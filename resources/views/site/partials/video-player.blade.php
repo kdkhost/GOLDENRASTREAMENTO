@@ -7,8 +7,9 @@
     sugeridos — o que o visitante vê em repouso é sempre a nossa moldura com o nosso selo.
     Os únicos controles são os daqui embaixo (tocar/pausar, mudo, volume) e o selo do vidro.
 
-    E nada toca sozinho, em lugar nenhum: abrir o quadro não toca. Tocar é sempre um toque
-    dado sobre um botão de play nosso. O comportamento está em public/js/golden-site.js.
+    E nada toca sozinho: abrir o quadro não toca. Tocar é sempre um toque dado em algo nosso —
+    o play da barra ou o card da galeria, que abre e já toca no mesmo toque. O comportamento
+    está em public/js/golden-site.js.
 
     Onde o vidro não alcança — porque o vídeo já está tocando e tem de aparecer — a casa fecha
     a passagem de outro jeito: a máscara de topo segura o cartão de título que o YouTube mostra

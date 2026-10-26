@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Support\Carrinho;
+use App\Support\ChavesDeIntegracao;
 use App\Support\MenuPainel;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Routing\Events\RouteMatched;
@@ -44,6 +45,12 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        // O que o painel gravou no banco passa na frente do .env antes de qualquer leitura.
+        // É aqui, e em nenhum outro lugar: os ~15 leitores do sistema seguem perguntando
+        // config('google_ads.developer_token') sem saber de onde o valor veio — e por isso
+        // salvar na tela vale na hora, sem config:clear nem reinício de servidor.
+        ChavesDeIntegracao::aplicar();
 
         // Toda lista paginada do painel e do portal passa por um único view. O padrão do
         // framework é o do Tailwind: dentro do Bootstrap ele sai sem estilo e com SVG de

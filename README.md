@@ -127,7 +127,9 @@ GOLDEN_WHATSAPP=5519997101483
 GOLDEN_EMAIL=comercial@goldenrastreamento.com.br
 GOLDEN_TRACKING_ENABLED=false
 
-# SMTP (o código de e-mail já está pronto; só falta a credencial do servidor)
+# SMTP — o código de e-mail já está pronto; falta só a credencial do servidor.
+# Ela se preenche no painel (Configurações → Chaves de integração → E-mail de disparo);
+# estas linhas ficam como plano de fundo, para o que o banco não tiver.
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.seudominio.com.br
 MAIL_PORT=587
@@ -399,7 +401,10 @@ a dimensão ideal.
 - **Usuários & permissões**: perfis `admin`, `vendedor`, `visualizador` com middleware
   de papel (`role:`). Catálogo, CMS e configurações são restritos a `admin`.
 - **Configurações**: WhatsApp e telefones oficiais, endereço da empresa, chaves de
-  medição (GA4/Pixel/GTM) com *switch* de consentimento e a loja virtual.
+  medição (GA4/Pixel/GTM) com *switch* de consentimento, a loja virtual e as **chaves de
+  integração** (Google Ads, Avaliações do Google e o SMTP de disparo). Nada se configura
+  escrevendo no `.env`: o painel grava no banco — cifrando o que é segredo — e o arquivo
+  fica como plano de fundo, valendo só para o campo que ninguém preencheu na tela.
 
 ### Captura de leads (`POST /leads`)
 - **Um único formulário no site**, na página dedicada `/contato`

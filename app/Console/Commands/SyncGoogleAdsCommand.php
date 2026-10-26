@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\SyncGoogleAdsMetrics;
 use App\Models\GoogleAdsAccount;
 use App\Services\GoogleAds\GoogleAdsService;
+use App\Support\ChavesDeIntegracao;
 use Illuminate\Console\Command;
 
 /**
@@ -15,7 +16,8 @@ use Illuminate\Console\Command;
  * três tentativas com espera e o aviso de conta desconectada. Rodar a chamada aqui, no
  * processo do cron, perderia esse colchão e tomaria o tempo do cron inteiro.
  *
- * Falta credencial no ambiente, o comando devolve falha antes de enfileirar qualquer coisa:
+ * Falta credencial — no banco ou no ambiente —, o comando devolve falha antes de enfileirar
+ * qualquer coisa:
  * um agendamento que dispara jobs fadados ao erro é a receita para encher `google_ads_api_logs`
  * e a caixa de entrada de todo mundo de madrugada.
  */
@@ -40,7 +42,8 @@ class SyncGoogleAdsCommand extends Command
         $faltantes = GoogleAdsService::credenciaisFaltantes();
 
         if ($faltantes->isNotEmpty()) {
-            $this->error('Faltam credenciais no ambiente: '.$faltantes->implode(', ').'.');
+            $this->error('Faltam as credenciais do Google Ads: '.$faltantes->implode(', ')
+                .'. Preencha na tela '.ChavesDeIntegracao::CAMINHO_NO_PAINEL.' do painel (ou, em último caso, no .env deste servidor).');
 
             return self::FAILURE;
         }

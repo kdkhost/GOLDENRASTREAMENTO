@@ -5,6 +5,81 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.29.0] - 2026-10-25
+
+### Adicionado
+- **Chaves de integração no painel** (`/admin/configuracoes#chaves`). A regra da casa passou a valer
+  para as credenciais: o que se configura, se configura pela tela, e grava no banco. Três grupos na
+  mesma página — **Google Ads** (token de desenvolvedor, ID e segredo OAuth, endereço de volta, MCC,
+  vida do cache e período padrão), **Avaliações do Google** (conta, ficha, token e os dois limites de
+  leitura) e **E-mail de disparo** (mailer, host, porta, criptografia, usuário, senha, remetente e
+  nome). Uma linha nova em `config/golden.php` e a tela aparece: `App\Support\ChavesDeIntegracao` é
+  a fonte única dos campos, e nenhuma view decide cor nem rotulagem.
+- **O banco passa na frente do `.env`, e não o contrário.** `AppServiceProvider::boot()` chama
+  `ChavesDeIntegracao::aplicar()`, que sobrepõe o valor gravado ao `config()` antes de qualquer
+  leitura. Os ~15 leitores do sistema — o serviço do Google Ads, o driver Socialite, o Livewire do
+  painel, os comandos e a importação de depoimentos — continuaram perguntando `config(...)`: salvar
+  na tela vale na hora, sem `config:clear`, sem `artisan` e sem reiniciar servidor. Banco vazio não
+  é erro, é o estado em que o `.env` conduz, e a tabela que ainda não existe é apenas um `catch`.
+- **Segredo é segredo.** Token, segredo OAuth, senha de e-mail e Bearer do Business Profile saem
+  cifrados do banco (`Crypt`) e **não voltam a aparecer na tela** — o formulário mostra *se* estão
+  gravados, nunca *o que*. Apagar um segredo é uma chave explícita ao lado dele ("apagar e voltar ao
+  `.env`"), porque uma caixa de senha vazia não pode querer dizer "apague a minha senha" a cada
+  salvamento do resto do formulário. Campo comum em branco apaga a linha e devolve aquele valor ao
+  `.env`: é o mesmo "voltar à foto original" das imagens do site — o painel passa na frente do
+  ambiente, não escreve por cima dele.
+- `x-admin.campo-chave`, o componente que desenha cada linha: o campo, o selo de onde o valor vem
+  (`gravada no banco` / `vem do .env` / `sem valor`, com cor vinda de `tom_por_status`) e a variável
+  de plano de fundo ao lado, para quem administra o servidor reconhecer a chave na hora.
+- **Um toque no card da galeria abre o vídeo e já o põe rodando** (`/videos`). Antes eram dois
+  toques — um no card, outro no vidro. O comando de sincronização e o cartão de espera do Google Ads
+  passaram a nomear a tela onde se preenche cada falta, em vez de nomear o arquivo.
+
+### Corrigido
+- O guia do painel ensinava a edição do `.env` e mandava rodar `php artisan config:clear` — o que a
+  regra nova tornou desnecessário. As seções *Google Ads*, *Configurações*, *Depoimentos* e
+  *Ambiente* agora apontam para **Sistema → Configurações → Chaves de integração**, com a tabela do
+  nome que a tela usa ao lado da variável que ainda existe como plano de fundo.
+- O guia citava `GOOGLE_PLACES_API_KEY`, uma chave que nunca existiu em lugar nenhum: a importação
+  lê conta, ficha e token do Business Profile.
+- Os cartões de "não configurado" (tela de Depoimentos e `php artisan depoimentos:google`) diziam
+  "falta no `.env`"; hoje dizem o que falta e apontam a tela.
+- **Uma chave por linha.** Os três cartões de chaves ficam lado a lado em `col-xl-4`, e o componente
+  desenhava cada campo em meia coluna: a dica e o nome longo da variável (`GOOGLE_ADS_LOGIN_CUSTOMER_ID`)
+  atravessavam a borda e batiam no cartão vizinho, o que tornava a tela ilegível no desktop. Cada campo
+  passou a ocupar a linha inteira do próprio cartão, os `'col'` que sobravam em
+  `ChavesDeIntegracao::GRUPOS` saíram de cena, e `admin-golden.css` deixou o `<code>` do nome quebrar
+  dentro da linha em vez de empurrar o vizinho.
+
+### Mudado
+- **Celular e tablet deitam o vídeo.** O toque que dá play — no play da barra ou no card da galeria
+  — pede tela cheia no palco do vídeo e trava a orientação na horizontal até onde o navegador
+  deixa; onde o pedido é recusado (iOS), a classe `giro` gira o próprio quadro em CSS. Sair pelo
+  sistema (o «voltar» do Android, o Esc) levanta o quadro de volta, porque a tela cheia pode acabar
+  sem passar pela casa.
+- `loadVideoById` entrou no player **só** no ramo do toque que pediu play; `cueVideoById` continua
+  sendo o caminho de quem só abriu o quadro. A guarda de autoplay passou a contar os `load`s em vez
+  de proibir a palavra.
+
+### Testado
+- `ChavesDeIntegracaoTest` (13 testes) trava a regra por todos os lados em que ela pode quebrar:
+  banco vence `.env`, `.env` conduz o que o banco não tem, campo apagado devolve o valor ao
+  ambiente, toda chave aponta para um `config` que existe de verdade, segredo cifrado no banco e
+  ausente do HTML, a tela mostra nome e origem de cada campo, cada campo ocupa a linha inteira do
+  cartão, POST do grupo `email` muda `config('mail.mailers.smtp.*')`, segredo em branco sem pedir
+  apagar **não** apaga nada, os números do Google Ads voltam inteiros, grupo desconhecido não
+  escreve, e o vendedor lê mas não edita.
+- `GuiaDoPainelTest` trocou a exigência: o guia ainda nomeia as quatro credenciais que a tela
+  reclama, mas agora **proíbe** `config:clear` na seção do Google Ads. `PaginaDeFunilTest` ganhou
+  o deitar em tela cheia (pedido nativo, trava de orientação, `giro` e a escuta de saída), e
+  `GaleriaDeVideosTest`, o abrir-e-tocar de um toque com o quadro visível antes do pedido.
+
+### Documentado
+- `docs/INSTALACAO.md`: a seção 7 abre declarando que **o `.env` é plano de fundo**, não o painel de
+  controle; a seção 9.1 do Google Ads perdeu o bloco de variáveis e ganhou a tabela "nome na tela ↔
+  variável"; a caixa de disparo se preenche na tela; as chaves do Business Profile idem. O README
+  diz onde a credencial de SMTP se escreve hoje. O PDF de instalação foi regenerado da mesma fonte.
+
 ## [2.28.0] - 2026-10-25
 
 ### Adicionado

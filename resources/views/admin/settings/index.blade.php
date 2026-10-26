@@ -119,9 +119,37 @@
             <dl class="defs mb-0">
                 <dt>Banco ativo</dt><dd>{{ config('database.default') }}@if(config('database.default') === 'sqlite') <span class="form-hint">(<code>database/database.sqlite</code>)</span>@endif</dd>
                 <dt>Módulos</dt><dd>CRM (leads, clientes, interações) · CMS (páginas, depoimentos, FAQs) · ERP (produtos, estoque, fornecedores, pedidos)</dd>
+                <dt>Chaves</dt><dd>{{ count(\App\Support\ChavesDeIntegracao::campos()) }} campos, todos editáveis nesta tela. O <code>.env</code> deste servidor só conduz o que o banco não tem.</dd>
             </dl>
-            <p class="small text-secondary mb-0 mt-2">Para produção, defina <code>DB_CONNECTION=mysql</code> no <code>.env</code> e rode <code>php artisan migrate --force</code>. As migrations são compatíveis com os dois bancos.</p>
+            <p class="small text-secondary mb-0 mt-2">Ficam no <code>.env</code> só o que é deste servidor e não decisão de ninguém: a ligação com o banco (<code>DB_CONNECTION=mysql</code>, <code>php artisan migrate --force</code> — as migrations rodam nos dois bancos), a chave da aplicação e o transporte do Google Ads (<code>GOOGLE_ADS_TRANSPORT</code>, <code>GOOGLE_ADS_CACHE_STORE</code>), que dependem do que a máquina tem.</p>
         </x-admin.card>
+    </div>
+
+    {{-- As credenciais que até aqui só existiam no .env. Um card por grupo, um endpoint só:
+         a tela percorre ChavesDeIntegracao::GRUPOS, então acrescentar uma chave é escrever na
+         lista — ninguém precisa mexer em view nem em controle para isso aparecer aqui. --}}
+    <div class="col-12" id="chaves">
+        <h6 class="zone-title"><i class="fas fa-key text-tone-gold" aria-hidden="true"></i> Chaves de integração</h6>
+        <p class="form-hint">O que for gravado aqui vale na hora, sem tocar no servidor, e fica cifrado no banco quando é segredo. Campo vazio é o painel se retirando do caminho: o <code>.env</code> deste servidor volta a conduzir aquele valor.</p>
+
+        <div class="row g-3">
+            @foreach (\App\Support\ChavesDeIntegracao::GRUPOS as $id => $grupo)
+                <div class="col-12 col-xl-4">
+                    <x-admin.card :title="$grupo['rotulo']" :icon="$grupo['icone']" :descricao="$grupo['descricao']">
+                        <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3">
+                            @csrf
+                            <input type="hidden" name="grupo" value="{{ $id }}">
+                            @foreach ($grupo['campos'] as $campo)
+                                <x-admin.campo-chave :campo="$campo" />
+                            @endforeach
+                            <div class="col-12">
+                                <button class="btn btn-golden btn-sm w-100"><i class="fas fa-save me-1"></i> Salvar chaves</button>
+                            </div>
+                        </form>
+                    </x-admin.card>
+                </div>
+            @endforeach
+        </div>
     </div>
 </div>
 @endsection

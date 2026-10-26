@@ -169,16 +169,21 @@ return [
                     ['icone' => 'fa-shield-halved', 'titulo' => 'Tela de consentimento e chave OAuth', 'texto' => 'No Google Cloud Console, crie a tela de consentimento (Externo), uma credencial do tipo Aplicação da Web e cadastre como URI de redirecionamento exatamente o endereço que o painel usa: https://SEU_DOMINIO/auth/google-ads/callback.'],
                     ['icone' => 'fa-plug', 'titulo' => 'Ativar a API', 'texto' => 'Ainda no projeto, ative a "Google Ads API". Sem isso o consentimento aparece e a chamada falha.'],
                 ]],
-                ['tipo' => 'texto', 'conteudo' => 'Com os quatro prontos, preencha o `.env` do servidor. Faltando qualquer um, a tela diz **qual** falta, pelo nome, em vez de quebrar — e o comando de sincronização responde o mesmo.'],
-                ['tipo' => 'codigo', 'linhas' => [
-                    'GOOGLE_ADS_DEVELOPER_TOKEN=seu-token',
-                    'GOOGLE_CLIENT_ID=seu-client-id.apps.googleusercontent.com',
-                    'GOOGLE_CLIENT_SECRET=seu-segredo',
-                    'GOOGLE_REDIRECT_URI="${APP_URL}/auth/google-ads/callback"',
-                    'GOOGLE_ADS_LOGIN_CUSTOMER_ID=1234567890   # o número da MCC, sem hífen; pode ficar vazio',
+                ['tipo' => 'texto', 'conteudo' => 'Com os quatro prontos, preencha as chaves em **Sistema → Configurações → Chaves de integração**. É o painel que manda: o que for gravado ali vale na hora, sem tocar no servidor, sem limpar configuração nem reiniciar nada. O `.env` deste servidor existe só como plano de fundo, para o que o banco não tiver.'],
+                ['tipo' => 'lista', 'itens' => [
+                    'Token de desenvolvedor, ID do cliente OAuth e segredo do cliente são **segredos**: cifram no banco e não voltam a aparecer na tela — o formulário mostra *se* estão gravados, nunca *o que* está gravado.',
+                    'Endereço de volta do OAuth e conta gerente (MCC) são os dois opcionais. Deixe em branco para o painel usar o próprio endereço e para consultar cada conta conectada por si só.',
+                    'Campo em branco é o painel se retirando do caminho: aquele valor volta a obedecer ao `.env`. Para tirar um segredo já gravado, use a chave "apagar e voltar ao .env" que aparece ao lado dele.',
+                    'Faltando qualquer uma, a tela diz **qual** falta, pelo nome, e aponta onde se preenche — em vez de quebrar. O comando de sincronização responde o mesmo.',
                 ]],
-                ['tipo' => 'passos', 'titulo' => 'Depois de salvar o .env', 'itens' => [
-                    ['icone' => 'fa-broom', 'titulo' => 'Limpar a configuração', 'texto' => 'php artisan config:clear. Sem isso o Laravel continua lendo o arquivo antigo.'],
+                ['tipo' => 'tabela', 'cabecalho' => ['O nome na tela', 'A variável de plano de fundo'], 'linhas' => [
+                    ['Token de desenvolvedor', 'GOOGLE_ADS_DEVELOPER_TOKEN'],
+                    ['ID do cliente OAuth', 'GOOGLE_CLIENT_ID'],
+                    ['Segredo do cliente OAuth', 'GOOGLE_CLIENT_SECRET'],
+                    ['Endereço de volta do OAuth', 'GOOGLE_REDIRECT_URI — tem de ser o mesmo cadastrado no Google Cloud: ${APP_URL}/auth/google-ads/callback'],
+                    ['Conta gerente (MCC)', 'GOOGLE_ADS_LOGIN_CUSTOMER_ID — pode ficar vazio'],
+                ]],
+                ['tipo' => 'passos', 'titulo' => 'Depois de salvar as chaves', 'itens' => [
                     ['icone' => 'fa-arrow-right-to-bracket', 'titulo' => 'Conectar a conta', 'texto' => 'Comercial → Google Ads → "Conectar conta Google Ads". O Google pergunta em que conta daquele login entrar e quais permissões dar; ao voltar, a tela já mostra o nome, o identificador e a moeda da conta.'],
                     ['icone' => 'fa-arrows-rotate', 'titulo' => 'Rodar a primeira sincronização', 'texto' => 'php artisan google-ads:sync (todas as contas ativas) — ou só uma: --conta=3 --dias=7. A partir daí o agendamento cuida sozinho, a cada quinze minutos.'],
                     ['icone' => 'fa-filter', 'titulo' => 'Usar a tela', 'texto' => 'Período de sete, trinta ou noventa dias, busca pelo nome e filtro por situação. "Atualizar agora" enfileira uma sincronização nova; a tabela se refaz sozinha quando os números chegam.'],
@@ -190,7 +195,7 @@ return [
                     'Pausar e ativar campanha têm confirmação antes e passam por uma operação simulada (`validate_only`) antes da escrita de verdade.',
                 ]],
                 ['tipo' => 'tabela', 'cabecalho' => ['O que a tela diz', 'O que fazer'], 'linhas' => [
-                    ['A integração ainda não tem credenciais', 'Faltam valores no `.env` deste servidor; o cartão lista quais.'],
+                    ['A integração ainda não tem credenciais', 'Faltam valores; o cartão lista quais e leva direto a Configurações → Chaves de integração.'],
                     ['Carregando… por mais de dois minutos', 'Veja se o cron do agendador está ativo e se a fila anda: php artisan queue:work --stop-when-empty.'],
                     ['A última sincronização não terminou', 'O cartão marca desde quando e o motivo; "Tentar de novo" enfileira outra.'],
                     ['Conta desconectada, com e-mail para o dono', 'O Google recusou a credencial — token revogado ou senha da conta alterada. Reconecte pela tela.'],
@@ -366,7 +371,7 @@ return [
             'blocos' => [
                 ['tipo' => 'lista', 'itens' => [
                     'Escrito pela equipe, importado do perfil do Google Business ou enviado pelo próprio cliente pelo portal.',
-                    'A importação do Google pede a chave em `GOOGLE_PLACES_API_KEY`; sem ela a tela oferece só as outras duas origens.',
+                    'A importação do Google pede três valores em Sistema → Configurações → Chaves de integração → Avaliações do Google (conta, ficha e token). Sem eles a tela oferece só as outras duas origens — e o sistema não inventa avaliação.',
                     'Só o que está aprovado aparece no site — nada vai para o ar sozinho.',
                     'O carrossel é um só em todo o sistema: mesma folha, mesmo arraste, mesmos pontos.',
                 ]],
@@ -429,13 +434,14 @@ return [
             'titulo' => 'Configurações',
             'icone' => 'fa-sliders',
             'rota' => 'admin.settings.index',
-            'resumo' => 'O que é decisão de negócio fica aqui, não em arquivo: contato, rastreamento, WhatsApp e loja.',
+            'resumo' => 'O que é decisão de negócio e o que é credencial fica aqui, não em arquivo: contato, rastreamento, WhatsApp, loja e chaves de integração.',
             'blocos' => [
                 ['tipo' => 'lista', 'itens' => [
                     'Gerais — nome do site, WhatsApp, telefone, e-mail, endereço, cidade e CEP.',
                     'Rastreamento — ligar ou desligar a medição própria e as etiquetas externas: Google Analytics (`ga_measurement_id`), Meta Pixel e GTM. Deixar tudo vazio é legítimo: a atribuição do sistema não depende de nenhum dos três.',
                     'WhatsApp — a caixa multicanal do botão flutuante: título, subtítulo e um número por canal, cada um ligável separadamente.',
                     'Loja — liga e desliga a vitrine, e guarda frete, corte do frete grátis, retirada, chave Pix e o e-mail que recebe o alerta de venda.',
+                    'Chaves de integração — Google Ads, Avaliações do Google e o servidor de disparo. É o que se preenche nesta tela, nunca no `.env`: o valor grava no banco (cifrado quando é segredo) e vale na hora, sem limpar configuração nem reiniciar o servidor.',
                 ]],
             ],
         ],
@@ -477,11 +483,11 @@ return [
             'grupo' => 'Sistema',
             'titulo' => 'Ambiente, e-mail e agendador',
             'icone' => 'fa-server',
-            'resumo' => 'O que existe fora das telas e faz o sistema funcionar: arquivo .env, fila de e-mail e o cron.',
+            'resumo' => 'O que existe fora das telas e faz o sistema funcionar: o plano de fundo do .env, a fila de e-mail e o cron.',
             'blocos' => [
-                ['tipo' => 'texto', 'conteudo' => 'O `.env` guarda o que é segredo deste servidor: banco, e-mail de disparo e as credenciais do Google Ads. Ele nunca vai para o repositório — o modelo é o `.env.example`. Toda mudança nele pede `php artisan config:clear`.'],
+                ['tipo' => 'texto', 'conteudo' => 'Todo valor configurável se preenche nas telas, e o que o painel grava fica no banco — com os segredos cifrados. O `.env` deste servidor é o **plano de fundo**: ele conduz apenas o que o banco não tem. Ele nunca vai para o repositório, e o modelo é o `.env.example`. Mudou o `.env`, o `php artisan config:clear` continua sendo do servidor; quem usa o painel não limpa nada, porque salvar na tela vale na hora.'],
                 ['tipo' => 'lista', 'itens' => [
-                    'SMTP — o que faz o recado sair. Faltando credencial, o código continua pronto: falta a chave, não o recurso.',
+                    'SMTP — o que faz o recado sair. A credencial se preenche em Sistema → Configurações → Chaves de integração → E-mail de disparo. Faltando chave, o código continua pronto: falta a credencial, não o recurso.',
                     'Fila — todo aviso entra em fila, e um único `queue:work --stop-when-empty` por minuto drena o que está preso. Não use worker residente nem `queue:listen` em hospedagem compartilhada.',
                     'Agendador — uma linha no cron do cPanel toca as tarefas: sincronizar Google Ads a cada quinze minutos, podar o rastreio toda terça e drenar a fila a cada minuto.',
                 ]],

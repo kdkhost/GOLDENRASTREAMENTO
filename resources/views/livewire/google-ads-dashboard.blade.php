@@ -14,8 +14,15 @@
 <div>
 @if (! $configurado)
     <x-admin.card title="A integração ainda não tem credenciais" icon="fa-key"
-        descricao="Faltam valores no ambiente deste servidor. Nenhuma chamada ao Google é feita enquanto faltar um deles.">
-        <p class="mb-2">Declare no <code>.env</code> e rode <code>php artisan config:clear</code>:</p>
+        descricao="Faltam valores para o painel. Nenhuma chamada ao Google é feita enquanto faltar um deles.">
+        <p class="mb-2">
+            @can('admin')
+                Preencha em <a href="{{ route('admin.settings.index') }}#chaves">Configurações → Chaves de integração</a>.
+            @else
+                Peça ao administrador que preencha em Configurações → Chaves de integração.
+            @endcan
+            O <code>.env</code> deste servidor entra só como plano de fundo, para o que o banco não tiver:
+        </p>
         <ul class="ads-faltas list-unstyled mb-0">
             @foreach ($credenciais_faltando as $nome)
                 <li><code>{{ $nome }}</code></li>
@@ -241,7 +248,7 @@
      texto é o da seção "google-ads" do guia; um partial só, duas telas. --}}
 @include('admin.guia.partials.cartao', [
     'secaoGuia' => 'google-ads',
-    'tituloCartao' => 'Como configurar — os quatro passos no Google, o .env e o comando',
+    'tituloCartao' => 'Como configurar — os quatro passos no Google, as chaves no painel e o comando',
     'abertoGuia' => ! $configurado,
 ])
 </div>

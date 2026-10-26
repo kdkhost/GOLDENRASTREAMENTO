@@ -292,6 +292,9 @@ return [
             'indicacao' => 'violet', 'email' => 'teal', 'parceiro' => 'teal',
             'direto' => 'neutral', 'indexador' => 'neutral', 'desconhecido' => 'neutral',
         ],
+        // De onde vem o valor de uma chave de integração (ChavesDeIntegracao::origem): o que o
+        // painel gravou é o que manda, o ambiente é plano de fundo, ausente é o aviso.
+        'origem_chave' => ['banco' => 'green', 'ambiente' => 'gold', 'ausente' => 'neutral'],
         'fallback' => 'neutral',
     ],
 

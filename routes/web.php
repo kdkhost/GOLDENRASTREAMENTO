@@ -395,5 +395,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/loja', [SettingController::class, 'loja'])->name('loja');
         Route::post('/loja-regras', [SettingController::class, 'regras'])->name('loja-regras');
         Route::post('/whatsapp', [SettingController::class, 'whatsapp'])->name('whatsapp');
+        Route::post('/chaves', [SettingController::class, 'chaves'])->name('chaves');
     });
 });

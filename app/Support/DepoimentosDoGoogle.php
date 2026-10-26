@@ -38,9 +38,9 @@ class DepoimentosDoGoogle
     }
 
     /**
-     * O resource name completo (`accounts/123/locations/456`) formado das variáveis do `.env`,
-     * ou null quando falta alguma peça — é assim que o painel avisa "não configurado" sem
-     * explodir em cada leitura.
+     * O resource name completo (`accounts/123/locations/456`) formado das chaves do painel — ou
+     * do `.env`, para o que ele não tiver —, ou null quando falta alguma peça — é assim que o
+     * painel avisa "não configurado" sem explodir em cada leitura.
      */
     public static function recurso(): ?string
     {

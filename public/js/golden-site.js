@@ -457,9 +457,10 @@
      Uma peça só, servindo à faixa de vídeo do funil e ao modal da galeria. Duas regras
      mandam nele, e as duas são do visitante:
 
-     1. nada toca sozinho. Abrir o quadro é uma coisa, tocar é outra — e tocar só acontece
-        quando o dedo cai sobre um play nosso (o selo do vidro ou o botão da barra). O
-        iframe nasce com autoplay: 0 e a casa não chama playVideo() em nenhum onReady;
+     1. nada põe o vídeo pra rodar por conta própria. O quadro abre coberto e calado, e o play
+        sempre vem de um gesto do visitante: o toque no card da galeria (que abre e já toca), o
+        selo do vidro ou o botão da barra. O iframe nasce com autoplay: 0 e a casa não chama
+        playVideo() em nenhum onReady — ela só atende o toque que foi pedido antes dele;
      2. nada do YouTube aparece. Os controles dele estão desligados, o endereço é o de
         sem cookies, o vidro por cima não deixa clique nem hover caírem na superfície dele
         e — enquanto o vídeo não está tocando — o vidro fica opaco, cobrindo o play
@@ -504,7 +505,71 @@
     };
   }
 
+  // Celular e tablet não têm tela para um tutorial de painel pequeno: o toque que dá play é o
+  // mesmo que deita o vídeo. `tela-cheia` é o estado (o quadro passa a ser a janela inteira);
+  // `giro` só entra quando o navegador recusa o pedido nativo — no iOS elemento nenhum vai para
+  // tela cheia — e aí a casa gira o próprio quadro em CSS, sem depender da boa vontade dele.
+  var palcoDeTelaCheia = [];
+
+  function deitarTela(palco) {
+    if (!window.matchMedia('(max-width: 960px)').matches) return false;
+    if (palco.classList.contains('tela-cheia')) return true;
+
+    palco.classList.add('tela-cheia');
+    palcoDeTelaCheia.push(palco);
+
+    var pedido = null;
+
+    try {
+      if (palco.requestFullscreen) pedido = palco.requestFullscreen();
+      else if (palco.webkitRequestFullscreen) palco.webkitRequestFullscreen();
+      else palco.classList.add('giro');
+    } catch (recusado) {
+      palco.classList.add('giro');
+    }
+
+    if (pedido && pedido.catch) pedido.catch(function () { palco.classList.add('giro'); });
+
+    // A trava de orientação só vale dentro de tela cheia nativa; fora dela o Google devolve
+    // rejeição, e quem decide o girar passa a ser o CSS.
+    if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+      window.screen.orientation.lock('landscape').catch(function () {});
+    }
+
+    return true;
+  }
+
+  function levantarTela(palco) {
+    palco.classList.remove('tela-cheia', 'giro');
+    palcoDeTelaCheia = palcoDeTelaCheia.filter(function (p) { return p !== palco; });
+
+    if (document.fullscreenElement === palco || document.webkitFullscreenElement === palco) {
+      if (document.exitFullscreen) document.exitFullscreen().catch(function () {});
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+
+    if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
+      window.screen.orientation.unlock();
+    }
+  }
+
+  // Sair por gestos do sistema (o «voltar» do Android, o Esc do desktop) não passa pela casa:
+  // sem este listener o quadro ficaria marcado como deitado depois que a tela cheia acabasse.
+  function amarrarSaidaDaTelaCheia() {
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (evento) {
+      document.addEventListener(evento, function () {
+        if (document.fullscreenElement || document.webkitFullscreenElement) return;
+        palcoDeTelaCheia.slice().forEach(function (p) {
+          if (!p.classList.contains('giro')) levantarTela(p);
+        });
+      });
+    });
+  }
+
   function montarVideo(slot) {
+    var palco = slot.closest('.video-modal') || slot;
+    function deitar() { return deitarTela(palco); }
+    function levantar() { levantarTela(palco); }
     var cartaz = slot.querySelector('.video-cartaz');
     var player = slot.querySelector('.video-player');
     var quadro = slot.querySelector('.video-quadro');
@@ -622,6 +687,7 @@
     function terminar() {
       pediuTocar = false;
       descobrirMarcas();
+      levantar();
       if (inst) {
         inst.pauseVideo();
         inst.seekTo(0, true);
@@ -633,6 +699,9 @@
     }
 
     function alternar() {
+      // O play é sempre um toque da casa, e é nele — não no onReady — que a tela deita.
+      if (!tocando()) deitar();
+
       if (!inst) {
         pediuTocar = true;
 
@@ -647,20 +716,29 @@
       pintar();
     }
 
-    // Abrir é só abrir: o quadro entra em cena coberto e calado.
-    function abrir(novoCodigo) {
+    // Na galeria, abrir já é tocar: o card escolhido entra em cena e roda no mesmo gesto
+    // (`tocarJa`). Na faixa do funil o quadro abre coberto e calado, e o play fica para o
+    // próximo toque — ali o visitante está lendo a página, não assistindo.
+    function abrir(novoCodigo, tocarJa) {
       if (novoCodigo) codigo = novoCodigo;
       if (cartaz) cartaz.hidden = true;
       player.hidden = false;
+      if (tocarJa) deitar();
 
       comAYouTube(function () {
         if (!inst) {
-          if (codigo) criar();
+          // O toque via com o player a caminho: pediuTocar é a memória dele, atendida no onReady.
+          if (codigo) { pediuTocar = !!tocarJa; criar(); }
 
           return;
         }
-        // cue, e não load: cue deixa o vídeo pronto sem tocar.
-        if (codigo !== noQuadro) { inst.cueVideoById(codigo); noQuadro = codigo; }
+        if (codigo !== noQuadro) {
+          noQuadro = codigo;
+          // cue deixa o vídeo pronto sem tocar; load é o cue que já atende o toque dado.
+          if (tocarJa) inst.loadVideoById(codigo); else inst.cueVideoById(codigo);
+        } else if (tocarJa) {
+          inst.playVideo();
+        }
         etiquetar();
         pintar();
       });
@@ -704,6 +782,8 @@
   }
 
   function initVideo() {
+    amarrarSaidaDaTelaCheia();
+
     document.querySelectorAll('.video-slot').forEach(function (slot) {
       controladores.set(slot, montarVideo(slot));
     });
@@ -725,11 +805,14 @@
       ultimoCard = card;
       titulo.textContent = card.getAttribute('data-titulo') || 'Tutorial em vídeo';
       slot.setAttribute('data-rotulo', titulo.textContent);
-      // O quadro abre coberto e mudo. O play é o toque seguinte, sempre da casa.
-      if (video) video.abrir(card.getAttribute('data-video'));
+      // O modal abre primeiro: o quadro precisa estar visível no instante do play, senão o
+      // navegador descarta o pedido de tela cheia feito no mesmo toque.
       modal.classList.add('aberta');
       modal.setAttribute('aria-hidden', 'false');
       document.body.classList.add('video-aberto');
+      // O card é o play: o vídeo do tutorial entra rodando, e em tela cheia na horizontal
+      // quando a tela é de celular ou tablet.
+      if (video) video.abrir(card.getAttribute('data-video'), true);
       botaoFechar.focus();
     }
 

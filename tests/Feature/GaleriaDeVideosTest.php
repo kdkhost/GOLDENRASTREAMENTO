@@ -261,4 +261,28 @@ class GaleriaDeVideosTest extends TestCase
             $this->assertArrayHasKey($categoria, Video::categorias());
         }
     }
+
+    /**
+     * O card da galeria é o play: um toque abre o quadro e já põe o vídeo rodando, sem a
+     * segunda catada no vidro que havia antes. A ordem importa — o modal precisa estar visível
+     * no instante do pedido de tela cheia, senão o navegador descarta o toque dado.
+     */
+    public function test_um_toque_no_cartao_abre_o_video_e_ja_toca(): void
+    {
+        $js = file_get_contents(public_path('js/golden-site.js'));
+        $inicio = strpos($js, 'function abrir(card) {');
+        $tocar = strpos($js, "video.abrir(card.getAttribute('data-video'), true);");
+
+        $this->assertStringContainsString('function abrir(novoCodigo, tocarJa) {', $js);
+        $this->assertNotFalse($inicio);
+        $this->assertNotFalse($tocar);
+
+        $antesDoToque = substr($js, $inicio, $tocar - $inicio);
+        $this->assertStringContainsString("modal.classList.add('aberta');", $antesDoToque,
+            'O quadro abre antes de o vídeo ser pedido.');
+
+        $html = $this->get('/videos')->assertOk()->getContent();
+        $this->assertStringContainsString('data-video="', $html);
+        $this->assertStringContainsString('id="videoModal"', $html);
+    }
 }

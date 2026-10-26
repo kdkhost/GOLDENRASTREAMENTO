@@ -384,6 +384,20 @@ section{padding:84px 0}
 .video-modal-fechar:hover{background:var(--line);transform:rotate(90deg)}
 body.video-aberto{overflow:hidden}
 
+/* Tela cheia deitada, para celular e tablet. O toque que dá play é o mesmo que estica o quadro
+   até a janela inteira (`tela-cheia`) e, quando o navegador não atende o pedido nativo — no iOS
+   elemento nenhum vai para tela cheia —, a casa gira o próprio quadro (`giro`): 100vh de largura
+   por 100vw de altura, rodados 90° a partir do canto superior esquerdo, que é a conta exata de
+   cobrir uma viewport em retrato. Os controles da casa ficam dentro do slot, então vêm junto.
+   1400: acima do modal (1080) e do toastr (1090), porque aqui o quadro É a tela. */
+.video-modal.tela-cheia{padding:0;background:#05070a;backdrop-filter:none}
+.video-modal.tela-cheia .video-modal-caixa{width:100%;max-width:none;height:100%;border-radius:0;transform:none;box-shadow:none;display:flex;flex-direction:column}
+.video-modal.tela-cheia .video-modal-topo{flex:none}
+.video-modal.tela-cheia .video-slot{flex:1 1 auto;min-height:0}
+.video-slot.tela-cheia{aspect-ratio:auto;width:100%;height:100%;border-radius:0}
+.video-modal.giro,.video-slot.giro{position:fixed;top:0;left:100vw;width:100vh;height:100vw;aspect-ratio:auto;
+  transform:rotate(90deg);transform-origin:left top;z-index:1400;border-radius:0;margin:0}
+
 /* Formulário de lead */
 .lead-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
 .form-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:34px;box-shadow:var(--shadow)}
