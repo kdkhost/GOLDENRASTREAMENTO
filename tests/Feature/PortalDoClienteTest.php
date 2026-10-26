@@ -564,6 +564,65 @@ class PortalDoClienteTest extends TestCase
             ->assertDontSee(config('golden.acessos.servidor_1'), false);
     }
 
+    /** Todo rótulo do caminho até a plataforma é editável — e em branco volta ao padrão da casa. */
+    public function test_os_textos_dos_acessos_sao_trocados_no_painel_e_o_site_obedece(): void
+    {
+        $this->actingAs($this->admin)->get(route('admin.settings.index'))->assertOk()
+            ->assertSee('acesso_botao_rotulo', false)
+            ->assertSee('acesso_servidor_1_titulo', false)
+            ->assertSee('acesso_modal_titulo', false);
+
+        $this->actingAs($this->admin)->post(route('admin.settings.update'), [
+            'site_nome' => 'Golden Rastreamento',
+            'contato_whatsapp' => '(19) 99710-1483',
+            'acesso_botao_rotulo' => 'Entrar na plataforma',
+            'acesso_conta_rotulo' => 'Minha conta Golden',
+            'acesso_area_titulo' => 'Clientes',
+            'acesso_portal_titulo' => 'Portal Golden',
+            'acesso_portal_desc' => 'Seus pedidos e chamados',
+            'acesso_financeiro_titulo' => 'Financeiro',
+            'acesso_financeiro_desc' => 'Boletos e notas',
+            'acesso_modal_titulo' => 'Escolha a plataforma',
+            'acesso_modal_desc' => 'Cada frota mora em um servidor.',
+            'acesso_servidor_1_titulo' => 'Servidor Centro',
+            'acesso_servidor_2_titulo' => 'Servidor Sul',
+            'acesso_servidor_1_icone' => 'fa-server',
+            'acesso_servidor_2_icone' => 'fa-location-dot',
+            'acesso_ajuda' => 'Ficou na dúvida?',
+            'acesso_ajuda_link' => 'Chame a equipe',
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('aria-controls="acessoPlataformas">Entrar na plataforma</button>', $html);
+        $this->assertStringContainsString('aria-label="Minha conta Golden"', $html);
+        $this->assertStringContainsString('<b>Portal Golden</b><small>Seus pedidos e chamados</small>', $html);
+        $this->assertStringContainsString('<b>Financeiro</b><small>Boletos e notas</small>', $html);
+        $this->assertStringContainsString('<h3 id="acessoPlataformasTitulo">Escolha a plataforma</h3>', $html);
+        $this->assertStringContainsString('Cada frota mora em um servidor.', $html);
+        $this->assertStringContainsString('Ficou na dúvida?', $html);
+        $this->assertStringContainsString('>Chame a equipe</a>', $html);
+
+        $modal = Str::before(Str::after($html, 'id="acessoPlataformas"'), 'class="acesso-ajuda"');
+        $this->assertStringContainsString('<b>Servidor Centro</b>', $modal);
+        $this->assertStringContainsString('<b>Servidor Sul</b>', $modal);
+        $this->assertStringContainsString('fa-server', $modal);
+        $this->assertStringContainsString('fa-location-dot', $modal);
+
+        // Campo em branco devolve o rótulo ao config: o painel sai do caminho sem apagar nada.
+        $this->actingAs($this->admin)->post(route('admin.settings.update'), [
+            'site_nome' => 'Golden Rastreamento',
+            'contato_whatsapp' => '(19) 99710-1483',
+            'acesso_botao_rotulo' => '',
+            'acesso_servidor_1_titulo' => '',
+        ])->assertSessionHas('success');
+
+        $limpo = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('aria-controls="acessoPlataformas">'.config('golden.acessos.textos.botao').'</button>', $limpo);
+        $this->assertStringContainsString('<b>'.config('golden.acessos.textos.servidor_1_titulo').'</b>', $limpo);
+    }
+
     public function test_o_contrato_publicado_no_painel_chega_ao_portal_com_o_pdf(): void
     {
         Storage::fake('public');

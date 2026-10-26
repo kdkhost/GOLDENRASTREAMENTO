@@ -4,8 +4,8 @@
      Configurações, no painel. --}}
 @php
     $servidores = [
-        ['titulo' => 'Servidor 1', 'url' => $golden['acessos']['servidor_1_url'], 'icone' => 'fa-satellite-dish'],
-        ['titulo' => 'Servidor 2', 'url' => $golden['acessos']['servidor_2_url'], 'icone' => 'fa-tower-broadcast'],
+        ['titulo' => $golden['acessos']['servidor_1_titulo'], 'url' => $golden['acessos']['servidor_1_url'], 'icone' => $golden['acessos']['servidor_1_icone']],
+        ['titulo' => $golden['acessos']['servidor_2_titulo'], 'url' => $golden['acessos']['servidor_2_url'], 'icone' => $golden['acessos']['servidor_2_icone']],
     ];
 @endphp
 <div class="acesso-modal" id="acessoPlataformas" role="dialog" aria-modal="true" aria-labelledby="acessoPlataformasTitulo" aria-hidden="true">
@@ -14,8 +14,8 @@
         <div class="acesso-topo">
             <span class="acesso-selo"><i class="fa-solid fa-satellite-dish" aria-hidden="true"></i></span>
             <div class="acesso-titulos">
-                <h3 id="acessoPlataformasTitulo">Acessar a plataforma</h3>
-                <p>Cada servidor é uma plataforma diferente. Escolha o da sua instalação.</p>
+                <h3 id="acessoPlataformasTitulo">{{ $golden['acessos']['modal_titulo'] }}</h3>
+                <p>{{ $golden['acessos']['modal_desc'] }}</p>
             </div>
             <button type="button" class="acesso-fechar" data-acesso-fechar aria-label="Fechar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
@@ -31,6 +31,6 @@
             @endforeach
         </div>
 
-        <p class="acesso-ajuda">Não sabe qual é o seu? <a href="{{ route('site.contato') }}" data-track="contact" data-cta="acesso">Fale com um especialista</a>.</p>
+        <p class="acesso-ajuda">{{ $golden['acessos']['ajuda'] }} <a href="{{ route('site.contato') }}" data-track="contact" data-cta="acesso">{{ $golden['acessos']['ajuda_link'] }}</a>.</p>
     </div>
 </div>

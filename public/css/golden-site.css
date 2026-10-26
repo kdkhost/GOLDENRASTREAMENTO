@@ -533,7 +533,9 @@ body.acesso-aberto{overflow:hidden}
   opacity:0;transform:translateX(8px);pointer-events:none;transition:opacity .24s ease,transform .24s cubic-bezier(.22,.61,.36,1)}
 .wa-float:hover .wa-tip,.wa-float:focus-visible .wa-tip{opacity:1;transform:none}
 
-.wa-popup{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + 70px);z-index:70;width:352px;max-width:calc(100vw - 32px);
+/* Acima da bolha do assistente (72): a caixa abre por cima dela em vez de deixá-la
+   aparecendo no meio do painel. */
+.wa-popup{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + 70px);z-index:74;width:352px;max-width:calc(100vw - 32px);
   max-height:calc(100vh - 124px);display:flex;flex-direction:column;
   border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#171d23,var(--dark-2));border:1px solid rgba(224,163,62,.22);
   box-shadow:0 26px 60px -24px rgba(0,0,0,.9);transform-origin:bottom right;

@@ -401,8 +401,10 @@ a dimensão ideal.
 - **Usuários & permissões**: perfis `admin`, `vendedor`, `visualizador` com middleware
   de papel (`role:`). Catálogo, CMS e configurações são restritos a `admin`.
 - **Configurações**: WhatsApp e telefones oficiais, endereço da empresa, chaves de
-  medição (GA4/Pixel/GTM) com *switch* de consentimento, a loja virtual e as **chaves de
-  integração** (Google Ads, Avaliações do Google e o SMTP de disparo). Nada se configura
+  medição (GA4/Pixel/GTM) com *switch* de consentimento, a loja virtual, os **acessos
+  externos do site** (endereço, nome e ícone de cada servidor) com **todos os rótulos do
+  caminho** — botão dourado, ícone de conta, submenu, modal e frase de ajuda — e as
+  **chaves de integração** (Google Ads, Avaliações do Google e o SMTP de disparo). Nada se configura
   escrevendo no `.env`: o painel grava no banco — cifrando o que é segredo — e o arquivo
   fica como plano de fundo, valendo só para o campo que ninguém preencheu na tela.
 
@@ -576,7 +578,8 @@ a dimensão ideal.
   *Painel do cliente* e *Financeiro antigo*, e o botão **Rastreamento** abre o modal com os
   dois servidores — na tela aparece só o nome de cada um, o endereço fica na própria ligação.
   Cada endereço externo se troca em *Sistema → Configurações → Acessos externos do site*
-  (banco vence `config/golden.acessos`).
+  (banco vence `config/golden.acessos`), junto do nome e do ícone de cada servidor; os
+  rótulos do botão, do submenu e do modal ficam no cartão *Textos dos acessos*.
 - **Seis telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
   *Pedidos* (linha do tempo da jornada e os documentos do pedido), *Chamados*, *Contratos*
   com o PDF, *Meus dados* e *Deixar um depoimento*.
@@ -680,7 +683,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (468 testes, 5.555 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (471 testes, 5.595 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

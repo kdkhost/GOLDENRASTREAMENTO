@@ -56,6 +56,41 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertSame('/assistente/falas', parse_url($rosto['falas'], PHP_URL_PATH));
     }
 
+    /** A ficha que ninguém editou não deixa texto solto no HTML: tudo vem do padrão da casa. */
+    public function test_a_bolha_mostra_os_textos_da_casa_quando_a_ficha_nao_escreveu_nenhum(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('aria-label="Falar com Ana"', $html);
+        $this->assertStringContainsString('<span class="ia-dica">Falar com Ana</span>', $html);
+        $this->assertStringContainsString('Respondendo agora', $html);
+        $this->assertStringContainsString('placeholder="Escreva sua dúvida…"', $html);
+        $this->assertStringContainsString('Prefero falar com uma pessoa', $html);
+        $this->assertStringContainsString('fa-comments', $html);
+    }
+
+    /** O painel escreve na ficha e a bolha obedece — inclusive o ícone de quem não tem rosto. */
+    public function test_os_textos_e_o_icone_da_bolha_vem_da_ficha_editada_no_painel(): void
+    {
+        Assistente::garanta()->update([
+            'nome' => 'Bia',
+            'dica' => 'Conversar com :nome',
+            'status' => 'Online agora',
+            'placeholder' => 'No que posso ajudar?',
+            'humano' => 'Quero um humano',
+            'icone' => 'fa-headset',
+        ]);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('aria-label="Conversar com Bia"', $html);
+        $this->assertStringContainsString('<span class="ia-dica">Conversar com Bia</span>', $html);
+        $this->assertStringContainsString('Online agora', $html);
+        $this->assertStringContainsString('placeholder="No que posso ajudar?"', $html);
+        $this->assertStringContainsString('>Quero um humano</a>', $html);
+        $this->assertStringContainsString('fa-headset', $html);
+    }
+
     /** Ficha desligada: nem o botão, nem a folha, nem o script — a página não paga por nada. */
     public function test_a_ficha_desligada_tira_o_botao_a_folha_e_o_script_da_pagina(): void
     {

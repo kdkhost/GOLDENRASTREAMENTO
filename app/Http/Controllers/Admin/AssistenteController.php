@@ -31,6 +31,7 @@ class AssistenteController extends Controller
             'assistente' => Assistente::garanta(),
             'tons' => Assistente::tons(),
             'vozes' => Fabrica::opcoesDeVoz(),
+            'icones' => (array) config('assistente.icones_bolha'),
             'faltando' => Fabrica::faltando(),
             'ligado' => Fabrica::ligado(),
         ]);
@@ -67,9 +68,15 @@ class AssistenteController extends Controller
             'regras' => ['nullable', 'string', 'max:8000'],
             'avatar' => ['nullable', 'string', 'max:190'],
             'avatar_alt' => ['nullable', 'string', 'max:120'],
+            'dica' => ['nullable', 'string', 'max:80'],
+            'status' => ['nullable', 'string', 'max:60'],
+            'placeholder' => ['nullable', 'string', 'max:120'],
+            'humano' => ['nullable', 'string', 'max:120'],
+            'icone' => ['nullable', 'string', 'in:' . implode(',', array_keys((array) config('assistente.icones_bolha')))],
             'voz' => ['nullable', 'string', 'in:' . implode(',', array_keys(Fabrica::opcoesDeVoz()))],
         ], [
             'tom.in' => 'O tom escolhido não está na lista da ficha.',
+            'icone.in' => 'O ícone escolhido não está na lista da bolha.',
             'voz.in' => 'A voz escolhida não está na lista dos provedores ligados.',
         ], [
             'nome' => 'nome',
@@ -79,6 +86,11 @@ class AssistenteController extends Controller
             'regras' => 'regras do atendimento',
             'avatar' => 'avatar',
             'avatar_alt' => 'descrição do avatar',
+            'dica' => 'dica da bolha',
+            'status' => 'selo de status',
+            'placeholder' => 'texto do campo de mensagem',
+            'humano' => 'link para falar com uma pessoa',
+            'icone' => 'ícone da bolha',
             'voz' => 'voz das respostas',
         ]);
 

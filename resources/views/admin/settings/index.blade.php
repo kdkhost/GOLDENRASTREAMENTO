@@ -10,6 +10,8 @@
     $boxAtivo = ($settings['whatsapp_box_ativo'] ?? '1') === '1';
     $paraExibir = fn ($cents) => ((int) $cents) > 0 ? number_format(((int) $cents) / 100, 2, '.', '') : '';
     $numeroPadrao = $settings['contato_whatsapp'] ?? config('golden.whatsapp');
+    $textosAcesso = config('golden.acessos.textos');
+    $iconesAcesso = config('golden.acessos.icones');
 @endphp
 
 @section('page_actions')
@@ -43,11 +45,32 @@
             </x-admin.card>
 
             <x-admin.card title="Acessos externos do site" icon="fa-arrow-up-right-from-square" class="mt-3"
-                descricao="Para onde levam o submenu da conta e o botão do topo do site. O portal do cliente é rota interna e não aparece aqui.">
+                descricao="Para onde levam o submenu da conta e o botão do topo do site, com o nome e o ícone de cada servidor. O portal do cliente é rota interna e não aparece aqui.">
                 <div class="row g-3">
                     <x-admin.field name="acesso_financeiro_url" type="url" label="Financeiro antigo" :value="$settings['acesso_financeiro_url'] ?? config('golden.acessos.financeiro')" maxlength="255" :opcional="true" placeholder="https://financeiro.exemplo.com.br/login" hint="Abre em outra aba, pelo submenu do ícone de login." />
-                    <x-admin.field name="acesso_servidor_1_url" type="url" label="Servidor de rastreamento 1" :value="$settings['acesso_servidor_1_url'] ?? config('golden.acessos.servidor_1')" maxlength="255" :opcional="true" placeholder="https://app1.exemplo.com.br" />
-                    <x-admin.field name="acesso_servidor_2_url" type="url" label="Servidor de rastreamento 2" :value="$settings['acesso_servidor_2_url'] ?? config('golden.acessos.servidor_2')" maxlength="255" :opcional="true" placeholder="http://203.0.113.10:8082/" hint="Cada servidor aparece como uma opção no botão do topo do site." />
+                    <x-admin.field name="acesso_servidor_1_url" type="url" label="Endereço do servidor 1" :value="$settings['acesso_servidor_1_url'] ?? config('golden.acessos.servidor_1')" col="col-12 col-md-6" maxlength="255" :opcional="true" placeholder="https://app1.exemplo.com.br" />
+                    <x-admin.field name="acesso_servidor_2_url" type="url" label="Endereço do servidor 2" :value="$settings['acesso_servidor_2_url'] ?? config('golden.acessos.servidor_2')" col="col-12 col-md-6" maxlength="255" :opcional="true" placeholder="http://203.0.113.10:8082/" />
+                    <x-admin.field name="acesso_servidor_1_titulo" label="Nome do servidor 1" :value="$settings['acesso_servidor_1_titulo'] ?? $textosAcesso['servidor_1_titulo']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Servidor 1" hint="É o que o cliente lê no modal — o endereço fica só no link." />
+                    <x-admin.field name="acesso_servidor_2_titulo" label="Nome do servidor 2" :value="$settings['acesso_servidor_2_titulo'] ?? $textosAcesso['servidor_2_titulo']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Servidor 2" />
+                    <x-admin.field name="acesso_servidor_1_icone" type="select" label="Ícone do servidor 1" :value="$settings['acesso_servidor_1_icone'] ?? $textosAcesso['servidor_1_icone']" :options="$iconesAcesso" col="col-12 col-md-6" empty="Ícone padrão" :opcional="true" />
+                    <x-admin.field name="acesso_servidor_2_icone" type="select" label="Ícone do servidor 2" :value="$settings['acesso_servidor_2_icone'] ?? $textosAcesso['servidor_2_icone']" :options="$iconesAcesso" col="col-12 col-md-6" empty="Ícone padrão" :opcional="true" />
+                </div>
+            </x-admin.card>
+
+            <x-admin.card title="Textos dos acessos" icon="fa-pen-nib" class="mt-3"
+                descricao="Cada rótulo do caminho até a plataforma, do botão dourado ao modal. Em branco vale o texto padrão da casa.">
+                <div class="row g-3">
+                    <x-admin.field name="acesso_botao_rotulo" label="Rótulo do botão dourado" :value="$settings['acesso_botao_rotulo'] ?? $textosAcesso['botao']" col="col-12 col-md-6" maxlength="40" :opcional="true" placeholder="Rastreamento" hint="Aparece no topo e na gaveta do site, e abre a escolha de servidor." />
+                    <x-admin.field name="acesso_conta_rotulo" label="Nome do ícone de conta" :value="$settings['acesso_conta_rotulo'] ?? $textosAcesso['conta']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Acessar minha conta" hint="Lido pelo leitor de tela e mostrado ao passar o mouse." />
+                    <x-admin.field name="acesso_area_titulo" label="Título da área no menu" :value="$settings['acesso_area_titulo'] ?? $textosAcesso['area']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Área do cliente" hint="O grupo que reúne portal e financeiro na gaveta do site." />
+                    <x-admin.field name="acesso_portal_titulo" label="Nome do portal do cliente" :value="$settings['acesso_portal_titulo'] ?? $textosAcesso['portal_titulo']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Painel do cliente" />
+                    <x-admin.field name="acesso_portal_desc" label="Descrição do portal" :value="$settings['acesso_portal_desc'] ?? $textosAcesso['portal_desc']" col="col-12 col-md-6" maxlength="80" :opcional="true" placeholder="Pedidos, chamados e contratos" />
+                    <x-admin.field name="acesso_financeiro_titulo" label="Nome do financeiro antigo" :value="$settings['acesso_financeiro_titulo'] ?? $textosAcesso['financeiro_titulo']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Financeiro antigo" />
+                    <x-admin.field name="acesso_financeiro_desc" label="Descrição do financeiro" :value="$settings['acesso_financeiro_desc'] ?? $textosAcesso['financeiro_desc']" col="col-12 col-md-6" maxlength="80" :opcional="true" placeholder="Abrir o sistema financeiro" />
+                    <x-admin.field name="acesso_modal_titulo" label="Título do modal" :value="$settings['acesso_modal_titulo'] ?? $textosAcesso['modal_titulo']" col="col-12 col-md-6" maxlength="80" :opcional="true" placeholder="Acessar a plataforma" />
+                    <x-admin.field name="acesso_modal_desc" label="Descrição do modal" :value="$settings['acesso_modal_desc'] ?? $textosAcesso['modal_desc']" col="col-12" maxlength="160" :opcional="true" placeholder="Cada servidor é uma plataforma diferente. Escolha o da sua instalação." />
+                    <x-admin.field name="acesso_ajuda" label="Frase de ajuda" :value="$settings['acesso_ajuda'] ?? $textosAcesso['ajuda']" col="col-12 col-md-6" maxlength="120" :opcional="true" placeholder="Não sabe qual é o seu?" hint="Fica no pé do modal, antes do link." />
+                    <x-admin.field name="acesso_ajuda_link" label="Texto do link de ajuda" :value="$settings['acesso_ajuda_link'] ?? $textosAcesso['ajuda_link']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Fale com um especialista" hint="O link leva à página de contato." />
                 </div>
             </x-admin.card>
 

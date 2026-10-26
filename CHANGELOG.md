@@ -3,6 +3,35 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.36.0] - 2026-10-26
+
+### Alterado
+- **A bolha do assistente passou para cima do WhatsApp.** No canto do site e da página de
+  funil, o botão do robô deixou o andar de baixo e ocupa agora a posição logo acima do
+  WhatsApp; o WhatsApp continua ancorado no pé da tela. O balão abre a partir da bolha e a
+  caixa multicanal do WhatsApp sobe acima dela quando aberta, para um não cobrir o outro. No
+  celular os dois encolhem juntos e mantêm a mesma ordem.
+- **Os textos da bolha saíram do HTML e foram para a ficha do assistente.** *Atendimento →
+  Assistente virtual* ganhou o cartão **Bolha de atendimento**: dica ao passar o mouse (aceita
+  `:nome`), ícone de quem ainda não tem rosto, selo de status, texto do campo de mensagem e o
+  link para falar com uma pessoa. O que for gravado ali vale na hora; em branco, o padrão de
+  `config/assistente.php` conduz.
+- **Todo rótulo do caminho até a plataforma virou campo de Configurações.** O cartão **Acessos
+  externos do site** ganhou o nome e o ícone de cada servidor, e um cartão novo, **Textos dos
+  acessos**, reúne o rótulo do botão dourado, o nome do ícone de conta, o título da área do
+  cliente, as duas portas do submenu, o título e a descrição do modal e a frase de ajuda com o
+  texto do link. Campo em branco devolve aquele rótulo ao padrão da casa, sem apagar o resto.
+
+### Adicionado
+- A tabela `assistente` ganhou `dica`, `status`, `placeholder`, `humano` e `icone`, todos
+  opcionais: a ficha que não os preencheu continua exatamente como era.
+- `config/assistente.php` ganhou o bloco `bolha` e a lista fechada `icones_bolha`; e
+  `config/golden.php`, o bloco `acessos.textos` e a lista `acessos.icones`, que a validação e
+  os selects do painel compartilham.
+- `BolhaDoAssistenteTest` cobre os textos padrão da bolha e a ficha editada no painel;
+  `PortalDoClienteTest` cobre a troca de todos os textos dos acessos e o retorno ao padrão
+  quando o campo fica em branco.
+
 ## [2.35.1] - 2026-10-26
 
 ### Alterado

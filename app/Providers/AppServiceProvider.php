@@ -215,12 +215,29 @@ class AppServiceProvider extends ServiceProvider
         // Header, gaveta e rodapé compartilham a mesma resposta: para onde a Área do cliente leva.
         $rotaConta = Auth::guard('cliente')->check() ? 'portal.inicio' : 'portal.login';
 
-        // O que aponta para fora do site: portal financeiro antigo e os dois servidores de
-        // rastreamento. O painel grava cada endereço; sem nada gravado, o config conduz.
+        // O que aponta para fora do site (portal financeiro antigo e os dois servidores de
+        // rastreamento) e os textos que o visitante lê no caminho. O painel grava cada um; sem
+        // nada gravado, o config conduz — inclusive nos rótulos, que nunca ficam presos no HTML.
+        $textosAcesso = config('golden.acessos.textos');
         $acessos = [
             'financeiro_url' => $pegar('acesso_financeiro_url', config('golden.acessos.financeiro')),
             'servidor_1_url' => $pegar('acesso_servidor_1_url', config('golden.acessos.servidor_1')),
             'servidor_2_url' => $pegar('acesso_servidor_2_url', config('golden.acessos.servidor_2')),
+            'botao' => $pegar('acesso_botao_rotulo', $textosAcesso['botao']),
+            'conta_rotulo' => $pegar('acesso_conta_rotulo', $textosAcesso['conta']),
+            'area_titulo' => $pegar('acesso_area_titulo', $textosAcesso['area']),
+            'portal_titulo' => $pegar('acesso_portal_titulo', $textosAcesso['portal_titulo']),
+            'portal_desc' => $pegar('acesso_portal_desc', $textosAcesso['portal_desc']),
+            'financeiro_titulo' => $pegar('acesso_financeiro_titulo', $textosAcesso['financeiro_titulo']),
+            'financeiro_desc' => $pegar('acesso_financeiro_desc', $textosAcesso['financeiro_desc']),
+            'modal_titulo' => $pegar('acesso_modal_titulo', $textosAcesso['modal_titulo']),
+            'modal_desc' => $pegar('acesso_modal_desc', $textosAcesso['modal_desc']),
+            'servidor_1_titulo' => $pegar('acesso_servidor_1_titulo', $textosAcesso['servidor_1_titulo']),
+            'servidor_2_titulo' => $pegar('acesso_servidor_2_titulo', $textosAcesso['servidor_2_titulo']),
+            'servidor_1_icone' => $pegar('acesso_servidor_1_icone', $textosAcesso['servidor_1_icone']),
+            'servidor_2_icone' => $pegar('acesso_servidor_2_icone', $textosAcesso['servidor_2_icone']),
+            'ajuda' => $pegar('acesso_ajuda', $textosAcesso['ajuda']),
+            'ajuda_link' => $pegar('acesso_ajuda_link', $textosAcesso['ajuda_link']),
         ];
 
         return $this->site = [
@@ -244,7 +261,7 @@ class AppServiceProvider extends ServiceProvider
             'parceiros' => config('golden.parceiros_m2m'),
             'loja_ativa' => $lojaAtiva,
             'carrinho_itens' => $lojaAtiva ? Carrinho::daSessao()->totalItens() : 0,
-            'nav' => $this->montarMenu($lojaAtiva, $rotaConta, $acessos['financeiro_url']),
+            'nav' => $this->montarMenu($lojaAtiva, $rotaConta, $acessos),
             'portal_url' => route($rotaConta),
             'acessos' => $acessos,
             'tracking' => $pegar('tracking_enabled', '0') === '1',
@@ -258,7 +275,7 @@ class AppServiceProvider extends ServiceProvider
      * dinâmicos (categorias da loja, páginas do CMS e a entrada do portal) são
      * resolvidos aqui, para que header e gaveta mobile compartilhem os mesmos itens.
      */
-    private function montarMenu(bool $lojaAtiva, string $rotaConta, string $financeiroUrl): array
+    private function montarMenu(bool $lojaAtiva, string $rotaConta, array $acessos): array
     {
         $rotaAtual = optional(request()->route())->getName() ?: '';
         $paginaAtual = (string) request()->route('slug');
@@ -313,7 +330,7 @@ class AppServiceProvider extends ServiceProvider
 
         return collect(config('golden.nav'))
             ->reject(fn ($item) => ($item['grupo'] ?? null) === 'loja' && ! $lojaAtiva)
-            ->map(function ($item) use ($montar, $paginas, $rotaConta, $financeiroUrl) {
+            ->map(function ($item) use ($montar, $paginas, $rotaConta, $acessos) {
                 if (($item['grupo'] ?? null) === 'loja') {
                     $item['rota'] = 'site.loja.index';
                     $item['prefixo'] = 'site.loja.';
@@ -341,11 +358,13 @@ class AppServiceProvider extends ServiceProvider
                     $item['rota'] = $rotaConta;
                     // No topo o item vira ícone com submenu (ver o partial do cabeçalho); na
                     // gaveta, o mesmo item abre as duas portas em acordeão. `acesso` é o que
-                    // diz ao partial que esta entrada tem tratamento próprio.
+                    // diz ao partial que esta entrada tem tratamento próprio. O título do
+                    // grupo e das portas vem dos textos editáveis em Configurações.
                     $item['acesso'] = true;
+                    $item['titulo'] = $acessos['area_titulo'];
                     $item['filhos'] = [
-                        ['titulo' => 'Painel do cliente', 'rota' => $rotaConta],
-                        ['titulo' => 'Financeiro antigo', 'url' => $financeiroUrl, 'externo' => true],
+                        ['titulo' => $acessos['portal_titulo'], 'rota' => $rotaConta],
+                        ['titulo' => $acessos['financeiro_titulo'], 'url' => $acessos['financeiro_url'], 'externo' => true],
                     ];
                 }
 

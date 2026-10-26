@@ -41,6 +41,22 @@
                     <button class="btn btn-golden"><i class="fas fa-save me-1"></i> Salvar ficha</button>
                 </div>
             </x-admin.card>
+
+            <x-admin.card title="Bolha de atendimento" icon="fa-comment-dots" class="mt-3"
+                descricao="O que o visitante lê na bolha, que fica acima do WhatsApp no canto do site e da página de funil. Em branco vale o padrão da casa.">
+                <div class="row g-3">
+                    <x-admin.field name="dica" label="Dica ao passar o mouse" :value="$assistente->dica" col="col-12 col-md-6" maxlength="80" :opcional="true"
+                        placeholder="Falar com :nome" hint="Use :nome para o nome da ficha." />
+                    <x-admin.field name="icone" type="select" label="Ícone sem foto" :value="$assistente->icone" :options="$icones" col="col-12 col-md-6" empty="Balões de conversa" :opcional="true"
+                        hint="Só aparece quando não há rosto enviado." />
+                    <x-admin.field name="status" label="Selo de status" :value="$assistente->status" col="col-12 col-md-6" maxlength="60" :opcional="true"
+                        placeholder="Respondendo agora" />
+                    <x-admin.field name="placeholder" label="Texto do campo de mensagem" :value="$assistente->placeholder" col="col-12 col-md-6" maxlength="120" :opcional="true"
+                        placeholder="Escreva sua dúvida…" />
+                    <x-admin.field name="humano" label="Link para falar com uma pessoa" :value="$assistente->humano" col="col-12" maxlength="120" :opcional="true"
+                        placeholder="Prefero falar com uma pessoa →" hint="Abre o formulário da própria página ou a página de contato, com o resumo da conversa." />
+                </div>
+            </x-admin.card>
         </div>
 
         <div class="col-lg-4">

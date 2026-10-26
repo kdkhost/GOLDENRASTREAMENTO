@@ -5,19 +5,14 @@
 :root{
   --ia-altura:58px;
   --ia-recuo:14px;
-  /* O andar que a bolha ocupa na calha dos flutuantes. */
+  /* O andar que a bolha ocupa na calha dos flutuantes: ela fica logo acima do WhatsApp, e é o
+     WhatsApp que continua no pé da tela. */
   --ia-slot:calc(var(--ia-altura) + var(--ia-recuo));
+  --wa-slot:calc(58px + var(--ia-recuo));
   --ia-largura:352px;
 }
 
-/* A calha ganha um andar embaixo: o robô fica no canto do pé da tela e o WhatsApp + voltar ao
-   topo sobem o slot inteiro. É a mesma variável que levanta a pilha quando o selo do reCAPTCHA
-   entra em cena, então as duas regras se somam em vez de uma cancelar a outra. O `:not([hidden])`
-   é o que devolve a calha ao tamanho antigo se a ficha for desligada com a página aberta. */
-body:has(.ia-float:not([hidden])){--flutuante-bottom:calc(var(--flutuante-gap) + var(--ia-slot))}
-body:has(.ia-float:not([hidden])):has(.grecaptcha-badge){--flutuante-bottom:calc(var(--selo-recaptcha) + var(--flutuante-gap) + var(--ia-slot))}
-
-.ia-float{position:fixed;right:22px;bottom:var(--flutuante-gap);z-index:72;
+.ia-float{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + var(--wa-slot));z-index:72;
   width:var(--ia-altura);height:var(--ia-altura);padding:0;border:2px solid rgba(255,255,255,.22);border-radius:50%;
   background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;font-size:1.4rem;cursor:pointer;
   display:grid;place-items:center;text-decoration:none;
@@ -44,8 +39,8 @@ body:has(.ia-float:not([hidden])):has(.grecaptcha-badge){--flutuante-bottom:calc
 .ia-float:hover .ia-dica,.ia-float:focus-visible .ia-dica{opacity:1;transform:none}
 
 /* Carcaça do balão: a mesma pele do box multicanal, para a casa ter uma cara só. */
-.ia-painel{position:fixed;right:22px;bottom:calc(var(--flutuante-gap) + var(--ia-slot));z-index:72;
-  width:var(--ia-largura);max-width:calc(100vw - 32px);max-height:calc(100vh - 124px);
+.ia-painel{position:fixed;right:22px;bottom:calc(var(--flutuante-bottom) + var(--wa-slot) + var(--ia-slot));z-index:72;
+  width:var(--ia-largura);max-width:calc(100vw - 32px);max-height:calc(100vh - 190px);
   display:flex;flex-direction:column;border-radius:18px;overflow:hidden;
   background:linear-gradient(180deg,#171d23,var(--dark-2,#0d1114));border:1px solid rgba(224,163,62,.22);
   box-shadow:0 26px 60px -24px rgba(0,0,0,.9);transform-origin:bottom right;
@@ -122,7 +117,7 @@ body:has(.ia-float:not([hidden])):has(.grecaptcha-badge){--flutuante-bottom:calc
 body.nav-open .ia-float,body.nav-open .ia-painel{opacity:0;pointer-events:none}
 
 @media(max-width:640px){
-  :root{--ia-altura:52px;--ia-recuo:12px}
+  :root{--ia-altura:52px;--ia-recuo:12px;--wa-slot:68px}
   .ia-float,.ia-painel{right:16px}
   .ia-float{font-size:1.25rem}
   .ia-dica{display:none}
@@ -130,7 +125,7 @@ body.nav-open .ia-float,body.nav-open .ia-painel{opacity:0;pointer-events:none}
 
 /* Em tela deitada o balão não cabe com o resto: vira quase a altura toda e o canto folga. */
 @media(max-height:520px) and (min-width:641px){
-  .ia-painel{max-height:calc(100vh - 24px)}
+  .ia-painel{max-height:calc(100vh - 180px)}
 }
 
 @media(prefers-reduced-motion:reduce){

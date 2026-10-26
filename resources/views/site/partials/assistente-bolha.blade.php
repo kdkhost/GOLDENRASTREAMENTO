@@ -12,6 +12,9 @@
     robô de busca: indexador não abre conversa, e o painel encheria de "atendimentos" que
     nenhum humano leu. O resto da régua — fonte, escalada, teto de caracteres — é do servidor,
     e o endpoint repete a pergunta antes de gastar uma chamada.
+
+    Os textos e o ícone (quando não há rosto) vêm da ficha, editável no painel. A bolha ocupa o
+    andar de cima da calha: o WhatsApp continua no pé da tela, e o robô fica logo acima dele.
 --}}
 @if($bolha ?? false)
     @php
@@ -32,14 +35,14 @@
     @endphp
 
     <button type="button" class="ia-float" id="iaFloat" aria-controls="iaPainel" aria-expanded="false"
-            aria-label="Conversar com {{ $ficha->nome }}" title="Falar com {{ $ficha->nome }}">
+            aria-label="{{ $ficha->textoDica() }}" title="{{ $ficha->textoDica() }}">
         @if($avatar)
             <img class="ia-rosto" src="{{ $avatar }}" alt="" width="58" height="58" loading="lazy" decoding="async">
         @else
-            <i class="fa-solid fa-comments" aria-hidden="true"></i>
+            <i class="fa-solid {{ $ficha->iconeBolha() }}" aria-hidden="true"></i>
         @endif
         <span class="ia-aviso" data-ia-aviso hidden aria-hidden="true"></span>
-        <span class="ia-dica">Falar com {{ $ficha->nome }}</span>
+        <span class="ia-dica">{{ $ficha->textoDica() }}</span>
     </button>
 
     <div class="ia-painel" id="iaPainel" role="dialog" aria-label="Conversa com {{ $ficha->nome }}">
@@ -47,7 +50,7 @@
             <button type="button" class="ia-fechar" data-ia-fechar aria-label="Fechar a conversa">
                 <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
-            <span class="ia-selo"><i class="fa-solid fa-circle" aria-hidden="true"></i> Respondendo agora</span>
+            <span class="ia-selo"><i class="fa-solid fa-circle" aria-hidden="true"></i> {{ $ficha->textoStatus() }}</span>
             @if($avatar)
                 <img class="ia-rosto ia-rosto-cabeca" src="{{ $avatar }}" alt="" width="34" height="34" loading="lazy" decoding="async">
             @endif
@@ -65,13 +68,13 @@
         <form class="ia-passos" data-ia-form>
             <label class="ia-oculto" for="iaTexto">Escreva sua mensagem para {{ $ficha->nome }}</label>
             <textarea id="iaTexto" name="texto" rows="1" maxlength="1000" autocomplete="off"
-                      placeholder="Escreva sua dúvida…" required></textarea>
+                      placeholder="{{ $ficha->textoPlaceholder() }}" required></textarea>
             <button type="submit" class="ia-enviar" data-ia-enviar aria-label="Enviar mensagem">
                 <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
             </button>
         </form>
 
-        <a class="ia-humano" href="{{ route('site.contato') }}" data-ia-humano>Prefero falar com uma pessoa →</a>
+        <a class="ia-humano" href="{{ route('site.contato') }}" data-ia-humano>{{ $ficha->textoHumano() }}</a>
     </div>
 
     <script>window.GOLDEN_IA = @json($rosto);</script>

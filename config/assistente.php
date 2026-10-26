@@ -292,6 +292,30 @@ return [
         'regras' => "Responda em português do Brasil, com frases curtas.\nNunca invente preço, prazo, cobertura ou especificação técnica: sem fonte, diga que vai chamar alguém da equipe.\nNão prometa instalação, bloqueio ou garantia em nome da empresa.\nNão peça documento, senha ou dados de pagamento pelo chat.",
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Os textos da bolha flutuante
+    |--------------------------------------------------------------------------
+    | O que o visitante lê no botão e dentro do balão, antes de qualquer resposta. O painel
+    | edita cada um na ficha; em branco, vale o padrão. `:nome` na dica vira o nome da ficha.
+    | A posição não é escolha: o robô fica logo acima do WhatsApp, no canto do site e do funil.
+    */
+    'bolha' => [
+        'dica' => 'Falar com :nome',
+        'status' => 'Respondendo agora',
+        'placeholder' => 'Escreva sua dúvida…',
+        'humano' => 'Prefero falar com uma pessoa →',
+        'icone' => 'fa-comments',
+    ],
+
+    /* Os ícones que a ficha oferece quando não há rosto enviado. */
+    'icones_bolha' => [
+        'fa-comments' => 'Balões de conversa',
+        'fa-headset' => 'Atendimento com fone',
+        'fa-robot' => 'Robô',
+        'fa-user-tie' => 'Consultor de vendas',
+    ],
+
     /* Os tons de fala que a tela oferece; a persona guarda um código e a view pede o rótulo. */
     'tons' => [
         'amigavel' => 'Amigável',

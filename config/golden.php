@@ -237,6 +237,37 @@ return [
         'financeiro' => env('GOLDEN_FINANCEIRO_URL', 'https://financeiro.goldenrastreamento.com.br/login'),
         'servidor_1' => env('GOLDEN_SERVIDOR_1_URL', 'https://app1.goldenrastreamento.com.br'),
         'servidor_2' => env('GOLDEN_SERVIDOR_2_URL', 'http://134.209.82.248:8082/'),
+
+        // Os textos de todo o caminho: botão dourado, ícone de conta, submenu, modal e ajuda.
+        // A tela de Configurações troca cada um e grava no banco; estes são os padrões de quem
+        // nunca abriu a tela. O portal do cliente não tem endereço aqui — é rota interna.
+        'textos' => [
+            'botao' => 'Rastreamento',
+            'conta' => 'Acessar minha conta',
+            'area' => 'Área do cliente',
+            'portal_titulo' => 'Painel do cliente',
+            'portal_desc' => 'Pedidos, chamados e contratos',
+            'financeiro_titulo' => 'Financeiro antigo',
+            'financeiro_desc' => 'Abrir o sistema financeiro',
+            'modal_titulo' => 'Acessar a plataforma',
+            'modal_desc' => 'Cada servidor é uma plataforma diferente. Escolha o da sua instalação.',
+            'servidor_1_titulo' => 'Servidor 1',
+            'servidor_2_titulo' => 'Servidor 2',
+            'servidor_1_icone' => 'fa-satellite-dish',
+            'servidor_2_icone' => 'fa-tower-broadcast',
+            'ajuda' => 'Não sabe qual é o seu?',
+            'ajuda_link' => 'Fale com um especialista',
+        ],
+
+        // Os ícones que a tela oferece para cada servidor. Fonte única do select e da validação.
+        'icones' => [
+            'fa-satellite-dish' => 'Antena de satélite',
+            'fa-tower-broadcast' => 'Torre de transmissão',
+            'fa-server' => 'Servidor',
+            'fa-globe' => 'Navegador / site',
+            'fa-location-dot' => 'Localização',
+            'fa-map-location-dot' => 'Mapa com rota',
+        ],
     ],
 
     // Página de listagem do painel: quantos registros cabem em uma página. As 12 listagens

@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.35.1
+- **Versão:** 2.36.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -428,7 +428,10 @@ rode os três de novo (ou `php artisan optimize:clear` e recarregue).
   financeiro antigo; o botão **Rastreamento** abre os dois servidores — na tela aparece
   só o nome de cada um, o endereço fica na ligação. Os três endereços externos se trocam
   em **Sistema → Configurações → Acessos externos do site** (o que a tela grava fica no
-  banco e vence o `config`).
+  banco e vence o `config`), junto do nome e do ícone de cada servidor. O cartão ao lado,
+  **Textos dos acessos**, edita cada rótulo do caminho: o botão dourado, o ícone de conta,
+  a área do cliente, as duas portas do submenu, o título e a descrição do modal e a frase
+  de ajuda. Campo em branco devolve aquele rótulo ao padrão da casa.
 - Troque a senha padrão assim que entrar, e remova o usuário de demonstração
   (`vendedor@golden.com.br`) se não for usar.
 
@@ -1313,7 +1316,10 @@ chave no cofre do painel e interruptor na tela.
   regras escritas pelo administrador, o rosto (arrastar e soltar, 96 × 96 px, até 2 MB) e a voz das
   respostas em áudio. É desta ficha que se monta a ordem que o provedor recebe; as regras entram na
   ordem exata em que foram escritas, sem reescrita. Quatro interruptores dizem onde ele atende:
-  ligado, no site, na página de funil, no chat do chamado.
+  ligado, no site, na página de funil, no chat do chamado. O cartão **Bolha de atendimento**, na
+  mesma ficha, edita o que o visitante lê no botão flutuante: a dica ao passar o mouse (aceita
+  `:nome`), o ícone de quem não tem rosto, o selo de status, o texto do campo de mensagem e o
+  link para falar com uma pessoa — em branco, vale o padrão de `config/assistente.php`.
 - **O que o assistente sabe** (`/admin/assistente/conhecimento`) — a base de respostas. Um assunto
   por linha, com resposta, tags, origem e endereço da fonte. A busca é léxica e ponderada
   (título pesa 3, assuntos 2, corpo 1) sobre o piso `assistente.resposta.minimo_de_fonte`; abaixo
@@ -1337,7 +1343,9 @@ pelas mãos da equipe. O código nunca sai do sistema por falta de credencial.
 
 ### A bolha no site e no funil
 
-O botão flutuante, o balão e a conversa anônima vêm com a página, e a folha
+O botão flutuante do assistente ocupa o andar de cima da calha de flutuantes: ele fica logo acima
+do botão do WhatsApp, que continua no pé da tela, e o balão abre a partir dele. O botão flutuante,
+o balão e a conversa anônima vêm com a página, e a folha
 (`public/css/golden-assistente.css`) e o script (`public/js/golden-assistente.js`) **só entram no
 HTML quando o interruptor do canal está ligado** — desligado, não sobra um byte de robô na página do
 visitante. As três rotas JSON são `POST /assistente/abrir`, `POST /assistente/fala` e

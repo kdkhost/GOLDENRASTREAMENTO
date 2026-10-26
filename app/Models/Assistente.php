@@ -35,7 +35,8 @@ class Assistente extends Model
 
     protected $fillable = [
         'nome', 'cargo', 'saudacao', 'tom', 'regras',
-        'avatar', 'avatar_alt', 'voz', 'ativo', 'no_site', 'no_funil', 'no_chamado', 'criado_por',
+        'avatar', 'avatar_alt', 'dica', 'status', 'placeholder', 'humano', 'icone',
+        'voz', 'ativo', 'no_site', 'no_funil', 'no_chamado', 'criado_por',
     ];
 
     protected $casts = [
@@ -114,6 +115,36 @@ class Assistente extends Model
     {
         return static::paraABolha()->atendeEm($canal)
             && Atribuidor::classificar(null, null, null, null, request()->userAgent())['canal'] !== 'indexador';
+    }
+
+    /*
+     * Os textos da bolha: o que o painel escreveu ou, em branco, o padrão de
+     * `config('assistente.bolha')`. A dica aceita `:nome`, para o rótulo acompanhar a ficha
+     * sem ninguém reescrevê-lo ao trocar o nome do atendente.
+     */
+    public function textoDica(): string
+    {
+        return str_replace(':nome', (string) $this->nome, (string) ($this->dica ?: config('assistente.bolha.dica')));
+    }
+
+    public function textoStatus(): string
+    {
+        return (string) ($this->status ?: config('assistente.bolha.status'));
+    }
+
+    public function textoPlaceholder(): string
+    {
+        return (string) ($this->placeholder ?: config('assistente.bolha.placeholder'));
+    }
+
+    public function textoHumano(): string
+    {
+        return (string) ($this->humano ?: config('assistente.bolha.humano'));
+    }
+
+    public function iconeBolha(): string
+    {
+        return (string) ($this->icone ?: config('assistente.bolha.icone'));
     }
 
     /** A voz desta ficha, ou a da casa quando ninguém escolheu. */
