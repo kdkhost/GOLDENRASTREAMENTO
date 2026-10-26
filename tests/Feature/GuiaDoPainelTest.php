@@ -276,6 +276,53 @@ class GuiaDoPainelTest extends TestCase
         $this->assertStringNotContainsString('**', $visivel, 'O guia mostrou o asterisco em vez do negrito.');
         $this->assertStringNotContainsString('`', $visivel, 'O guia mostrou a crase em vez do código.');
         $this->assertMatchesRegularExpression('/[ãçõê]/u', $visivel, 'O guia perdeu os acentos.');
+
+        // Ênfase de um asterisco só (`*assim*`) não é nada do que `inline()` desenha: chegaria à
+        // tela como asterisco. O texto que passa por ele tem de usar `**` ou não usar marca.
+        foreach (GuiaPainel::secoes() as $secao) {
+            foreach ($this->textosFormataveis($secao) as $texto) {
+                $this->assertDoesNotMatchRegularExpression('/(?<!\*)\*(?!\*)[^*\n]+(?<!\*)\*(?!\*)/u', $texto,
+                    "A seção '{$secao['id']}' usou ênfase em um asterisco, que a tela mostraria cru.");
+            }
+        }
+    }
+
+    /**
+     * Os textos que `GuiaPainel::inline()` formata, de cada seção. Os blocos de código ficam fora
+     * de propósito: lá dentro o marcador é o comando, não ênfase.
+     *
+     * @param  array<string, mixed>  $secao
+     * @return array<int, string>
+     */
+    private function textosFormataveis(array $secao): array
+    {
+        $textos = [$secao['titulo'], $secao['resumo']];
+
+        foreach ($secao['blocos'] as $bloco) {
+            if (($bloco['tipo'] ?? '') === 'codigo') {
+                continue;
+            }
+
+            foreach (['conteudo', 'titulo'] as $chave) {
+                if (isset($bloco[$chave])) {
+                    $textos[] = $bloco[$chave];
+                }
+            }
+
+            foreach ($bloco['itens'] ?? [] as $item) {
+                $textos[] = is_string($item) ? $item : ($item['titulo'] ?? '').' '.($item['texto'] ?? '');
+            }
+
+            foreach ($bloco['linhas'] ?? [] as $linha) {
+                foreach ((array) $linha as $celula) {
+                    if (is_string($celula)) {
+                        $textos[] = $celula;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_filter($textos, 'is_string'));
     }
 
     /**

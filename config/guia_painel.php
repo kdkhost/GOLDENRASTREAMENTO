@@ -171,7 +171,7 @@ return [
                 ]],
                 ['tipo' => 'texto', 'conteudo' => 'Com os quatro prontos, preencha as chaves em **Sistema → Configurações → Chaves de integração**. É o painel que manda: o que for gravado ali vale na hora, sem tocar no servidor, sem limpar configuração nem reiniciar nada. O `.env` deste servidor existe só como plano de fundo, para o que o banco não tiver.'],
                 ['tipo' => 'lista', 'itens' => [
-                    'Token de desenvolvedor, ID do cliente OAuth e segredo do cliente são **segredos**: cifram no banco e não voltam a aparecer na tela — o formulário mostra *se* estão gravados, nunca *o que* está gravado.',
+                    'Token de desenvolvedor, ID do cliente OAuth e segredo do cliente são **segredos**: cifram no banco e não voltam a aparecer na tela — o formulário mostra **se** estão gravados, nunca **o que** está gravado.',
                     'Endereço de volta do OAuth e conta gerente (MCC) são os dois opcionais. Deixe em branco para o painel usar o próprio endereço e para consultar cada conta conectada por si só.',
                     'Campo em branco é o painel se retirando do caminho: aquele valor volta a obedecer ao `.env`. Para tirar um segredo já gravado, use a chave "apagar e voltar ao .env" que aparece ao lado dele.',
                     'Faltando qualquer uma, a tela diz **qual** falta, pelo nome, e aponta onde se preenche — em vez de quebrar. O comando de sincronização responde o mesmo.',

@@ -35,15 +35,20 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - O texto de abertura dizia "A barra da esquerda traz cinco grupos". Lido dentro do guia, isso
   descrevia a tela errada — o índice do guia tem sete grupos, e quem procurava "Portal do cliente"
   na frase não achava. Diz "O menu lateral", que é do que a frase fala.
+- A seção do Google Ads mostrava `*se*` e `*o que*` com o asterisco na tela: ênfase de um asterisco
+  só não é nada do que `GuiaPainel::inline()` desenha. Virou `**se**` / `**o que**`, o negrito que o
+  resto do guia já usa.
 
 ### Testado
-- `GuiaDoPainelTest` (14 testes, 555 afirmações) ganhou duas travas sobre a arrumação:
+- `GuiaDoPainelTest` (14 testes, 761 afirmações) ganhou duas travas sobre a arrumação:
   *a tela é montada com as peças do painel* — o campo vem de `x-admin.filter`, nenhum `<input>` na
   view, nenhum dos utilitários que saíram voltou, um cartão por grupo do config e ícone no cabeçalho
   de cada um; *a folha e o script deixam tudo caber na tela* — sem `nowrap` na tabela, altura máxima
   e rolagem própria no índice, a medida de leitura escrita uma única vez, nenhum hexadecimal na
   folha, a busca sem acento intacta no script e os dois escondimentos estruturais (`[data-grupo]` e
-  `[data-nav-grupo]`).
+  `[data-nav-grupo]`). O teste da marca crua passou a ler o config seção por seção: nenhum texto que
+  passa pelo `inline()` pode guardar ênfase de um asterisco, e o `* * * * *` do cron continua vivo
+  onde é comando — dentro do bloco de código, que não formata nada.
 
 ## [2.29.0] - 2026-10-25
 
