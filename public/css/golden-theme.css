@@ -57,6 +57,17 @@
     /* camadas flutuantes (aviso e confirmação): superfície, sombra e véu */
     --aviso-sombra:0 18px 40px -22px rgba(18,22,26,.45);
     --aviso-veu:rgba(18,22,26,.55);
+
+    /* mock do anúncio na busca do Google: são as cores do Google, não as da marca — e por
+       serem de outra marca é que precisam de par declarado no tema escuro, senão o título azul
+       some no fundo preto. */
+    --anuncio-surface:#ffffff;
+    --anuncio-texto:#12161a;
+    --anuncio-titulo:#1a0dab;
+    --anuncio-url:#006621;
+    --anuncio-descricao:#4d5156;
+    --anuncio-rotulo:#5f6368;
+    --anuncio-linha:#e6e9ee;
 }
 
 [data-bs-theme="dark"]{
@@ -79,6 +90,16 @@
     --login-field-bg:#12171b;
     --aviso-sombra:0 18px 40px -22px rgba(0,0,0,.7);
     --aviso-veu:rgba(0,0,0,.72);
+
+    /* o mesmo mock, lido no fundo escuro: azul e verde do Google clareados, na mesma medida
+       que a própria busca clareia no tema escuro */
+    --anuncio-surface:#171c21;
+    --anuncio-texto:#eef2f5;
+    --anuncio-titulo:#8ab4f8;
+    --anuncio-url:#81c995;
+    --anuncio-descricao:#b8c1c9;
+    --anuncio-rotulo:#9aa7b4;
+    --anuncio-linha:#2c343c;
 }
 
 /* utilitários de tom — chips, ícones e bolhas usam sempre o mesmo par */

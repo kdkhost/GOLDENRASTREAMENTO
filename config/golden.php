@@ -276,6 +276,15 @@ return [
         // Página de funil (config 'funil_statuses'): o selo da listagem e o do relatório.
         // O grupo não se chama 'funil' porque essa chave já veste o status do lead.
         'pagina_funil' => ['rascunho' => 'neutral', 'publicada' => 'green', 'pausada' => 'amber'],
+        // Conexão de Google Ads (GoogleAdsAccount::STATUS): o selo da tela e o aviso do e-mail.
+        'conexao_ads' => ['ativo' => 'green', 'desconectado' => 'red'],
+        // Campanha de Google Ads, pelo enum que o serviço devolve em `status` — o rótulo em
+        // português já vem de config('google_ads.status_campanha'); o tom é por cima dele, e
+        // status que não está aqui cai no neutro em vez de inventar cor.
+        'campanha_ads' => [
+            'ENABLED' => 'green', 'PAUSED' => 'amber', 'REMOVED' => 'red',
+            'PENDING' => 'gold', 'PENDING_REVIEW' => 'gold', 'UNREVIEWED' => 'gold', 'DRAFT' => 'neutral',
+        ],
         // Origem da visita/lead, resolvida por Atribuidor::classificar() a partir das chaves
         // de 'canais' logo abaixo. O tom é o mesmo no cartão de atribuição e na ficha do lead.
         'canal' => [
@@ -735,6 +744,8 @@ return [
             ['titulo' => 'Leads', 'rota' => 'admin.leads.index', 'prefixo' => 'admin.leads.', 'icone' => 'fa-user-plus', 'bolha' => 'leads_novos', 'tom' => 'gold'],
             ['titulo' => 'Clientes', 'rota' => 'admin.clientes.index', 'prefixo' => 'admin.clientes.', 'icone' => 'fa-users'],
             ['titulo' => 'Campanhas', 'rota' => 'admin.campanhas.index', 'prefixo' => 'admin.campanhas.', 'icone' => 'fa-bullhorn'],
+            ['titulo' => 'Google Ads', 'rota' => 'admin.google-ads.index', 'prefixo' => 'admin.google-ads.index', 'icone' => 'fa-google'],
+            ['titulo' => 'Criativo do anúncio', 'rota' => 'admin.google-ads.criativo', 'prefixo' => 'admin.google-ads.criativo', 'icone' => 'fa-wand-magic-sparkles'],
             ['titulo' => 'Marketing (funil)', 'rota' => 'admin.funil.index', 'prefixo' => 'admin.funil.', 'icone' => 'fa-bullseye', 'admin' => true],
             ['titulo' => 'Atribuição de tráfego', 'rota' => 'admin.atribuicao.index', 'prefixo' => 'admin.atribuicao.', 'icone' => 'fa-diagram-project'],
         ]],

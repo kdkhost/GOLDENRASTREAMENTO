@@ -513,6 +513,13 @@ php artisan config:clear && php artisan config:cache
 | `GOLDEN_TRACKING_ENABLED` | `0` ou `1` | liga a consulta de rastreio |
 | `GOOGLE_BUSINESS_ACCOUNT`, `GOOGLE_BUSINESS_LOCATION`, `GOOGLE_BUSINESS_TOKEN` | do seu perfil | depoimentos do Google com avatar; sem eles o importador só avisa (seção 11) |
 | `GOOGLE_BUSINESS_LIMITE`, `GOOGLE_BUSINESS_NOTA_MINIMA` | `50`, `4` | até quantas avaliações ler e a nota mínima aceita |
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | da sua MCC | token de desenvolvedor da API; **segredo da aplicação**, nunca sai para a tela (seção 9.1) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | do Google Cloud | app OAuth da tela de consentimento; o painel conecta conta por conta com eles |
+| `GOOGLE_REDIRECT_URI` | `${APP_URL}/auth/google-ads/callback` | tem de ser o URI cadastrado no Google, endereço exato |
+| `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | MCC sem hífen | vazio é legítimo: cada conta conectada é consultada por si só |
+| `GOOGLE_ADS_TRANSPORT` | `rest` | `grpc` só onde a extensão do PHP existe (servidor próprio) |
+| `GOOGLE_ADS_CACHE_STORE` | vazio (= `CACHE_STORE`) | escreva `redis` só se houver **servidor** Redis, não apenas a extensão |
+| `GOOGLE_ADS_CACHE_MINUTOS`, `GOOGLE_ADS_DIAS` | `30`, `30` | vida da janela sincronizada e período padrão da tela |
 
 Sobre os e-mails: os modelos, o envio de orçamento e as notificações de pedido já
 existem. Trocar `MAIL_MAILER=log` para `smtp` e preencher as cinco chaves é tudo
@@ -643,6 +650,130 @@ recoloca a mensagem na fila sem precisar abrir o chamado de novo:
 ```bash
 php artisan queue:retry all    # devolve tudo que está em failed_jobs para a fila
 ```
+
+---
+
+## 9.1 Google Ads no painel
+
+*Comercial → Google Ads* (`/admin/google-ads`) mostra a métrica real das campanhas do
+anunciante dentro do painel: impressões, cliques, custo, conversões, CTR médio e ROAS, com a
+tabela de campanhas filtrável por período (7/30/90 dias), situação e busca pelo nome.
+*Comercial → Criativo do anúncio* (`/admin/google-ads/criativo`) é o editor do anúncio
+responsivo com a prévia do resultado da busca.
+
+Cada pessoa que entra no painel conecta **a própria conta** pelo OAuth do Google. A conexão
+fica em `google_ads_accounts` com o token de renovação cifrado no banco, e cada chamada
+devolvida pela API fica em `google_ads_api_logs` (endpoint, requisição, resposta, erro) para auditoria.
+O administrador vê as conexões da equipe inteira — a agência opera as contas dos clientes —;
+qualquer outro papel vê só as que ele conectou.
+
+### O que a tela nunca faz
+
+**Nenhuma requisição do painel chama a API do Google.** A tela lê a janela de cache
+`google_ads:metrics:{usuário}:{conta}:{dias}` (30 minutos de vida) e, se ela está vazia,
+enfileira `SyncGoogleAdsMetrics` e mostra "Carregando…" com verificação automática a cada 3
+segundos. Por isso um F5 rápido não custa chamada de rede, não estoura a cota da API e não
+deixa ninguém esperando pelo tempo de resposta do Google.
+
+Quem preenche o cache é a fila: o job tem três tentativas com espera de 30 s, 2 min e 5 min, e
+o agendamento `google-ads:sync` roda a cada 15 minutos para todas as contas ativas. Quando o
+Google **recusa a credencial** (token revogado, senha da conta alterada), o job não insiste:
+marca a conta como desconectada, escreve o motivo na tela e avisa o dono por e-mail.
+
+### Passos que só existem no Google (uma vez por conta gerente)
+
+Nenhum deles é trabalho de código, e sem eles a tela mostra exatamente o que falta:
+
+1. **Conta MCC (gerenciada).** Em *Google Ads → Ferramentas e configurações → Estrutura de
+   contas*, crie a conta gerente e anexe as contas de anunciante a ela. O número da MCC, **sem
+   hífens**, é o `GOOGLE_ADS_LOGIN_CUSTOMER_ID`. Sem MCC o campo fica vazio e cada conta
+   conectada é consultada por si só.
+2. **Token de desenvolvedor.** Na MCC: *Ferramentas e configurações → API do Google Ads →
+   Aplicação de teste*. Preencha o nome da aplicação, aceite os termos e peça o acesso
+   (padrão **Basic Access**; para escrever, o Google pode pedir revisão). O token gerado é o
+   `GOOGLE_ADS_DEVELOPER_TOKEN`. **É segredo da aplicação, não do anunciante**: nunca aparece no
+   navegador, em view, JSON ou log.
+3. **Tela de consentimento OAuth + credenciais.** No [Google Cloud console](https://console.cloud.google.com/apis/credentials),
+   crie um projeto, configure a *tela de consentimento OAuth* (tipo **Externo**, com o domínio
+   nos *domínios autorizados* e `contato@kdkhost.com.br` como contato de desenvolvimento) e crie
+   uma credencial do tipo **Aplicação da Web**:
+   - *URI de redirecionamento autorizado*: `https://SEU_DOMINIO/auth/google-ads/callback`
+     — o endereço exato, sem barra no fim; mudar o endereço é refazer o cadastro.
+   - O `GOOGLE_CLIENT_ID` e o `GOOGLE_CLIENT_SECRET` que a credencial devolve.
+   - O escopo pedido pelo painel é `https://www.googleapis.com/auth/adwords`, o único que a API
+     aceita; nada de escopos genéricos do Google.
+4. **Ativar a API do Google Ads** no mesmo projeto (*Biblioteca* → "Google Ads API" → Ativar).
+
+### Variáveis do `.env`
+
+```
+GOOGLE_ADS_DEVELOPER_TOKEN=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI="${APP_URL}/auth/google-ads/callback"
+GOOGLE_ADS_LOGIN_CUSTOMER_ID=
+GOOGLE_ADS_TRANSPORT=rest
+GOOGLE_ADS_CACHE_STORE=
+GOOGLE_ADS_CACHE_MINUTOS=30
+GOOGLE_ADS_DIAS=30
+```
+
+Depois de escrever qualquer uma delas:
+
+```bash
+php artisan config:clear && php artisan migrate --force
+```
+
+Duas variáveis existem por causa da hospedagem, e deixar os padrões é o certo nela:
+
+- **`GOOGLE_ADS_TRANSPORT=rest`** — a biblioteca oficial fala com o Google por gRPC **ou** REST.
+  A hospedagem compartilhada não tem root nem `pecl`, então a extensão `grpc` do PHP não entra.
+  Numa máquina sua com a extensão, troque para `grpc`: nenhuma linha de código muda.
+- **`GOOGLE_ADS_CACHE_STORE=`** vazio usa o store do próprio app. A hospedagem tem a extensão
+  Redis do PHP mas **não tem o servidor Redis**, então a métrica fica no `file`. Com um servidor
+  Redis no ar, escreva `redis` e a fila inteira passa a usar o mesmo ponto.
+
+### Rodar tudo
+
+```bash
+php artisan google-ads:sync                 # enfileira todas as contas ativas
+php artisan google-ads:sync --conta=3       # uma conexão específica
+php artisan google-ads:sync --dias=7        # janela diferente do padrão
+```
+
+O comando **enfileira**; quem chama a API é o worker. Numa hospedagem sem supervisor, o cron do
+`schedule:run` (seção 9) já drena a fila a cada minuto — é a mesma linha que serve aos e-mails.
+
+### Escrever na conta (pausar e ativar)
+
+Os botões da tabela pausam e reativam campanha, e cada escrita passa por **duas** chamadas:
+primeiro `validarOperacao`, que envia a mesma operação com `validate_only => true` e percorre
+permissão, status e FieldMask sem tocar em nada; só depois, se o Google aprovou, `mutateCampaigns`
+escreve de verdade. Uma conta real de anunciante não é lugar de experimentar.
+
+A escrita nunca é chamada pelo Livewire: é formulário POST com confirmação em SweetAlert2 e
+retorno em toastr, como todo ato destrutivo do painel. O `campaign_id` não vem do formulário como
+verdade — é conferido contra a lista sincronizada **daquela conta**, para o painel não escrever
+num número que alguém digitou ou que pertence a outra conta conectada.
+
+### Prévia do anúncio
+
+Não existe API oficial de prévia de anúncio responsivo; o mock em HTML/CSS é o padrão do
+mercado. O editor aplica as travas do Google — até 15 títulos de 30 caracteres, até 4 descrições
+de 90, duas rotas de display com trava **por segmento** — com contador por campo (verde, âmbar,
+vermelho) e três combinações de título/descrição no formato da busca, em desktop e celular. As
+combinações são as que o Google pode montar; ele escolhe, e a prévia mostra o corte real de
+cada uma.
+
+### Se a tela disser que falta alguma coisa
+
+| O que aparece | O que é |
+|---|---|
+| "A integração ainda não está configurada neste servidor: faltam …" | Variável ausente do `.env`; a lista diz quais. `php artisan config:clear` depois de escrever. |
+| "Conectar conta Google Ads" sumiu / erro do OAuth | `GOOGLE_REDIRECT_URI` diferente do URI cadastrado no Google Cloud. |
+| "Este token não alcança nenhuma conta de anunciante" | Consentimento dado sem conta ativa na MCC, ou conta nova com menos de 24 h. Reconecte. |
+| "Carregando…" por mais de alguns minutos | O worker não está rodando: `php artisan queue:work --stop-when-empty` à mão e confira o cron do `schedule:run`. |
+| Selo **Desconectada** com motivo | O Google recusou o token de atualização. Reconecte; o histórico sincronizado continua na tela. |
 
 ---
 
@@ -1379,6 +1510,11 @@ continua visível para você pelo painel ou SSH.
       `php artisan queue:retry all`
 - [ ] Tráfego: abrir `/admin/atribuicao` depois de algumas visitas reais e conferir se as
       origens aparecem
+- [ ] Google Ads (opcional, seção 9.1): com as variáveis no `.env`, *Comercial → Google Ads*
+      mostra o botão **Conectar conta Google Ads**; conectar, ver a tabela preencher sozinha e
+      conferir em `/admin/google-ads/criativo` que um título de 31 caracteres fica vermelho
+- [ ] Google Ads sem credencial: a mesma tela deve listar **qual** variável falta em vez de
+      quebrar, e nenhum token de desenvolvedor aparece no HTML nem no log
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`
       no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
       cadastro na tela da campanha (seção 13)

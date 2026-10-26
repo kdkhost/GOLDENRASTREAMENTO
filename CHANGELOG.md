@@ -5,6 +5,65 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ## [Unreleased]
 
+## [2.27.0] - 2026-10-25
+
+### Adicionado
+- **Google Ads dentro do painel** (admin → Comercial → Google Ads). Cada pessoa que entra no
+  painel conecta a própria conta de anunciante pelo OAuth do Google e passa a ver impressões,
+  cliques, custo, conversões, CTR médio e ROAS das campanhas — em português, com o dinheiro
+  formatado pela casa. A tela é o componente Livewire `GoogleAdsDashboard`; a conta fica em
+  `google_ads_accounts` com o token de renovação **cifrado no banco** (`cast encrypted`), e cada
+  chamada devolvida pelo Google fica registrada em `google_ads_api_logs`.
+- **A leitura nunca sai do cache.** O painel pede a janela ao `GoogleAdsCache`
+  (`google_ads:metrics:{user}:{customer}:{dias}`, meia hora de vida) e, se ela não existe,
+  enfileira `SyncGoogleAdsMetrics` e mostra **"Carregando…" com `wire:poll` de 3 s** — a tela se
+  refaz sozinha quando os números chegam. Uma recarga de painel, portanto, não custa uma chamada
+  de rede nem estoura a cota da API. O agendamento (`google-ads:sync`, a cada 15 min) faz o mesmo
+  para todas as contas ativas; o job tem 3 tentativas com espera de 30 s, 2 min e 5 min, e quando
+  o Google recusa a credencial ele **desconecta a conta e avisa o dono por e-mail** em vez de
+  tentar de novo — token revogado não se conserta em fila.
+- **Camada de serviço própria, com a biblioteca oficial.** `GoogleAdsService`
+  (`app/Services/GoogleAds`) monta o cliente, roda GAQL, divide `cost_micros`/`average_cpc` por
+  milhão para chegar em reais e traduz os enums (`ENABLED` → Ativa, `PAUSED` → Pausada,
+  `REMOVED` → Removida). Ela é registrada por um `GoogleAdsServiceProvider` que também cadastra o
+  driver `google-ads` do Socialite com `access_type=offline` e `prompt=consent` — sem esses dois
+  o Google não devolve token de renovação e a conta "conectaria" uma única vez. Nada de
+  wrappers da API descontinuada: `googleads/google-ads-php` V26, `API Escrow` e transporte REST.
+- **Pausar e ativar campanha, com a prova antes da escrita.** Os botões da tabela são formulário
+  POST comum (herdam a confirmação em SweetAlert2 e o retorno em toastr do painel) e o controller
+  chama **duas** vezes: primeiro `validarOperacao` (`validate_only => true`, que percorre
+  permissão, status e FieldMask sem tocar na campanha) e só depois `mutateCampaigns`. A
+  campanha é conferida contra a lista sincronizada **desta conta** — um `campaign_id` digitado à
+  mão ou de outra conta conectada não escreve em lugar nenhum.
+- **Prévia do anúncio responsivo** (`RsaPreview`, admin → Comercial → Criativo do anúncio): até
+  15 títulos de 30 caracteres e 4 descrições de 90, com contador por campo que fica verde, âmbar
+  ou vermelho conforme a trava do Google, URL final com as duas rotas de display, e o mock do
+  resultado da busca em três combinações de títulos/descrições, alternando desktop e celular. Não
+  existe API oficial de prévia — o mock em HTML/CSS é o padrão do mercado, e ele é desenhado com
+  as cores da busca, não as do painel.
+- **Folha `public/css/golden-ads.css`** com os contadores, o cartão da conta e o mock da busca,
+  todos por token (`--anuncio-*`, criados em `golden-theme.css` com par claro e escuro).
+- **Testes** (`tests/Feature/ConexaoGoogleAdsTest.php`, 12 casos): o pedido de acesso carrega
+  offline + escopo + `redirect_uri` verdadeiros; o callback guarda a conta e o banco não devolve
+  o token em texto; reconectar **atualiza a mesma fila** em vez de duplicar; a tela lê da cache e
+  enfileira em vez de chamar a API; ninguém escreve na conta de outro; pausar passa pela operação
+  simulada antes da verdadeira; e o job que recebe credencial recusada desconecta, avisa e escreve
+  o erro na janela.
+
+### Configurado
+- `.env.example` ganha o bloco `GOOGLE_ADS_*` comentado (token de desenvolvedor, app OAuth,
+  `LOGIN_CUSTOMER_ID` da MCC sem hífen, `GOOGLE_ADS_TRANSPORT`, `GOOGLE_ADS_CACHE_STORE`,
+  `GOOGLE_ADS_CACHE_MINUTOS`, `GOOGLE_ADS_DIAS`) e `config/services.php` o grupo `google_ads`.
+  Faltando qualquer um, a tela diz **qual** variável falta em vez de quebrar.
+
+### Decidido
+- **Transporte REST por padrão.** A hospedagem em produção é compartilhada: sem root e sem pecl,
+  a extensão `grpc` do PHP não entra. O mesmo `GOOGLE_ADS_TRANSPORT=grpc` ativa o transporte
+  rápido numa máquina própria, sem mudar uma linha de código.
+- **A cache pode cair no store de arquivos.** A hospedagem tem a extensão Redis do PHP mas não o
+  servidor Redis, então `GOOGLE_ADS_CACHE_STORE` fica vazio e a métrica vive onde o app já guarda
+  cache; com um servidor Redis, `redis` liga tudo sem outra mudança.
+
 ## [2.26.2] - 2026-10-25
 
 ### Corrigido

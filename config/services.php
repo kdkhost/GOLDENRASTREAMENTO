@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    /*
+    | Google Ads: o app OAuth do painel. As três credenciais nascem no Google Cloud console
+    | (tela de consentimento OAuth) e o endereço de volta é sempre o do próprio app — a
+    | variável existe para quem roda atrás de um proxy com domínio diferente de APP_URL.
+    | O escopo pedido (`adwords`) não fica aqui: é da API, mora em config('google_ads.escopos').
+    */
+    'google_ads' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI')
+            ?: rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/google-ads/callback',
+    ],
+
 ];

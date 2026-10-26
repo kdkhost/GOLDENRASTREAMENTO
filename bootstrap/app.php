@@ -28,6 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // próximo minuto e o withoutOverlapping impede dois workers sobre a mesma fila.
         $schedule->command('queue:work --stop-when-empty --max-time=50')
             ->everyMinute()->withoutOverlapping();
+
+        // A métrica do Google Ads tem meia hora de vida no cache e o painel só lê de lá.
+        // Quinze minutos mantém a janela sempre preenchida para quem abre a tela, sem
+        // dobrar as chamadas: o comando só enfileira, quem fala com o Google é a fila.
+        $schedule->command('google-ads:sync')->everyFifteenMinutes()->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

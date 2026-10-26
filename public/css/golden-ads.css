@@ -1,0 +1,54 @@
+/* Golden Rastreamento — a tela de Google Ads e o editor de anúncio.
+   Nenhuma cor própria: tudo sai dos tokens de golden-theme.css (o par .tone-* e os
+   --anuncio-* da prévia), assim claro e escuro continuam iguais aqui como no resto do painel. */
+
+/* A linha do editor: campo, contador e o botão de tirar, numa régua só. */
+.ads-linha{display:flex;align-items:flex-start;gap:.5rem}
+.ads-linha>.form-control{flex:1 1 auto;min-width:0}
+.ads-linha--textarea{flex-direction:column}
+.ads-linha--textarea .form-control{width:100%}
+.ads-linha--textarea>div{align-self:flex-end}
+
+/* O semáforo de caracteres: verde até faltar um pedaço, laranja perto do limite,
+   vermelho quando o Google não aceita. As cores vêm dos tons do tema, nunca de hex. */
+.contador{font-variant-numeric:tabular-nums;font-size:.78rem;padding:.15rem .5rem;border-radius:999px;white-space:nowrap;flex:none}
+.contador--ok{background:var(--t-green-bg);color:var(--t-green-fg)}
+.contador--perto{background:var(--t-amber-bg);color:var(--t-amber-fg)}
+.contador--estourado{background:var(--t-red-bg);color:var(--t-red-fg)}
+
+.ads-faltas li{display:flex;gap:.4rem;align-items:baseline;color:var(--t-amber-fg)}
+.ads-faltas li code{color:var(--bs-body-color)}
+
+/* O cartão da conta conectada usa o mesmo ícone redondo dos cartões de resumo. */
+.ads-conta .icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:1.3rem;flex:none}
+
+/* O estado da última sincronização que falhou: o tom vem dos tokens, então escuro e claro
+   trocam sozinhos. Não é caixa de alerta — é o mesmo cartão das outras telas, marcado à esquerda. */
+.ads-aviso{border-left:4px solid var(--t-red-fg)}
+
+/* A prévia fica colada no topo: quem edita embaixo continua vendo o anúncio em cima. */
+@media (min-width:992px){
+    .ads-preview{position:sticky;top:88px}
+}
+
+/*
+   O mock do resultado de busca. As medidas são as da tela do Google: largura de coluna de
+   texto no desktop, ~360px no celular, título em azul, destino em verde, etiqueta de
+   "Patrocinado" em cinza. Nada aqui imita a marca do painel — é a cara da busca.
+*/
+.ads-serp{background:var(--anuncio-surface);border:1px solid var(--anuncio-linha);border-radius:var(--radius-md);padding:.85rem 1rem;color:var(--anuncio-texto)}
+.ads-serp--celular{max-width:360px}
+.ads-serp__rotulo{display:flex;align-items:center;gap:.35rem;font-size:.75rem;color:var(--anuncio-rotulo);margin-bottom:.15rem}
+.ads-serp__destino{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--anuncio-texto);min-width:0}
+.ads-serp__marca{width:20px;height:20px;border-radius:50%;border:1px solid var(--anuncio-linha);display:grid;place-items:center;font-size:.68rem;font-weight:700;color:var(--anuncio-rotulo);flex:none}
+.ads-serp__dominio{color:var(--anuncio-url);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ads-serp__seta{font-size:.6rem;color:var(--anuncio-rotulo);flex:none}
+.ads-serp__rotas{color:var(--anuncio-rotulo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ads-serp__titulo{color:var(--anuncio-titulo);font-family:var(--font-head);font-size:1.06rem;line-height:1.3;margin:.15rem 0 .25rem;overflow-wrap:anywhere}
+.ads-serp__titulo-extra{font-weight:400}
+.ads-serp__descricao{color:var(--anuncio-descricao);font-size:.86rem;line-height:1.45;overflow-wrap:anywhere}
+/* O desktop mostra duas linhas e fecha o resto; o "mais" é o que o usuário da busca veria. */
+.ads-serp--desktop .ads-serp__descricao:not(.is-aberta){display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ads-serp__corte{color:var(--anuncio-rotulo)}
+.ads-serp__mais{background:none;border:0;padding:0;color:var(--anuncio-titulo);font-size:.82rem;cursor:pointer}
+.ads-serp__mais:hover{text-decoration:underline}

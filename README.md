@@ -27,6 +27,8 @@ Construído em **Laravel 13** seguindo a estrutura e os padrões do repositório
 - PHP 8.3+ (extensões `pdo_sqlite` e `pdo_mysql`)
 - Composer 2
 - Node 18+ (apenas para assets, opcional — o tema usa CSS/JS puro servido de `public/`)
+- Para a tela de Google Ads: nenhuma extensão extra. A biblioteca oficial fala por **REST** por
+  padrão; `grpc` é opcional e só vale onde ela existe (servidor próprio, com root).
 
 ## 2. Rodar local (SQLite / offline)
 
@@ -385,6 +387,8 @@ a dimensão ideal.
   notas de atendimento, edição do cadastro, atribuição de campanha e **linha do tempo**.
 - **Exportação CSV** respeitando os filtros ativos (com trilha de auditoria).
 - **Campanhas**: cadastro manual + criação automática por UTM, com métricas por campanha.
+- **Google Ads**: a métrica real das campanhas do anunciante dentro do painel, com OAuth por
+  usuário, sincronização em fila e prévia do anúncio responsivo — seção *Google Ads* abaixo.
 - **Auditoria**: trilha de ações administrativas (login, mudança de funil, exportação,
   configuração, cadastros de produto/página/pedido…), apenas para admin.
 - **Usuários & permissões**: perfis `admin`, `vendedor`, `visualizador` com middleware
@@ -441,6 +445,45 @@ a dimensão ideal.
 - **Trava de tamanho**: toda coluna recebe `Str::limit` no serviço, porque o SQLite ignora
   comprimento de `varchar` e o MySQL devolve *Data too long* no tráfego real.
 - Testes: `tests/Feature/AtribuicaoDeOrigemTest.php` (20).
+
+### Google Ads (`/admin/google-ads`) — a conta do anunciante dentro do painel
+- **Cada um conecta a própria conta** pelo OAuth do Google (`/auth/google-ads/redirect` →
+  `/auth/google-ads/callback`), com o driver `google-ads` do Socialite cadastrado no
+  `GoogleAdsServiceProvider` e `access_type=offline` + `prompt=consent` no pedido — sem esses
+  dois o Google não devolve token de renovação e a conta conectaria uma única vez. Reconectar
+  **atualiza o registro existente** em vez de duplicar a conta.
+- **`google_ads_accounts`** guarda `customer_id`, nome descritivo, moeda, status
+  (`ativo`/`desconectado`) e o token de renovação **cifrado no banco** (`cast encrypted`).
+  **`google_ads_api_logs`** registra cada chamada (endpoint, requisição, resposta, erro).
+- **Biblioteca oficial, sem wrapper da API descontinuada**: `googleads/google-ads-php` (V26),
+  encapsulada em `App\Services\GoogleAds\GoogleAdsService` — `clientFor()`, GAQL de campanhas
+  com métricas, `cost_micros`/`average_cpc` divididos por milhão, enums traduzidos
+  (`ENABLED` → Ativa, `PAUSED` → Pausada) e todo rótulo de métrica em português. O transporte é
+  **REST por padrão** porque a hospedagem compartilhada não tem a extensão `grpc` do PHP;
+  `GOOGLE_ADS_TRANSPORT=grpc` liga o outro sem mudar uma linha.
+- **O painel lê do cache e nunca chama a API em requisição**: `GoogleAdsCache`
+  (`google_ads:metrics:{user}:{customer}:{dias}`, 30 min) é a única fonte da tela; sem janela, o
+  componente enfileira `SyncGoogleAdsMetrics` e mostra "Carregando…" com `wire:poll` de 3 s.
+  O job tem `tries=3` e `backoff=[30,120,300]`, e `google-ads:sync` roda a cada 15 minutos no
+  agendador para todas as contas ativas.
+- **Credencial recusada não se insiste**: `REFRESH_TOKEN`/`UNAUTHENTICATED` desconectam a conta,
+  gravam o motivo na tela e disparam `ContaGoogleAdsDesconectada` para o dono — a métrica já
+  sincronizada continua visível.
+- **Escrita com a prova antes** (fase 2): pausar e ativar mandam a mesma operação duas vezes —
+  `validarOperacao` com `validate_only => true` e só então `mutateCampaigns` com
+  `CampaignOperation` + `FieldMask`. O `campaign_id` é conferido contra a lista sincronizada
+  daquela conta, e a escrita é formulário POST — assim ela herda a confirmação em SweetAlert2 e
+  o retorno em toastr, como todo ato destrutivo do painel.
+- **Prévia do anúncio responsivo** (`RsaPreview`, `/admin/google-ads/criativo`): até 15 títulos
+  de 30 caracteres e 4 descrições de 90, contador por campo (verde/âmbar/vermelho), rota de
+  display travada **por segmento**, e o mock do resultado da busca em três combinações, com
+  alternância desktop/celular. Não há API oficial de prévia — o mock em HTML/CSS é o padrão do
+  mercado.
+- **Visibilidade**: `GoogleAdsAccount::visiveisPara()` deixa o administrador ver as conexões da
+  equipe (a agência opera as contas dos clientes); qualquer outro papel vê só as próprias. As
+  rotas de escrita estão atrás de `auth` + `role:admin,vendedor`, e o token de desenvolvedor
+  nunca aparece em view, JSON ou log.
+- Testes: `tests/Feature/ConexaoGoogleAdsTest.php` (12).
 
 ### Portal do cliente (`/portal`) — a casa do cliente sem pedir nada à equipe
 - **É o mesmo painel, com a porta do cliente**: a barra lateral, o tema claro/escuro, os
@@ -505,18 +548,25 @@ app/
   Models/  Lead, Campaign, LeadStatusHistory, Activity, Setting, User,
            Customer, Interaction, Product, Category, Supplier,
            StockMovement, Order, OrderItem, OrderHistory, Page, Testimonial, Faq,
-           Visit, VisitEvent, Ticket, TicketMessage, Contract
+           Visit, VisitEvent, Ticket, TicketMessage, Contract,
+           GoogleAdsAccount, GoogleAdsApiLog
   Mail/    PedidoRecebido, PedidoNovoEquipe, ChamadoRecebido, ChamadoEquipe,
-           ChamadoResposta, RedefinirSenhaPortal
+           ChamadoResposta, RedefinirSenhaPortal, ContaGoogleAdsDesconectada
+  Livewire/  GoogleAdsDashboard, RsaPreview
+  Jobs/    SyncGoogleAdsMetrics.php       # o único caminho que fala com a API
   Services/LeadService.php               # atribuição + criação + funil
   Services/Atribuidor.php                # decide a origem (canal/rede/pago/motivo)
   Services/Rastreio.php                  # grava visita, evento e a atribuição do lead
+  Services/GoogleAds/GoogleAdsService.php # cliente, GAQL, micros→reais, enums traduzidos
+  Support/GoogleAdsCache.php             # a janela de 30 min que a tela lê
   Console/Commands/PodarRastreio.php     # rastreio:podar, a retenção do registro
+  Console/Commands/SyncGoogleAdsCommand.php # google-ads:sync, a cada 15 min
   Support/Carrinho.php                   # sacola em sessão, sobre o catálogo em cache
   Support/Envio.php                      # regras e gravação dos campos de arrastar-e-soltar
   Support/PortalDoCliente.php            # auto-cadastro: acha a ficha pelo documento/e-mail
   Support/helpers.php                    # brl(), loja_ativa(), slugify_pt()
 config/golden.php                        # conteúdo do site + contatos reais
+config/google_ads.php                    # credenciais, escopos, travas do RSA, janelas de métrica
 config/envios.php                        # formatos, limite, pasta e dimensão de cada campo de envio
 database/migrations/                     # leads/campanhas + CRM + ERP + CMS + portal (chamados, contratos)
 database/seeders/                        # Database, Catalog, Cms, Crm, Orders

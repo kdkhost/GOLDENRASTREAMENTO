@@ -9,6 +9,9 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\FunnelController as AdminFunnelController;
+use App\Http\Controllers\Admin\GoogleAdsAuthController;
+use App\Http\Controllers\Admin\GoogleAdsCampanhaController;
+use App\Http\Controllers\Admin\GoogleAdsController;
 use App\Http\Controllers\Admin\LeadController as AdminLeadController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
@@ -165,6 +168,20 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 /*
 |--------------------------------------------------------------------------
+| Conectar a conta Google Ads de quem está no painel
+|--------------------------------------------------------------------------
+|
+| Fica fora do prefixo /admin porque o Google devolve no caminho exato que foi
+| cadastrado na tela de OAuth (`${APP_URL}/auth/google-ads/callback`) — mudar o
+| endereço é refazer o cadastro no Google. Quem faz o trabalho é o controller.
+*/
+Route::prefix('auth/google-ads')->name('google-ads.')->middleware(['auth'])->group(function () {
+    Route::get('/redirect', [GoogleAdsAuthController::class, 'redirect'])->name('redirect');
+    Route::get('/callback', [GoogleAdsAuthController::class, 'callback'])->name('callback');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Painel Administrativo
 |--------------------------------------------------------------------------
 */
@@ -203,6 +220,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/{campaign}', [CampaignController::class, 'update'])->name('update');
         Route::post('/{campaign}/toggle', [CampaignController::class, 'toggle'])->name('toggle');
         Route::delete('/{campaign}', [CampaignController::class, 'destroy'])->name('destroy')->middleware('role:admin');
+    });
+
+    // Google Ads: a conta que cada um conecta, a métrica dela e o criativo do anúncio.
+    // A leitura é sempre da cache preenchida pela fila; aqui só a escrita passa direto ao
+    // Google, e mesmo assim depois de uma operação simulada (`validate_only`).
+    Route::prefix('google-ads')->name('google-ads.')->middleware('role:admin,vendedor')->group(function () {
+        Route::get('/', [GoogleAdsController::class, 'index'])->name('index');
+        Route::get('/criativo', [GoogleAdsController::class, 'criativo'])->name('criativo');
+        Route::post('/campanhas/{campanha}/status', [GoogleAdsCampanhaController::class, 'mudarStatus'])
+            ->whereNumber('campanha')->name('campanhas.status');
     });
 
     // Páginas de funil: a campanha de divulgação que só quem tem o link vê. Montagem por
