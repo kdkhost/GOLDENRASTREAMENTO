@@ -65,7 +65,7 @@
                         <x-admin.status :rotulo="'conta #'.$cliente->whmcs_id" tom="green" />
                         {{-- Onde está o dado do financeiro: aqui só o número que aponta para lá.
                              Serviços e faturas não são copiados para esta base — são lidos na hora,
-                             a cada visita, e obeyecem aos interruptores de veiculação. --}}
+                             a cada visita, e obedecem aos interruptores de veiculação. --}}
                         <div class="form-hint fw-normal">O único registro do financeiro guardado nesta ficha. Serviços e faturas são lidos na hora, a cada visita — nada fica sincronizado aqui.</div>
                     @else
                         <x-admin.status rotulo="não localizado" tom="neutral" />
@@ -78,12 +78,26 @@
                              botão é o caminho de volta quando o número envelheceu — conta recriada no
                              financeiro, ou e-mail corrigido numa das pontas. --}}
                         <form method="POST" class="mt-2 mb-0" action="{{ route('admin.clientes.revincular', $cliente) }}"
-                              data-confirmar="O painel vai perguntar ao financeiro qual conta pertence a {{ $emailDeAcesso }}.{{ $cliente->whmcs_id ? ' Se ele não confirmar nenhuma, o vínculo atual (#'.$cliente->whmcs_id.') é desfeito.' : '' }}">
+                              data-confirmar="O painel vai perguntar ao financeiro qual conta pertence a {{ $emailDeAcesso }}.{{ $cliente->whmcs_id ? ' Se ele não confirmar nenhuma, a tela mostra a pendência e o vínculo atual (#'.$cliente->whmcs_id.') só se desfaz depois que você confirmar.' : '' }}">
                             @csrf
                             <button class="btn btn-sm btn-outline-secondary text-nowrap" title="Refaz a busca da conta pelo e-mail de acesso desta ficha">
                                 <i class="fas fa-link me-1" aria-hidden="true"></i> Revincular ao financeiro
                             </button>
                         </form>
+                        @php $pendente = session('revinculo_pendente'); @endphp
+                        @if(is_array($pendente) && (int) $pendente['cliente'] === $cliente->id)
+                            {{-- O segundo clique é a confirmação. Enquanto ele não vem, o número
+                                 continua gravado e as telas de financeiro seguem lendo a conta que
+                                 estão lendo hoje — conferir nunca é motivo para apagar. --}}
+                            <form method="POST" class="mt-2 mb-0" action="{{ route('admin.clientes.revincular', $cliente) }}"
+                                  data-confirmar="O financeiro não encontra conta para {{ $pendente['email'] }}. Desfazer deixa esta ficha sem acesso às telas de financeiro até o e-mail bater de novo.">
+                                @csrf
+                                <input type="hidden" name="desfazer" value="1">
+                                <button class="btn btn-sm btn-outline-danger text-nowrap">
+                                    <i class="fas fa-link-slash me-1" aria-hidden="true"></i> Desfazer o vínculo com a conta #{{ $pendente['antes'] }}
+                                </button>
+                            </form>
+                        @endif
                     @endif
                 </dd>
                 <dt>Verificação no chat</dt>

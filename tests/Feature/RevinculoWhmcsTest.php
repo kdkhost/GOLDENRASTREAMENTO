@@ -146,7 +146,7 @@ class RevinculoWhmcsTest extends TestCase
         $this->assertSame(88, $dona->fresh()->whmcs_id);
     }
 
-    public function test_o_financeiro_nao_confirma_o_email_e_o_vinculo_velho_e_desfeito(): void
+    public function test_o_financeiro_nao_confirma_e_o_vinculo_fica_de_pe_ate_a_confirmacao(): void
     {
         $this->ligar();
         $cliente = $this->conta(['whmcs_id' => 11]);
@@ -155,10 +155,96 @@ class RevinculoWhmcsTest extends TestCase
         $this->actingAs($this->admin, 'web')
             ->post(route('admin.clientes.revincular', $cliente))
             ->assertRedirect()
-            ->assertSessionHas('warning', $this->contem('foi desfeito'));
+            ->assertSessionHas('warning', $this->contem('continua de pé'));
+
+        $this->assertSame(11, $cliente->fresh()->whmcs_id);
+        $this->assertFalse(Activity::where('action', 'cliente_desvinculado')->exists());
+        $this->assertSame(11, session('revinculo_pendente')['antes']);
+    }
+
+    public function test_a_confirmacao_na_tela_desfaz_o_que_a_verificacao_apontou(): void
+    {
+        $this->ligar();
+        $cliente = $this->conta(['whmcs_id' => 11]);
+        $this->fingirWhmcs($this->semConta());
+
+        $this->actingAs($this->admin, 'web')->post(route('admin.clientes.revincular', $cliente));
+
+        $this->actingAs($this->admin, 'web')
+            ->post(route('admin.clientes.revincular', $cliente), ['desfazer' => '1'])
+            ->assertRedirect()
+            ->assertSessionHas('success', $this->contem('foi desfeito'));
 
         $this->assertNull($cliente->fresh()->whmcs_id);
         $this->assertTrue(Activity::where('action', 'cliente_desvinculado')->exists());
+        $this->assertNull(session('revinculo_pendente'));
+    }
+
+    public function test_desfazer_sem_verificacao_previa_nao_toca_na_ficha(): void
+    {
+        $this->ligar();
+        $cliente = $this->conta(['whmcs_id' => 11]);
+
+        $this->actingAs($this->admin, 'web')
+            ->post(route('admin.clientes.revincular', $cliente), ['desfazer' => '1'])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertSame(11, $cliente->fresh()->whmcs_id);
+        $this->assertFalse(Activity::where('action', 'cliente_desvinculado')->exists());
+        Http::assertNothingSent();
+    }
+
+    public function test_a_pendencia_de_uma_ficha_nao_desfaz_o_vinculo_de_outra(): void
+    {
+        $this->ligar();
+        $cliente = $this->conta(['whmcs_id' => 11]);
+        $outra = $this->conta([
+            'nome' => 'Dona da Conta',
+            'email' => 'dona@exemplo.com.br',
+            'email_portal' => 'dona@exemplo.com.br',
+            'whmcs_id' => 44,
+        ]);
+        $this->fingirWhmcs($this->semConta());
+
+        $this->actingAs($this->admin, 'web')->post(route('admin.clientes.revincular', $cliente));
+
+        $this->actingAs($this->admin, 'web')
+            ->post(route('admin.clientes.revincular', $outra), ['desfazer' => '1'])
+            ->assertSessionHas('error');
+
+        $this->assertSame(11, $cliente->fresh()->whmcs_id);
+        $this->assertSame(44, $outra->fresh()->whmcs_id);
+    }
+
+    public function test_refazer_a_verificacao_deixa_a_pendencia_anterior_sem_valor(): void
+    {
+        $this->ligar();
+        $cliente = $this->conta(['whmcs_id' => 11]);
+
+        // Uma fake só, obedecendo a uma variável lida por referência: `Http::fake()` acumula
+        // callbacks (a primeira que casar responde), e registrar a segunda resposta deixaria a
+        // primeira valendo para sempre — o teste daria como "não confirmou" justamente o que
+        // passou a confirmar.
+        $confirmada = null;
+        Http::fake(function () use (&$confirmada) {
+            return Http::response(['result' => 'SUCCESS', 'clientid' => $confirmada ?? '']);
+        });
+
+        $this->actingAs($this->admin, 'web')->post(route('admin.clientes.revincular', $cliente));
+        $this->assertSame(11, session('revinculo_pendente')['antes']);
+
+        $confirmada = 88;
+        $this->actingAs($this->admin, 'web')->post(route('admin.clientes.revincular', $cliente));
+
+        $this->assertSame(88, $cliente->fresh()->whmcs_id);
+
+        // A pendência foi esquecida pela verificação nova; desfazer agora não tem o que apontar.
+        $this->actingAs($this->admin, 'web')
+            ->post(route('admin.clientes.revincular', $cliente), ['desfazer' => '1'])
+            ->assertSessionHas('error');
+
+        $this->assertSame(88, $cliente->fresh()->whmcs_id);
     }
 
     public function test_sem_vinculo_velho_a_ficha_continua_como_estava(): void
@@ -242,6 +328,18 @@ class RevinculoWhmcsTest extends TestCase
             ->assertOk()
             ->assertSee('Revincular ao financeiro')
             ->assertSee('maria@exemplo.com.br');
+    }
+
+    public function test_a_pendencia_aparece_na_ficha_como_botao_de_desfazer(): void
+    {
+        $this->ligar();
+        $cliente = $this->conta(['whmcs_id' => 11]);
+
+        $this->actingAs($this->admin, 'web')
+            ->withSession(['revinculo_pendente' => ['cliente' => $cliente->id, 'antes' => 11, 'email' => 'maria@exemplo.com.br']])
+            ->get(route('admin.clientes.show', $cliente))
+            ->assertOk()
+            ->assertSee('Desfazer o vínculo com a conta #11');
     }
 
     public function test_o_vendedor_refaz_o_vinculo_e_quem_so_le_enxerga_proibido(): void

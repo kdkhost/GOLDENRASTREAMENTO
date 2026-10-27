@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.45.1
+- **Versão:** 2.46.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -934,12 +934,20 @@ corrigido numa das pontas, e a ficha fica apontando para um número que já não
 daquela pessoa. O botão **Revincular ao financeiro**, na ficha do cliente
 (*CRM → Clientes*), refaz a descoberta pelo e-mail de acesso de agora e obedece a
 uma regra só — escreve na ficha apenas o que o financeiro confirmou: o id que ele
-devolve é gravado; se ele não confirma conta nenhuma para aquele e-mail, o vínculo
-velho é desfeito (ficha ligada a uma conta que o próprio e-mail não confirma é a
-porta de entrada da fatura alheia); e timeout, HTTP errado ou credencial recusada
-não mudam nada. O id já pertencer a outra ficha bloqueia a gravação — a coluna é
-única de propósito: uma conta no financeiro, uma ficha aqui. Podem apertar o botão
-administrador e vendedor.
+devolve é gravado; se ele **não** confirma conta nenhuma para aquele e-mail, nada é
+apagado no mesmo clique — a ficha ganha uma pendência, o vínculo velho continua de
+pé, e ele só se desfaz se você apertar o botão vermelho que aparece embaixo, com a
+sua confirmação; e timeout, HTTP errado ou credencial recusada não mudam nada. O id
+já pertencer a outra ficha bloqueia a gravação — a coluna é única de propósito: uma
+conta no financeiro, uma ficha aqui. Podem apertar o botão administrador e vendedor.
+
+O motivo de dois cliques é um só: a resposta "não achei conta para este e-mail"
+chega tanto de quem apagou a conta no WHMCS quanto de um e-mail digitado errado, e
+desfazer no clique que só foi **perguntar** apagaria o vínculo de quem quis conferir.
+Refazer a verificação derruba a pendência anterior — ela é a resposta de uma chamada
+velha. E o segundo clique tem dois guardas: a pendência precisa ser desta ficha e
+apontar para o número que ainda está gravado. Sem pendência, ou com pendência
+superada, nada se desfaz e a tela explica o caminho de volta.
 
 **As quatro respostas da tela** — e a diferença que importa:
 

@@ -3,6 +3,43 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.46.0] - 2026-10-27
+
+### Alterado
+- **O vínculo com o financeiro não se desfaz mais no clique que foi só perguntar.** O botão
+  **Revincular ao financeiro** fazia as duas coisas de uma vez: consultava o WHMCS e, se ele não
+  confirmasse conta nenhuma, apagava o número gravado na ficha. A intenção estava certa — ficha
+  ligada a uma conta que o próprio e-mail não confirma é a porta de entrada da fatura alheia — mas
+  a resposta *"não achei conta para este e-mail"* chega igual de quem apagou a conta e de quem
+  digitou o e-mail errado, e um clique de conferência não pode apagar nada. Agora a verificação
+  para na tela: o número velho continua de pé, e desfazer é decisão à parte.
+
+### Adicionado
+- **A pendência do desfazer.** Quando o financeiro não confirma conta para um e-mail que tinha
+  vínculo, `CustomerController::revincular` grava em sessão `revinculo_pendente`
+  (`cliente`, `antes`, `email`) e devolve o aviso *"o vínculo com a conta #X continua de pé: nada
+  foi desfeito sem a sua confirmação"*. Na ficha do cliente aparece então o botão
+  **Desfazer o vínculo com a conta #X**, com confirmação própria — é o segundo clique, com
+  `desfazer=1` na mesma rota, que chama `desfazerVinculo()` e escreve `whmcs_id = null`.
+- **Dois guardas no segundo clique**, porque entre uma chamada e outra a ficha pode ter mudado de
+  mãos: a pendência precisa ser *desta* ficha, e precisa apontar para o número que *ainda* está
+  gravado. Sem pendência, pendência de outra ficha ou número já trocado, nada se desfaz e a tela
+  diz o que refazer. Refazer a verificação também derruba a pendência anterior — ela é a resposta
+  de uma chamada superada.
+- **Seis travas novas em `RevinculoWhmcsTest`**: o vínculo fica de pé depois do "não confirmou", a
+  confirmação desfaz exatamente o que a verificação apontou, desfazer sem verificação prévia não
+  toca na ficha nem gasta chamada (`Http::assertNothingSent()`), a pendência de uma ficha não
+  desfaz o vínculo de outra, a pendência vira botão na tela, e a verificação nova deixa a pendência
+  velha sem valor.
+
+### Corrigido
+- **A bancada sabe dizer "não tem conta".** O WHMCS falso de `storage/app/demo-whmcs.php` devolvia
+  lista vazia para e-mail desconhecido, e o painel tem razão em tratar lista vazia como falha de
+  conversa — resultado é que o `sem_conta`, justamente o caminho que abre a pendência, nunca
+  chegava a ser exercitado na tela. Agora um e-mail que não está na bancada devolve o `SUCCESS`
+  com `clientid` vazio que o WHMCS real manda quando a credencial é boa e a conta não existe. O
+  parser da camada não foi tocado.
+
 ## [2.45.1] - 2026-10-27
 
 ### Corrigido

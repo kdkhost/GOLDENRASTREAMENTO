@@ -148,13 +148,19 @@ class CustomerController extends Controller
      * Este botão é o único caminho de volta que não passa pelo banco por fora.
      *
      * Os três desfechos abaixo obedecem a uma regra só: **só se escreve aqui o que o financeiro
-     * confirmou.** `ok` grava o id que ele devolveu; `sem_conta` desfaz o ponteiro velho, porque
-     * uma ficha ligada a uma conta que o próprio e-mail da pessoa não confirma é a porta de
-     * entrada da fatura alheia; e qualquer falha de conversa não muda nada — vínculo nenhum se
-     * desfaz porque o servidor ficou mudo por doze segundos.
+     * confirmou.** `ok` grava o id que ele devolveu; `sem_conta` abre uma pendência — o ponteiro
+     * velho continua de pé até a pessoa confirmar na tela, porque a resposta "não acho ficha para
+     * este e-mail" chega tanto de quem apagou a conta quanto de um e-mail digitado errado, e
+     * desfazer no mesmo clique do botão seria apagar o vínculo de quem só quis conferir; e
+     * qualquer falha de conversa não muda nada — vínculo nenhum se desfaz porque o servidor ficou
+     * mudo por doze segundos.
      */
-    public function revincular(Customer $cliente): RedirectResponse
+    public function revincular(Request $request, Customer $cliente): RedirectResponse
     {
+        if ($request->boolean('desfazer')) {
+            return $this->desfazerVinculo($cliente);
+        }
+
         $financeiro = app(Financeiro::class);
 
         if (! $financeiro->configurado()) {
@@ -170,6 +176,11 @@ class CustomerController extends Controller
         $sonda = $financeiro->sonda($email);
         $antes = $cliente->whmcs_id;
 
+        // A cada verificação refeita a pendência anterior perde o sentido: ela é a resposta de
+        // uma chamada antiga, e confirmar dois cliques depois um "não tem conta" que já foi
+        // superado por outro resultado desfaria o vínculo errado.
+        $request->session()->forget('revinculo_pendente');
+
         if ($sonda['estado'] === 'ok') {
             return $this->gravarVinculo($cliente, (int) $sonda['id'], $antes, $email);
         }
@@ -179,13 +190,46 @@ class CustomerController extends Controller
                 return back()->with('warning', $sonda['texto'].' Enquanto o e-mail for este, as telas de financeiro vão dizer que não há conta — e é o cadastro de uma das pontas que precisa ser conferido.');
             }
 
-            $cliente->forceFill(['whmcs_id' => null])->saveQuietly();
-            Activity::log('cliente_desvinculado', "Revinculou ao financeiro: o e-mail {$email} não tem conta lá, e o vínculo com a conta #{$antes} foi desfeito.", $cliente);
+            $request->session()->put('revinculo_pendente', [
+                'cliente' => $cliente->id,
+                'antes' => $antes,
+                'email' => $email,
+            ]);
 
-            return back()->with('warning', "O financeiro não confirma conta nenhuma para {$email}, e o vínculo com a conta #{$antes} foi desfeito. Se a pessoa tem conta lá, é o e-mail de uma das pontas que está outro — corrija e revincule de novo.");
+            return back()->with('warning', $sonda['titulo'].' O financeiro não confirma conta nenhuma para '.$email.', mas o vínculo com a conta #'.$antes.' continua de pé: nada foi desfeito sem a sua confirmação.');
         }
 
         return back()->with('error', $sonda['titulo'].' '.$sonda['texto'].' Nada foi alterado nesta ficha.');
+    }
+
+    /**
+     * Desfaz o ponteiro que a verificação de cima deixou pendente. Os dois guardas existem porque
+     * o botão que chega aqui é um segundo clique, e entre um e outro a ficha pode ter mudado de
+     * mãos: a pendência precisa ser desta ficha e apontar para o número que ainda está gravado.
+     * Sem pendência, ou com pendência velha, nada se desfaz — a tela refaz o caminho de volta.
+     */
+    private function desfazerVinculo(Customer $cliente): RedirectResponse
+    {
+        $pendente = session('revinculo_pendente');
+
+        if (! is_array($pendente) || (int) $pendente['cliente'] !== $cliente->id) {
+            return back()->with('error', 'Não há o que desfazer nesta ficha: a verificação que abriu esta pendência já passou. Aperte "Revincular ao financeiro" de novo para perguntar ao financeiro.');
+        }
+
+        if ((int) $pendente['antes'] !== (int) $cliente->whmcs_id) {
+            session()->forget('revinculo_pendente');
+
+            return back()->with('error', 'A pendência apontava para a conta #'.$pendente['antes'].' e esta ficha já aponta para '.($cliente->whmcs_id ? '#'.$cliente->whmcs_id : 'nenhuma conta').'. Refaça a verificação antes de desfazer.');
+        }
+
+        $antes = (int) $cliente->whmcs_id;
+        $email = (string) $pendente['email'];
+
+        $cliente->forceFill(['whmcs_id' => null])->saveQuietly();
+        session()->forget('revinculo_pendente');
+        Activity::log('cliente_desvinculado', "Desfez, depois de conferir, o vínculo com a conta #{$antes} — o e-mail {$email} não tem conta no financeiro.", $cliente);
+
+        return back()->with('success', 'O vínculo com a conta #'.$antes.' foi desfeito, como você confirmou. As telas de financeiro ficam mudas até o e-mail de uma das pontas bater — corrija e revincule.');
     }
 
     /**
