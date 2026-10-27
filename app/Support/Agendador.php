@@ -8,6 +8,7 @@ use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Stringable;
 
 /**
  * Quem traduz a tabela `cron_tarefas` em agendamento de verdade.
@@ -81,18 +82,23 @@ class Agendador
             $execucao = $tarefa->abrirExecucao(CronExecucao::POR_AGENDAMENTO);
         });
 
-        $evento->onSuccess(function ($saida) use ($tarefa, &$execucao): void {
+        // O parâmetro se chama `output` porque é o nome que o `Event` da framework procura para
+        // entregar a saída capturada (`closureParameterTypes()['output'] === Stringable::class`).
+        // Com outro nome — `$saida`, aqui — o container tenta resolver o parâmetro sozinho, não
+        // acha, e cada tarefa termina em `Unable to resolve dependency`: o histórico fica aberto
+        // e o aviso de falha nunca dispara. É contrato da framework, não escolha de estilo.
+        $evento->onSuccess(function (Stringable $output) use ($tarefa, &$execucao): void {
             if ($execucao !== null) {
-                $tarefa->fecharExecucao($execucao, true, (string) $saida);
+                $tarefa->fecharExecucao($execucao, true, (string) $output);
             }
         });
 
-        $evento->onFailure(function ($saida) use ($tarefa, &$execucao): void {
+        $evento->onFailure(function (Stringable $output) use ($tarefa, &$execucao): void {
             if ($execucao !== null) {
-                $tarefa->fecharExecucao($execucao, false, (string) $saida, (string) $saida);
+                $tarefa->fecharExecucao($execucao, false, (string) $output, (string) $output);
             }
 
-            static::avisarFalha($tarefa, (string) $saida);
+            static::avisarFalha($tarefa, (string) $output);
         });
     }
 

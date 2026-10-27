@@ -3,6 +3,40 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.42.2] - 2026-10-27
+
+### Corrigido
+- **O agendador voltou a fechar o histórico e a avisar quando um cron quebra.** Desde a 2.33.0,
+  cada tarefa registrada na tela *Sistema → Crons* terminava em
+  `Unable to resolve dependency [Parameter #0 [ <required> $saida ]] in class App\Support\Agendador`
+  — 901 linhas assim no log de produção em um dia. O motivo é contrato da framework: o `Event`
+  entrega a saída capturada ao callback de `onSuccess`/`onFailure` **pelo nome do parâmetro**
+  (`closureParameterTypes()['output'] === Stringable::class`); com o parâmetro chamado `$saida`,
+  o container tenta resolvê-lo sozinho, não acha, e lança antes de qualquer linha do nosso código
+  rodar. O comando em si executava — o que se perdia era o desfecho: a execução ficava aberta em
+  `executando`, a ficha da tarefa nunca mostrava a falha, o sino de `cron_falhou` nunca tocava e a
+  tela de histórico continuava dizendo que estava tudo bem. Os dois callbacks agora pedem
+  `Stringable $output`, e a volta inteira está travada por dois testes novos em
+  `tests/Feature/CentralDeCronsTest.php` (17): um roda o evento de verdade pelo `Event::run()` e
+  cobra a linha fechada com `Application cache cleared` dentro da saída, outro aponta a tarefa
+  para um comando inexistente e cobra `falha`, `fim` preenchido e a notificação
+  `cron_falhou:{id}:{data}`. Trocar o nome de volta por `$saida` faz os dois caírem com a mesma
+  exceção de produção — é isso que impede a regressão silenciosa.
+
+- **A hospedagem voltou a servir o site em PHP 8.3, e a documentação agora diz como sem root.**
+  O domínio amanheceu em branco com `Your Composer dependencies require a PHP version ">= 8.3.0".
+  You are running 5.6.40.` O `AddType application/x-httpd-ea-php83 .php` do `.htaccess` estava lá,
+  mas o cPanel escreve um bloco próprio **depois** dele (`# php -- BEGIN cPanel-generated handler`),
+  e `AddHandler` de versão antiga no fim do arquivo vence `AddType` no meio. A correção não é
+  editar o bloco — o cPanel reescreve na próxima salva — e sim mandar o cPanel reescrevê-lo certo,
+  pela API da própria conta: `uapi LangPHP php_set_vhost_versions vhost=dominio version=ea-php83`
+  (o argumento é `vhost`, não `domain`, e os nomes de função são `php_get_vhost_versions` /
+  `php_set_vhost_versions`, não o `get_version`/`set_version` de versões antigas do painel). A
+  seção 2 de `docs/INSTALACAO.md` ganhou o procedimento, o motivo de o `php` da linha de comando
+  ser um **terceiro** PHP que nada tem a ver com o do navegador, e a regra da casa que já protege
+  isso: cron e deploy chamam `/opt/cpanel/ea-php83/root/usr/bin/php` pelo caminho cheio, nunca
+  `php` sozinho.
+
 ## [2.42.0] - 2026-10-26
 
 ### Adicionado

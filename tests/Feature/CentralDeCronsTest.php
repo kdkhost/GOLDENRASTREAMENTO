@@ -2,13 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Models\Activity;
 use App\Models\CronExecucao;
 use App\Models\CronTarefa;
+use App\Models\Notificacao;
 use App\Models\User;
 use App\Support\Agendador;
+use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -261,12 +264,12 @@ class CentralDeCronsTest extends TestCase
         $tarefa->forceFill(['rodou_em' => now()->subDays(4)])->save();
 
         // A batida-cardíaco precisa estar viva: sem ela o comando não acusa tarefa nenhuma.
-        \Illuminate\Support\Facades\Cache::put((string) config('cron.batida.chave_no_cache'), now()->timestamp);
+        Cache::put((string) config('cron.batida.chave_no_cache'), now()->timestamp);
 
         Artisan::call('notificacoes:apodrecer');
         Artisan::call('notificacoes:apodrecer');
 
-        $this->assertSame(1, \App\Models\Notificacao::where('chave', 'cron_pausado:'.$tarefa->id.':'.now()->toDateString())
+        $this->assertSame(1, Notificacao::where('chave', 'cron_pausado:'.$tarefa->id.':'.now()->toDateString())
             ->where('user_id', $this->admin->id)
             ->count());
     }
@@ -286,5 +289,66 @@ class CentralDeCronsTest extends TestCase
         $this->assertStringContainsString('ea-php83', $linha);
         $this->assertStringContainsString('2&gt;&amp;1', $linha);
         $this->assertStringContainsString('value="* * * * * cd ~/public_html', $linha);
+    }
+
+    /**
+     * A volta inteira do agendador: a linha do banco virou evento, o evento rodou, e o
+     * histórico fechou com a saída do comando dentro.
+     *
+     * É este teste que falta quando a framework muda o contrato do callback. Ela entrega a saída
+     * num parâmetro chamado `output` typeado `Stringable`; com outro nome o container tenta
+     * resolver sozinho, lança `Unable to resolve dependency` e a execução nasce aberta e morre
+     * aberta — sem linha vermelha na tela e sem aviso no sino.
+     */
+    public function test_o_agendador_fecha_o_historico_com_a_saida_do_comando(): void
+    {
+        $tarefa = CronTarefa::create([
+            'nome' => 'Limpar o cache pela agenda',
+            'comando' => 'cache:clear',
+            'agenda' => 'everyMinute',
+            'ativa' => true,
+        ]);
+
+        $this->eventoDaAgenda($tarefa)->run(app());
+
+        $execucao = $tarefa->execucoes()->firstOrFail();
+
+        $this->assertSame(CronExecucao::POR_AGENDAMENTO, $execucao->acionada_por);
+        $this->assertSame(CronTarefa::SUCESSO, $execucao->status);
+        $this->assertNotNull($execucao->fim);
+        $this->assertStringContainsString('Application cache cleared', (string) $execucao->saida);
+        $this->assertSame(CronTarefa::SUCESSO, $tarefa->refresh()->status);
+    }
+
+    public function test_a_falha_do_comando_fecha_o_historico_e_avisa_a_equipe(): void
+    {
+        $tarefa = CronTarefa::create([
+            'nome' => 'Tarefa que não existe',
+            'comando' => 'golden:nao-existe-no-teste',
+            'agenda' => 'everyMinute',
+            'ativa' => true,
+        ]);
+
+        $this->eventoDaAgenda($tarefa)->run(app());
+
+        $execucao = $tarefa->execucoes()->firstOrFail();
+
+        $this->assertSame(CronTarefa::FALHA, $execucao->status);
+        $this->assertNotNull($execucao->fim);
+        $this->assertNotEmpty((string) $execucao->erro);
+        $this->assertSame(CronTarefa::FALHA, $tarefa->refresh()->status);
+        $this->assertDatabaseHas('notificacoes', [
+            'chave' => 'cron_falhou:'.$tarefa->id.':'.now()->toDateString(),
+        ]);
+    }
+
+    /** O evento que o `Agendador` montou para esta linha, no schedule de verdade. */
+    private function eventoDaAgenda(CronTarefa $tarefa): Event
+    {
+        $agenda = app(Schedule::class);
+        Agendador::registrar($agenda);
+
+        return collect($agenda->events())
+            ->firstOrFail(fn (Event $evento): bool => $evento->description === $tarefa->nome);
     }
 }

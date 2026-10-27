@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.42.1
+- **Versão:** 2.42.2
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -93,6 +93,30 @@ site.
   arquivo** em seguida. Se aparecer `apachectl/lsapi` diferente ou a versão
   antiga, o handler escolhido não existe no servidor — liste os disponíveis com
   `ls -d /opt/cpanel/ea-php*`.
+
+  **Quando o `AddType` deixa de valer.** O cPanel escreve um bloco próprio no fim
+  do `.htaccess`, entre `# php -- BEGIN cPanel-generated handler` e `END`, e ele
+  vem **depois** da nossa linha — logo, manda. Se alguém salvar o domínio no
+  *MultiPHP Manager* com uma versão antiga, o site cai inteiro com
+  `You are running 5.6.40` mesmo com o `AddType ... ea-php83` no arquivo. Não é
+  para editar o bloco à mão (o cPanel reescreve): é para dizer ao cPanel, pela
+  própria API dele, qual versão o domínio usa. Pela SSH da conta, sem root:
+
+  ```bash
+  uapi LangPHP php_get_vhost_versions                       # o que está valendo
+  uapi LangPHP php_set_vhost_versions vhost=seudominio.com.br version=ea-php83
+  ```
+
+  O comando regrava o bloco gerado com o handler certo e a volta ao ar é imediata.
+  Repare que o argumento é `vhost`, não `domain`, e que ele não aceita o nome da
+  função no estilo antigo (`get_version`, `set_version`): o que existe neste
+  cPanel está em `grep -n "^sub php_" /usr/local/cpanel/Cpanel/API/LangPHP.pm`.
+
+  O `php` da **linha de comando** é um terceiro PHP, e a API acima não o toca:
+  num servidor assim, `/usr/local/bin/php` pode ser 5.6 enquanto o site roda 8.3.
+  É por isso que toda cron e todo deploy deste projeto chamam o interpretador
+  pelo caminho cheio (`/opt/cpanel/ea-php83/root/usr/bin/php`, ou o atalho
+  `/usr/local/bin/ea-php83`) e nunca por `php` sozinho.
 
 - **Extensões que costumam faltar no PHP da web:** `fileinfo` (upload de
   imagem, vídeo e documento) e `intl`. No seletor do CloudLinux elas se acendem

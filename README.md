@@ -522,7 +522,13 @@ a dimensão ideal.
   em cache (`golden.cron_batida`, tolerância de 120 s) — "sem batida há duas horas" é a crontab
   arrancada, diagnóstico diferente de "a tarefa falhou". `notificacoes:apodrecer` ainda avisa, uma
   vez por dia, a tarefa ativa que passou da própria tolerância.
-- Testes: `tests/Feature/CentralDeCronsTest.php` (15).
+- **O callback de desfecho se chama `output`, e não é preciosismo**: a framework entrega a saída
+  capturada ao `onSuccess`/`onFailure` pelo **nome** do parâmetro (`Stringable $output`). Com outro
+  nome o container tenta resolver sozinho, lança `Unable to resolve dependency`, e o comando até
+  roda — o que morre é o desfecho: a execução fica em `executando` para sempre e o sino de
+  `cron_falhou` nunca toca. Por isso os testes rodam o `Event::run()` de verdade, e não só a
+  montagem da agenda.
+- Testes: `tests/Feature/CentralDeCronsTest.php` (17).
 
 ### Central de notificações (`/admin/notificacoes`) — o sino, a página e a ficha
 - **Uma linha por destinatário**: cada pessoa tem as suas notificações e o próprio `lida_em`. Abrir
