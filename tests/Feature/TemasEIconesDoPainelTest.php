@@ -129,6 +129,50 @@ class TemasEIconesDoPainelTest extends TestCase
         }
     }
 
+    /**
+     * A lista suspensa do <select> é desenhada pelo sistema, não pela página: sem esquema de
+     * cor declarado e sem fundo e texto na própria option, o Windows claro abre a lista com
+     * fundo branco herdando o texto claro do painel escuro — a lista existe e ninguém lê.
+     */
+    public function test_a_lista_do_select_tem_fundo_e_texto_declarados_nos_dois_temas(): void
+    {
+        $tema = $this->ler('public/css/golden-theme.css');
+        $inicio = (int) strpos($tema, '[data-bs-theme="dark"]');
+        $claro = substr($tema, 0, $inicio);
+        $escuro = substr($tema, $inicio);
+
+        $this->assertMatchesRegularExpression('/(^|[\s;{])color-scheme:light;/', $claro,
+            'O tema claro não declara o esquema nativo; o pop-up do select fica nas cores do sistema.');
+        $this->assertMatchesRegularExpression('/(^|[\s;{])color-scheme:dark;/', $escuro,
+            'O tema escuro não declara o esquema nativo.');
+
+        foreach (['select-surface', 'select-text', 'select-marcado'] as $token) {
+            $this->assertMatchesRegularExpression("/--{$token}:\s*#[0-9a-fA-F]{6};/", $claro,
+                "O token --{$token} falta no tema claro, ou não é uma cor opaca.");
+            $this->assertMatchesRegularExpression("/--{$token}:\s*#[0-9a-fA-F]{6};/", $escuro,
+                "O token --{$token} não tem par opaco no tema escuro.");
+        }
+
+        $this->assertMatchesRegularExpression(
+            '/option[^{]*\{[^}]*(?:background|background-color):var\(--select-surface\)[^}]*color:var\(--select-text\)/',
+            $tema,
+            'A option não herda o par declarado da paleta; a lista volta a abrir invisível.');
+        $this->assertStringContainsString('optgroup{font-weight:600}', $tema,
+            'O rótulo de grupo do select precisa das mesmas cores da lista.');
+    }
+
+    public function test_nenhuma_outra_folha_escreve_cor_de_option(): void
+    {
+        foreach (glob(base_path('public/css/*.css')) ?: [] as $caminho) {
+            if (basename($caminho) === 'golden-theme.css') {
+                continue;
+            }
+
+            $this->assertDoesNotMatchRegularExpression('/\boption\b[^{]*\{/', (string) file_get_contents($caminho),
+                basename($caminho).' pinta a option por conta própria; a lista do select vive na paleta única.');
+        }
+    }
+
     /** @return list<string> */
     private function todos(string $texto, string $regex): array
     {

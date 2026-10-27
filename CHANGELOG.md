@@ -3,6 +3,21 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.47.2] - 2026-10-27
+
+### Corrigido
+- **A lista do select voltou a ser legível.** Em algumas máquinas, abrir um campo de escolha do
+  painel no tema escuro mostrava a lista **vazia**: as opções estavam lá, mas em texto claro sobre
+  o fundo branco que o próprio Windows pintou. O pop-up do `<select>` não é desenhado pela página —
+  é desenhado pelo sistema, que pega o fundo nas cores do sistema e só o texto vem do CSS. A paleta
+  única declara agora as duas cores da lista (`--select-surface`, `--select-text`, `--select-marcado`,
+  cada uma com par opaco no escuro) em `option` e `optgroup`, e cada tema declara o **esquema nativo**
+  (`color-scheme: light` / `dark`), que é o que faz navegador, barra de rolagem e calendário pintarem
+  o resto na mesma metade. Fundo opaco é obrigatório ali: transparência, nesse pop-up, é invisível.
+- **Duas travas novas** em `TemasEIconesDoPainelTest`: a lista do select tem fundo e texto declarados
+  nos dois temas (e os três tokens são cor sólida, não `rgba`), e nenhuma outra folha do projeto escreve
+  cor de `option` — a regra vive num lugar só, como todo o resto da paleta.
+
 ## [2.47.1] - 2026-10-27
 
 ### Adicionado

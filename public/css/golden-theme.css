@@ -2,6 +2,11 @@
    Toda cor do painel e do login vem daqui: nenhuma página ou script escreve hex próprio,
    assim os dois temas permanecem coerentes entre si. */
 :root{
+    /* o esquema nativo diz ao navegador com que cor ele pinta o que a página não pinta:
+       o pop-up de <select>, a barra de rolagem e os calendários. Sem esta linha, uma máquina
+       com o sistema no claro abre a lista em fundo branco herdando o texto claro do painel. */
+    color-scheme:light;
+
     /* identidade */
     --brand-gold:#e0a33e;
     --brand-gold-2:#c9862a;
@@ -39,6 +44,12 @@
     --t-red-bg:rgba(192,57,43,.12);     --t-red-fg:var(--brand-red);
     --t-neutral-bg:#f6f8fa;      --t-neutral-fg:#5b6672;
 
+    /* lista do <select>: a lista suspensa não é desenhada pela página, e sim pelo sistema,
+       então precisa de fundo e texto próprios e opacos — transparência aí é o que some. */
+    --select-surface:#ffffff;
+    --select-text:#12161a;
+    --select-marcado:#f6e6c6;
+
     /* gráfico */
     --chart-line:var(--brand-gold-2);
     --chart-area:rgba(224,163,62,.12);
@@ -71,6 +82,8 @@
 }
 
 [data-bs-theme="dark"]{
+    color-scheme:dark;
+
     --t-gold-bg:rgba(224,163,62,.20);    --t-gold-fg:#eabf6b;
     --t-teal-bg:rgba(31,158,134,.20);    --t-teal-fg:#5ed3b9;
     --t-blue-bg:rgba(28,93,153,.26);     --t-blue-fg:#82b8f0;
@@ -79,6 +92,9 @@
     --t-amber-bg:rgba(168,99,15,.26);    --t-amber-fg:#f0bd6a;
     --t-red-bg:rgba(192,57,43,.24);      --t-red-fg:#f2908f;
     --t-neutral-bg:rgba(255,255,255,.07);--t-neutral-fg:#9aa7b4;
+    --select-surface:#171c21;
+    --select-text:#eef2f5;
+    --select-marcado:#3c3218;
     --chart-line:var(--brand-gold);
     --chart-area:rgba(224,163,62,.20);
     --chart-grid:rgba(255,255,255,.09);
@@ -101,6 +117,14 @@
     --anuncio-rotulo:#9aa7b4;
     --anuncio-linha:#2c343c;
 }
+
+/* A lista do <select> é montada pelo sistema, não pela página: ela pega o fundo das cores do
+   sistema e o texto do elemento, então no painel escuro sobra letra clara sobre lista branca e
+   a lista abre aparentemente vazia. As duas cores declaradas na option fecham esse buraco em
+   qualquer Windows; o fundo tem de ser opaco — transparência ali é invisível. */
+option,optgroup{background-color:var(--select-surface);color:var(--select-text)}
+option:checked{background-color:var(--select-marcado);color:var(--select-text)}
+optgroup{font-weight:600}
 
 /* utilitários de tom — chips, ícones e bolhas usam sempre o mesmo par */
 .tone-gold{background:var(--t-gold-bg);color:var(--t-gold-fg)}
