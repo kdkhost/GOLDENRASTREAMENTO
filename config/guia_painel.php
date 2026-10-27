@@ -420,10 +420,13 @@ return [
             'titulo' => 'Imagens e textos do site',
             'icone' => 'fa-image',
             'rota' => 'admin.conteudo.imagens.index',
-            'resumo' => 'As fotografias por página e a abertura (título, subtítulo, etiqueta) de cada uma.',
+            'resumo' => 'As fotografias do site divididas por área — identidade, Home e os cartazes das páginas — e a abertura de cada página.',
             'blocos' => [
                 ['tipo' => 'lista', 'itens' => [
-                    'Imagens do site guarda uma linha por arquivo, organizada pela página onde aparece; trocar a foto é subir a nova no lugar da antiga.',
+                    'A tela abre em três abas: **Identidade** (logo, favicon e o cartão que as redes mostram ao compartilhar um link), **Home** (as faixas da página inicial, na ordem em que aparecem) e **Cartazes das páginas** (o topo de cada página do site). Cada aba mostra quantas fotos guarda.',
+                    'No topo, os quatro contadores dizem o estado do site inteiro: quantas fotos existem, quantas vêm do painel, quantas ainda são a foto do pacote e quantas estão sem imagem no ar.',
+                    'Cada ficha traz a foto que está no ar na moldura do card — clique nela para ver em tamanho grande, com o link do arquivo e da página —, a medida em pixels, o selo do que está valendo e o link **Ver esta foto no site**. Na aba dos cartazes, o nome da página no alto do card diz onde cada foto entra.',
+                    'Trocar a foto é soltar a nova no lugar da antiga; **Voltar à foto original do pacote** apaga o envio e devolve o arquivo instalado, junto com o texto alternativo registrado.',
                     'Textos das páginas corrigem a abertura — rótulo, eyebrow, título e subtítulo — sem tocar no corpo.',
                     'O site só mostra o que existe aqui: nenhuma view escreve caminho de imagem por conta própria.',
                 ]],

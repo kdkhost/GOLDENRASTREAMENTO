@@ -3,6 +3,37 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.40.0] - 2026-10-26
+
+### Alterado
+- **`/admin/conteudo/imagens` virou uma galeria por área do site.** A tela tinha 20 cards
+  enfileirados na ordem do arquivo de configuração, sem hierarquia: quem abria não sabia por
+  onde começar nem qual foto pertencia a quê. Agora a tela tem as mesmas abas do resto do
+  painel — **Identidade** (3), **Home** (9) e **Cartazes das páginas** (8), cada uma com a
+  contagem no rótulo — e acima delas quatro contadores dizem o estado do site inteiro:
+  quantas fotografias existem, quantas vêm do painel, quantas ainda são a foto do pacote e
+  quantas estão sem imagem no ar (estas últimas com o selo âmbar de pendência).
+- **Cada ficha diz onde a foto entra.** Os oito cartazes têm o mesmo título — "Cartaz do topo
+  da página" —, então o nome da página (Soluções, Planos e kits, Dúvidas frequentes…) passou a
+  aparecer em cima do card; na Home, quem identifica a ficha é a seção. Um clique na moldura
+  abre a foto em tamanho grande, com o link direto do arquivo e o da página onde ela está no ar.
+- **As molduras deixaram de cortar e de ampliar as fotos.** A altura da prévia é a mesma em
+  todos os cards; a foto quadrada e o favicon aparecem inteiros e no tamanho real do arquivo
+  (um PNG de 64 px deixaria de ser nítido ampliado), e só as faixas largas — 16:9 e 20:9 — são
+  recortadas, que é exatamente como o site as usa. Corrigido também o grid que fazia a moldura
+  estourar a altura: a moldura passou a flexível, onde o `max-height` da foto resolve contra a
+  altura certa do card.
+
+### Corrigido
+- **Duas abas abertas ao mesmo tempo.** A tela nova não marcava o botão da primeira aba como
+  ativo, e o Bootstrap, sem saber qual painel fechar, deixava os dois visíveis um embaixo do
+  outro. O botão da primeira aba passou a nascer `active`, como na tela de Configurações, e um
+  teste novo confere que cada slot cai na aba da sua área.
+
+### Documentação
+- Guia do painel (`Guia de uso → Imagens e textos do site`) reescrito para as três abas, os
+  quatro contadores, o clique na foto e a regra de recorte.
+
 ## [2.39.0] - 2026-10-26
 
 ### Adicionado

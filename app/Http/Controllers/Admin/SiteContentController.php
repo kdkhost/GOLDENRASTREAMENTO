@@ -35,37 +35,74 @@ class SiteContentController extends Controller
         'ausente' => 'sem foto no ar',
     ];
 
+    /**
+     * As três áreas em que a tela divide as fotografias do site. A regra é o campo `pagina`
+     * do próprio slot — o vocabulário do site, não uma lista de arquivos: o que se repete em
+     * tudo é identidade, o que começa com "Home" é a página inicial, e o resto é o cartaz de
+     * uma página interna.
+     */
+    private const AREAS = [
+        'identidade' => [
+            'titulo' => 'Identidade',
+            'icone' => 'fa-badge',
+            'descricao' => 'O que vale em todo o site de uma vez: a marca, o símbolo da aba do navegador e o cartão que as redes mostram ao compartilhar um link.',
+        ],
+        'home' => [
+            'titulo' => 'Home',
+            'icone' => 'fa-house',
+            'descricao' => 'As fotografias da página inicial, na ordem em que aparecem para quem entra no site e rola a tela.',
+        ],
+        'cartazes' => [
+            'titulo' => 'Cartazes das páginas',
+            'icone' => 'fa-file-lines',
+            'descricao' => 'A foto de topo de cada página do site. Sem envio, a abertura fica com o degradê padrão da própria página.',
+        ],
+    ];
+
     public function imagens(): View
     {
-        $grupos = [];
+        $porArea = array_fill_keys(array_keys(self::AREAS), []);
+        $estados = ['enviada' => 0, 'pacote' => 0, 'ausente' => 0];
 
-        foreach (ConteudoSite::porPagina() as $pagina => $slots) {
-            $itens = [];
+        foreach (ConteudoSite::slots() as $slot => $registro) {
+            $enviada = ConteudoSite::enviada($slot);
+            $url = ConteudoSite::url($slot);
+            $estado = $enviada ? 'enviada' : ($url ? 'pacote' : 'ausente');
+            $estados[$estado]++;
 
-            foreach ($slots as $slot => $registro) {
-                $enviada = ConteudoSite::enviada($slot);
-                $url = ConteudoSite::url($slot);
-                $estado = $enviada ? 'enviada' : ($url ? 'pacote' : 'ausente');
+            $pagina = (string) $registro['pagina'];
+            $area = self::areaDaPagina($pagina);
 
-                $itens[] = [
-                    'slot' => $slot,
-                    'registro' => $registro,
-                    'enviada' => $enviada,
-                    'url' => $url,
-                    'alt' => ConteudoSite::alt($slot),
-                    'sem_arquivo' => ! ConteudoSite::padraoExiste($slot),
-                    'rota' => $this->rotaDaPagina($pagina),
-                    'estado' => $estado,
-                    'estado_rotulo' => self::ESTADOS[$estado],
-                ];
-            }
-
-            $grupos[] = ['pagina' => $pagina, 'slots' => $itens];
+            $porArea[$area][] = [
+                'slot' => $slot,
+                'registro' => $registro,
+                // Onde a foto aparece, na voz do site: a seção da Home, ou o nome da página quando
+                // todos os cards da área têm o mesmo título (os cartazes).
+                'onde' => Str::contains($pagina, ' · ')
+                    ? Str::after($pagina, ' · ')
+                    : ($area === 'cartazes' ? $pagina : null),
+                'enviada' => $enviada,
+                'url' => $url,
+                'alt' => ConteudoSite::alt($slot),
+                'sem_arquivo' => ! ConteudoSite::padraoExiste($slot),
+                'rota' => $this->rotaDaPagina($pagina),
+                'estado' => $estado,
+                'estado_rotulo' => self::ESTADOS[$estado],
+            ];
         }
 
+        $abas = collect(self::AREAS)
+            ->map(fn (array $area, string $id) => $area + ['id' => $id, 'itens' => $porArea[$id]])
+            ->reject(fn (array $area) => $area['itens'] === [])
+            ->values()
+            ->all();
+
         return view('admin.site-content.imagens', [
-            'grupos' => $grupos,
+            'abas' => $abas,
             'total' => count(ConteudoSite::slots()),
+            'no_painel' => $estados['enviada'],
+            'no_pacote' => $estados['pacote'],
+            'sem_foto' => $estados['ausente'],
         ]);
     }
 
@@ -180,6 +217,16 @@ class SiteContentController extends Controller
         Activity::log('configuracao_salva', 'Textos das páginas do site atualizados.');
 
         return back()->with('success', $salvos > 0 ? 'Textos salvos no site.' : 'Nenhum texto mudou.');
+    }
+
+    /** A aba da tela em que o slot aparece, lida do mesmo rótulo de página do registro. */
+    private static function areaDaPagina(string $rotulo): string
+    {
+        return match (true) {
+            $rotulo === 'Todo o site' => 'identidade',
+            Str::before($rotulo, ' ·') === 'Home' => 'home',
+            default => 'cartazes',
+        };
     }
 
     /**

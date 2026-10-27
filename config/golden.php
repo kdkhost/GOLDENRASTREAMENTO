@@ -117,7 +117,6 @@ return [
             'pagina' => 'Soluções', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
             'alt' => 'Veículo monitorado pela plataforma Golden',
             'largura' => 1600, 'altura' => 720, 'dimensao' => '1600 × 720 px', 'proporcao' => '20:9',
-            'dica' => 'Fica atrás do título da página, escurecido. Sem envio, o fundo é o degradê padrão.',
         ],
         'hero_segmentos' => [
             'pagina' => 'Para quem é', 'titulo' => 'Cartaz do topo da página', 'padrao' => null,
@@ -308,7 +307,7 @@ return [
         // Movimentação do estoque (StockMovement::TIPOS): o saldo subiu, desceu ou foi conferido.
         'movimento' => ['entrada' => 'green', 'saida' => 'red', 'ajuste' => 'gold'],
         // Selo de cada fotografia do site (SiteContentController::imagens): qual arquivo está no ar.
-        'slot_imagem' => ['enviada' => 'gold', 'pacote' => 'neutral', 'ausente' => 'neutral'],
+        'slot_imagem' => ['enviada' => 'gold', 'pacote' => 'neutral', 'ausente' => 'amber'],
         // Categoria da galeria de vídeos (config 'video_categorias'): o mesmo tom veste o selo
         // do painel e o ponto de cor do cartão no site.
         'video' => [

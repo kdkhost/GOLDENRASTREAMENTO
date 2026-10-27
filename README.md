@@ -693,7 +693,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (503 testes, 5.922 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (504 testes, 5.955 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

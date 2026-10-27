@@ -134,6 +134,43 @@ class ImagensDoSitePeloCmsTest extends TestCase
         }
     }
 
+    public function test_a_tela_divide_as_fotos_por_area_e_diz_onde_cada_uma_aparece(): void
+    {
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.conteudo.imagens.index'))
+            ->assertOk()
+            ->getContent();
+
+        preg_match_all('#data-aba-painel="([a-z]+)"(.*?)(?=data-aba-painel=|<div class="abas-salvar|\z)#s', $html, $paneis);
+
+        $porArea = array_combine($paneis[1], $paneis[2]);
+
+        $this->assertSame(['identidade', 'home', 'cartazes'], array_keys($porArea));
+
+        foreach (ConteudoSite::slots() as $slot => $registro) {
+            $area = match (true) {
+                $registro['pagina'] === 'Todo o site' => 'identidade',
+                str_starts_with($registro['pagina'], 'Home') => 'home',
+                default => 'cartazes',
+            };
+
+            $this->assertStringContainsString(
+                'data-nome="imagem['.$slot.']"',
+                $porArea[$area],
+                "O slot {$slot} ({$registro['pagina']}) caiu na aba errada."
+            );
+
+            // Os cartazes têm todos o mesmo título, então quem diz qual é qual é o nome da página.
+            if ($area === 'cartazes') {
+                $this->assertStringContainsString(
+                    '<div class="slot-onde">'.$registro['pagina'].'</div>',
+                    $porArea[$area],
+                    "O card do cartaz {$slot} não diz em qual página a foto entra."
+                );
+            }
+        }
+    }
+
     public function test_salvar_uma_foto_apaga_a_anterior_do_disco(): void
     {
         Storage::fake('public');

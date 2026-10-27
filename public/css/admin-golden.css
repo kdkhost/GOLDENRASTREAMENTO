@@ -154,14 +154,29 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 .canal-bloco .form-check-label{font-weight:600}
 .canal-bloco small{font-size:.7rem!important}
 
-/* Imagens do site (CMS): um card por slot, com a foto que está no ar na frente.
-   Só tokens — o mesmo card serve no tema claro e no escuro. */
+/* Imagens do site (CMS): um mosaico de fichas com a moldura de altura única — foto quadrada
+   aparece inteira, faixa larga aparece recortada como fica no ar. Só tokens: a mesma ficha
+   serve aos dois temas e o que distingue uma da outra é o selo de estado, não a cor. */
 .slot{display:flex;flex-direction:column;gap:.45rem;height:100%;padding:.75rem;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg);background:var(--bs-tertiary-bg)}
+.slot-onde{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--bs-secondary-color)}
 .slot-cabeca{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:.9rem}
-.slot-miniatura{display:block;width:100%;height:132px;object-fit:contain;padding:6px;border-radius:var(--radius-md);border:1px solid var(--bs-border-color-translucent);background:var(--bs-body-bg)}
-.slot-miniatura.vazia{display:grid;place-items:center;align-content:center;gap:6px;color:var(--bs-secondary-color);font-size:.78rem;text-align:center;padding:0 14px;background:var(--bs-body-bg)}
-.slot-miniatura.vazia i{font-size:1.3rem}
+/* A moldura é flex e tem altura certa: só assim o max-height da foto resolve contra ela.
+   Em grid com linha auto, a foto de 1375 px estourava a moldura e era cortada pelo overflow. */
+.slot-quadro{display:flex;align-items:center;justify-content:center;width:100%;height:9rem;padding:0;overflow:hidden;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-md);background:var(--bs-body-bg)}
+/* A foto aparece do tamanho que o navegador aguenta: nunca ampliada (um favicon de 64 px
+   ficaria borrado), e a faixa larga simula o recorte que o site faz dela. */
+.slot-quadro img{max-width:100%;max-height:100%}
+.slot-quadro.faixa img{width:100%;height:100%;object-fit:cover}
+button.slot-quadro{font:inherit;color:inherit;cursor:zoom-in;transition:border-color .2s var(--ease)}
+button.slot-quadro:hover,button.slot-quadro:focus-visible{border-color:var(--brand-gold)}
+.slot-quadro.vazio{flex-direction:column;gap:6px;padding:0 14px;color:var(--bs-secondary-color);font-size:.78rem;text-align:center;border-style:dashed}
+.slot-quadro.vazio i{font-size:1.3rem}
+.slot-lupa img{display:block;width:100%;height:auto;border-radius:var(--radius-md)}
 .slot-meta{font-size:.76rem;color:var(--bs-secondary-color)}
+.slot-dica{font-size:.78rem;color:var(--bs-secondary-color);margin:0}
+.slot-pe{margin-top:auto;padding-top:.2rem}
+.slot-pe a{font-size:.78rem;font-weight:600;color:var(--bs-secondary-color);text-decoration:none}
+.slot-pe a:hover{color:var(--bs-body-color);text-decoration:underline}
 .slot .upload{background:var(--bs-body-bg)}
 
 /* Saída de execução do cron: monoespaçada, curta e contida no cartão — um comando que
@@ -195,6 +210,9 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 .abas-nav .nav-link i{color:var(--bs-secondary-color);transition:color .2s var(--ease)}
 .abas-nav .nav-link.active{background:var(--t-gold-bg);border-color:transparent;color:var(--t-gold-fg)}
 .abas-nav .nav-link.active i{color:var(--t-gold-fg)}
+/* Quantos itens a aba guarda: quem escolhe entre abas decide com esse número, não com o rótulo. */
+.abas-contagem{padding:.05rem .4rem;border-radius:999px;background:var(--bs-tertiary-bg);color:var(--bs-secondary-color);font-size:.72rem;font-weight:700}
+.abas-nav .nav-link.active .abas-contagem{background:var(--bs-body-bg);color:var(--t-gold-fg)}
 
 /* Um grupo por pílula, em grade que se ajusta à largura: rótulo comprido quebra em duas
    linhas em vez de empurrar os vizinhos. No celular viram uma fila com rolagem lateral. */
@@ -212,4 +230,8 @@ a.stat-link:hover .stat-card{box-shadow:0 12px 26px -18px rgba(0,0,0,.45);transf
 
 /* O pé de cada aba: o botão de salvar separado do conteúdo por uma linha discreta. */
 .abas-salvar{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;padding-top:1rem;border-top:1px dashed var(--bs-border-color)}
+/* Tela longa, muitos campos: a barra de salvar cola no rodapé da janela e não some no meio da
+   lista. O texto do lado é a regra que a pessoa precisa ler antes de clicar, não depois. */
+.abas-salvar.aderente{position:sticky;bottom:0;align-items:center;flex-wrap:wrap;margin-top:1rem;padding:.7rem .9rem;border:1px solid var(--bs-border-color-translucent);border-top:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-md);background:var(--bs-body-bg)}
+.abas-salvar-note{flex:1 1 18rem;min-width:0;font-size:.78rem;color:var(--bs-secondary-color);margin:0}
 .abas-aninhadas{margin-top:.25rem}

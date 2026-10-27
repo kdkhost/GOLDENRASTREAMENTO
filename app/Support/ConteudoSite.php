@@ -43,18 +43,6 @@ class ConteudoSite
         return $registro;
     }
 
-    /** Slots na ordem do registro, agrupados pela página onde aparecem. */
-    public static function porPagina(): array
-    {
-        $grupos = [];
-
-        foreach (self::slots() as $slot => $registro) {
-            $grupos[$registro['pagina']][$slot] = $registro;
-        }
-
-        return $grupos;
-    }
-
     /** O caminho enviado pelo painel para este slot, se houver. */
     public static function enviada(string $slot): ?string
     {
