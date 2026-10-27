@@ -39,6 +39,7 @@ use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalDepoimentoController;
 use App\Http\Controllers\Portal\PortalFinanceiroController;
 use App\Http\Controllers\Portal\PortalPedidoController;
+use App\Http\Controllers\Portal\PortalSupervisaoController;
 use App\Http\Controllers\Site\AssistenteController as SiteAssistenteController;
 use App\Http\Controllers\Site\FunnelController;
 use App\Http\Controllers\Site\LeadController as SiteLeadController;
@@ -137,9 +138,16 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::post('redefinir-senha', [PortalAuthController::class, 'salvarSenhaNova'])
         ->middleware('throttle:6,1')->name('senha.redefinir.post');
 
-    Route::middleware('cliente')->group(function () {
+    // `cliente` primeiro, `supervisao` depois: o cadeado só pergunta depois de saber que há uma
+    // sessão de portal autenticada e com a ficha ativa — invertida a ordem, a barreira julgaria
+    // uma sessão que ainda nem existe.
+    Route::middleware(['cliente', 'supervisao'])->group(function () {
         Route::get('/', [PortalController::class, 'inicio'])->name('inicio');
         Route::post('sair', [PortalAuthController::class, 'sair'])->name('sair');
+
+        // A única saída da janela de supervisão, do lado de dentro dela. São as duas rotas que
+        // `AcessoSupervisionado` deixa gravar; o resto do portal é vitrine.
+        Route::post('sair-da-conta', [PortalSupervisaoController::class, 'sair'])->name('supervisao.sair');
 
         Route::get('pedidos', [PortalPedidoController::class, 'index'])->name('pedidos');
         Route::get('pedidos/{pedido}', [PortalPedidoController::class, 'show'])
@@ -301,6 +309,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/novo', [CustomerController::class, 'create'])->name('create');
         Route::post('/', [CustomerController::class, 'store'])->name('store');
         Route::get('/{cliente}', [CustomerController::class, 'show'])->name('show');
+        // A janela de supervisão, aberta do lado do painel: só o administrador, e o que ele passa
+        // a ver são as telas do portal do cliente — não uma cópia feita aqui, que seria uma
+        // segunda verdade sobre o que a pessoa vê. POST porque troca de sessão, não consulta.
+        Route::post('/{cliente}/portal', [PortalSupervisaoController::class, 'entrar'])
+            ->whereNumber('cliente')->name('portal.entrar')->middleware('role:admin');
         Route::get('/{cliente}/editar', [CustomerController::class, 'edit'])->name('edit');
         Route::post('/{cliente}', [CustomerController::class, 'update'])->name('update');
         Route::post('/{cliente}/interacao', [CustomerController::class, 'interaction'])->name('interacao');

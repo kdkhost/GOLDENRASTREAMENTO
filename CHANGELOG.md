@@ -3,6 +3,68 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.43.0] - 2026-10-27
+
+### Adicionado
+- **Ver a conta do cliente, em modo somente leitura.** A pergunta que abriu este trabalho era
+  honesta: *"onde estão os dados sincronizados do WHMCS?"* — e a resposta é **em lugar nenhum**.
+  *Meus serviços* e *Minhas faturas* leem a API na hora, a cada visita, e o único registro que fica
+  na ficha é o `customers.whmcs_id` descoberto pelo e-mail. Sem espelho no banco não havia o que
+  abrir numa tela de "dados sincronizados", e inventar uma segunda tela de leitura seria inventar
+  uma segunda verdade: filtros que podem divergir, um `whmcs_id` que pode envelhecer, um HTML que
+  o cliente nunca viu. A supervisão então não copia o portal — ela **entra** nele.
+  O botão **Ver a conta do cliente**, no topo da ficha (*Admin → Clientes*), autentica a ficha no
+  guard `cliente` dentro da mesma sessão do painel (`web` continua aberto), e a pessoa passa a
+  ver exatamente as telas que o cliente vê, com os mesmos interruptores de `Veiculacao` e o mesmo
+  id no financeiro. Travado por `tests/Feature/PortalSupervisaoTest.php` (13 testes, 97 asserções),
+  cujo último par compara o HTML do supervisor com o do cliente na mesma tela, linha a linha.
+- **A janela não escreve.** `App\Http\Middleware\AcessoSupervisionado` foi montado sobre o grupo
+  autenticado do portal (`['cliente', 'supervisao']`, nesta ordem: o cadeado só pergunta depois de
+  a framework saber que há uma sessão de portal) e recusa todo verbo que não seja `GET`/`HEAD`,
+  menos as duas saídas — `portal.supervisao.sair` e `portal.sair`. A barreira mora no middleware,
+  não nas views, de propósito: esconder botão por botão seriam cinco promessas para manter, e a
+  sexta — a que alguém esquece no HTML de uma tela futura — é a que grava. Recusada a escrita, a
+  volta é um *toast* dizendo que nada foi gravado, e a tentativa fica na auditoria como
+  `portal_supervisao_bloqueado` com a rota e o verbo. Teste cobre as três telas que escrevem
+  (cadastro, chamado e senha) e confere depois que o nome, o telefone, a senha e a contagem de
+  chamados do cliente estão intactos.
+- **Barra de supervisão e porta de saída.** Um `alert` âmbar em fluxo normal, logo acima do
+  cabeçalho da página (`resources/views/portal/partials/supervisao.blade.php`, incluído antes do
+  `app-content-header` para não tocar no layout fixo do AdminLTE), diz em qual conta você está,
+  quem abriu, a que hora, e traz os dois botões: **Sair da conta do cliente** (devolve o
+  administrador à ficha, com o painel inteiro vivo) e **Ir à ficha no painel**. Nenhuma linha de
+  CSS nova, nenhum posicionamento fixo, nenhuma cor fora dos tokens — o pedido era explícito em
+  não danificar o layout, e a tela não ganhou nem um seletor próprio.
+- **A janela vence sozinha.** `App\Support\Supervisao` guarda o marcador em
+  `golden.supervisao` (id da ficha, id e nome de quem abriu, hora) e só o devolve quando as quatro
+  condições batem ao mesmo tempo: marcador com forma, guard `cliente` na ficha marcada, guard
+  `web` no administrador que abriu, veiculação ligada e prazo em vigor — 45 minutos, por padrão.
+  Vencido, o middleware derruba a sessão do portal em vez de deixar a navegação virar conta
+  normal, e avisa que quem estava ali não era o dono. `session()->regenerate()` foi
+  deliberadamente **não** chamado na saída: derrubaria o token CSRF das outras abas do painel
+  abertas no mesmo navegador.
+- **Dois interruptores novos na aba do financeiro** (*Sistema → Configurações → Financeiro
+  (WHMCS)*): *Abrir a conta do cliente no painel, em modo leitura* e *A janela de supervisão fica
+  aberta (minutos)*, com a casa de sempre — **o painel grava no banco e o banco passa a mandar**;
+  o `.env` deste servidor (`WHMCS_VEICULA_SUPERVISAO`, `WHMCS_VEICULA_SUPERVISAO_MINUTOS`) conduz
+  apenas o que o banco não tem. Desligada a supervisão, o botão some da ficha, a rota responde 403
+  e uma janela já aberta se fecha na requisição seguinte; quem não é `admin` não entra por
+  nenhum caminho.
+
+### Corrigido
+- **A ficha do cliente dizia quanto do financeiro ela guardava, e não dizia nada.** Havia `whmcs_id`
+  na tabela e nenhuma linha na tela, o que deixava a pergunta "onde estão os dados sincronizados?"
+  sem resposta visível. A ficha ganhou o par *No financeiro (WHMCS)* — `conta #77` com a nota
+  "o único registro guardado aqui; serviços e faturas são lidos na hora, a cada visita" — ou
+  `não localizado` quando a conexão ainda não achou aquela pessoa.
+- **Um login de verdade não herda a janela.** `PortalAuthController` limpa o marcador ao
+  autenticar, ao cadastrar e ao sair. Sem isso, a pessoa que digitasse a própria senha no portal
+  herdaria a barra de "está na conta de outra pessoa" e o cadeado — travando a escrita dela na
+  conta dela. O mesmo teste que prova a barreira prova a volta: o cliente real continua gravando.
+- **`$request->user()` não é o administrador depois do login do cliente.** Uma vez autenticada a
+  ficha, a framework passa a responder o guard do portal, e a janela registraria no próprio cliente
+  quem entrou nela. Quem abre a janela é lido por `Auth::guard('web')->user()`, antes do `login()`.
+
 ## [2.42.2] - 2026-10-27
 
 ### Corrigido

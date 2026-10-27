@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AcessoSupervisionado;
 use App\Http\Middleware\AutenticarCliente;
 use App\Http\Middleware\ControleAcesso;
 use App\Http\Middleware\IdentificadorVisita;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => ControleAcesso::class,
             'cliente' => AutenticarCliente::class,
+            'supervisao' => AcessoSupervisionado::class,
             'loja' => LojaAtiva::class,
         ]);
     })

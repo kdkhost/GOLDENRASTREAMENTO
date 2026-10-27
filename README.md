@@ -621,9 +621,10 @@ a dimensão ideal.
   gravação local continua valendo. As três credenciais ficam em *Sistema → Configurações →
   Chaves de integração → WHMCS* (segredo cifrado no banco, `.env` só como plano de fundo).
 - **O que a conexão veicula** (`App\Services\Whmcs\Veiculacao`, aba *Sistema → Configurações →
-  Financeiro (WHMCS)*): sete interruptores e uma lista de grupos decidem quanto do financeiro o
+  Financeiro (WHMCS)*): oito interruptores, um prazo e uma lista de grupos decidem quanto do financeiro o
   cliente vê — as duas telas, se serviço encerrado e fatura paga entram na vitrine, quais grupos
-  de produtos aparecem, se o cliente pode saltar para o WHMCS e se o portal escreve lá. Fechado,
+  de produtos aparecem, se o cliente pode saltar para o WHMCS, se o portal escreve lá e se a
+  equipe pode supervisionar a conta. Fechado,
   o efeito é de verdade: o controller devolve "Esta área do portal está fechada." **sem abrir
   o cliente HTTP**, o item sai esmaecido do menu, e o espelho desligado não gera aviso de erro
   porque desligar não é falha. Na mesma aba, a **sonda** pergunta ao financeiro por um e-mail e
@@ -633,6 +634,21 @@ a dimensão ideal.
   `success` com `clientid` vazio e o erro autenticado `Client Not Found`, para uma credencial
   boa nunca ser lida como revogada. Travado por
   `tests/Feature/VeiculacaoDoWhmcsTest.php` (17).
+- **Supervisão da conta do cliente** (`App\Support\Supervisao`,
+  `App\Http\Middleware\AcessoSupervisionado`): o botão **Ver a conta do cliente** no topo da ficha
+  (Admin → Clientes) abre o `/portal` daquela pessoa na sessão do painel — os dois guards convivem,
+  e não existe uma tela de leitura paralela, porque uma segunda tela seria uma segunda verdade. O
+  isolamento é estrutural: supervisor e cliente passam pelos mesmos Blade, pelos mesmos filtros de
+  `Veiculacao` e pelo mesmo `whmcs_id` da ficha; um teste compara os dois HTMLs linha a linha.
+  Dentro da janela o middleware recusa todo verbo que não seja leitura, exceto as duas saídas
+  (`portal.supervisao.sair`, `portal.sair`): nada grava — nem cadastro, nem chamado, nem senha —,
+  a tentativa responde um *toast* dizendo que nada foi gravado e entra na auditoria como
+  `portal_supervisao_bloqueado`. A barra amarela no alto do portal diz em qual conta você está, quem
+  abriu e a que hora fecha; a janela vence sozinha (45 minutos, configurável) e, vencida, derruba a
+  sessão do portal em vez de virar conta normal. Um login com a senha própria limpa o marcador — a
+  barreira é da janela, não do portal. `role:admin`, e o interruptor desligado esconde o botão,
+  responde 403 na rota e fecha a janela aberta. Travado por
+  `tests/Feature/PortalSupervisaoTest.php` (13).
 - **Recuperação sem broker**: link assinado (`URL::temporarySignedRoute`, 60 minutos), sem
   tabela de tokens, e a mesma frase para e-mail com ou sem conta.
 - **O cliente escreve o próprio depoimento** (*Deixar um depoimento*): só a ficha `ativo`

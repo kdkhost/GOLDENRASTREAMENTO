@@ -6,6 +6,7 @@ use App\Mail\RedefinirSenhaPortal;
 use App\Models\Activity;
 use App\Models\Customer;
 use App\Support\PortalDoCliente;
+use App\Support\Supervisao;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -56,6 +57,10 @@ class PortalAuthController extends PortalBaseController
         }
 
         $request->session()->regenerate();
+        // Login de verdade apaga qualquer janela de supervisão: a partir daqui quem escreve é o
+        // dono da conta, e um marcador velho deixaria o `AcessoSupervisionado` travando um
+        // formulário de quem acabou de se autenticar com a própria senha.
+        Supervisao::limpar();
         $cliente = $this->cliente();
         $cliente->registrarAcesso();
         Activity::log('portal_login', 'Acesso ao portal.', $cliente, por: $cliente->nome);
@@ -123,6 +128,7 @@ class PortalAuthController extends PortalBaseController
 
         Auth::guard('cliente')->login($cliente);
         $request->session()->regenerate();
+        Supervisao::limpar();
         $cliente->registrarAcesso();
 
         return redirect()->route('portal.inicio')->with(
@@ -199,6 +205,7 @@ class PortalAuthController extends PortalBaseController
 
         // Só este guard sai: a sessão da equipe, se estiver aberta no mesmo navegador, continua.
         Auth::guard('cliente')->logout();
+        Supervisao::limpar();
 
         return redirect()->route('site.home')->with('info', 'Você saiu do portal.');
     }

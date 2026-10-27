@@ -78,6 +78,10 @@
 
     {{-- CONTEÚDO --}}
     <main class="app-main">
+        {{-- Antes do cabeçalho da página: é a primeira coisa que quem abriu a conta do outro lê,
+             e some sozinha quando a janela fecha — sem flag, sem cor nova, sem layout à parte. --}}
+        @include('portal.partials.supervisao')
+
         <div class="app-content-header mb-3">
             <div class="container-fluid">
                 <div class="row align-items-center g-2">

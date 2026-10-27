@@ -42,9 +42,14 @@ return [
     | O que a conexão veicula no portal. `servicos` e `faturas` abrem ou fecham as duas telas do
     | cliente; `servicos_encerrados` e `faturas_pagas` decidem se o passado continua na vitrine;
     | `link_externo` controla se o cliente pode saltar para o financeiro a partir do portal;
-    | `espelhar_dados` e `espelhar_senha` são as duas escritas que o portal faz lá; e `grupos`,
+    | `espelhar_dados` e `espelhar_senha` são as duas escritas que o portal faz lá; `grupos`,
     | quando preenchido, mostra só aqueles grupos de serviços — útil quando o mesmo WHMCS vende
     | mais do que a Golden quer que o cliente veja por aqui.
+    |
+    | `supervisao` não é vitrine do cliente, é a janela da equipe: ligado, o administrador abre a
+    | conta de um cliente no portal, pelas mesmas telas e com os mesmos filtros que o cliente vê,
+    | em modo somente leitura. `supervisao_minutos` é o prazo dessa janela — vencido, a sessão cai
+    | e ninguém fica dentro da conta de outra pessoa por descuido.
     */
     'veiculacao' => [
         'servicos' => (bool) env('WHMCS_VEICULA_SERVICOS', true),
@@ -55,6 +60,8 @@ return [
         'espelhar_dados' => (bool) env('WHMCS_VEICULA_ESPELHAR_DADOS', true),
         'espelhar_senha' => (bool) env('WHMCS_VEICULA_ESPELHAR_SENHA', true),
         'grupos' => env('WHMCS_VEICULA_GRUPOS', ''),
+        'supervisao' => (bool) env('WHMCS_VEICULA_SUPERVISAO', true),
+        'supervisao_minutos' => (int) env('WHMCS_VEICULA_SUPERVISAO_MINUTOS', 45),
     ],
 
     /*

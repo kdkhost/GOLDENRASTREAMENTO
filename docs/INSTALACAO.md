@@ -939,7 +939,8 @@ hospedagem exige o comprimento e o índice dentro do limite.
 Credencial é a porta; o que passa por ela é decisão da casa, e se muda em *Sistema
 → Configurações → Financeiro (WHMCS)*. A aba tem três cartões: o estado da conexão
 (credenciais completas ou a lista do que falta, com o nome do campo e a variável do
-`.env` correspondente), os **sete interruptores** de veiculação, e a **sonda**.
+`.env` correspondente), os **oito interruptores** de veiculação com o **prazo da
+janela de supervisão**, e a **sonda**.
 
 | Interruptor | Padrão | O que muda no portal |
 | --- | --- | --- |
@@ -950,13 +951,17 @@ Credencial é a porta; o que passa por ela é decisão da casa, e se muda em *Si
 | `whmcs_veicula_grupos` | vazio = todos | Só os grupos de produtos listados aparecem; a comparação ignora caixa e espaços. |
 | `whmcs_veicula_link_externo` | ligado | Os botões *Abrir* e *Pagar* levam ao WHMCS; desligado, o cliente não salta para fora do portal. |
 | `whmcs_veicula_espelhar_dados` / `whmcs_veicula_espelhar_senha` | ligados | O portal escreve (`UpdateClient`) no financeiro, ou grava só em si mesmo. |
+| `whmcs_veicula_supervisao` | ligado | O botão **Ver a conta do cliente** existe na ficha, e uma janela de supervisão é aceita. |
+| `whmcs_veicula_supervisao_minutos` | 45 | Quantos minutos a janela de supervisão fica aberta, entre 5 e 240. |
 
 **Desligado não é botão escondido.** Fechada a veiculação de uma tela, o controller
 devolve "Esta área do portal está fechada." antes de qualquer HTTP, o item do menu
 sai esmaecido com o aviso, e o financeiro não recebe uma requisição sequer. Fechado
 o espelho, a ação do cliente grava no portal e **não** dispara a chamada — e, como
 desligar não é falha, a tela não mostra o aviso de "o financeiro não respondeu".
-Fechado o link externo, a coluna de pagamento diz *Pelo atendimento*.
+Fechado o link externo, a coluna de pagamento diz *Pelo atendimento*. Fechada a
+supervisão, o botão some da ficha, a rota responde 403 e a janela que estava aberta
+se fecha na requisição seguinte.
 
 **A sonda** responde à pergunta que nenhuma tela de cliente responde: *a conexão
 está ligada mesmo?* Informe o e-mail de um cliente e o painel devolve o que o WHMCS
@@ -976,7 +981,37 @@ gravado no banco manda; **campo em branco devolve a decisão ao `.env`**
 (`WHMCS_VEICULA_*`), e nenhum valor precisa de `config:clear` nem de reinício — a
 sobreposição roda no `boot()` de cada requisição.
 
-### O que a equipe faz com isso
+### Ver a conta do cliente (supervisão)
+
+A pergunta "onde estão os dados sincronizados do WHMCS?" tem uma resposta honesta:
+**em lugar nenhum**. *Meus serviços* e *Minhas faturas* leem a API na hora, a cada
+visita, e o único registro que fica no banco é o `customers.whmcs_id` descoberto pelo
+e-mail na primeira visita — a ficha mostra isso no par *No financeiro (WHMCS)*, para
+não deixar dúvida. Não há tabela espelho, nem cache, nem sincronização periódica.
+
+Por isso a supervisão não copia o portal: ela **entra** nele. O botão **Ver a conta do
+cliente**, no topo da ficha (*Admin → Clientes*, só para `admin`), autentica a ficha no
+guard do portal dentro da mesma sessão do painel. Quem supervisiona vê os mesmos
+arquivos Blade, obedece aos mesmos interruptores de veiculação e consulta o mesmo id no
+financeiro que aquela pessoa consulta — é por aí que o isolamento com o resto da
+carteira é garantido, e não por uma tela escrita à mão. Um teste (`PortalSupervisaoTest`)
+compara o HTML do supervisor com o do cliente na mesma tela.
+
+Dentro da janela:
+
+- Uma barra âmbar no alto do portal diz em qual conta você está, quem abriu, a que hora
+  e quando a janela fecha, com **Sair da conta do cliente** (devolve o administrador à
+  ficha com o painel vivo) e **Ir à ficha no painel**.
+- Nada escreve. O middleware `AcessoSupervisionado` recusa todo verbo que não seja
+  leitura, menos as duas saídas — cadastro, chamado, depoimento, contrato e senha estão
+  travados por igual, e uma tela futura já nasce coberta. A tentativa devolve um aviso
+  dizendo que nada foi gravado e fica registrada na auditoria como
+  `portal_supervisao_bloqueado`, com a rota e o verbo.
+- A janela vence sozinha (45 minutos, configurável). Vencida, a sessão do portal cai em
+  vez de continuar navegando como se fosse a conta do painel.
+- O cliente de verdade não é afetado: com a própria senha ele continua gravando na conta
+  dele, e o login limpa qualquer marcador de supervisão deixado para trás.
+
 
 - **Admin → Atendimento → Chamados**: KPIs de abertos, sem resposta, aguardando
   o cliente e resolvidos; filtro por status e prioridade; responsável; resposta

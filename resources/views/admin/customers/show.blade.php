@@ -3,7 +3,23 @@
 @section('page_title', $cliente->nome)
 @section('page_description', \App\Models\Customer::label($cliente->status).' · '.($cliente->tipo === 'juridica' ? 'Pessoa jurídica' : 'Pessoa física'))
 
+@php use App\Services\Whmcs\Veiculacao; @endphp
+
 @section('page_actions')
+@can('admin')
+    {{-- A janela de supervisão: as telas do portal desta pessoa, abiertas daqui, em somente
+         leitura. Só aparece com conta ativa — sem conta não há o que ver — e some quando o
+         interruptor da tela de Configurações está desligado, para o painel não oferecer um botão
+         que a rota negaria. --}}
+    @if(Veiculacao::supervisao() && $cliente->temConta() && $cliente->status === 'ativo')
+        <form method="POST" action="{{ route('admin.clientes.portal.entrar', $cliente) }}" class="mb-0">
+            @csrf
+            <button class="btn btn-sm btn-outline-secondary text-nowrap" title="Abre o portal desta pessoa, igual ao que ela vê, sem gravar nada">
+                <i class="fas fa-user-shield me-1" aria-hidden="true"></i> Ver a conta do cliente
+            </button>
+        </form>
+    @endif
+@endcan
 <a href="{{ route('admin.clientes.edit', $cliente) }}" class="btn btn-golden btn-sm"><i class="fas fa-pen me-1"></i> Editar ficha</a>
 @if($cliente->telefone)
     <a href="https://wa.me/{{ preg_replace('/\D/', '', $cliente->telefone) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success"><i class="fab fa-whatsapp me-1"></i> WhatsApp</a>
@@ -39,6 +55,19 @@
                     @else
                         <x-admin.status rotulo="sem conta" tom="neutral" />
                         <div class="form-hint fw-normal">Se a pessoa se cadastrar no portal, esta ficha ganha o acesso — nada é criado à mão.</div>
+                    @endif
+                </dd>
+                <dt>No financeiro (WHMCS)</dt>
+                <dd>
+                    @if($cliente->whmcs_id)
+                        <x-admin.status :rotulo="'conta #'.$cliente->whmcs_id" tom="green" />
+                        {{-- Onde está o dado do financeiro: aqui só o número que aponta para lá.
+                             Serviços e faturas não são copiados para esta base — são lidos na hora,
+                             a cada visita, e obeyecem aos interruptores de veiculação. --}}
+                        <div class="form-hint fw-normal">O único registro do financeiro guardado nesta ficha. Serviços e faturas são lidos na hora, a cada visita — nada fica sincronizado aqui.</div>
+                    @else
+                        <x-admin.status rotulo="não localizado" tom="neutral" />
+                        <div class="form-hint fw-normal">A pessoa ainda não foi reconhecida no financeiro: na primeira visita ao portal a busca é feita pelo e-mail de acesso e este número aparece.</div>
                     @endif
                 </dd>
                 <dt>No funil</dt><dd><x-admin.status :rotulo="\App\Models\Customer::label($cliente->status)" :tom="tom_por_status('cliente', $cliente->status)" /></dd>

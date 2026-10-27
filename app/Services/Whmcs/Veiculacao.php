@@ -93,4 +93,22 @@ class Veiculacao
     {
         return (bool) config("whmcs.veiculacao.espelhar_{$oQue}");
     }
+
+    /**
+     * A equipe pode entrar na conta de um cliente, pela janela de supervisão?
+     *
+     * É a pergunta que a ficha do cliente faz antes de desenhar o botão e que o middleware faz
+     * em cada requisição do portal. Desligar no meio de uma supervisão aberta fecha a janela na
+     * hora — não adianta um interruptor que só vale para a próxima sessão.
+     */
+    public static function supervisao(): bool
+    {
+        return (bool) config('whmcs.veiculacao.supervisao');
+    }
+
+    /** Por quantos minutos a janela fica aberta. */
+    public static function minutosDeSupervisao(): int
+    {
+        return max(1, (int) config('whmcs.veiculacao.supervisao_minutos'));
+    }
 }

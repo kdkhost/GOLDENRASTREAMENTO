@@ -334,7 +334,7 @@ class ChavesDeIntegracao
             'whmcs-veiculacao' => [
                 'rotulo' => 'WHMCS — o que a conexão veicula',
                 'icone' => 'fa-satellite-dish',
-                'descricao' => 'A porta aberta, e agora? Estes interruptores decidem o que o cliente vê e o que o portal escreve no financeiro. São de veiculação, não de acesso: quem desliga não esconde botão — deixa de consultar e tira a tela do menu do portal.',
+                'descricao' => 'A porta aberta, e agora? Estes interruptores decidem o que o cliente vê, o que o portal escreve no financeiro e se a equipe pode entrar na conta de um cliente para conferir por dentro. São de veiculação e de acesso, não de código: quem desliga não esconde botão — deixa de consultar, tira a tela do menu e fecha a janela de supervisão.',
                 // A aba própria (Configurações → Financeiro (WHMCS)) mostra o estado da conexão e a
                 // sonda ao lado destes campos, coisa que um grupo de credenciais não tem. Por isso
                 // ela e não a lista de chaves os exibe: o mesmo campo em duas telas seria a
@@ -400,6 +400,24 @@ class ChavesDeIntegracao
                         'regras' => ['string', 'max:255'],
                         'placeholder' => 'Rastreamento veicular, Monitoramento de frota',
                         'dica' => 'Nomes exatamente como o WHMCS os escreve em Configurações do sistema → Grupos de produtos, separados por vírgula. Vazio exibe todos.',
+                    ],
+                    self::campoSimNao(
+                        'whmcs_veicula_supervisao',
+                        'whmcs.veiculacao.supervisao',
+                        'WHMCS_VEICULA_SUPERVISAO',
+                        'Abrir a conta do cliente no painel, em modo leitura',
+                        'É o botão "Ver a conta do cliente" na ficha. A pessoa entra nas mesmas telas do portal, com os mesmos filtros acima, e nada ali grava: nem chamado, nem pedido, nem dado, nem senha. Desligado, o botão some e nenhuma sessão de supervisão é aceita.'
+                    ),
+                    [
+                        'chave' => 'whmcs_veicula_supervisao_minutos',
+                        'config' => 'whmcs.veiculacao.supervisao_minutos',
+                        'ambiente' => 'WHMCS_VEICULA_SUPERVISAO_MINUTOS',
+                        'label' => 'A janela de supervisão fica aberta (minutos)',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:5', 'max:240'],
+                        'placeholder' => '45',
+                        'dica' => 'Vencido o prazo, a sessão do outro lado cai sozinha e volta para a tela de entrada do portal. É o fim da conversa de "esqueci a conta do cliente aberta".',
                     ],
                 ],
             ],
