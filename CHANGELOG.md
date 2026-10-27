@@ -3,6 +3,83 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.47.0] - 2026-10-27
+
+### Adicionado
+- **A porta do atendimento personalizado.** Nada que olhe a conta da pessoa abre antes de a casa
+  saber de quem é a conta. `App\Services\Assistente\Identificacao` é a fechadura: o pedido de segunda
+  via — ou qualquer ação sobre a ficha — só desce para a máquina quando a conversa tem **nome** e
+  **e-mail do cadastro**. O assunto geral continua sendo respondido na hora, e o pedido fica na fila
+  em `conversas.acao_pendente` para **retomar sozinho** quando a identificação fecha, ninguém
+  precisa repetir o que já pediu. Vencido o prazo da conferência
+  (`assistente.verificacao.minutos`, padrão 20) o pedido pendente vence junto: retomar uma segunda via
+  dita uma hora atrás, noutro assunto, seria a máquina agindo por conta própria.
+- **O e-mail dito no chat.** Aproveitado de qualquer frase ("meu email é maria@exemplo.com, quero a
+  via"), com o espaço que o celular coloca em volta do `@` descolado antes de procurar, e descartado
+  quando é o endereço da própria casa — quem cola o contato do site não está se identificando, está
+  repetindo o que leu. Quando a fala é **só o endereço**, a máquina confirma com a frase fixa da ficha
+  e nenhuma chamada de IA acontece, pelo mesmo motivo da apresentação pelo nome. O endereço serve para
+  *achar* a ficha e nunca para enviar: o destino continua sendo a coluna do banco.
+- **A nota do atendimento da Ana no fim da conversa.** `App\Services\Assistente\Avaliacao` colhe a nota
+  de 1 a 5 nos dois únicos fins que existem: a ação que se encerrou (a fatura saiu) e a despedida
+  escrita no chat ("obrigado, era isso", "pode encerrar"). Uma só vez por conversa
+  (`avaliacao_pedida_em` é a prova), com piso de falas da máquina antes de incomodar
+  (`assistente.avaliacao.minimo_de_falas`, padrão 3), e **nunca quando um humano assumiu o fio** — a
+  pessoa avaliaria o atendente errado.
+- **Dois caminhos de resposta, uma coluna.** O toque nas estrelas da bolha entra pela rota nova
+  `POST /assistente/avaliar`; o número escrito no chat é lido por regra (`4`, `nota 4`, `4/5`,
+  `quatro`, `5 estrelas`, e o resto da frase vira `avaliacao_texto`), e uma fala só é lida como nota
+  depois de a máquina ter perguntado — `4` no meio de uma conferência é dado de cadastro. Os dois
+  gravam `avaliacao_nota` + `avaliada_em` e deixam a fala de sistema
+  `Avaliação do atendimento: 4/5` no histórico.
+- **Quatro falas novas na ficha, editáveis no painel**, com `:nome` onde a casa chama a pessoa:
+  *Pergunta pelo e-mail*, *Resposta a quem disse o e-mail*, *Pedido de avaliação* e
+  *Agradecimento pela nota*. Em branco, vale o padrão de `config/assistente.php`.
+- **Cinco interruptores na tela de chaves** (`Sistema → Configurações → Chaves de integração →
+  Assistente`): *Perguntar o e-mail do cadastro*, *Vezes que o e-mail é pedido*, **Exigir nome e e-mail
+  antes de mexer na conta da pessoa**, *Pedir a nota do atendimento no fim* e *Falas da máquina antes
+  da pesquisa*. Nada de ajuste por arquivo: o que a casa decide é gravado no banco, e o `.env` só vale
+  enquanto o banco está vazio.
+- **Motivo de escala novo na fila**: `sem_identificacao` — esgotados os tetos de pergunta, a conversa
+  vai para a equipe com a frase dita ao cliente, em vez de virar formulário infinito.
+- **Três migrations** (`2026_10_27_000005`, `000006`, `000007`): as colunas de e-mail e avaliação na
+  conversa, as quatro falas na ficha do assistente e a fila da identificação. Todas aditivas, com
+  `down()`, comprimento de `varchar` conferido no MySQL 8.4 da hospedagem.
+- **Treze travas em `IdentificacaoEAvaliacaoPeloAssistenteTest`**: a ação não abre sem e-mail, o pedido
+  fica na fila e retoma sozinho, o pedido vence com a janela da conferência, o teto derruba para a
+  equipe, o e-mail colado no chat nunca é destino, o endereço isolado não gasta IA, a nota escrita e a
+  estrela tocada gravam as mesmas colunas, a pesquisa não abre em conversa assumida por gente, e os
+  quatro endereços da bolha não dividem o mesmo teto de requisições.
+- **O deploy treina a Ana sozinho.** `deploy/instalador-golden.sh` roda `assistente:ensinar` logo depois
+  das migrations, e `deploy/atualiza-golden.sh` repete o passo a cada atualização — sem
+  `--personalidade`, a única opção capaz de passar por cima do tom escolhido no painel. Instalação nova
+  que nasce sem base é instalação em que toda conversa da bolha escala por falta de fonte, e isso seria
+  a primeira coisa que o cliente veria. O passo não derruba a instalação se falhar: base manca se
+  resolve no painel, site sem instalar não se resolve.
+
+### Corrigido
+- **Cada endereço da bolha tem seu próprio teto.** Os contadores de requisição do site
+  (`/assistente/abrir`, `/fala`, `/falas`, `/avaliar`, `/leads` e `/rastreio/evento`) estavam escritos
+  sem prefixo no `throttle`, e sem prefixo a chave é assinada só pelo IP e pelo navegador: a varredura
+  de `falas`, que roda a cada cinco segundos com o balão aberto, consumia o mesmo teto da fala. Na
+  bancada isso apareceu como um `429` mudo no meio do atendimento — o visitante não conseguia escrever
+  nem tocar nas estrelas, justamente quando a pesquisa estava na tela. Cada rota passou a ter prefixo
+  próprio, e a trava nova derruba o teste se alguém tirar um deles.
+
+### Alterado
+- **A ordem do atendimento** passou a ter a identificação no meio: ação em curso manda, nome e e-mail
+  são aproveitados de qualquer fala, a ação nova só abre identificada, o resto é conversa — e o fim de
+  atendimento virou hora de pesquisa. A ordem de sistema também avisa o modelo quando o e-mail já foi
+  dito (*não o peça de novo, não o escreva na resposta*) e quando ele falta (*nada da conta pode ser
+  enviado, alterado ou localizado — não diga que fez nada disso*).
+- **A ficha da conversa no painel** passa a mostrar *E-mail do cadastro* e
+  *Avaliação do atendimento* (`4/5`, `pedida, sem nota` ou `não pedida`).
+- **A bolha ganhou estrelas**: acendem quando a pesquisa foi pedida e ainda não tem nota, e o toque
+  responde sem apagar o fio.
+- **Guia do painel** (`assistente` e `assistente-conversas`) e **`docs/INSTALACAO.md`** documentam a
+  porta da identificação, a colheita da nota e a quarta rota JSON — o PDF da instalação é regerado da
+  mesma fonte.
+
 ## [2.46.0] - 2026-10-27
 
 ### Alterado

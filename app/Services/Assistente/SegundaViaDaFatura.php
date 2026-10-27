@@ -111,6 +111,16 @@ final class SegundaViaDaFatura implements Acao
     {
         $conversa->abrirAcao(self::CODIGO, self::EMAIL);
 
+        // O e-mail que a pessoa já deu no chat não é pedido de novo: a porta do atendimento
+        // personalizado (identificação exigida) garante que ele existe quando a ação abre, e refazer
+        // a primeira pergunta é o jeito mais rápido de o cliente achar que ninguém leu nada.
+        $ficha = self::fichaDoEmailDito($conversa);
+
+        if ($ficha !== null) {
+            return $this->pelaFicha($conversa, $ficha,
+                'Encontrei a conta do e-mail que você já me deu. Antes de enviar, preciso conferir um dado seu: ');
+        }
+
         return $this->chame($conversa, 'Certo, eu mando. Primeiro me diga o e-mail que você usa no seu cadastro — '
             .'é por ele que eu localizo a sua conta, e é só para ele que a fatura vai.');
     }
@@ -119,6 +129,14 @@ final class SegundaViaDaFatura implements Acao
     {
         if ($conversa->acao_em === null || $conversa->acao_em->lessThan(now()->subMinutes(Verificacao::minutos()))) {
             $conversa->abrirAcao(self::CODIGO, self::EMAIL);
+
+            $ficha = self::fichaDoEmailDito($conversa);
+
+            if ($ficha !== null) {
+                return $this->pelaFicha($conversa, $ficha,
+                    'A conversa ficou parada e, por segurança, aquela conferência não vale mais. '
+                        .'Vale de novo, a partir de agora: ');
+            }
 
             return $this->chame($conversa, 'A conversa ficou parada e, por segurança, aquela conferência não vale '
                 .'mais. Vamos de novo: me diga o e-mail do seu cadastro.');
@@ -149,6 +167,20 @@ final class SegundaViaDaFatura implements Acao
                 'Não localizei nenhuma conta com esse e-mail. Confere se é o mesmo que você usa para entrar no portal.');
         }
 
+        // O endereço que serviu fica na conversa: é o fim da pergunta, não o de uma conferência — a
+        // ficha só é amarrada depois que os dados baterem.
+        $conversa->update(['email' => $email]);
+
+        return $this->pelaFicha($conversa, $ficha, 'Conta encontrada. ');
+    }
+
+    /**
+     * O começo da conferência de uma ficha já achada — pelo e-mail dito na hora ou pelo que a pessoa
+     * informou no atendimento. É um caminho só porque a régua (`Verificacao::exigiveis`) não pode
+     * depender de como a ficha foi encontrada.
+     */
+    private function pelaFicha(Conversa $conversa, Customer $ficha, string $abertura): string
+    {
         $conferiveis = Verificacao::exigiveis($ficha);
 
         if ($conferiveis === []) {
@@ -165,7 +197,7 @@ final class SegundaViaDaFatura implements Acao
             'necessarios' => min(Verificacao::minimo(), count($conferiveis)),
         ]);
 
-        return $this->chame($conversa, 'Conta encontrada. '.Verificacao::pergunta($conferiveis[0]));
+        return $this->chame($conversa, $abertura.Verificacao::pergunta($conferiveis[0]));
     }
 
     /**
@@ -286,6 +318,12 @@ final class SegundaViaDaFatura implements Acao
         return $this->chame($conversa, 'Enviei a fatura '.$fatura['numero'].' para o e-mail do seu cadastro'
             .($fatura['vencimento'] ? ', com vencimento em '.$fatura['vencimento']->format('d/m/Y') : '')
             .'. Confira a caixa de entrada — se não estiver lá, me avise que eu chame a equipe.');
+    }
+
+    /** A ficha do e-mail que a pessoa já deu no atendimento — `null` quando ele não é de ninguém daqui. */
+    private static function fichaDoEmailDito(Conversa $conversa): ?Customer
+    {
+        return blank($conversa->email) ? null : Customer::porEmail((string) $conversa->email);
     }
 
     /**

@@ -424,6 +424,20 @@ else
   ok "Migrations aplicadas (sem dados de demonstração)"
 fi
 
+# O treinamento da assistente não é dado de demonstração: é o que ela sabe da empresa, e sem ele
+# toda conversa da bolha escalaria por falta de fonte. O comando é idempotente — acrescenta o que
+# falta e regrava só o catálogo com os preços vigentes; o texto editado no painel fica como está,
+# e a personalidade já nasce com a ficha (por isso `--personalidade` não roda aqui).
+passo "Treinando o assistente virtual"
+# Não é `rodar`: ali a falha derruba a instalação, e assistente sem base é tela que se resolve
+# depois no painel — não motivo para deixar o site sem instalar.
+printf '\n$ %s artisan assistente:ensinar\n' "$PHP_BIN" >> "$LOG_INSTALACAO"
+if "$PHP_BIN" artisan assistente:ensinar >> "$LOG_INSTALACAO" 2>&1; then
+  ok "Base de conhecimento e catálogo aplicados ao assistente"
+else
+  aviso "O treinamento não rodou; ensine a base em Atendimento → O que o assistente sabe."
+fi
+
 # ---------------------------------------------------------------------------
 # 6. Administrador do painel
 # ---------------------------------------------------------------------------

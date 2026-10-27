@@ -99,6 +99,8 @@
                 <dt>De onde</dt><dd>{{ $conversa->canalLabel() }}</dd>
                 <dt>Página</dt><dd>{{ $conversa->pagina ?: '—' }}</dd>
                 <dt>Contato dito no chat</dt><dd>{{ $conversa->contato ?: '—' }}</dd>
+                <dt>E-mail do cadastro</dt><dd>{{ $conversa->email ?: 'ainda não identificado' }}</dd>
+                <dt>Avaliação do atendimento</dt><dd>{{ $conversa->avaliacaoLabel() !== '' ? $conversa->avaliacaoLabel() : ($conversa->avaliacao_pedida_em ? 'pedida, sem nota' : 'não pedida') }}</dd>
                 <dt>Por que chamou a equipe</dt><dd>{{ $conversa->escala_motivo ? $conversa->escalaLabel() : '—' }}</dd>
                 <dt>Ação da máquina</dt><dd>{{ $acao_em_curso !== '' ? $acao_em_curso : 'nenhuma em curso' }}</dd>
                 <dt>Equipe assumiu</dt><dd>{{ $conversa->respondido_por_equipe_em ? $conversa->respondido_por_equipe_em->format('d/m/Y H:i') : 'ainda é da máquina' }}</dd>

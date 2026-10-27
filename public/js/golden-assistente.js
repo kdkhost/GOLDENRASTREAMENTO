@@ -17,6 +17,8 @@
   var campo = document.getElementById('iaTexto');
   var envio = painel.querySelector('[data-ia-enviar]');
   var saida = painel.querySelector('[data-ia-humano]');
+  var pesquisa = painel.querySelector('[data-ia-avaliacao]');
+  var estrelas = pesquisa ? Array.prototype.slice.call(pesquisa.querySelectorAll('[data-ia-nota]')) : [];
   var aviso = document.querySelector('[data-ia-aviso]');
   var caixa = document.getElementById('waPopup');
   var flutuante = document.getElementById('waFloat');
@@ -122,6 +124,55 @@
     if (aviso) aviso.hidden = false;
   }
 
+  /* ---------- a avaliação ---------- */
+
+  /* A pesquisa é acendida pelo servidor, nunca pelo texto pintado: `avaliacao_pedida_em` já é a
+     prova de que a Ana perguntou, e uma nota só pode ser dada uma vez. Caída a nota, a fileira
+     inteira sai de cena — estrelas que continuam ali depois do toque convidam a segunda nota, e a
+     casa passaria a somar uma avaliação repetida da mesma pessoa. */
+  function mostraPesquisa(d) {
+    if (!pesquisa) return;
+    pesquisa.hidden = d.avaliacao !== true;
+    if (pesquisa.hidden) pintaEstrelas(0);
+  }
+
+  function pintaEstrelas(até) {
+    estrelas.forEach(function (estrela, i) {
+      var icone = estrela.querySelector('i');
+      if (icone) icone.className = (i < até ? 'fa-solid' : 'fa-regular') + ' fa-star';
+      estrela.classList.toggle('cheia', i < até);
+    });
+  }
+
+  estrelas.forEach(function (estrela, i) {
+    estrela.addEventListener('mouseenter', function () {
+      if (!estrela.disabled) pintaEstrelas(i + 1);
+    });
+    estrela.addEventListener('mouseleave', function () { pintaEstrelas(0); });
+
+    estrela.addEventListener('click', function () {
+      if (ocupado) return;
+
+      ocupado = true;
+      estrelas.forEach(function (b) { b.disabled = true; });
+
+      var nota = Number(estrela.getAttribute('data-ia-nota'));
+      pintaEstrelas(nota);
+
+      enviar_post(cfg.avaliar, { nota: nota }).then(function (d) {
+        if (!d.ativo) {
+          // A conversa já tinha nota, ou a equipe assumiu o fio: a fileira some e nada mais.
+          mostraPesquisa({});
+          return;
+        }
+        mostraPesquisa(d);
+        pinta(d.falas);
+      }).finally(function () {
+        ocupado = false;
+      });
+    });
+  });
+
   /* A caixa do WhatsApp e a conversa ocupam o mesmo canto da tela: abrir uma fecha a outra,
      senão os dois painéis se sobrepõem. */
   function fechaCaixa() {
@@ -146,6 +197,7 @@
     obter_falas().then(function (d) {
       if (d.ativo === false) { desaparece(); return; }
       if (d.status === 'aguardando_equipe') escalada = true;
+      mostraPesquisa(d);
       pinta(d.falas);
     });
   }
@@ -189,6 +241,7 @@
         if (!d.ativo) { desaparece(); return; }
         criada = true;
         escalada = d.status === 'aguardando_equipe';
+        mostraPesquisa(d);
         pinta(d.falas);
         ajustaVarredura();
       });
@@ -257,6 +310,7 @@
         return;
       }
       escalada = d.status === 'aguardando_equipe' || escalada;
+      mostraPesquisa(d);
       pinta(d.falas);
     }).finally(function () {
       ocupado = false;

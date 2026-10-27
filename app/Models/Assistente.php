@@ -35,7 +35,8 @@ class Assistente extends Model
     protected $table = 'assistente';
 
     protected $fillable = [
-        'nome', 'cargo', 'saudacao', 'pergunta_nome', 'confirmacao_nome', 'tom', 'regras',
+        'nome', 'cargo', 'saudacao', 'pergunta_nome', 'confirmacao_nome', 'pergunta_email',
+        'confirmacao_email', 'pedido_avaliacao', 'agradecimento_avaliacao', 'tom', 'regras',
         'avatar', 'avatar_alt', 'dica', 'status', 'placeholder', 'humano', 'icone',
         'voz', 'ativo', 'no_site', 'no_funil', 'no_chamado', 'criado_por',
     ];
@@ -69,6 +70,10 @@ class Assistente extends Model
             'saudacao' => (string) config('assistente.persona.saudacao'),
             'pergunta_nome' => (string) config('assistente.persona.pergunta_nome'),
             'confirmacao_nome' => (string) config('assistente.persona.confirmacao_nome'),
+            'pergunta_email' => (string) config('assistente.persona.pergunta_email'),
+            'confirmacao_email' => (string) config('assistente.persona.confirmacao_email'),
+            'pedido_avaliacao' => (string) config('assistente.persona.pedido_avaliacao'),
+            'agradecimento_avaliacao' => (string) config('assistente.persona.agradecimento_avaliacao'),
             'tom' => (string) config('assistente.persona.tom'),
             'regras' => (string) config('assistente.persona.regras'),
         ]);
@@ -153,6 +158,56 @@ class Assistente extends Model
         $texto = (string) ($this->confirmacao_nome ?: config('assistente.persona.confirmacao_nome'));
 
         return str_replace(':nome', Str::before($nome, ' '), $texto);
+    }
+
+    /** A frase que pede o e-mail do cadastro — antes de qualquer coisa que olhe a conta da pessoa. */
+    public function textoPerguntaEmail(): string
+    {
+        return (string) ($this->pergunta_email ?: config('assistente.persona.pergunta_email'));
+    }
+
+    /** A fala que confirma o e-mail anotado. Sem nome dito, o `:nome` sai da frase sem costura. */
+    public function textoConfirmacaoEmail(?string $nome): string
+    {
+        $texto = (string) ($this->confirmacao_email ?: config('assistente.persona.confirmacao_email'));
+
+        return self::apliqueONome($texto, $nome);
+    }
+
+    /** A pergunta que abre a nota do atendimento, dita no fim da conversa. */
+    public function textoPedidoAvaliacao(?string $nome = null): string
+    {
+        $texto = (string) ($this->pedido_avaliacao ?: config('assistente.persona.pedido_avaliacao'));
+
+        return self::apliqueONome($texto, $nome);
+    }
+
+    /** A resposta a quem deu a nota. É texto da casa, e não do provedor. */
+    public function textoAgradecimentoAvaliacao(?string $nome): string
+    {
+        $texto = (string) ($this->agradecimento_avaliacao ?: config('assistente.persona.agradecimento_avaliacao'));
+
+        return self::apliqueONome($texto, $nome);
+    }
+
+    /**
+     * Onde a casa chama a pessoa, é `:nome`. Sem nome dado — a pessoa respondeu ao e-mail sem ter
+     * se apresentado — o vocativo sai da frase junto com a vírgula que o pendurava, para a fala não
+     * terminar com um "Obrigado !" na tela de quem não sabe de quem a máquina está falando.
+     */
+    private static function apliqueONome(string $texto, ?string $nome): string
+    {
+        if (! str_contains($texto, ':nome')) {
+            return $texto;
+        }
+
+        if (filled($nome)) {
+            return str_replace(':nome', Str::before($nome, ' '), $texto);
+        }
+
+        $semVocativo = (string) preg_replace('/[,\s]*:nome\s*[,]?/u', ' ', $texto);
+
+        return trim((string) preg_replace(['/[\s,]{2,}/u', '/\s+([.!?:;,])/u'], [' ', '$1'], $semVocativo));
     }
 
     public function textoPlaceholder(): string

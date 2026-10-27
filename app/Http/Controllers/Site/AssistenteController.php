@@ -7,6 +7,7 @@ use App\Models\Assistente;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
 use App\Services\Assistente\Atendedor;
+use App\Services\Assistente\Avaliacao;
 use App\Services\Rastreio;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ use Illuminate\Support\Str;
 /**
  * A bolha de atendimento no site e na página de funil.
  *
- * Três endereços JSON e nenhuma página: o robô mora num canto da tela que já existe, então não
+ * Quatro endereços JSON e nenhuma página: o robô mora num canto da tela que já existe, então não
  * faz sentido ele ter URL própria — e o visitante que abre a bolha num funil de anúncio não pode
  * ser levado para fora dele bem na hora da conversão. O cadastro continua sendo do formulário
  * que a casa já tem (`site/partials/lead-form`): a bolha leva o visitante até ele e a conversa é
@@ -51,12 +52,7 @@ class AssistenteController extends Controller
             $novas = collect(Atendedor::abertura($conversa, $ficha));
         }
 
-        return response()->json([
-            'ativo' => true,
-            'conversa' => (int) $conversa->id,
-            'status' => $conversa->status,
-            'falas' => $this->falasParaTela($novas),
-        ]);
+        return $this->resposta($conversa, $novas);
     }
 
     /** A fala do cliente entra, e a resposta do assistente volta no mesmo pedido. */
@@ -95,11 +91,47 @@ class AssistenteController extends Controller
 
     private function novasFalas(Conversa $conversa, int $de): JsonResponse
     {
+        return $this->resposta($conversa, $conversa->mensagens()->where('id', '>', $de)->get());
+    }
+
+    /**
+     * A nota dada no toque das estrelas. É o mesmo número que a nota escrita no chat grava, por
+     * outro caminho: quem avaliaria o atendimento digitando "4" depois de uma frase qualquer
+     * deixaria a pesquisa sem resposta, e a casa ficaria cega justamente sobre o atendimento que a
+     * pessoa encerrou sem falar mais nada.
+     *
+     * Só vale enquanto a conversa é da sessão desta pessoa e a pesquisa está aberta: nota repetida
+     * não sobrescreve a primeira, e um toque fora de hora devolve a conversa como está.
+     */
+    public function avaliar(Request $request): JsonResponse
+    {
+        $conversa = Conversa::naSessao($request);
+
+        if (! $conversa || ! Avaliacao::pedidaSemNota($conversa)) {
+            return response()->json(['ativo' => false]);
+        }
+
+        $dados = $request->validate([
+            'nota' => ['required', 'integer', 'between:1,'.Avaliacao::NOTA_MAX],
+        ], [], ['nota' => 'nota']);
+
+        $antes = (int) $conversa->mensagens()->max('id');
+
+        Avaliacao::grave($conversa, (int) $dados['nota']);
+        Atendedor::agradeceAValiacao($conversa);
+
+        return $this->resposta($conversa, $conversa->mensagens()->where('id', '>', $antes)->get());
+    }
+
+    /** O envelope dos quatro endpoints da bolha: o que pintar, em que situação a conversa está. */
+    private function resposta(Conversa $conversa, iterable $falas): JsonResponse
+    {
         return response()->json([
             'ativo' => true,
-            'conversa' => $conversa->id,
+            'conversa' => (int) $conversa->id,
             'status' => $conversa->status,
-            'falas' => $this->falasParaTela($conversa->mensagens()->where('id', '>', $de)->get()),
+            'avaliacao' => Avaliacao::pedidaSemNota($conversa),
+            'falas' => $this->falasParaTela($falas),
         ]);
     }
 
@@ -125,7 +157,7 @@ class AssistenteController extends Controller
         ])->values()->all();
     }
 
-    /** O robô atende esta página, para este visitante? É a única porta dos três endpoints. */
+    /** O robô atende esta página, para este visitante? É a única porta dos quatro endpoints. */
     private function atende(Request $request): bool
     {
         return Assistente::atendeVisitante($this->canalDaPagina($request));

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Assistente\Avaliacao;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,18 +33,25 @@ class Conversa extends Model
         'verificacao_impossivel' => 'A ficha não tinha dado para conferir',
         'verificacao_sem_sucesso' => 'A conferência de dados não passou',
         'envio_nao_concluido' => 'Ação do assistente não pôde ser concluída',
+        'sem_identificacao' => 'Pediu atendimento personalizado sem se identificar',
     ];
 
     protected $fillable = [
         'canal', 'status', 'visit_id', 'lead_id', 'customer_id', 'ticket_id',
-        'nome', 'contato', 'pagina', 'escala_motivo',
-        'acao', 'acao_passo', 'acao_tentativas', 'acao_dados_json', 'acao_em', 'nome_pedidos',
+        'nome', 'contato', 'email', 'pagina', 'escala_motivo',
+        'acao', 'acao_passo', 'acao_tentativas', 'acao_dados_json', 'acao_em',
+        'acao_pendente', 'acao_pendente_em',
+        'nome_pedidos', 'email_pedidos',
+        'avaliacao_nota', 'avaliacao_texto', 'avaliada_em', 'avaliacao_pedida_em',
         'respondido_por_equipe_em', 'resolvido_em', 'ultima_fala_em',
     ];
 
     protected $casts = [
         'acao_dados_json' => 'array',
         'acao_em' => 'datetime',
+        'acao_pendente_em' => 'datetime',
+        'avaliada_em' => 'datetime',
+        'avaliacao_pedida_em' => 'datetime',
         'respondido_por_equipe_em' => 'datetime',
         'resolvido_em' => 'datetime',
         'ultima_fala_em' => 'datetime',
@@ -98,6 +106,20 @@ class Conversa extends Model
     public function escalaLabel(): string
     {
         return (string) (self::ESCALAS[$this->escala_motivo] ?? $this->escala_motivo ?? '');
+    }
+
+    /**
+     * A nota do atendimento em palavras, para a equipe ler na tela de conversas. Devolve vazio
+     * quando ainda não há nota: a coluna é o que se soma, esta frase é o que se lê.
+     */
+    public function avaliacaoLabel(): string
+    {
+        if ($this->avaliacao_nota === null) {
+            return '';
+        }
+
+        return $this->avaliacao_nota.'/'.Avaliacao::NOTA_MAX
+            .($this->avaliacao_texto ? ' — '.$this->avaliacao_texto : '');
     }
 
     /**
@@ -196,6 +218,9 @@ class Conversa extends Model
             'acao_tentativas' => 0,
             'acao_dados_json' => $dados,
             'acao_em' => now(),
+            // O pedido que esperava a identificação virou a ação em curso: não há mais o que retomar.
+            'acao_pendente' => null,
+            'acao_pendente_em' => null,
         ])->save();
     }
 
@@ -225,6 +250,8 @@ class Conversa extends Model
             'acao_tentativas' => 0,
             'acao_dados_json' => null,
             'acao_em' => null,
+            'acao_pendente' => null,
+            'acao_pendente_em' => null,
         ])->save();
     }
 

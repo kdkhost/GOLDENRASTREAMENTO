@@ -26,6 +26,7 @@
             'abrir' => route('site.assistente.abrir'),
             'fala' => route('site.assistente.fala'),
             'falas' => route('site.assistente.falas'),
+            'avaliar' => route('site.assistente.avaliar'),
             'contato' => route('site.contato'),
             'canal' => $canal,
             'nome' => (string) $ficha->nome,
@@ -46,6 +47,20 @@
         </div>
 
         <div class="ia-corpo" data-ia-corpo aria-live="polite"></div>
+
+        {{-- A pesquisa entra em estrelas para que a nota não dependa da pessoa saber escrever
+             "quatro": o toque grava o mesmo número que a fala escrita gravaria. Só aparece depois
+             de a máquina perguntar, e some no primeiro toque — pedir duas vezes é estragar a nota. --}}
+        <div class="ia-avaliacao" data-ia-avaliacao hidden>
+            <div class="ia-estrelas" role="group" aria-label="Nota de 1 a 5">
+                @for($nota = 1; $nota <= 5; $nota++)
+                    <button type="button" class="ia-estrela" data-ia-nota="{{ $nota }}"
+                            aria-label="{{ $nota }} de 5">
+                        <i class="fa-regular fa-star" aria-hidden="true"></i>
+                    </button>
+                @endfor
+            </div>
+        </div>
 
         <p class="ia-digitando" data-ia-digitando hidden>
             <span class="ia-pontos" aria-hidden="true"><i></i><i></i><i></i></span>

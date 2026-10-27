@@ -8,6 +8,7 @@ use App\Models\Conversa;
 use App\Models\ConversaMensagem;
 use App\Models\Lead;
 use App\Models\Setting;
+use App\Services\Assistente\Contratos\Acao;
 use App\Services\Atribuidor;
 use App\Support\Notifica;
 use Illuminate\Http\Request;
@@ -52,19 +53,22 @@ final class Atendedor
      * a mídia (áudio, imagem, documento) chega antes por outro caminho: a fala é gravada no
      * upload, e a resposta sai quando o arquivo está no disco.
      *
-     * A ordem das quatro perguntas abaixo é o atendimento inteiro, e ela não é trocável:
+     * A ordem das perguntas abaixo é o atendimento inteiro, e ela não é trocável:
      *
      * **Ação em curso manda.** Quem está no meio de uma conferência de segurança respondeu a uma
      * pergunta definida; desviar essa fala para a IA faria a máquina responder "não entendi" no
      * passo mais delicado da conversa.
      *
-     * **O nome vem do que a pessoa diz.** Ele é tirado da fala antes de qualquer assunto, porque é
-     * ele que deixa o atendimento formal — e um nome gravado tarde ainda chega a tempo da fatura.
-     * Quando a fala é só a resposta à pergunta pelo nome, a máquina reconhece a pessoa com texto
-     * fixo e para ali: ninguém fez pergunta nenhuma ao dizer como se chama.
+     * **Nome e e-mail vêm do que a pessoa diz.** Os dois são aproveitados de qualquer frase, antes
+     * de qualquer assunto, porque o nome é o que deixa o atendimento formal e o e-mail é o que
+     * deixa a máquina saber de quem é a conta — e um dado gravado tarde ainda chega a tempo da
+     * fatura. Quando a fala é só a resposta à pergunta pelo nome ou pelo e-mail, a máquina
+     * reconhece com texto fixo e para ali: ninguém fez pergunta nenhuma ao se apresentar.
      *
-     * **A ação nova é achada antes de a máquina abrir a boca.** O gatilho é léxico e determinístico:
-     * uma IA decidir se "abre ou não" uma conferência de dados é a régua dependente do chute.
+     * **A ação nova é achada antes de a máquina abrir a boca.** O gatilho é léxico e
+     * determinístico: uma IA decidir se "abre ou não" uma conferência de dados é a régua
+     * dependente do chute. E ela só abre identificada — atendimento personalizado é o que olha a
+     * conta da pessoa, e o que a casa não sabe de quem é, a casa não mexe.
      *
      * **O resto é conversa**, com a fonte obrigatória e o nome no texto de ordem.
      */
@@ -91,14 +95,26 @@ final class Atendedor
         $acao = Acoes::emCurso($conversa);
 
         if ($acao !== null) {
-            return self::fale($conversa, $acao->atender($conversa, $pergunta));
+            $resposta = self::fale($conversa, $acao->atender($conversa, $pergunta));
+
+            // A ação se encerrou e a conversa continua com a máquina: acabou um atendimento de
+            // verdade — é nele, e não numa dúvida respondida pela metade, que a casa quer a nota.
+            return $conversa->acao === null ? (self::pecaAValiacao($conversa, $ficha) ?? $resposta) : $resposta;
         }
 
         $nomeDito = self::guardeONome($conversa, $pergunta, $ficha);
+        $emailDito = self::guardeOEmail($conversa, $pergunta, $ficha);
 
-        $pedida = Acoes::pedidaPela($pergunta);
+        $pedida = Acoes::pedidaPela($pergunta) ?? self::acaoEsperandoIdentificacao($conversa);
 
         if ($pedida !== null) {
+            // Nada que olhe a conta da pessoa abre antes de a casa saber de quem é a conta. E o
+            // pedido que fica na fila não precisa ser repetido: fechada a identificação, a casa
+            // retoma sozinha — enquanto ela falta, a pergunta é o atendimento, não a IA.
+            if (Identificacao::exigir() && ! Identificacao::pronta($conversa)) {
+                return self::pidaIdentificacao($conversa, $ficha, $pergunta, $pedida);
+            }
+
             return self::fale($conversa, $pedida->abrir($conversa));
         }
 
@@ -107,6 +123,22 @@ final class Atendedor
         // "Maria Aparecida" ao provedor era o jeito mais educado de dizer "chamei a equipe".
         if ($nomeDito !== null) {
             return self::fale($conversa, $ficha->textoConfirmacaoNome($nomeDito));
+        }
+
+        if ($emailDito !== null) {
+            return self::fale($conversa, $ficha->textoConfirmacaoEmail($conversa->nome));
+        }
+
+        // A nota também se colhe por regra, não por modelo: a última fala foi o pedido e esta é a
+        // resposta. Gravada a nota, a casa agradece e a máquina volta ao assunto.
+        if (self::acabouDePedirAValiacao($conversa, $ficha)) {
+            $nota = Avaliacao::leia($pergunta);
+
+            if ($nota !== null) {
+                Avaliacao::grave($conversa, $nota['nota'], $nota['texto']);
+
+                return self::fale($conversa, $ficha->textoAgradecimentoAvaliacao($conversa->nome));
+            }
         }
 
         $pedeONome = self::vaiPedirONome($conversa);
@@ -142,7 +174,11 @@ final class Atendedor
 
         self::tocarUltimaFala($conversa);
 
-        return $fala;
+        // A despedida é o outro fim de conversa, e o único que a casa não decide: quem escreve
+        // "obrigado, era isso" encerrou o atendimento, e é nessa hora que a pesquisa vale.
+        return $resposta->respondeu()
+            ? (self::pecaAValiacao($conversa, $ficha, $pergunta) ?? $fala)
+            : $fala;
     }
 
     /**
@@ -193,12 +229,60 @@ final class Atendedor
     /** A última fala do assistente nesta conversa foi exatamente a pergunta pelo nome? */
     private static function acabouDePerguntarONome(Conversa $conversa, Assistente $ficha): bool
     {
+        return self::ultimaFalaDaMaquina($conversa) === $ficha->textoPerguntaNome();
+    }
+
+    /**
+     * O e-mail de quem fala, aproveitado de qualquer frase — inclusive do meio de um assunto, porque
+     * "meu nome é Ana, meu e-mail é ana@exemplo.com" chega tudo junto.
+     *
+     * Ao contrário do nome, o endereço não precisa de a casa ter perguntado para ser confirmado: um
+     * e-mail sozinho no chat não se confunde com outra coisa, e fingir não entender o que a pessoa
+     * ofereceu seria empurrá-la para a IA com uma frase que já tem dono. Devolve o endereço quando a
+     * fala é só ele — caso em que não há pergunta nenhuma a mandar ao provedor, e a máquina confirma
+     * com a fala fixa da ficha. O endereço nunca vira destino de envio por aqui: quem manda é a
+     * ação, e ela manda para a coluna da ficha.
+     */
+    private static function guardeOEmail(Conversa $conversa, string $pergunta, Assistente $ficha): ?string
+    {
+        if (filled($conversa->email)) {
+            return null;
+        }
+
+        $email = Identificacao::extrair($pergunta);
+
+        if ($email === null) {
+            return null;
+        }
+
+        $conversa->update(['email' => $email]);
+
+        return Identificacao::soOEmail($pergunta) ? $email : null;
+    }
+
+    /** A última fala da máquina foi exatamente o pedido da nota? */
+    private static function acabouDePedirAValiacao(Conversa $conversa, Assistente $ficha): bool
+    {
+        if ($conversa->avaliacao_nota !== null) {
+            return false;
+        }
+
+        return self::ultimaFalaDaMaquina($conversa) === $ficha->textoPedidoAvaliacao($conversa->nome);
+    }
+
+    /**
+     * A última fala do assistente nesta conversa, crua. É por comparação com ela que a máquina sabe
+     * o que acabou de perguntar — o chat é uma requisição por fala, e estado algum seria mais
+     * honesto que a própria frase escrita na tela.
+     */
+    private static function ultimaFalaDaMaquina(Conversa $conversa): ?string
+    {
         $pergunta = $conversa->mensagens()
             ->where('autor', 'assistente')
             ->reorder('id', 'desc')
             ->first();
 
-        return $pergunta !== null && $pergunta->corpo === $ficha->textoPerguntaNome();
+        return $pergunta?->corpo;
     }
 
     /**
@@ -250,6 +334,116 @@ final class Atendedor
     }
 
     /**
+     * A porta do atendimento personalizado. Nada que olhe a conta da pessoa abre sem que a casa
+     * saiba de quem é a conta: pede o que falta, um por vez, com o teto de cada pergunta, e grava o
+     * pedido que ficou na fila (`acao_pendente`).
+     *
+     * Esgotados os tetos, a conversa vai para a equipe — e não é covardia de máquina: um cliente
+     * pedindo segunda via para uma conversa que nunca conseguiu identificá-lo é o cliente sem
+     * atendimento. O que a tranca entrega é a pergunta a mais, nunca o envio errado.
+     */
+    private static function pidaIdentificacao(Conversa $conversa, Assistente $ficha, string $pergunta, Acao $pedida): ConversaMensagem
+    {
+        $conversa->forceFill(['acao_pendente' => $pedida->codigo(), 'acao_pendente_em' => now()])->save();
+
+        if (blank($conversa->nome) && self::vaiPedirONome($conversa)) {
+            return self::fale($conversa, $ficha->textoPerguntaNome());
+        }
+
+        if (blank($conversa->email) && self::vaiPedirOEmail($conversa)) {
+            return self::fale($conversa, $ficha->textoPerguntaEmail());
+        }
+
+        $conversa->forceFill(['acao_pendente' => null, 'acao_pendente_em' => null])->save();
+
+        self::chameEquipe($conversa, 'sem_identificacao', $pergunta);
+
+        return self::fale($conversa, 'Para mexer no que é da sua conta, eu preciso saber de quem é a conta. '
+            .'Como você não quis me dizer, já chamei a equipe — ela continua com você por aqui.');
+    }
+
+    /**
+     * A ação que ficou na fila da identificação, se ainda vale.
+     *
+     * Ela é olhada em toda fala, porque quem pediu a segunda via e ainda não tem e-mail na conversa
+     * está pedindo atendimento personalizado — e a pergunta certa é a do cadastro, não uma IA
+     * respondendo teoria de rastreador. O teto de cada pergunta (`assistente.contato.perguntas_max`)
+     * é o que limita a insistência, e vencido o prazo da conferência (`Verificacao::minutos`) o
+     * pedido vence junto: retomar uma segunda via dita uma hora atrás, noutro assunto, seria a
+     * máquina agindo por conta própria.
+     */
+    private static function acaoEsperandoIdentificacao(Conversa $conversa): ?Acao
+    {
+        if (blank($conversa->acao_pendente)) {
+            return null;
+        }
+
+        $vence = $conversa->acao_pendente_em?->addMinutes(Verificacao::minutos());
+        $acao = $vence !== null && $vence->greaterThan(now()) ? Acoes::porCodigo($conversa->acao_pendente) : null;
+
+        if ($acao === null || ! $acao->ligada()) {
+            $conversa->forceFill(['acao_pendente' => null, 'acao_pendente_em' => null])->save();
+
+            return null;
+        }
+
+        return $acao;
+    }
+
+    /**
+     * O pedido de e-mail desta rodada: ligado quando a casa manda pedir, a conversa ainda não tem
+     * endereço e o teto de `assistente.contato.perguntas_max` não foi gasto. A conta é gravada na
+     * conversa, e não na fala, porque quem decide parar de perguntar precisa de prova.
+     */
+    private static function vaiPedirOEmail(Conversa $conversa): bool
+    {
+        if (filled($conversa->email) || ! Identificacao::pedir()) {
+            return false;
+        }
+
+        if ((int) $conversa->email_pedidos >= Identificacao::perguntasMax()) {
+            return false;
+        }
+
+        $conversa->update(['email_pedidos' => (int) $conversa->email_pedidos + 1]);
+
+        return true;
+    }
+
+    /**
+     * A fala de agradecimento depois de uma nota dada por outro caminho que não o chat — hoje, o
+     * toque nas estrelas da bolha. É pública porque quem grava a nota não é este atendedor, mas a
+     * régua de quem responde é: a frase continua sendo a da ficha, e a conversa continua da máquina.
+     */
+    public static function agradeceAValiacao(Conversa $conversa): ConversaMensagem
+    {
+        return self::fale($conversa, Assistente::garanta()->textoAgradecimentoAvaliacao($conversa->nome));
+    }
+
+    /**
+     * A pesquisa de satisfação, dita no fim de um atendimento — o da ação que se encerrou ou o da
+     * despedida escrita no chat. Pede uma vez só, porque `avaliacao_pedida_em` é a prova, e só pede
+     * enquanto a conversa é da máquina: quem foi assumido por um humano avaliaria quem não atendeu.
+     *
+     * A nota não passa por IA nenhuma: ela entra pelo toque na bolha ou pelo número escrito aqui, e
+     * os dois caminhos gravam as mesmas colunas.
+     */
+    private static function pecaAValiacao(Conversa $conversa, Assistente $ficha, ?string $despedida = null): ?ConversaMensagem
+    {
+        if ($despedida !== null && ! Avaliacao::eDespedida($despedida)) {
+            return null;
+        }
+
+        if (! Avaliacao::horaDePedir($conversa)) {
+            return null;
+        }
+
+        $conversa->forceFill(['avaliacao_pedida_em' => now()])->save();
+
+        return self::fale($conversa, $ficha->textoPedidoAvaliacao($conversa->nome));
+    }
+
+    /**
      * A ordem de sistema desta conversa: a persona da ficha mais o que se sabe de quem está do
      * outro lado. É aqui que o nome entra na boca da máquina, porque o atendimento formal da casa
      * não pode depender de a IA ter lido a frase em que a pessoa se apresentou.
@@ -264,6 +458,14 @@ final class Atendedor
             $ordem[] = 'Você ainda não sabe o nome desta pessoa: pergunte-o nesta resposta, com naturalidade e uma única vez, e siga atendendo o assunto.';
         } elseif (Nome::pedir()) {
             $ordem[] = 'Esta pessoa não quis se identificar. Atenda sem nome e não volte a pedir.';
+        }
+
+        if (filled($conversa->email)) {
+            $ordem[] = 'O e-mail desta pessoa já foi dito: não o peça de novo, não o escreva na resposta e não o use '
+                .'para prometer nada — quem localiza a conta e confere os dados é o sistema, em outra etapa.';
+        } elseif (Identificacao::exigir() && Identificacao::pedir()) {
+            $ordem[] = 'Sem o e-mail do cadastro, nada da conta desta pessoa pode ser enviado, alterado ou localizado. '
+                .'Não diga que fez nada disso: responda a dúvida geral e diga que o atendimento personalizado segue com a equipe.';
         }
 
         return $ordem;

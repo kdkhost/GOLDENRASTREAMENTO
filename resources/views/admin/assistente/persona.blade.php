@@ -25,6 +25,14 @@
                         hint="A segunda frase da bolha, logo depois da saudação: o atendimento não começa sem nome. Quantas vezes ela se repete para quem não responde se ajusta em Sistema → Configurações → Chaves de integração → Assistente." />
                     <x-admin.field name="confirmacao_nome" type="textarea" label="Resposta a quem disse o nome" :value="$assistente->confirmacao_nome" col="col-12" :rows="2" maxlength="500" :opcional="true"
                         hint="A frase que reconhece a pessoa logo depois de ela se apresentar. Escreva :nome no lugar do nome dito — vale só o primeiro nome, como no resto do atendimento." />
+                    <x-admin.field name="pergunta_email" type="textarea" label="Pergunta pelo e-mail" :value="$assistente->pergunta_email" col="col-12" :rows="2" maxlength="500" :opcional="true"
+                        hint="O que ele diz quando o cliente pede atendimento personalizado sem ter se identificado. É por esse e-mail que a conta é encontrada. Quantas vezes a pergunta se repete se ajusta em Sistema → Configurações → Chaves de integração → Assistente." />
+                    <x-admin.field name="confirmacao_email" type="textarea" label="Resposta a quem disse o e-mail" :value="$assistente->confirmacao_email" col="col-12" :rows="2" maxlength="500" :opcional="true"
+                        hint="A frase de confirmação logo depois de a pessoa informar o endereço. Escreva :nome para usar o nome dela." />
+                    <x-admin.field name="pedido_avaliacao" type="textarea" label="Pedido de avaliação" :value="$assistente->pedido_avaliacao" col="col-12" :rows="2" maxlength="500" :opcional="true"
+                        hint="Dito uma única vez no fim do atendimento — quando a máquina resolveu o assunto ou quando o cliente se despediu. Escreva :nome para chamá-lo." />
+                    <x-admin.field name="agradecimento_avaliacao" type="textarea" label="Agradecimento pela nota" :value="$assistente->agradecimento_avaliacao" col="col-12" :rows="2" maxlength="500" :opcional="true"
+                        hint="A resposta depois de o cliente dar a nota de 1 a 5. A nota fica gravada na conversa e na tela de conversas." />
                     <x-admin.field name="tom" type="select" label="Tom de fala" :value="$assistente->tom" :options="$tons" col="col-12 col-md-6" :required="true"
                         hint="Como a máquina monta as frases." />
                     <x-admin.field name="voz" type="select" label="Voz das respostas em áudio" :value="$assistente->voz" :options="$vozes" col="col-12 col-md-6" empty="A voz padrão da casa" :opcional="true"

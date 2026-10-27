@@ -501,6 +501,49 @@ class ChavesDeIntegracao
                         'placeholder' => '3',
                         'dica' => 'Insistir demais é o que faz a pessoa desistir do chat. Esgotado o número, a máquina segue atendendo sem nome.',
                     ],
+                    self::campoSimNao(
+                        'assistente_pedir_email',
+                        'assistente.contato.pedir',
+                        'ASSISTENTE_PEDIR_EMAIL',
+                        'Perguntar o e-mail do cadastro',
+                        'É o que localiza a conta da pessoa no financeiro. Desligado, a máquina continua atendendo o assunto geral e o que for da conta vai para a equipe — ela pergunta na fila.'
+                    ),
+                    [
+                        'chave' => 'assistente_email_perguntas',
+                        'config' => 'assistente.contato.perguntas_max',
+                        'ambiente' => 'ASSISTENTE_EMAIL_PERGUNTAS',
+                        'label' => 'Vezes que o e-mail é pedido na mesma conversa',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1', 'max:5'],
+                        'placeholder' => '3',
+                        'dica' => 'Passou disto a conversa segue sem e-mail; o pedido personalizado é escalado em vez de virar formulário infinito.',
+                    ],
+                    self::campoSimNao(
+                        'assistente_exigir_identificacao',
+                        'assistente.contato.exigir_para_personalizado',
+                        'ASSISTENTE_EXIGIR_IDENTIFICACAO',
+                        'Exigir nome e e-mail antes de mexer na conta da pessoa',
+                        'É a porta do atendimento personalizado: ligada, segunda via de fatura e qualquer ação que olhe a ficha só abre depois que a pessoa se identificou — o pedido fica na fila e retoma sozinho. A conferência de segurança dos dados da ficha não depende desta chave e continua valendo igual.'
+                    ),
+                    self::campoSimNao(
+                        'assistente_pedir_avaliacao',
+                        'assistente.avaliacao.pedir',
+                        'ASSISTENTE_PEDIR_AVALIACAO',
+                        'Pedir a nota do atendimento no fim',
+                        'A casa só sabe se a Ana atende bem pelo que a pessoa disser. Pedida uma vez por conversa, e nunca quando um humano já assumiu o fio.'
+                    ),
+                    [
+                        'chave' => 'assistente_avaliacao_minimo_falas',
+                        'config' => 'assistente.avaliacao.minimo_de_falas',
+                        'ambiente' => 'ASSISTENTE_AVALIACAO_MINIMO_FALAS',
+                        'label' => 'Falas da máquina antes da pesquisa',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1', 'max:10'],
+                        'placeholder' => '3',
+                        'dica' => 'Pesquisa no "oi" de boas-vindas não é pesquisa, é incômodo: é aqui o piso de conversa de verdade antes de incomodar com a nota.',
+                    ],
                     [
                         'chave' => 'assistente_verificacao_campos',
                         'config' => 'assistente.verificacao.campos',

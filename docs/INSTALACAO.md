@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.46.0
+- **Versão:** 2.47.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -1590,6 +1590,12 @@ Dois caminhos aplicam a mesma régua:
 A mesma base pode ser editada item por item na tela de conhecimento; o comando nunca sobrescreve o
 que foi escrito ali sem `--atualizar`.
 
+**Nenhum servidor precisa clicar em nada.** O `deploy/instalador-golden.sh` roda o treinamento logo
+depois das migrations, e o `deploy/atualiza-golden.sh` repete o passo em toda atualização — sem
+`--personalidade`, que é a única opção capaz de passar por cima do tom escolhido no painel. Uma
+instalação recém-publicada já tem a Ana sabendo da empresa: sem base, toda conversa da bolha escalaria
+por falta de fonte, e isso é a primeira coisa que o cliente veria.
+
 ### Cada item da caixa é um campo do painel
 
 Em **Sistema → Configurações → Botão do WhatsApp no site** está a caixa inteira, item por item, e
@@ -1622,8 +1628,11 @@ A caixa, o balão e a conversa anônima vêm com a página, e a folha
 HTML quando o interruptor do canal está ligado** — desligado, não sobra um byte de robô na página do
 visitante. Com a caixa desligada em **Configurações**, o canto volta a ser o link direto do
 WhatsApp e o assistente perde a porta. Quando não sobra nenhum canal humano, o mesmo botão passa a
-ser a porta do assistente. As três rotas JSON são `POST /assistente/abrir`, `POST /assistente/fala`
-e `GET /assistente/falas`, com throttle de 30, 20 e 120 por minuto e por visitante.
+ser a porta do assistente. As quatro rotas JSON são `POST /assistente/abrir`, `POST /assistente/fala`,
+`GET /assistente/falas` e `POST /assistente/avaliar`, com throttle de 30, 20, 120 e 10 por minuto e
+por visitante. **Cada uma tem contador próprio** (o prefixo no `throttle`): sem ele o navegador fica
+com um só teto para as quatro, e a varredura de `falas` — que roda a cada cinco segundos com o balão
+aberto — esvaziaria o teto da fala no meio do atendimento.
 
 Como se comporta:
 
@@ -1671,6 +1680,61 @@ Nem tudo o que chega é nome, e a lista do que nunca é está escrita uma vez s�
 acesso, não vocativo — `maria@exemplo.com.br` deixaria um "Maria" na ficha de alguém), números
 solto, saudação e as palavras de resposta (`sou`, `estou`, `somos`, `tenho`, `acho`, `penso`), porque
 "sou cliente da Golden" é uma frase, não uma identificação.
+
+### A porta do atendimento personalizado
+
+Atendimento personalizado é o que olha a conta da pessoa — segunda via de fatura, qualquer ação no
+financeiro. Essa porta tem fechadura, e ela é `App\Services\Assistente\Identificacao`: enquanto a
+conversa não tem **nome** e **e-mail do cadastro**, a ação não abre. O assunto geral continua sendo
+respondido na hora, e o pedido fica na fila (`conversas.acao_pendente` + `acao_pendente_em`) para
+retomar sozinho assim que a identificação fecha — ninguém precisa repetir o que já pediu.
+
+Vencido o prazo da conferência (`assistente.verificacao.minutos`, padrão 20) o pedido pendente vence
+junto: retomar uma segunda via dita uma hora atrás, noutro assunto, seria a máquina agindo por conta
+própria. Esgotados os tetos de pergunta (`assistente.contato.perguntas_max`, padrão **3** para o
+e-mail, gravado em `conversas.email_pedidos`, o mesmo desenho do nome), a conversa vai para a equipe
+com o motivo `sem_identificacao` — insistentes não, e a pessoa nunca fica sem resposta.
+
+Três regras que não mudam de lugar:
+
+- o e-mail é aproveitado de qualquer frase ("meu email é maria@exemplo.com, quero a via"), e quando a
+  fala é **só o endereço** a máquina confirma com a frase fixa `assistente.confirmacao_email` e não
+  gasta chamada de IA — o mesmo raciocínio da apresentação pelo nome;
+- o endereço dito no chat serve para *achar* a ficha, nunca para enviar: um e-mail colado na conversa
+  que virasse destino de fatura é a consulta que vaza. O da própria casa, publicado no site, é
+  descartado — quem o cola não está se identificando, está repetindo o que leu;
+- **a conferência de segurança não passa por aqui.** Identificada a pessoa, a ação ainda confere os
+  dados da ficha antes de enviar qualquer coisa; a tranca entrega uma pergunta a mais, jamais um
+  envio afrouxado.
+
+Na tela de chaves, o grupo *Assistente* tem *Perguntar o e-mail do cadastro*,
+*Vezes que o e-mail é pedido*, e o interruptor da porta inteira, **Exigir nome e e-mail antes de
+mexer na conta da pessoa** — desligado, a ação abre com o que a conversa tiver, e a conferência
+continua valendo igual.
+
+### A nota do atendimento no fim da conversa
+
+A casa só sabe se a Ana atende bem por uma coisa que a máquina não mede sozinha. `App\Services\Assistente\Avaliacao`
+colhe a nota de 1 a 5 no fim de um atendimento **de verdade**, pelos dois únicos fins que existem: a
+ação que se encerrou (a fatura saiu) ou a despedida escrita no chat ("obrigado, era isso", "até mais",
+"pode encerrar"). Uma pesquisa depois de um "oi" é incômodo, e por isso há piso
+(`assistente.avaliacao.minimo_de_falas`, padrão **3** falas da máquina).
+
+Se pede **uma única vez** por conversa — `conversas.avaliacao_pedida_em` é a prova — e nunca quando um
+humano já assumiu o fio: a pessoa avaliaria o atendente errado. A resposta entra por dois caminhos que
+gravam as mesmas colunas:
+
+- o **toque nas estrelas** da bolha, que vai a `POST /assistente/avaliar` e devolve o agradecimento;
+- o **número escrito no chat**, lido por regra, não por modelo: `4`, `nota 4`, `4/5`, `quatro`,
+  `5 estrelas`, e o que sobra da frase vira `avaliacao_texto` ("5, parabéns pelo atendimento"). Uma
+  fala só é lida como nota depois de a máquina ter perguntado — `4` no meio de uma conferência é dado
+  de cadastro.
+
+Gravada a nota, fica a fala de sistema `Avaliação do atendimento: 4/5` no histórico e a coluna na
+conversa, que a tela *Atendimento → Conversas* mostra como `4/5`, `pedida, sem nota` ou `não pedida`.
+O pedido e o agradecimento são textos da ficha (`assistente.pedido_avaliacao` e
+`assistente.agradecimento_avaliacao`, editáveis em **Assistente virtual**, com `:nome`), e o interruptor
+*Pedir a nota do atendimento no fim* liga ou desliga a pesquisa inteira.
 
 ### Ações: o assistente agora faz
 
@@ -1765,6 +1829,15 @@ da ação em `conversas` (`acao`, `acao_passo`, `acao_tentativas`, `acao_dados_j
 `assistente.pergunta_nome` e `2026_10_27_000004_devolve_a_bola_a_quem_deu_o_nome` acrescenta
 `assistente.confirmacao_nome`. Todas são aditivas, têm `down()` e são exercitadas no MySQL 8.4 da
 hospedagem antes da verificação no ar.
+
+As três migrations seguintes abrem a porta do atendimento personalizado e colhem a nota:
+`2026_10_27_000005_peca_o_email_e_a_avaliacao_na_conversa` acrescenta `conversas.email` (180, o teto
+da coluna é o teto da validação), `conversas.avaliacao_texto` (500), `avaliada_em` e
+`avaliacao_pedida_em`; `2026_10_27_000006_da_os_textos_do_email_e_da_avaliacao_a_ficha` acrescenta
+`assistente.pergunta_email`, `confirmacao_email`, `pedido_avaliacao` e `agradecimento_avaliacao`
+(colunas `text` — em branco, vale o padrão de `config/assistente.php`);
+`2026_10_27_000007_guarda_o_que_a_conversa_estava_pedindo` acrescenta `conversas.acao_pendente` (60) e
+`acao_pendente_em`, a fila da identificação. Nenhuma tabela nova, nenhuma coluna sem `down()`.
 
 ### O que ainda não está no ar
 

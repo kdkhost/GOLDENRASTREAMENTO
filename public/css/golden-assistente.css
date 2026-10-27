@@ -82,6 +82,18 @@
 .ia-enviar:hover{transform:translateY(-2px) scale(1.05)}
 .ia-enviar[disabled]{opacity:.45;cursor:progress;transform:none}
 
+/* A fileira da pesquisa de satisfação: acende quando a casa pergunta a nota e apaga no primeiro
+   toque. Fora dos balões porque a nota não é fala — é o fecho de um atendimento terminado. */
+.ia-avaliacao{display:flex;justify-content:center;padding:9px 12px 3px;border-top:1px solid rgba(255,255,255,.08)}
+.ia-avaliacao[hidden]{display:none}
+.ia-estrelas{display:flex;gap:2px}
+.ia-estrela{border:0;background:none;padding:4px 7px;font-size:1.1rem;line-height:1;color:rgba(255,255,255,.32);
+  cursor:pointer;transition:transform .18s var(--ease,cubic-bezier(.22,.61,.36,1)),color .18s ease}
+.ia-estrela:hover,.ia-estrela.cheia{color:var(--gold)}
+.ia-estrela:hover{transform:scale(1.16)}
+.ia-estrela:disabled{cursor:default;transform:none}
+.ia-estrela:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:8px}
+
 .ia-humano{display:block;padding:11px;text-align:center;font-size:.8rem;font-weight:600;color:var(--gold-soft,#f4d9a6);
   text-decoration:none;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.08)}
 .ia-humano:hover{background:rgba(224,163,62,.1);color:#fff}
@@ -103,5 +115,5 @@ body.nav-open .ia-painel{opacity:0;pointer-events:none}
 }
 
 @media(prefers-reduced-motion:reduce){
-  .ia-painel,.ia-enviar,.ia-fechar,.ia-pontos i{transition:none;animation:none}
+  .ia-painel,.ia-enviar,.ia-fechar,.ia-pontos i,.ia-estrela{transition:none;animation:none}
 }

@@ -68,23 +68,28 @@ Route::get('/c/{slug}', [FunnelController::class, 'show'])->name('site.funil');
 
 // Captura de leads (validação + rate limit + honeypot)
 Route::post('/leads', [SiteLeadController::class, 'store'])
-    ->middleware('throttle:8,1')
+    ->middleware('throttle:8,1,lead')
     ->name('site.leads.store');
 
 // Farol do site: cada clique, kit, ligação e formulário iniciado do visitante.
 Route::post('/rastreio/evento', [SiteRastreioController::class, 'evento'])
-    ->middleware('throttle:120,1')
+    ->middleware('throttle:120,1,farol')
     ->name('site.rastreio.evento');
 
-// Bolha de atendimento: três endereços JSON para o robô responder no site e no funil. O throttle
-// aperta na fala porque cada uma pode virar uma chamada de IA que cobra por token.
+// Bolha de atendimento: quatro endereços JSON para o robô responder no site e no funil. O throttle
+// aperta na fala porque cada uma pode virar uma chamada de IA que cobra por token — e cada endereço
+// tem prefixo próprio, porque sem prefixo o contador é assinado só pelo IP e pelo navegador: a
+// varredura de `falas`, que roda a cada 5 s com o balão aberto, consumiria o mesmo teto da fala e
+// deixaria o visitante sem conseguir escrever no meio da própria conversa.
 Route::prefix('assistente')->name('site.assistente.')->group(function () {
     Route::post('/abrir', [SiteAssistenteController::class, 'abrir'])
-        ->middleware('throttle:30,1')->name('abrir');
+        ->middleware('throttle:30,1,assistente-abrir')->name('abrir');
     Route::post('/fala', [SiteAssistenteController::class, 'fala'])
-        ->middleware('throttle:20,1')->name('fala');
+        ->middleware('throttle:20,1,assistente-fala')->name('fala');
     Route::get('/falas', [SiteAssistenteController::class, 'falas'])
-        ->middleware('throttle:120,1')->name('falas');
+        ->middleware('throttle:120,1,assistente-falas')->name('falas');
+    Route::post('/avaliar', [SiteAssistenteController::class, 'avaliar'])
+        ->middleware('throttle:10,1,assistente-avaliar')->name('avaliar');
 });
 
 /*

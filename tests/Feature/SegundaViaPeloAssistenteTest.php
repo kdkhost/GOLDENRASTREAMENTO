@@ -22,8 +22,8 @@ use Tests\TestCase;
  * testes fecham não é a frase bonita: é a régua de segurança combinada antes de escrever o código.
  *
  * 1. **Nenhuma decisão de envio passa por uma IA.** Sem chave de provedor nenhuma, o atendimento
- *    normal escalaria; se a conversa continua `aberta` e a máquina pergunta o e-mail, é porque a
- *    ação atendeu aquela fala — não o modelo.
+ *    normal escalaria; se a conversa continua `aberta` e a máquina pergunta um dado da ficha, é
+ *    porque a ação atendeu aquela fala — não o modelo.
  * 2. **O destino é a coluna da ficha, nunca o texto do chat.** O endereço digitado serve só para
  *    localizar a conta; o e-mail sai para `emailDeAcesso()`.
  * 3. **Errar não vaza.** A resposta errada ouve "não bateu com o cadastro" e nunca o valor certo,
@@ -48,6 +48,11 @@ class SegundaViaPeloAssistenteTest extends TestCase
         // que torna estes testes uma prova e não uma coincidência: conversa que segue `aberta` foi
         // atendida pela ação, e não por uma IA que aqui não existe.
         config(['assistente.chaves.gemini' => null, 'assistente.chaves.openai' => null]);
+
+        // A pesquisa de satisfação muda a última fala devolvida pelo endpoint no exato momento em que
+        // a ação se encerra — e é dela que estes testes tratam. O pedido de nota tem teste próprio
+        // (`IdentificacaoEAvaliacaoPeloAssistenteTest`); aqui ele sai do caminho.
+        config(['assistente.avaliacao.pedir' => false]);
     }
 
     /** A ficha de um cliente com os três dados que a casa escolheu conferir. */
@@ -136,19 +141,35 @@ class SegundaViaPeloAssistenteTest extends TestCase
         return (string) $fala['texto'];
     }
 
+    /**
+     * O procedimento da casa antes de mexer na conta de alguém: nome e e-mail na conversa. Os testes
+     * desta classe provam a régua de segurança do envio, e a porta da identificação é provada em
+     * `IdentificacaoEAvaliacaoPeloAssistenteTest` — aqui ela se atravessa uma vez, no começo.
+     */
+    private function identifica(Conversa $conversa): void
+    {
+        $this->diga($conversa, 'Maria Compradora');
+        $this->diga($conversa, 'maria@exemplo.com.br');
+
+        $this->assertSame('maria@exemplo.com.br', $conversa->refresh()->email);
+    }
+
     public function test_o_pedido_de_segunda_via_abre_a_conferencia_sem_tocar_no_financeiro(): void
     {
         Mail::fake();
+        $this->ficha();
         $this->ligaFinanceiro();
         $this->fingirWhmcs($this->faturas());
         $conversa = $this->conversa();
+        $this->identifica($conversa);
 
         $texto = $this->diga($conversa, 'Quero a segunda via da fatura, por favor.');
 
         $conversa->refresh();
-        $this->assertStringContainsString('e-mail', $texto);
+        // O e-mail já dado no atendimento não é pedido de novo: a ação começa direto na conferência.
+        $this->assertStringContainsString('ncontrei a conta', $texto);
+        $this->assertSame('conferir', $conversa->acao_passo);
         $this->assertSame('segunda_via', $conversa->acao);
-        $this->assertSame('email', $conversa->acao_passo);
         $this->assertSame('aberta', $conversa->status, 'Sem IA disponível, a ação teria que virar equipe.');
         $this->assertSame(1, $conversa->nome_pedidos, 'A conferência começou sem a abertura ter pedido o nome.');
 
@@ -159,7 +180,9 @@ class SegundaViaPeloAssistenteTest extends TestCase
     /** "2ª via", "via do boleto" e "manda a fatura" são o mesmo pedido — a máquina não pede IA para isso. */
     public function test_o_gatilho_reconhece_o_pedido_sem_acento_e_em_formas_diferentes(): void
     {
+        $this->ficha();
         $conversa = $this->conversa();
+        $this->identifica($conversa);
 
         foreach (['Pode mandar a fatura no meu email?', '2ª via do boleto', 'preciso da via da minha conta'] as $pedido) {
             $conversa->encerrarAcao();
@@ -188,13 +211,16 @@ class SegundaViaPeloAssistenteTest extends TestCase
         Mail::fake();
 
         $conversa = $this->conversa();
+        $this->diga($conversa, 'Maria Compradora');
+        // A identificação aceita o endereço que a pessoa deu; a ação é que sabe se ele é de alguém.
+        $this->diga($conversa, 'intruso@exemplo.com.br');
         $this->diga($conversa, 'Quero a segunda via da fatura.');
 
         // Primeiro um endereço que não é de ninguém: a máquina diz que não achou e nada sai.
-        $this->assertStringContainsString('Não localizei', $this->diga($conversa, 'intruso@exemplo.com.br'));
+        $this->assertStringContainsString('não localizei', $this->diga($conversa, 'intruso@exemplo.com.br'));
         Mail::assertNothingSent();
 
-        $this->assertStringContainsString('Conta encontrada', $this->diga($conversa, 'maria@exemplo.com.br'));
+        $this->assertStringContainsString('conta encontrada', $this->diga($conversa, 'maria@exemplo.com.br'));
 
         $conversa->refresh();
         $this->assertSame('conferir', $conversa->acao_passo);
@@ -203,7 +229,7 @@ class SegundaViaPeloAssistenteTest extends TestCase
         // A mesa de trabalho guarda estado, não resposta: nem o e-mail digitado nem o dado ficam lá.
         $this->assertStringNotContainsString('maria@exemplo.com.br', json_encode($conversa->acao_dados_json, JSON_THROW_ON_ERROR));
 
-        $this->assertStringContainsString('Isso mesmo', $this->diga($conversa, '123.456.789-01'));
+        $this->assertStringContainsString('isso mesmo', $this->diga($conversa, '123.456.789-01'));
         $texto = $this->diga($conversa, '27/10/1990');
 
         $this->assertStringContainsString('GR-501', $texto);
@@ -235,16 +261,16 @@ class SegundaViaPeloAssistenteTest extends TestCase
         Mail::fake();
 
         $conversa = $this->conversa();
+        $this->identifica($conversa);
         $this->diga($conversa, 'segunda via da fatura');
-        $this->diga($conversa, 'maria@exemplo.com.br');
 
         $texto = $this->diga($conversa, 'BRQ9999');
 
-        $this->assertStringContainsString('Não bateu com o cadastro', $texto);
+        $this->assertStringContainsString('não bateu com o cadastro', $texto);
         $this->assertStringNotContainsString('ABC1D23', $texto);
         $this->assertStringNotContainsString('BRQ9999', $texto, 'A máquina repetiu o que a pessoa errou.');
         $this->assertSame(1, $conversa->refresh()->acao_tentativas);
-        $this->assertNull($conversa->nome, 'A placa digitada virou o nome da pessoa.');
+        $this->assertSame('Maria Compradora', $conversa->nome, 'A placa digitada virou o nome da pessoa.');
 
         Mail::assertNothingSent();
     }
@@ -258,8 +284,8 @@ class SegundaViaPeloAssistenteTest extends TestCase
         Mail::fake();
 
         $conversa = $this->conversa();
+        $this->identifica($conversa);
         $this->diga($conversa, 'segunda via da fatura');
-        $this->diga($conversa, 'maria@exemplo.com.br');
         $this->diga($conversa, '000.000.000-00');
         $texto = $this->diga($conversa, '111.111.111-11');
 
@@ -281,8 +307,10 @@ class SegundaViaPeloAssistenteTest extends TestCase
         Mail::fake();
 
         $conversa = $this->conversa();
-        $this->diga($conversa, 'segunda via da fatura');
-        $texto = $this->diga($conversa, 'maria@exemplo.com.br');
+        $this->identifica($conversa);
+        // Sem e-mail para achar a ficha, a ação teria que pedir o endereço antes; identificada a
+        // pessoa, ela já sabe de quem é a conta e descobre na hora que não há o que conferir.
+        $texto = $this->diga($conversa, 'segunda via da fatura');
 
         $this->assertStringContainsString('chamei a equipe', $texto);
         $this->assertSame('verificacao_impossivel', $conversa->refresh()->escala_motivo);
@@ -296,8 +324,8 @@ class SegundaViaPeloAssistenteTest extends TestCase
 
         // 1. Sem credencial nenhuma: a conferência passa e o envio não tem para onde ir.
         $conversa = $this->conversa();
+        $this->identifica($conversa);
         $this->diga($conversa, 'segunda via da fatura');
-        $this->diga($conversa, 'maria@exemplo.com.br');
         $this->diga($conversa, '123.456.789-01');
         $texto = $this->diga($conversa, '27/10/1990');
 
@@ -311,7 +339,6 @@ class SegundaViaPeloAssistenteTest extends TestCase
         $this->fingirWhmcs(['GetInvoices' => Http::response(['result' => 'error', 'message' => 'boom'], 500)]);
 
         $this->diga($conversa, 'segunda via da fatura');
-        $this->diga($conversa, 'maria@exemplo.com.br');
         $this->diga($conversa, '123.456.789-01');
         $texto = $this->diga($conversa, '27/10/1990');
 
@@ -338,8 +365,8 @@ class SegundaViaPeloAssistenteTest extends TestCase
         Mail::fake();
 
         $conversa = $this->conversa();
+        $this->identifica($conversa);
         $this->diga($conversa, 'segunda via da fatura');
-        $this->diga($conversa, 'maria@exemplo.com.br');
         $this->diga($conversa, '123.456.789-01');
         $texto = $this->diga($conversa, '27/10/1990');
 
@@ -350,8 +377,8 @@ class SegundaViaPeloAssistenteTest extends TestCase
     }
 
     /**
-     * Conferência parada é outra pessoa na frente do computador: vencida a janela, os acertos são
-     * esquecidos e a conversa volta a pedir o e-mail antes de qualquer envio.
+     * Conferência parada é outra pessoa na frente do computador: vencida a janela, a mesa é montada
+     * de novo do zero — os acertos da rodada vencida não servem de atalho para ninguém.
      */
     public function test_a_conferencia_vencida_recomeca_do_zero(): void
     {
@@ -362,20 +389,24 @@ class SegundaViaPeloAssistenteTest extends TestCase
         Mail::fake();
 
         $conversa = $this->conversa();
+        $this->identifica($conversa);
         $this->diga($conversa, 'segunda via da fatura');
-        $this->diga($conversa, 'maria@exemplo.com.br');
         $this->diga($conversa, '123.456.789-01');
+
+        $conversa->refresh();
+        $this->assertSame(1, (int) $conversa->acao_dados_json['acertos'], 'A conferência não anotou o primeiro acerto.');
 
         $this->travel(21)->minutes();
         $texto = $this->diga($conversa, '27/10/1990');
 
         $this->assertStringContainsString('não vale mais', $texto);
         $conversa->refresh();
-        $this->assertSame('email', $conversa->acao_passo);
-        // "Do zero" é a mesa de trabalho vazia: a ficha achada e os acertos da rodada vencida não
-        // podem servir de atalho para uma pessoa nova do outro lado da tela.
-        $this->assertSame([], (array) $conversa->acao_dados_json,
-            'Sobrou confidência da conferência vencida na mesa de trabalho.');
+        // A ficha não é pedida de novo — ela é o e-mail que a identificação já gravou. O que morre é
+        // a rodada: a mesa volta a listar os três dados e o placar zera.
+        $this->assertSame('conferir', $conversa->acao_passo);
+        $this->assertSame(Verificacao::escolhidos(), $conversa->acao_dados_json['conferindo']);
+        $this->assertSame(0, (int) $conversa->acao_dados_json['acertos'],
+            'Sobrou acerto da conferência vencida na mesa de trabalho.');
         $this->assertSame(0, (int) $conversa->acao_tentativas);
         Mail::assertNothingSent();
     }
@@ -389,8 +420,8 @@ class SegundaViaPeloAssistenteTest extends TestCase
         Mail::fake();
 
         $conversa = $this->conversa();
+        $this->identifica($conversa);
         $this->diga($conversa, 'segunda via da fatura');
-        $this->diga($conversa, 'maria@exemplo.com.br');
         $this->assertSame('conferir', $conversa->refresh()->acao_passo);
 
         config(['whmcs.veiculacao.segunda_via' => false]);
@@ -406,11 +437,15 @@ class SegundaViaPeloAssistenteTest extends TestCase
     /** O pedido antes da conferência: um endereço malformado não gasta uma consulta ao financeiro. */
     public function test_um_texto_que_nao_e_email_nao_vira_busca_de_conta(): void
     {
+        // A tranca da identificação é provada na outra classe; aqui ela sai do caminho de propósito,
+        // porque o que se testa é o passo `email` da própria ação — o único em que ela ainda pergunta.
+        config(['assistente.contato.exigir_para_personalizado' => false]);
         $this->ficha();
         $this->ligaFinanceiro();
         $this->fingirWhmcs($this->faturas());
 
         $conversa = $this->conversa();
+        $this->diga($conversa, 'Maria Compradora');
         $this->diga($conversa, 'segunda via da fatura');
         $texto = $this->diga($conversa, 'maria sem aroba');
 
@@ -429,6 +464,8 @@ class SegundaViaPeloAssistenteTest extends TestCase
 
         $this->diga($conversa, 'Meu nome é Marcelo');
         $this->assertSame('Marcelo', $conversa->refresh()->nome);
+
+        $this->diga($conversa, 'maria@exemplo.com.br');
 
         $texto = $this->diga($conversa, 'segunda via da fatura');
 
@@ -449,12 +486,12 @@ class SegundaViaPeloAssistenteTest extends TestCase
         Mail::fake();
 
         $conversa = $this->conversa();
+        $this->identifica($conversa);
         $this->diga($conversa, 'segunda via da fatura');
-        $this->diga($conversa, 'maria@exemplo.com.br');
         $texto = $this->diga($conversa, 'ABC1D23');
 
-        $this->assertStringContainsString('Enviei', $texto);
-        $this->assertNull($conversa->refresh()->nome, 'A placa conferida virou o nome da pessoa.');
+        $this->assertStringContainsString('enviei a fatura', $texto);
+        $this->assertSame('Maria Compradora', $conversa->refresh()->nome, 'A placa conferida virou o nome da pessoa.');
         $this->assertSame($this->fichaId(), (int) $conversa->customer_id);
     }
 

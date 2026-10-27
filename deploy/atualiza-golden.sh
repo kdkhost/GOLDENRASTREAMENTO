@@ -76,6 +76,11 @@ echo "==> Migrations"
 "$PHP_BIN" artisan config:clear >/dev/null
 "$PHP_BIN" artisan migrate --force
 
+# Treinamento da assistente: acrescenta o que falta na base e regrava o catálogo com os preços
+# vigentes. O que a equipe editou no painel não é tocado — por isso roda em toda atualização.
+echo "==> Treinando o assistente virtual"
+"$PHP_BIN" artisan assistente:ensinar || echo "    o treinamento não rodou; ensine a base no painel."
+
 echo "==> Storage"
 "$PHP_BIN" artisan storage:link >/dev/null 2>&1 || true
 
