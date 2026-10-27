@@ -3,6 +3,23 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.47.3] - 2026-10-27
+
+### Corrigido
+- **A lista do select passou a ser desenhada pela própria página.** A 2.47.2 deu fundo e texto às
+  opções, mas no Chrome de algumas máquinas a lista ainda abria como uma mancha só, sem linhas e
+  sem letra, nos dois temas — porque o pop-up nativo é montado fora da página, e ali entram o tema
+  do Windows, o modo escuro forçado do navegador e a aceleração de vídeo, que a CSS nenhuma alcança.
+  Onde o navegador entende `appearance: base-select` (Chrome e Edge 123+), o `<select>` e o seu
+  `::picker(select)` agora usam esse modo: a lista virou DOM, pintado com os tokens da paleta, e o
+  que restou de nativo — o ícone do seletor, escondido porque o Bootstrap já desenha a seta — não
+  interfere. Quem não tem o suporte fica com o pop-up do sistema e o par de cores da 2.47.2.
+- **Armadilha da especificidade, registrada em teste:** o `appearance: none` da classe
+  `.form-select`, do Bootstrap, ganha da etiqueta `select`, então o seletor nomeia as duas — sem
+  isso o campo continuaria com o pop-up do sistema e a correção não chegaria a ninguém.
+- **Três travas novas** em `TemasEIconesDoPainelTest`: o bloco `@supports (appearance:base-select)`
+  existe, nomeia `.form-select`, e a caixa da lista lê `--select-surface` da paleta.
+
 ## [2.47.2] - 2026-10-27
 
 ### Corrigido

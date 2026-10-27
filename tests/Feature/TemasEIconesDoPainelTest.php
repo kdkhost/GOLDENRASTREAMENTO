@@ -161,6 +161,32 @@ class TemasEIconesDoPainelTest extends TestCase
             'O rótulo de grupo do select precisa das mesmas cores da lista.');
     }
 
+    /**
+     * No Chrome o pop-up nativo pode ser pintado fora da página (tema do Windows, modo escuro
+     * forçado, aceleração de vídeo) e abrir como uma mancha de cor única. Com `base-select` a
+     * lista vira DOM e passa a obedecer à paleta — mas o `appearance:none` da classe `.form-select`,
+     * do Bootstrap, ganha da etiqueta `select`, então o seletor precisa nomear a classe.
+     */
+    public function test_a_lista_do_select_e_desenhada_pela_pagina_onde_o_navegador_permite(): void
+    {
+        $tema = $this->ler('public/css/golden-theme.css');
+
+        $this->assertMatchesRegularExpression('/@supports\s*\(appearance:base-select\)/', $tema,
+            'Sem o bloco base-select o pop-up continua nas mãos do sistema operacional.');
+
+        $inicio = (int) strpos($tema, '@supports (appearance:base-select)');
+        $bloco = substr($tema, $inicio);
+
+        $this->assertMatchesRegularExpression('/(?:^|[\s,])\.form-select\s*,/', $bloco,
+            'A classe .form-select precisa entrar no seletor: o appearance:none do Bootstrap vence a etiqueta select.');
+        $this->assertStringContainsString('::picker(select){appearance:base-select}', $bloco,
+            'O picker também precisa entrar no modo desenhado pela página.');
+        $this->assertMatchesRegularExpression(
+            '/::picker\(select\)\{[^}]*background-color:var\(--select-surface\)/',
+            $bloco,
+            'A caixa da lista não lê a paleta.');
+    }
+
     public function test_nenhuma_outra_folha_escreve_cor_de_option(): void
     {
         foreach (glob(base_path('public/css/*.css')) ?: [] as $caminho) {

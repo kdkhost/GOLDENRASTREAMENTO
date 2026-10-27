@@ -126,6 +126,31 @@ option,optgroup{background-color:var(--select-surface);color:var(--select-text)}
 option:checked{background-color:var(--select-marcado);color:var(--select-text)}
 optgroup{font-weight:600}
 
+/* Onde o navegador entende `base-select` (Chrome e Edge de 2024 em diante) a lista deixa de
+   ser desenhada pelo sistema e passa a ser desenhada pela página: é a única garantia que não
+   depende do tema do Windows, do modo escuro forçado do navegador nem da aceleração de vídeo,
+   que são exatamente o que fazia a lista abrir como uma mancha de cor única. Sem esse suporte,
+   o pop-up nativo fica com o par de cores declarado logo acima. */
+@supports (appearance:base-select){
+    /* `.form-select` entra no seletor porque o Bootstrap do painel escreve `appearance:none` na
+       classe, e classe ganha de etiqueta: sem isso o campo continuaria com o pop-up do sistema. */
+    select,.form-select,::picker(select){appearance:base-select}
+    select::picker-icon{display:none}
+    ::picker(select){
+        background-color:var(--select-surface);
+        color:var(--select-text);
+        border:1px solid var(--bs-border-color);
+        border-radius:var(--radius-md);
+        padding:4px;margin-top:2px;
+        box-shadow:var(--aviso-sombra);
+    }
+    option{display:flex;align-items:center;gap:8px;padding:.42rem .6rem;border-radius:6px}
+    option:hover,option:focus{background-color:var(--select-marcado)}
+    option:checked{background-color:transparent;font-weight:600}
+    option::checkmark{color:var(--brand-gold-2)}
+    optgroup label{padding:.4rem .6rem;color:var(--t-neutral-fg)}
+}
+
 /* utilitários de tom — chips, ícones e bolhas usam sempre o mesmo par */
 .tone-gold{background:var(--t-gold-bg);color:var(--t-gold-fg)}
 .tone-teal{background:var(--t-teal-bg);color:var(--t-teal-fg)}
