@@ -60,7 +60,7 @@ class ImagensDoSitePeloCmsTest extends TestCase
         // Toda página fixa pode receber cartaz, e o nome do grupo de cada slot
         // precisa bater com uma página registrada — é assim que a tela agrupa.
         $nomes = collect(config('golden.paginas_site'))->pluck('nome')->all();
-        $nomes[] = 'Home';
+        $nomes[] = 'Página inicial';
         $nomes[] = 'Todo o site';
 
         foreach ($slots as $registro) {
@@ -150,7 +150,7 @@ class ImagensDoSitePeloCmsTest extends TestCase
         foreach (ConteudoSite::slots() as $slot => $registro) {
             $area = match (true) {
                 $registro['pagina'] === 'Todo o site' => 'identidade',
-                str_starts_with($registro['pagina'], 'Home') => 'home',
+                str_starts_with($registro['pagina'], 'Página inicial') => 'home',
                 default => 'cartazes',
             };
 

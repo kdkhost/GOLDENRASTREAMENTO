@@ -38,8 +38,8 @@ class SiteContentController extends Controller
     /**
      * As três áreas em que a tela divide as fotografias do site. A regra é o campo `pagina`
      * do próprio slot — o vocabulário do site, não uma lista de arquivos: o que se repete em
-     * tudo é identidade, o que começa com "Home" é a página inicial, e o resto é o cartaz de
-     * uma página interna.
+     * tudo é identidade, o que começa com "Página inicial" é a home do site, e o resto é o cartaz
+     * de uma página interna.
      */
     private const AREAS = [
         'identidade' => [
@@ -48,7 +48,7 @@ class SiteContentController extends Controller
             'descricao' => 'O que vale em todo o site de uma vez: a marca, o símbolo da aba do navegador e o cartão que as redes mostram ao compartilhar um link.',
         ],
         'home' => [
-            'titulo' => 'Home',
+            'titulo' => 'Página inicial',
             'icone' => 'fa-house',
             'descricao' => 'As fotografias da página inicial, na ordem em que aparecem para quem entra no site e rola a tela.',
         ],
@@ -76,8 +76,8 @@ class SiteContentController extends Controller
             $porArea[$area][] = [
                 'slot' => $slot,
                 'registro' => $registro,
-                // Onde a foto aparece, na voz do site: a seção da Home, ou o nome da página quando
-                // todos os cards da área têm o mesmo título (os cartazes).
+                // Onde a foto aparece, na voz do site: a seção da página inicial, ou o nome da
+                // página quando todos os cards da área têm o mesmo título (os cartazes).
                 'onde' => Str::contains($pagina, ' · ')
                     ? Str::after($pagina, ' · ')
                     : ($area === 'cartazes' ? $pagina : null),
@@ -224,14 +224,14 @@ class SiteContentController extends Controller
     {
         return match (true) {
             $rotulo === 'Todo o site' => 'identidade',
-            Str::before($rotulo, ' ·') === 'Home' => 'home',
+            Str::before($rotulo, ' ·') === 'Página inicial' => 'home',
             default => 'cartazes',
         };
     }
 
     /**
      * A página onde o slot aparece, para o botão "ver no site": o rótulo do grupo
-     * ('Home · Para quem é') é conferido contra config('golden.paginas_site'),
+     * ('Página inicial · Para quem é') é conferido contra config('golden.paginas_site'),
      * então a tela nunca aponta para uma rota inventada.
      */
     private function rotaDaPagina(string $rotulo): string

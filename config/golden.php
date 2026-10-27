@@ -61,52 +61,52 @@ return [
         ],
 
         'home_hero' => [
-            'pagina' => 'Home', 'titulo' => 'Foto de fundo do herói', 'padrao' => 'img/home/hero-monitoramento.jpg',
+            'pagina' => 'Página inicial', 'titulo' => 'Foto de fundo do herói', 'padrao' => 'img/home/hero-monitoramento.jpg',
             'alt' => 'Analista da Golden acompanhando os veículos no mapa em dois monitores',
             'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
             'dica' => 'Abre o site: a central de monitoramento. Escurecida por cima, use foto clara no centro.',
         ],
         'home_plataforma' => [
-            'pagina' => 'Home · Aplicativo e plataforma', 'titulo' => 'Foto de fundo da plataforma', 'padrao' => 'img/home/plataforma-monitor.jpg',
+            'pagina' => 'Página inicial · Aplicativo e plataforma', 'titulo' => 'Foto de fundo da plataforma', 'padrao' => 'img/home/plataforma-monitor.jpg',
             'alt' => 'Plataforma Golden de monitoramento aberta em um computador sobre uma mesa de madeira',
             'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
             'dica' => 'Faixa em largura total: o computador fica à direita e o texto, sobre o lado esquerdo escuro.',
         ],
         'home_equipamento' => [
-            'pagina' => 'Home · Rastreador J16', 'titulo' => 'Foto de fundo do rastreador', 'padrao' => 'img/home/rastreador-j16.jpg',
+            'pagina' => 'Página inicial · Rastreador J16', 'titulo' => 'Foto de fundo do rastreador', 'padrao' => 'img/home/rastreador-j16.jpg',
             'alt' => 'Rastreador veicular J16 4G/2G com chicote de instalação sobre uma mesa de madeira',
             'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
             'dica' => 'Faixa em largura total: o equipamento fica à esquerda e o texto, sobre o lado direito escuro.',
         ],
         'home_cta' => [
-            'pagina' => 'Home', 'titulo' => 'Foto da chamada final', 'padrao' => 'img/home/estrada-por-do-sol.jpg',
+            'pagina' => 'Página inicial', 'titulo' => 'Foto da chamada final', 'padrao' => 'img/home/estrada-por-do-sol.jpg',
             'alt' => 'Caminhão em estrada ao pôr do sol',
             'largura' => 1600, 'altura' => 914, 'dimensao' => '1600 × 914 px', 'proporcao' => '16:9',
             'dica' => 'Última faixa do site, sob o texto de contato.',
         ],
 
         'segmento_motorista' => [
-            'pagina' => 'Home · Para quem é', 'titulo' => 'Motoristas de aplicativo', 'padrao' => 'img/home/segmento-motorista.jpg',
+            'pagina' => 'Página inicial · Para quem é', 'titulo' => 'Motoristas de aplicativo', 'padrao' => 'img/home/segmento-motorista.jpg',
             'alt' => 'Motorista de aplicativo no carro com o celular no suporte',
             'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
         ],
         'segmento_particular' => [
-            'pagina' => 'Home · Para quem é', 'titulo' => 'Veículos particulares', 'padrao' => 'img/home/segmento-particular.jpg',
+            'pagina' => 'Página inicial · Para quem é', 'titulo' => 'Veículos particulares', 'padrao' => 'img/home/segmento-particular.jpg',
             'alt' => 'Carro particular estacionado em frente a uma casa',
             'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
         ],
         'segmento_frota' => [
-            'pagina' => 'Home · Para quem é', 'titulo' => 'Frotas empresariais', 'padrao' => 'img/home/segmento-frota.jpg',
+            'pagina' => 'Página inicial · Para quem é', 'titulo' => 'Frotas empresariais', 'padrao' => 'img/home/segmento-frota.jpg',
             'alt' => 'Frota de veículos utilitários da empresa em pátio',
             'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
         ],
         'segmento_locadora' => [
-            'pagina' => 'Home · Para quem é', 'titulo' => 'Locadoras de veículos', 'padrao' => 'img/home/segmento-locadora.jpg',
+            'pagina' => 'Página inicial · Para quem é', 'titulo' => 'Locadoras de veículos', 'padrao' => 'img/home/segmento-locadora.jpg',
             'alt' => 'Fileira de carros de locadora prontos para retirada',
             'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
         ],
         'segmento_rural' => [
-            'pagina' => 'Home · Para quem é', 'titulo' => 'Operações rurais', 'padrao' => 'img/home/segmento-rural.jpg',
+            'pagina' => 'Página inicial · Para quem é', 'titulo' => 'Operações rurais', 'padrao' => 'img/home/segmento-rural.jpg',
             'alt' => 'Trator e caminhão em lavoura na zona rural',
             'largura' => 720, 'altura' => 540, 'dimensao' => '720 × 540 px', 'proporcao' => '4:3',
         ],

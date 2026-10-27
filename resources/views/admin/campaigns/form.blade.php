@@ -36,7 +36,7 @@
                     <x-admin.link-copiar :valor="$campanha->linkRastreado($destino ? url('/'.ltrim($destino, '/')) : null)" label="URL rastreada" :hint="'destino: '.($destino ?: '/')" />
                 </div>
                 <div class="d-flex flex-wrap gap-2 mt-2 small">
-                    <a href="{{ route('admin.campanhas.edit', [$campanha, 'destino' => '/']) }}">Home</a>
+                    <a href="{{ route('admin.campanhas.edit', [$campanha, 'destino' => '/']) }}">Página inicial</a>
                     @foreach(config('golden.paginas_site') as $pagina)
                         <a href="{{ route('admin.campanhas.edit', [$campanha, 'destino' => '/'.ltrim(route($pagina['rota'], absolute: false), '/')]) }}">{{ $pagina['rotulo'] }}</a>
                     @endforeach

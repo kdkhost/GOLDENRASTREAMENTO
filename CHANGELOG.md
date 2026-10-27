@@ -3,6 +3,28 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.45.1] - 2026-10-27
+
+### Corrigido
+- **Toda tela volta a falar português, sem exceção.** O pedido veio como regra permanente —
+  *"nunca ponha textos em outro idioma na tela de desenvolvimento e outras"* — e a varredura nas
+  views, nos controladores, nas sondas e na assistente mostrou que o sistema já falava português
+  quase inteiro: `Total` é palavra nossa, os `Click` do Google Ads são nomes de método da API, e os
+  rótulos de `paginas_site` já estavam todos traduzidos. Sobrou uma palavra, e ela estava em três
+  lugares que se escrevem uns pelos outros: o nome do grupo de fotografias da página inicial em
+  Sistema → Conteúdo → Imagens do site, o prefixo que o controlador usa para decidir em qual aba
+  cada slot aparece (`Str::before($rotulo, ' ·') === 'Home'`) e o atalho que escolhe o destino de
+  uma campanha. `Home` virou **Página inicial** nos três, com o teste que trava o vocabulário do
+  grupo acompanhando (`ImagensDoSitePeloCmsTest`) — porque a regra só vale se o contrato que
+  depende da palavra for junto.
+
+### Adicionado
+- **A regra de idioma está gravada na memória do projeto.** Não como nota solta: toda string de
+  tela, toast, confirmação, guia, e-mail e mensagem de erro sai em português brasileiro, inclusive
+  nas telas de desenvolvimento e nas sondas técnicas. Código de resposta e nome de variável podem
+  aparecer entre parênteses como prova do que o servidor disse; a frase que explica vem sempre em
+  português.
+
 ## [2.45.0] - 2026-10-27
 
 ### Adicionado
