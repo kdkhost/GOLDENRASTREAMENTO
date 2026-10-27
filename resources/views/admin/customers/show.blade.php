@@ -3,7 +3,7 @@
 @section('page_title', $cliente->nome)
 @section('page_description', \App\Models\Customer::label($cliente->status).' · '.($cliente->tipo === 'juridica' ? 'Pessoa jurídica' : 'Pessoa física'))
 
-@php use App\Services\Whmcs\Veiculacao; @endphp
+@php use App\Services\Whmcs\Cliente as Financeiro; use App\Services\Whmcs\Veiculacao; @endphp
 
 @section('page_actions')
 @can('admin')
@@ -70,6 +70,20 @@
                     @else
                         <x-admin.status rotulo="não localizado" tom="neutral" />
                         <div class="form-hint fw-normal">A pessoa ainda não foi reconhecida no financeiro: na primeira visita ao portal a busca é feita pelo e-mail de acesso e este número aparece.</div>
+                    @endif
+                    @php $emailDeAcesso = (string) $cliente->emailDeAcesso(); @endphp
+                    @if(app(Financeiro::class)->configurado() && $emailDeAcesso !== '')
+                        {{-- O vínculo nasce sozinho na primeira visita ao portal e, depois disso, é o
+                             número gravado que manda: nenhuma visita volta a conferir o e-mail. Este
+                             botão é o caminho de volta quando o número envelheceu — conta recriada no
+                             financeiro, ou e-mail corrigido numa das pontas. --}}
+                        <form method="POST" class="mt-2 mb-0" action="{{ route('admin.clientes.revincular', $cliente) }}"
+                              data-confirmar="O painel vai perguntar ao financeiro qual conta pertence a {{ $emailDeAcesso }}.{{ $cliente->whmcs_id ? ' Se ele não confirmar nenhuma, o vínculo atual (#'.$cliente->whmcs_id.') é desfeito.' : '' }}">
+                            @csrf
+                            <button class="btn btn-sm btn-outline-secondary text-nowrap" title="Refaz a busca da conta pelo e-mail de acesso desta ficha">
+                                <i class="fas fa-link me-1" aria-hidden="true"></i> Revincular ao financeiro
+                            </button>
+                        </form>
                     @endif
                 </dd>
                 <dt>Verificação no chat</dt>

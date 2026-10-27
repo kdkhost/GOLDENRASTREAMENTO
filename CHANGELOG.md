@@ -3,6 +3,44 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.45.0] - 2026-10-27
+
+### Adicionado
+- **A ficha pode mandar refazer o vínculo com o financeiro.** A pergunta que abriu este trabalho
+  foi a mais honesta do mundo: *"toda vez que o cliente entrar com o mesmo e-mail do WHMCS, vai
+  carregar os serviços dele?"* — e a resposta tinha um porém que ninguém tinha dito em voz alta. O
+  vínculo nasce na primeira visita, pelo e-mail de acesso, e **depois disso é o número gravado que
+  manda**: nenhuma visita seguinte volta a conferir e-mail. É o que deixa o portal rápido, e é o
+  que deixa a tela mentindo quando a conta é apagada e recriada no WHMCS, ou quando o e-mail muda
+  numa das pontas. Faltava caminho de volta, e o caminho que existia era mexer na coluna pelo
+  banco.
+- **`POST /admin/clientes/{cliente}/revincular`** (`CustomerController::revincular`) refaz a
+  descoberta pelo e-mail de acesso de agora e obedece a uma linha só: **escreve na ficha apenas o
+  que o financeiro confirmou.** O `ok` grava o id devolvido — e se for o mesmo que já estava, diz
+  que nada mudou em vez de fingir trabalho. O `sem_conta` **desfaz** o ponteiro velho, porque
+  ficha ligada a uma conta que o próprio e-mail da pessoa não confirma é a porta de entrada da
+  fatura alheia; sem vínculo anterior, a ficha fica como está e o recado pede para conferir o
+  cadastro das duas pontas. Timeout, HTTP errado e credencial recusada não mudam nada — vínculo
+  nenhum se desfaz porque o servidor ficou mudo por doze segundos. E o id confirmado pertencer a
+  outra ficha bloqueia a gravação com o nome da outra ficha na frase: a coluna é única de
+  propósito, uma conta no financeiro e uma ficha aqui.
+- **O botão na ficha, com a pergunta antes do estrago.** Dentro do bloco *No financeiro (WHMCS)*,
+  `data-confirmar` nomeia o e-mail que vai ser perguntado e avisa, quando existe vínculo, que ele
+  será desfeito se o financeiro não confirmar nada — a confirmação sai em SweetAlert2 e o retorno
+  em toastr, como no resto do painel. O botão não aparece sem as três credenciais nem sem e-mail na
+  ficha: painel nenhum oferece porta que a rota fecha. Administrador e vendedor podem apertar — o
+  resultado é o e-mail que está na ficha que eles já editam, e condicionar a correção a um
+  administrador disponível deixaria o cliente esperando.
+
+### Testado
+- `RevinculoWhmcsTest` (10) roda a rota inteira com o WHMCS fingido e cobre os três desfechos, a
+  colisão de id com outra ficha, a ficha sem e-mail (que não gasta chamada nenhuma, travada com
+  `Http::assertNothingSent()`), o caso sem credencial — onde a rota não chama **e** a ficha não
+  oferece o botão —, e o papel: vendedor passa, visualizador leva 403. A régua que nenhum deles
+  solta é a que importa aqui: em cada falha de conversa, o teste lê a ficha de novo e exige que o
+  número antigo continue no lugar.
+- Suíte inteira em **592 testes e 6.733 asserções**.
+
 ## [2.44.0] - 2026-10-27
 
 ### Adicionado

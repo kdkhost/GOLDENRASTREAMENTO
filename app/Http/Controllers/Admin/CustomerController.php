@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Interaction;
 use App\Models\User;
+use App\Services\Whmcs\Cliente as Financeiro;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -135,6 +136,87 @@ class CustomerController extends Controller
         Activity::log('cliente_excluido', "Cliente {$nome} removido.");
 
         return redirect()->route('admin.clientes.index')->with('success', 'Cliente removido.');
+    }
+
+    /**
+     * Refaz o vínculo desta ficha com o financeiro, pelo e-mail de acesso.
+     *
+     * O vínculo nasce sozinho na primeira visita ao portal e, depois disso, é o número gravado
+     * que manda: nenhuma visita volta a conferir e-mail. É o que torna a tela rápida, e é também
+     * o que deixa o ponteiro envelhecer — conta apagada e recriada no WHMCS, ou e-mail corrigido
+     * numa das pontas, e a ficha segue apontando para um número que já não é daquela pessoa.
+     * Este botão é o único caminho de volta que não passa pelo banco por fora.
+     *
+     * Os três desfechos abaixo obedecem a uma regra só: **só se escreve aqui o que o financeiro
+     * confirmou.** `ok` grava o id que ele devolveu; `sem_conta` desfaz o ponteiro velho, porque
+     * uma ficha ligada a uma conta que o próprio e-mail da pessoa não confirma é a porta de
+     * entrada da fatura alheia; e qualquer falha de conversa não muda nada — vínculo nenhum se
+     * desfaz porque o servidor ficou mudo por doze segundos.
+     */
+    public function revincular(Customer $cliente): RedirectResponse
+    {
+        $financeiro = app(Financeiro::class);
+
+        if (! $financeiro->configurado()) {
+            return back()->with('error', 'O financeiro ainda não tem as três credenciais em Sistema → Configurações → Chaves de integração → WHMCS. Sem elas não há com quem falar.');
+        }
+
+        $email = (string) $cliente->emailDeAcesso();
+
+        if ($email === '') {
+            return back()->with('error', "A ficha de {$cliente->nome} não tem e-mail nenhum — é pelo e-mail de acesso que o financeiro reconhece a conta.");
+        }
+
+        $sonda = $financeiro->sonda($email);
+        $antes = $cliente->whmcs_id;
+
+        if ($sonda['estado'] === 'ok') {
+            return $this->gravarVinculo($cliente, (int) $sonda['id'], $antes, $email);
+        }
+
+        if ($sonda['estado'] === 'sem_conta') {
+            if ($antes === null) {
+                return back()->with('warning', $sonda['texto'].' Enquanto o e-mail for este, as telas de financeiro vão dizer que não há conta — e é o cadastro de uma das pontas que precisa ser conferido.');
+            }
+
+            $cliente->forceFill(['whmcs_id' => null])->saveQuietly();
+            Activity::log('cliente_desvinculado', "Revinculou ao financeiro: o e-mail {$email} não tem conta lá, e o vínculo com a conta #{$antes} foi desfeito.", $cliente);
+
+            return back()->with('warning', "O financeiro não confirma conta nenhuma para {$email}, e o vínculo com a conta #{$antes} foi desfeito. Se a pessoa tem conta lá, é o e-mail de uma das pontas que está outro — corrija e revincule de novo.");
+        }
+
+        return back()->with('error', $sonda['titulo'].' '.$sonda['texto'].' Nada foi alterado nesta ficha.');
+    }
+
+    /**
+     * Grava o id que o financeiro confirmou, depois de checar que aquela conta não é de outra
+     * ficha. A coluna é `unique` de propósito — uma conta lá, uma cá — e deixar a violação subir
+     * como exceção devolveria uma página de erro no meio de um atendimento.
+     */
+    private function gravarVinculo(Customer $cliente, int $id, ?int $antes, string $email): RedirectResponse
+    {
+        $dona = Customer::where('whmcs_id', $id)->whereKeyNot($cliente->id)->first();
+
+        if ($dona !== null) {
+            return back()->with('error', "O financeiro confirma {$email} como a conta #{$id}, mas essa conta já está vinculada à ficha de {$dona->nome}. Desfaça um dos dois antes de gravar: uma conta do financeiro só pode ser uma ficha aqui.");
+        }
+
+        if ($antes === $id) {
+            return back()->with('info', "Nada mudou: {$email} já é a conta #{$id}, e era esse o número gravado.");
+        }
+
+        $cliente->forceFill(['whmcs_id' => $id])->saveQuietly();
+        Activity::log(
+            'cliente_revinculado',
+            $antes === null
+                ? "Vinculou ao financeiro pelo e-mail {$email}: conta #{$id}."
+                : "Revinculou ao financeiro pelo e-mail {$email}: a ficha apontava para #{$antes} e passou para #{$id}.",
+            $cliente
+        );
+
+        return back()->with('success', $antes === null
+            ? "A ficha está ligada à conta #{$id} do financeiro ({$email})."
+            : "Vínculo trocado: a ficha apontava para a conta #{$antes} e passou para #{$id}, que é o que o financeiro confirma para {$email}.");
     }
 
     private function validateData(Request $request): array

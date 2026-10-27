@@ -314,6 +314,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         // segunda verdade sobre o que a pessoa vê. POST porque troca de sessão, não consulta.
         Route::post('/{cliente}/portal', [PortalSupervisaoController::class, 'entrar'])
             ->whereNumber('cliente')->name('portal.entrar')->middleware('role:admin');
+        // Refaz o ponteiro desta ficha para a conta do financeiro, pelo e-mail de acesso. POST
+        // porque grava. Quem pode é o próprio grupo acima (admin e vendedor): o resultado é o
+        // e-mail que já está na ficha que eles editam, e negar isso a quem atende deixaria a
+        // correção dependente de um administrador disponível.
+        Route::post('/{cliente}/revincular', [CustomerController::class, 'revincular'])
+            ->whereNumber('cliente')->name('revincular');
         Route::get('/{cliente}/editar', [CustomerController::class, 'edit'])->name('edit');
         Route::post('/{cliente}', [CustomerController::class, 'update'])->name('update');
         Route::post('/{cliente}/interacao', [CustomerController::class, 'interaction'])->name('interacao');

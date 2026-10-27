@@ -114,6 +114,7 @@ return [
                     'Cada interação é uma linha do tempo — ligação, visita, e-mail, WhatsApp — e é o que a equipe lê antes de falar com o cliente.',
                     'O pedido e o chamado do cliente aparecem na própria ficha; não é preciso caçar em outra tela.',
                     '**Ver a conta do cliente** — o botão no topo da ficha abre o portal daquela pessoa na tela do painel, exatamente como ela vê, e em somente leitura. É a forma de conferir o que o cliente está vendo sem pedir a senha dele.',
+                    '**Revincular ao financeiro** — o número do WHMCS gravado na ficha é o que manda nas visitas ao portal; nenhuma delas volta a conferir o e-mail. Quando a conta é recriada lá, ou quando o e-mail muda numa das pontas, este botão refaz a busca pelo e-mail de acesso de agora: o que o financeiro confirma é gravado, o que ele não confirma desfaz o vínculo velho, e uma falha de conversa não muda nada nesta ficha.',
                 ]],
             ],
         ],

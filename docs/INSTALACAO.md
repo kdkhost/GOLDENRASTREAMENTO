@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.44.0
+- **Versão:** 2.45.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -927,6 +927,19 @@ qual é o id da conta com o e-mail de acesso (`email_portal ?: email`) e grava o
 resultado em `customers.whmcs_id`; as visitas seguintes vão direto ao id. Nenhum
 endereço do portal aceita id de cliente — ele vem sempre da ficha autenticada, o
 que fecha a troca de número na URL.
+
+**Quando o número envelhece.** Como as visitas seguintes obedecem ao id gravado,
+nenhuma delas volta a conferir e-mail. Conta apagada e recriada no WHMCS, ou e-mail
+corrigido numa das pontas, e a ficha fica apontando para um número que já não é
+daquela pessoa. O botão **Revincular ao financeiro**, na ficha do cliente
+(*CRM → Clientes*), refaz a descoberta pelo e-mail de acesso de agora e obedece a
+uma regra só — escreve na ficha apenas o que o financeiro confirmou: o id que ele
+devolve é gravado; se ele não confirma conta nenhuma para aquele e-mail, o vínculo
+velho é desfeito (ficha ligada a uma conta que o próprio e-mail não confirma é a
+porta de entrada da fatura alheia); e timeout, HTTP errado ou credencial recusada
+não mudam nada. O id já pertencer a outra ficha bloqueia a gravação — a coluna é
+única de propósito: uma conta no financeiro, uma ficha aqui. Podem apertar o botão
+administrador e vendedor.
 
 **As quatro respostas da tela** — e a diferença que importa:
 
