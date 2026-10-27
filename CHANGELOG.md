@@ -56,6 +56,9 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   fake roteado pela `action` recebida — dois fakes no mesmo teste deixariam o segundo mudo, e um
   teste mudo passa por acidente.
 
+## [2.42.1] - 2026-10-26
+
+### Corrigido
 - **A sonda lê o WHMCS que existe, não o que a documentação descreve.** Na primeira prova em
   produção, um e-mail sem ficha respondeu `result: error` com `Client Not Found` e HTTP 200 —
   credencial boa, conta ausente. Como todo `result` diferente de `success` era tratado como
