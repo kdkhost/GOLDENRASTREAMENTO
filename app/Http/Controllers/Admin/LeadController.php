@@ -11,6 +11,7 @@ use App\Models\Lead;
 use App\Models\LeadStatusHistory;
 use App\Models\User;
 use App\Services\LeadService;
+use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -130,22 +131,23 @@ class LeadController extends Controller
 
         Activity::log('lead_exportado', 'Exportação de leads ('.$leads->count().' registros).', null, $request->only(['status', 'campanha', 'inicio', 'fim']));
 
-        $filename = 'golden-leads-'.now()->format('Ymd-His').'.csv';
-
-        return response()->streamDownload(function () use ($leads) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 p/ Excel
-            fputcsv($out, ['ID', 'Nome', 'WhatsApp', 'E-mail', 'Perfil', 'Frota', 'Kit', 'Status', 'Campanha', 'Origem', 'UTM Campaign', 'Valor (R$)', 'Criado em', 'Responsável']);
-            foreach ($leads as $l) {
-                fputcsv($out, [
-                    $l->id, $l->name, $l->phone, $l->email, $l->profile, $l->fleet_size, $l->kit,
-                    Lead::label($l->status), $l->campaign?->name, $l->utm_source, $l->utm_campaign,
-                    $l->value ? number_format($l->value / 100, 2, ',', '') : '',
-                    $l->created_at->format('d/m/Y H:i'), $l->owner?->name,
-                ]);
-            }
-            fclose($out);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        // Os rótulos abaixo são o que aparece na primeira linha; a ordem alfabética é do Csv.
+        return Csv::baixar('golden-leads', [
+            'ID' => fn (Lead $lead) => $lead->id,
+            'Nome' => fn (Lead $lead) => $lead->name,
+            'WhatsApp' => fn (Lead $lead) => $lead->phone,
+            'E-mail' => fn (Lead $lead) => $lead->email,
+            'Perfil' => fn (Lead $lead) => $lead->profile,
+            'Frota' => fn (Lead $lead) => $lead->fleet_size,
+            'Kit' => fn (Lead $lead) => $lead->kit,
+            'Status' => fn (Lead $lead) => Lead::label($lead->status),
+            'Campanha' => fn (Lead $lead) => $lead->campaign?->name,
+            'Origem' => fn (Lead $lead) => $lead->utm_source,
+            'UTM campanha' => fn (Lead $lead) => $lead->utm_campaign,
+            'Valor (R$)' => fn (Lead $lead) => Csv::moeda($lead->value),
+            'Criado em' => fn (Lead $lead) => Csv::data($lead->created_at),
+            'Responsável' => fn (Lead $lead) => $lead->owner?->name,
+        ], $leads);
     }
 
     private function query(Request $request)

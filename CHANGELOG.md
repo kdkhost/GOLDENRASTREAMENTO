@@ -3,6 +3,41 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.41.0] - 2026-10-26
+
+### Adicionado
+- **`App\Support\Csv`: a escrita de CSV da plataforma numa fonte só.** Antes, cada exportação
+  chamava o próprio `fputcsv` com vírgula, na ordem em que o programador tinha escrito as
+  colunas. O Excel em português não reconhece vírgula como separador, então cada linha inteira
+  entrava numa célula só e o arquivo abria como uma bagunça ilegível. Agora quem exporta declara
+  `Rótulo => fn (registro) => valor` e recebe o download pronto, com as quatro promessas do
+  padrão: **colunas em ordem alfabética pelo rótulo** (o acento não prega lugar — `Última
+  atividade` fica no "u" que lhe cabe, antes de `UTM campanha`, e não no fim do arquivo, como
+  jogava a comparação de bytes), separador **ponto e vírgula**, **BOM UTF-8** e linha em CRLF
+  para o Excel abrir com as colunas abertas e o acento certo, e **toda célula entre aspas**.
+- **O arquivo não executa nada e não desalinha a planilha.** Texto é aparado e tem suas quebras
+  de linha viradas em espaço (uma célula multilinha quebrava o alinhamento de todo o resto);
+  número sai com vírgula decimal e data no `dd/mm/aaaa hh:mm`, como o Brasil escreve; valor em
+  centavos sai como moeda; e o que começa com `=`, `+`, `@`, `-`, tab ou CR entra com apóstrofo
+  na frente, para um telefone ou @ de cliente virar dado e não fórmula.
+- **Testes do padrão** (`tests/Feature/ArquivosCsvTest.php`): sete testes que conferem a ordem
+  alfabética, o BOM/separador/aspas, a célula multilinha, a neutralização de fórmula, os formatos
+  brasileiros e, tela por tela, o cabeçalho exato e uma linha por registro nos dois arquivos.
+
+### Alterado
+- **As duas exportações do painel passaram pela fonte única.** `Admin → Leads → Exportar CSV`
+  (também no painel inicial) e `Admin → Atribuição → Exportar` agora só declaram suas colunas; a
+  escrita é do `Csv`. Os leads ganham cabeçalho estável — `Campanha`, `Criado em`, `E-mail`,
+  `Frota`, `ID`, `Kit`, `Nome`, `Origem`, `Perfil`, `Responsável`, `Status`, `UTM campanha`,
+  `Valor (R$)`, `WhatsApp` — e a atribuição teve seus rótulos técnicos traduzidos: `utm_source`,
+  `utm_medium`, `utm_campaign` e `Views` viraram **UTM fonte**, **UTM meio**, **UTM campanha** e
+  **Visualizações**, iguais aos da tabela na tela.
+
+### Documentação
+- README (seção de exportação) e guia do painel (`Leads`, `Atribuição`) explicam o padrão do
+  arquivo: uma coluna por campo, em ordem alfabética, ponto e vírgula e BOM — abre no Excel já
+  organizado.
+
 ## [2.40.0] - 2026-10-26
 
 ### Alterado

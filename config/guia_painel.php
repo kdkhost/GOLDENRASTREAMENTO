@@ -94,6 +94,7 @@ return [
                     'A ficha do lead abre a jornada inteira: primeiro toque, último toque e a linha do tempo da visita antes de você atender.',
                     'Notas são a linha do tempo da negociação — data, autor e texto; nada substitui o estado.',
                     'Editar o telefone, o e-mail ou o perfil do lead é feito na própria ficha, sem formulário separado.',
+                    '**Exportar CSV** escreve os leads que estão na tela, uma coluna por campo e as colunas em ordem alfabética. O arquivo usa ponto e vírgula e traz o BOM do UTF-8, então abre no Excel em português já com as colunas certas.',
                     'Excluir é do administrador, e só depois de confirmar.',
                 ]],
             ],
@@ -145,6 +146,7 @@ return [
                     'Os identificadores que o sistema lê sozinhos: `utm_*`, `gclid` (Google), `fbclid` (Meta), `ttclid` (TikTok), `msclkid` (Microsoft), `li_fat_id` (LinkedIn), `yclid` (Yandex).',
                     'O cookie `golden_visitor` dura noventa dias, é de primeira parte e não guarda dado pessoal; o IP entra como hash.',
                     'Robô de índice — GPTBot, ClaudeBot, o crawler do Google — entra no registro mas fica fora de todo número. O navegador embutido do WhatsApp e do Instagram conta como gente, porque foi lá que o clique aconteceu.',
+                    '**Exportar CSV** traz as visitas do período que está na tela, com o mesmo cabeçalho em português da tabela e as colunas em ordem alfabética — os rótulos `utm_*` aparecem como UTM fonte, UTM meio e UTM campanha.',
                 ]],
                 ['tipo' => 'codigo', 'linhas' => [
                     'php artisan rastreio:podar            # guarda um ano (golden.rastreio.dias_retencao)',

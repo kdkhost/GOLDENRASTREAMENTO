@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\Visit;
 use App\Models\VisitEvent;
 use App\Services\Atribuidor;
+use App\Support\Csv;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -65,23 +66,27 @@ class AttributionController extends Controller
         $periodo = $this->periodo($request);
         $visitas = $this->visitas($request, $periodo)->withCount('leads')->latest('ultima_em')->get();
 
-        $filename = 'golden-atribuicao-'.now()->format('Ymd-His').'.csv';
-
-        return response()->streamDownload(function () use ($visitas) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Abertura', 'Última atividade', 'Canal', 'Rede', 'Pago', 'Motivo', 'utm_source', 'utm_medium', 'utm_campaign', 'Clique', 'Origem (host)', 'Origem (caminho)', 'Destino', 'Dispositivo', 'Navegador', 'Views', 'Cliques', 'Leads']);
-            foreach ($visitas as $v) {
-                fputcsv($out, [
-                    $v->aberta_em?->format('d/m/Y H:i'), $v->ultima_em?->format('d/m/Y H:i'),
-                    Atribuidor::rotuloCanal($v->canal), Atribuidor::rotuloRede($v->rede), $v->pago ? 'sim' : 'não', $v->motivo,
-                    $v->utm_source, $v->utm_medium, $v->utm_campaign, $v->clique_id,
-                    $v->origem_host, $v->origem_path, $v->landing_path,
-                    $v->dispositivo, $v->navegador, $v->visualizacoes, $v->eventos, $v->leads_count,
-                ]);
-            }
-            fclose($out);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        // Os rótulos abaixo são o que aparece na primeira linha; a ordem alfabética é do Csv.
+        return Csv::baixar('golden-atribuicao', [
+            'Abertura' => fn (Visit $v) => Csv::data($v->aberta_em),
+            'Última atividade' => fn (Visit $v) => Csv::data($v->ultima_em),
+            'Canal' => fn (Visit $v) => Atribuidor::rotuloCanal($v->canal),
+            'Rede' => fn (Visit $v) => Atribuidor::rotuloRede($v->rede),
+            'Pago' => fn (Visit $v) => $v->pago ? 'sim' : 'não',
+            'Motivo' => fn (Visit $v) => $v->motivo,
+            'UTM fonte' => fn (Visit $v) => $v->utm_source,
+            'UTM meio' => fn (Visit $v) => $v->utm_medium,
+            'UTM campanha' => fn (Visit $v) => $v->utm_campaign,
+            'Clique' => fn (Visit $v) => $v->clique_id,
+            'Origem (host)' => fn (Visit $v) => $v->origem_host,
+            'Origem (caminho)' => fn (Visit $v) => $v->origem_path,
+            'Destino' => fn (Visit $v) => $v->landing_path,
+            'Dispositivo' => fn (Visit $v) => $v->dispositivo,
+            'Navegador' => fn (Visit $v) => $v->navegador,
+            'Visualizações' => fn (Visit $v) => $v->visualizacoes,
+            'Cliques' => fn (Visit $v) => $v->eventos,
+            'Leads' => fn (Visit $v) => $v->leads_count,
+        ], $visitas);
     }
 
     /**

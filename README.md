@@ -390,7 +390,11 @@ a dimensão ideal.
 - **Leads**: listagem com **filtros** (status, campanha, período, busca, responsável),
   ficha completa com **mover no funil** (novo → contatado → proposta → vendido / perdido),
   notas de atendimento, edição do cadastro, atribuição de campanha e **linha do tempo**.
-- **Exportação CSV** respeitando os filtros ativos (com trilha de auditoria).
+- **Exportação CSV** respeitando os filtros ativos (com trilha de auditoria). Todo arquivo sai de
+  uma fonte única (`App\Support\Csv`): **uma coluna por campo, em ordem alfabética pelo rótulo**,
+  separador ponto e vírgula, BOM UTF-8 e CRLF — abre no Excel em português já com as colunas
+  abertas. Texto não ganha quebra de linha, número sai com vírgula decimal, data sai `dd/mm/aaaa`
+  e o que começa com `=`, `+`, `@` ou `-` entra com apóstrofo para a planilha não executar um dado.
 - **Campanhas**: cadastro manual + criação automática por UTM, com métricas por campanha.
 - **Google Ads**: a métrica real das campanhas do anunciante dentro do painel, com OAuth por
   usuário, sincronização em fila e prévia do anúncio responsivo — seção *Google Ads* abaixo.
@@ -693,7 +697,7 @@ tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas a
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (504 testes, 5.955 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (511 testes, 5.990 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 
