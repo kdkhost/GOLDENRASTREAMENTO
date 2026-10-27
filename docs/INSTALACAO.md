@@ -1736,6 +1736,16 @@ O pedido e o agradecimento são textos da ficha (`assistente.pedido_avaliacao` e
 `assistente.agradecimento_avaliacao`, editáveis em **Assistente virtual**, com `:nome`), e o interruptor
 *Pedir a nota do atendimento no fim* liga ou desliga a pesquisa inteira.
 
+A despedida é reconhecida **por regra, antes de a máquina abrir a boca**. Quem escreve "obrigado, era
+isso" não fez pergunta nenhuma: mandá-la ao provedor terminava em "isso eu não sei responder, já chamei
+alguém da equipe" — escalando para a gente um atendimento concluído, com a pesquisa aberta na tela
+esperando nota. Hoje a fala de encerramento passa pela mesma régua do nome e do e-mail: com a pesquisa
+ainda em aberto, ela é o gatilho do pedido de nota; com a nota dada (ou com a porta de pesquisa fechada),
+sai a frase **Despedida** da ficha, com `:nome`, e a conversa continua `aberta` sem chamar ninguém.
+São sete textos fixos no caminho da identificação e do encerramento — pergunta e confirmação do nome,
+pergunta e confirmação do e-mail, pedido de avaliação, agradecimento pela nota e despedida — e todos se
+editam em **Atendimento → Assistente virtual**; em branco, vale o padrão de `config/assistente.php`.
+
 ### Ações: o assistente agora faz
 
 O atendimento tinha boca; ganhou mãos. `App\Services\Assistente\Acoes` é o registro das ações, e cada
@@ -1837,7 +1847,10 @@ da coluna é o teto da validação), `conversas.avaliacao_texto` (500), `avaliad
 `assistente.pergunta_email`, `confirmacao_email`, `pedido_avaliacao` e `agradecimento_avaliacao`
 (colunas `text` — em branco, vale o padrão de `config/assistente.php`);
 `2026_10_27_000007_guarda_o_que_a_conversa_estava_pedindo` acrescenta `conversas.acao_pendente` (60) e
-`acao_pendente_em`, a fila da identificação. Nenhuma tabela nova, nenhuma coluna sem `down()`.
+`acao_pendente_em`, a fila da identificação. Nenhuma tabela nova, nenhuma coluna sem `down()`. A
+correção seguinte, `2026_10_27_000008_da_a_fala_de_despedida_a_ficha_do_assistente`, acrescenta
+`assistente.despedida` (`text`, em branco vale o padrão) — a fala de encerramento precisou virar coluna
+porque é regra, e regra editável no painel é coluna na ficha.
 
 ### O que ainda não está no ar
 

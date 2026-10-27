@@ -70,6 +70,10 @@ final class Atendedor
      * dependente do chute. E ela só abre identificada — atendimento personalizado é o que olha a
      * conta da pessoa, e o que a casa não sabe de quem é, a casa não mexe.
      *
+     * **A despedida é o fim, e o fim é regra.** "Obrigado, era isso" não é pergunta: é a conversa
+     * encerrada. É nela (e no fecho de uma ação) que a casa pede a nota, e quando a nota já tem dono
+     * a máquina despede com o texto da ficha — nunca com o de escalada.
+     *
      * **O resto é conversa**, com a fonte obrigatória e o nome no texto de ordem.
      */
     public static function atender(Conversa $conversa): ?ConversaMensagem
@@ -141,6 +145,16 @@ final class Atendedor
             }
         }
 
+        // A despedida encerra por regra, antes de a máquina abrir a boca: quem escreve "obrigado, era
+        // isso" não fez pergunta nenhuma, e mandá-la ao provedor termina em "não sei responder,
+        // chamei a equipe" — a pior maneira de fechar um atendimento concluído, ainda mais com a
+        // pesquisa aberta na tela esperando nota. É aqui, e não depois da resposta, que ela vira o
+        // fim de conversa: sem IA no ar o atendimento ainda se despede, e sem custo de token.
+        if (Avaliacao::eDespedida($pergunta)) {
+            return self::pecaAValiacao($conversa, $ficha)
+                ?? self::fale($conversa, $ficha->textoDespedida($conversa->nome));
+        }
+
         $pedeONome = self::vaiPedirONome($conversa);
 
         // As fontes são achadas uma vez e servem às duas coisas: alimentar a chamada e registrar na
@@ -174,11 +188,7 @@ final class Atendedor
 
         self::tocarUltimaFala($conversa);
 
-        // A despedida é o outro fim de conversa, e o único que a casa não decide: quem escreve
-        // "obrigado, era isso" encerrou o atendimento, e é nessa hora que a pesquisa vale.
-        return $resposta->respondeu()
-            ? (self::pecaAValiacao($conversa, $ficha, $pergunta) ?? $fala)
-            : $fala;
+        return $fala;
     }
 
     /**
@@ -428,12 +438,8 @@ final class Atendedor
      * A nota não passa por IA nenhuma: ela entra pelo toque na bolha ou pelo número escrito aqui, e
      * os dois caminhos gravam as mesmas colunas.
      */
-    private static function pecaAValiacao(Conversa $conversa, Assistente $ficha, ?string $despedida = null): ?ConversaMensagem
+    private static function pecaAValiacao(Conversa $conversa, Assistente $ficha): ?ConversaMensagem
     {
-        if ($despedida !== null && ! Avaliacao::eDespedida($despedida)) {
-            return null;
-        }
-
         if (! Avaliacao::horaDePedir($conversa)) {
             return null;
         }

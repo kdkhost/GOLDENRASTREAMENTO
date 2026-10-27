@@ -3,6 +3,29 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.47.1] - 2026-10-27
+
+### Adicionado
+- **A despedida virou texto da ficha.** Coluna nova, `assistente.despedida`, com a frase editável em
+  **Atendimento → Assistente virtual** (com `:nome`) e o padrão em `config/assistente.php`. É a sétima
+  fala fixa do caminho da identificação e do encerramento: pergunta e confirmação do nome, pergunta e
+  confirmação do e-mail, pedido de avaliação, agradecimento pela nota e agora a despedida.
+  `2026_10_27_000008_da_a_fala_de_despedida_a_ficha_do_assistente` é aditiva, tem `down()` e foi
+  exercitada no MySQL 8.4 da hospedagem.
+
+### Corrigido
+- **Despedida não chama mais a equipe.** Na caminhada real da bolha, o cliente que escreveu
+  "obrigado, era isso" depois de receber a fatura ouviu *isso eu não sei responder com certeza, já
+  chamei alguém da equipe* — a fala de encerramento estava indo ao provedor como se fosse pergunta, e a
+  conversa fechava em `aguardando_equipe` com a pesquisa aberta na tela esperando nota. Quem se despede
+  não perguntou nada: `App\Services\Assistente\Atendedor` reconhece o encerramento **por regra, antes de
+  a máquina abrir a boca** — com a pesquisa em aberto a fala vira o pedido de nota, com a nota dada sai a
+  frase de despedida, e em nenhum dos dois caminhos existe chamada de IA, custo de token ou escala para
+  gente. A conversa continua `aberta` e `respondido_por_equipe_em` continua nulo.
+- **Duas travas novas** em `IdentificacaoEAvaliacaoPeloAssistenteTest`: a despedida pede a nota e não
+  chama a equipe, e a despedida depois da nota se despede pelo nome sem repetir a pesquisa uma segunda
+  vez na mesma conversa.
+
 ## [2.47.0] - 2026-10-27
 
 ### Adicionado

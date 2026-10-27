@@ -33,6 +33,8 @@
                         hint="Dito uma única vez no fim do atendimento — quando a máquina resolveu o assunto ou quando o cliente se despediu. Escreva :nome para chamá-lo." />
                     <x-admin.field name="agradecimento_avaliacao" type="textarea" label="Agradecimento pela nota" :value="$assistente->agradecimento_avaliacao" col="col-12" :rows="2" maxlength="500" :opcional="true"
                         hint="A resposta depois de o cliente dar a nota de 1 a 5. A nota fica gravada na conversa e na tela de conversas." />
+                    <x-admin.field name="despedida" type="textarea" label="Despedida" :value="$assistente->despedida" col="col-12" :rows="2" maxlength="500" :opcional="true"
+                        hint="Dito quando o cliente encerra a conversa e a pesquisa já não tem mais o que pedir. Escreva :nome no lugar de quem se despede. A despedida é regra, não pergunta: nunca vira chamado para a equipe." />
                     <x-admin.field name="tom" type="select" label="Tom de fala" :value="$assistente->tom" :options="$tons" col="col-12 col-md-6" :required="true"
                         hint="Como a máquina monta as frases." />
                     <x-admin.field name="voz" type="select" label="Voz das respostas em áudio" :value="$assistente->voz" :options="$vozes" col="col-12 col-md-6" empty="A voz padrão da casa" :opcional="true"

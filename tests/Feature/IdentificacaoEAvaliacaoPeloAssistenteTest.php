@@ -373,6 +373,51 @@ class IdentificacaoEAvaliacaoPeloAssistenteTest extends TestCase
      * meio da própria conversa. É o tipo de travamento que só aparece em uso de verdade, depois de dois
      * minutos de balão aberto — por isso a régua aqui é o consumo de um endereço não bloquear o outro.
      */
+    /**
+     * A despedida é o fim de conversa, e o fim é regra.
+     *
+     * "Obrigado, era isso" não é pergunta: é a pessoa encerrando. Mandada ao provedor sem chave
+     * ligada — ou a um provedor fora do ar — ela voltaria como "não sei responder" com a equipe
+     * chamada no fim de um atendimento concluído, que é exatamente a hora em que a casa quer a nota.
+     */
+    public function test_a_despedida_pede_a_nota_e_nao_chama_a_equipe(): void
+    {
+        $conversa = $this->conversa();
+        $this->diga($conversa, 'Maria Compradora');
+
+        $texto = $this->diga($conversa, 'obrigado, era isso');
+
+        $conversa->refresh();
+        $this->assertSame(config('assistente.persona.pedido_avaliacao'), $texto);
+        $this->assertSame('aberta', $conversa->status, 'A despedida virou chamado para a equipe.');
+        $this->assertNull($conversa->respondido_por_equipe_em);
+        $this->assertNotNull($conversa->avaliacao_pedida_em);
+    }
+
+    /**
+     * Dada a nota, a despedida que vem depois se despede — e não pergunta nada de novo.
+     *
+     * A pesquisa é uma vez só por conversa; o que sobra é o adeus, e ele é a fala da ficha, não o
+     * texto de escalada. Uma segunda pesquisa na mesma conversa é o jeito mais rápido de estragar a
+     * nota que a pessoa acabou de dar.
+     */
+    public function test_a_despedida_depois_da_nota_se_despede_sem_repetir_a_pesquisa(): void
+    {
+        $conversa = $this->conversa();
+        $this->diga($conversa, 'Maria Compradora');
+        $this->diga($conversa, 'obrigado, era isso');
+        $this->diga($conversa, '5');
+
+        $texto = $this->diga($conversa, 'valeu, era só isso');
+
+        $conversa->refresh();
+        $this->assertStringContainsString('Foi um prazer ajudar', $texto);
+        $this->assertStringContainsString('Maria', $texto, 'A despedida não chamou a pessoa pelo nome.');
+        $this->assertSame('aberta', $conversa->status);
+        $this->assertSame(1, ConversaMensagem::where('corpo', config('assistente.persona.pedido_avaliacao'))->count(),
+            'A casa pediu a nota de novo depois de já ter recebido a nota.');
+    }
+
     public function test_os_enderecos_da_bolha_nao_dividem_o_mesmo_teto(): void
     {
         $this->conversa();

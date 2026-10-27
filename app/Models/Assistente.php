@@ -36,7 +36,7 @@ class Assistente extends Model
 
     protected $fillable = [
         'nome', 'cargo', 'saudacao', 'pergunta_nome', 'confirmacao_nome', 'pergunta_email',
-        'confirmacao_email', 'pedido_avaliacao', 'agradecimento_avaliacao', 'tom', 'regras',
+        'confirmacao_email', 'pedido_avaliacao', 'agradecimento_avaliacao', 'despedida', 'tom', 'regras',
         'avatar', 'avatar_alt', 'dica', 'status', 'placeholder', 'humano', 'icone',
         'voz', 'ativo', 'no_site', 'no_funil', 'no_chamado', 'criado_por',
     ];
@@ -74,6 +74,7 @@ class Assistente extends Model
             'confirmacao_email' => (string) config('assistente.persona.confirmacao_email'),
             'pedido_avaliacao' => (string) config('assistente.persona.pedido_avaliacao'),
             'agradecimento_avaliacao' => (string) config('assistente.persona.agradecimento_avaliacao'),
+            'despedida' => (string) config('assistente.persona.despedida'),
             'tom' => (string) config('assistente.persona.tom'),
             'regras' => (string) config('assistente.persona.regras'),
         ]);
@@ -186,6 +187,18 @@ class Assistente extends Model
     public function textoAgradecimentoAvaliacao(?string $nome): string
     {
         $texto = (string) ($this->agradecimento_avaliacao ?: config('assistente.persona.agradecimento_avaliacao'));
+
+        return self::apliqueONome($texto, $nome);
+    }
+
+    /**
+     * A fala de quem encerra a conversa sem ter o que responder. A despedida não é pergunta, e a
+     * casa diz adeus com texto da ficha — nunca com o texto de escalada, que chamaria a equipe para
+     * um atendimento já concluído.
+     */
+    public function textoDespedida(?string $nome): string
+    {
+        $texto = (string) ($this->despedida ?: config('assistente.persona.despedida'));
 
         return self::apliqueONome($texto, $nome);
     }
