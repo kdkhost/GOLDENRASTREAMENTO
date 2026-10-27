@@ -40,6 +40,8 @@
         <x-admin.card title="Ficha do cliente" icon="fa-address-card">
             <dl class="defs mb-0">
                 <dt>Documento</dt><dd>{{ $cliente->documento ?: '—' }} ({{ $cliente->tipo === 'juridica' ? 'CNPJ' : 'CPF' }})</dd>
+                <dt>Nascimento</dt><dd>{{ $cliente->nascimento?->format('d/m/Y') ?: '—' }}</dd>
+                <dt>Placas</dt><dd>{{ $cliente->placas ?: '—' }}</dd>
                 <dt>WhatsApp</dt><dd>{{ $cliente->telefone ?: '—' }}</dd>
                 <dt>E-mail</dt><dd>{{ $cliente->email ?: '—' }}</dd>
                 <dt>Endereço</dt><dd>{{ $linhasEndereco ? implode(' · ', $linhasEndereco) : '—' }}</dd>
@@ -68,6 +70,20 @@
                     @else
                         <x-admin.status rotulo="não localizado" tom="neutral" />
                         <div class="form-hint fw-normal">A pessoa ainda não foi reconhecida no financeiro: na primeira visita ao portal a busca é feita pelo e-mail de acesso e este número aparece.</div>
+                    @endif
+                </dd>
+                <dt>Verificação no chat</dt>
+                <dd>
+                    @php
+                        $conferiveis = \App\Services\Assistente\Verificacao::exigiveis($cliente);
+                        $piso = \App\Services\Assistente\Verificacao::minimo();
+                    @endphp
+                    @if($conferiveis !== [])
+                        <x-admin.status :rotulo="count($conferiveis).' dado(s) para conferir'" :tom="count($conferiveis) >= $piso ? 'green' : 'gold'" />
+                        <div class="form-hint fw-normal">{{ collect($conferiveis)->map(fn ($campo) => \App\Services\Assistente\Verificacao::rotulo($campo))->implode(' · ') }}. A casa exige {{ $piso }} acerto(s) antes de qualquer envio; o que a pessoa responde nunca volta para esta tela.</div>
+                    @else
+                        <x-admin.status rotulo="nada para conferir" tom="neutral" />
+                        <div class="form-hint fw-normal">Nenhum dos campos pedidos em Sistema → Configurações → Assistente está preenchido aqui. Sem conferência, o assistente não envia nada sozinho — quem pedir pelo chat fala com a equipe.</div>
                     @endif
                 </dd>
                 <dt>No funil</dt><dd><x-admin.status :rotulo="\App\Models\Customer::label($cliente->status)" :tom="tom_por_status('cliente', $cliente->status)" /></dd>

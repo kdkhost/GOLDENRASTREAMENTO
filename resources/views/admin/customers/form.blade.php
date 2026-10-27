@@ -25,8 +25,10 @@
                     <x-admin.field name="nome" label="Nome" :value="$cliente->nome" col="col-12 col-md-8" :required="true" maxlength="190" autocomplete="organization" />
                     <x-admin.field name="tipo" type="select" label="Tipo" :value="$cliente->tipo ?: 'fisica'" :options="$tiposPessoa" col="col-6 col-md-4" :required="true" />
                     <x-admin.field name="documento" label="CPF / CNPJ" :value="$cliente->documento" col="col-6 col-md-4" maxlength="24" :opcional="true" hint="Somente números, com ou sem máscara." />
+                    <x-admin.field name="nascimento" type="date" label="Nascimento" :value="$cliente->nascimento?->format('Y-m-d')" col="col-6 col-md-4" :opcional="true" hint="Usada pelo assistente para conferir a identidade antes de enviar qualquer coisa." />
                     <x-admin.field name="telefone" label="WhatsApp" :value="$cliente->telefone" col="col-6 col-md-4" maxlength="32" :opcional="true" />
-                    <x-admin.field name="email" type="email" label="E-mail" :value="$cliente->email" col="col-12 col-md-4" maxlength="160" :opcional="true" autocomplete="off" />
+                    <x-admin.field name="email" type="email" label="E-mail" :value="$cliente->email" col="col-6 col-md-4" maxlength="160" :opcional="true" autocomplete="off" />
+                    <x-admin.field name="placas" label="Placas rastreadas" :value="$cliente->placas" col="col-12 col-md-8" maxlength="190" :opcional="true" placeholder="ABC1D23, DEF4E56" hint="Separadas por vírgula. O assistente pergunta uma delas antes de mandar a segunda via da fatura." />
 
                     <x-admin.field name="endereco" label="Endereço" :value="$cliente->endereco" maxlength="255" :opcional="true" />
                     <x-admin.field name="cidade" label="Cidade" :value="$cliente->cidade" col="col-6 col-md-5" maxlength="96" :opcional="true" />

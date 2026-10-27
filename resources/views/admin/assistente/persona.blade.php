@@ -21,6 +21,10 @@
                         placeholder="Assistente virtual da Golden Rastreamento" />
                     <x-admin.field name="saudacao" type="textarea" label="Saudação" :value="$assistente->saudacao" col="col-12" :rows="3" maxlength="1000" :opcional="true"
                         hint="A primeira frase da conversa, quando o cliente abre a bolha." />
+                    <x-admin.field name="pergunta_nome" type="textarea" label="Pergunta pelo nome" :value="$assistente->pergunta_nome" col="col-12" :rows="2" maxlength="500" :opcional="true"
+                        hint="A segunda frase da bolha, logo depois da saudação: o atendimento não começa sem nome. Quantas vezes ela se repete para quem não responde se ajusta em Sistema → Configurações → Chaves de integração → Assistente." />
+                    <x-admin.field name="confirmacao_nome" type="textarea" label="Resposta a quem disse o nome" :value="$assistente->confirmacao_nome" col="col-12" :rows="2" maxlength="500" :opcional="true"
+                        hint="A frase que reconhece a pessoa logo depois de ela se apresentar. Escreva :nome no lugar do nome dito — vale só o primeiro nome, como no resto do atendimento." />
                     <x-admin.field name="tom" type="select" label="Tom de fala" :value="$assistente->tom" :options="$tons" col="col-12 col-md-6" :required="true"
                         hint="Como a máquina monta as frases." />
                     <x-admin.field name="voz" type="select" label="Voz das respostas em áudio" :value="$assistente->voz" :options="$vozes" col="col-12 col-md-6" empty="A voz padrão da casa" :opcional="true"

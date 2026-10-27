@@ -18,7 +18,7 @@ class CustomerController extends Controller
         $clientes = Customer::withCount(['orders', 'interactions'])
             ->with('owner')
             ->when($request->filled('busca'), function ($q) use ($request) {
-                $t = '%' . $request->busca . '%';
+                $t = '%'.$request->busca.'%';
                 $q->where(fn ($w) => $w->where('nome', 'like', $t)->orWhere('telefone', 'like', $t)->orWhere('email', 'like', $t));
             })
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
@@ -116,7 +116,7 @@ class CustomerController extends Controller
     public function interaction(Request $request, Customer $cliente): RedirectResponse
     {
         $data = $request->validate([
-            'tipo' => ['required', 'in:' . implode(',', array_keys(Interaction::TIPOS))],
+            'tipo' => ['required', 'in:'.implode(',', array_keys(Interaction::TIPOS))],
             'assunto' => ['nullable', 'string', 'max:190'],
             'descricao' => ['nullable', 'string', 'max:5000'],
             'proxima_acao_em' => ['nullable', 'date'],
@@ -142,6 +142,8 @@ class CustomerController extends Controller
         return $request->validate([
             'nome' => ['required', 'string', 'max:190'],
             'documento' => ['nullable', 'string', 'max:24'],
+            'nascimento' => ['nullable', 'date'],
+            'placas' => ['nullable', 'string', 'max:190'],
             'tipo' => ['required', 'in:fisica,juridica'],
             'telefone' => ['nullable', 'string', 'max:32'],
             'email' => ['nullable', 'email', 'max:160'],
@@ -151,7 +153,7 @@ class CustomerController extends Controller
             'cep' => ['nullable', 'string', 'max:12'],
             'segmento' => ['nullable', 'string', 'max:40'],
             'frota_tamanho' => ['nullable', 'integer', 'min:0'],
-            'status' => ['required', 'in:' . implode(',', array_keys(Customer::STATUS))],
+            'status' => ['required', 'in:'.implode(',', array_keys(Customer::STATUS))],
             'owner_id' => ['nullable', 'integer'],
             'valor_anual' => ['nullable', 'numeric', 'min:0'],
             'observacoes' => ['nullable', 'string', 'max:5000'],

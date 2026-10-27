@@ -159,7 +159,7 @@ class PortalAuthController extends PortalBaseController
             );
 
             try {
-                Mail::to($cliente->email_portal)->queue(new RedefinirSenhaPortal($cliente, $link, self::VALIDADE_LINK));
+                Mail::to($cliente->emailDeAcesso())->queue(new RedefinirSenhaPortal($cliente, $link, self::VALIDADE_LINK));
             } catch (\Throwable $e) {
                 report($e);
             }

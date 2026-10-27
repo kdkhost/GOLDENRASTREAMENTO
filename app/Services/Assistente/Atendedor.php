@@ -51,6 +51,22 @@ final class Atendedor
      * Responde a última fala do cliente que ainda está sem resposta. Separado de `dizer()` porque
      * a mídia (áudio, imagem, documento) chega antes por outro caminho: a fala é gravada no
      * upload, e a resposta sai quando o arquivo está no disco.
+     *
+     * A ordem das quatro perguntas abaixo é o atendimento inteiro, e ela não é trocável:
+     *
+     * **Ação em curso manda.** Quem está no meio de uma conferência de segurança respondeu a uma
+     * pergunta definida; desviar essa fala para a IA faria a máquina responder "não entendi" no
+     * passo mais delicado da conversa.
+     *
+     * **O nome vem do que a pessoa diz.** Ele é tirado da fala antes de qualquer assunto, porque é
+     * ele que deixa o atendimento formal — e um nome gravado tarde ainda chega a tempo da fatura.
+     * Quando a fala é só a resposta à pergunta pelo nome, a máquina reconhece a pessoa com texto
+     * fixo e para ali: ninguém fez pergunta nenhuma ao dizer como se chama.
+     *
+     * **A ação nova é achada antes de a máquina abrir a boca.** O gatilho é léxico e determinístico:
+     * uma IA decidir se "abre ou não" uma conferência de dados é a régua dependente do chute.
+     *
+     * **O resto é conversa**, com a fonte obrigatória e o nome no texto de ordem.
      */
     public static function atender(Conversa $conversa): ?ConversaMensagem
     {
@@ -72,6 +88,29 @@ final class Atendedor
             return null;
         }
 
+        $acao = Acoes::emCurso($conversa);
+
+        if ($acao !== null) {
+            return self::fale($conversa, $acao->atender($conversa, $pergunta));
+        }
+
+        $nomeDito = self::guardeONome($conversa, $pergunta, $ficha);
+
+        $pedida = Acoes::pedidaPela($pergunta);
+
+        if ($pedida !== null) {
+            return self::fale($conversa, $pedida->abrir($conversa));
+        }
+
+        // A resposta à pergunta pelo nome não é pergunta: é apresentação. Reconhecer com uma fala
+        // fixa custa zero chamada de IA e não escala a conversa de quem só se apresentou — mandar
+        // "Maria Aparecida" ao provedor era o jeito mais educado de dizer "chamei a equipe".
+        if ($nomeDito !== null) {
+            return self::fale($conversa, $ficha->textoConfirmacaoNome($nomeDito));
+        }
+
+        $pedeONome = self::vaiPedirONome($conversa);
+
         // As fontes são achadas uma vez e servem às duas coisas: alimentar a chamada e registrar na
         // fala o que a sustentou. Pedir duas vezes à mesma busca sairia diferente se alguém
         // editasse o conhecimento entre as duas — e a prova gravada deixaria de ser a da resposta.
@@ -79,7 +118,7 @@ final class Atendedor
 
         $resposta = Motor::responder(new Chamada(
             pergunta: $pergunta,
-            instrucoes: explode("\n", $ficha->instrucoes()),
+            instrucoes: self::ordemDaConversa($conversa, $ficha, $pedeONome),
             historico: self::historico($conversa, $ultima),
             fontes: $fontes,
             conversaId: $conversa->id,
@@ -98,12 +137,136 @@ final class Atendedor
         ]);
 
         if (! $resposta->respondeu()) {
-            self::escalar($conversa, $resposta->motivoDeEscalada ?? 'sem_fonte', $ultima);
+            self::chameEquipe($conversa, $resposta->motivoDeEscalada ?? 'sem_fonte', $pergunta);
         }
 
         self::tocarUltimaFala($conversa);
 
         return $fala;
+    }
+
+    /**
+     * A fala da máquina que não saiu de uma IA: passo de ação ou pergunta pelo nome. Ela entra na
+     * conversa sem provedor nem modelo gravados, porque a tela precisa mostrar de onde veio cada
+     * frase — e esta veio do código, que é justamente o que a equipe não pode discutir.
+     */
+    private static function fale(Conversa $conversa, string $texto): ConversaMensagem
+    {
+        $fala = ConversaMensagem::create([
+            'conversa_id' => $conversa->id,
+            'autor' => 'assistente',
+            'tipo' => 'texto',
+            'corpo' => mb_substr(trim($texto), 0, (int) config('assistente.resposta.caracteres_max')),
+        ]);
+
+        self::tocarUltimaFala($conversa);
+
+        return $fala;
+    }
+
+    /**
+     * O nome de quem fala, aproveitado de qualquer frase. A máquina só tenta adivinhar quando a
+     * última fala do assistente foi a pergunta pelo nome: aí "Maria de Jesus" é resposta, e fora
+     * desse estado uma resposta solta poderia virar nome de gente por engano.
+     *
+     * Devolve o nome quando a fala é só ele, resposta direta à pergunta — caso em que não há
+     * pergunta nenhuma a mandar ao provedor, e a máquina reconhece a pessoa com a frase da ficha.
+     */
+    private static function guardeONome(Conversa $conversa, string $pergunta, Assistente $ficha): ?string
+    {
+        if (filled($conversa->nome)) {
+            return null;
+        }
+
+        $direta = self::acabouDePerguntarONome($conversa, $ficha);
+        $nome = Nome::extrair($pergunta, respostaDireta: $direta);
+
+        if ($nome === null) {
+            return null;
+        }
+
+        $conversa->update(['nome' => $nome]);
+
+        return $direta && Nome::soONome($pergunta) ? $nome : null;
+    }
+
+    /** A última fala do assistente nesta conversa foi exatamente a pergunta pelo nome? */
+    private static function acabouDePerguntarONome(Conversa $conversa, Assistente $ficha): bool
+    {
+        $pergunta = $conversa->mensagens()
+            ->where('autor', 'assistente')
+            ->reorder('id', 'desc')
+            ->first();
+
+        return $pergunta !== null && $pergunta->corpo === $ficha->textoPerguntaNome();
+    }
+
+    /**
+     * As falas que abrem a bolha: a saudação da casa e, logo depois, o pedido de nome. Duas falas e
+     * não uma frase só porque a casa atende pelo nome — e quem espera a terceira frase para
+     * perguntá-lo já perdeu as duas primeiras para um "Prezado cliente".
+     *
+     * Quem abre a conversa é a bolha, mas a régua é desta classe: o mesmo teto de
+     * `assistente.nome.perguntas_max` que vale no meio do fio vale aqui, e é por isso que as duas
+     * falam pela boca de `fale()`.
+     *
+     * @return array<int, ConversaMensagem>
+     */
+    public static function abertura(Conversa $conversa, Assistente $ficha): array
+    {
+        $falas = [];
+
+        if (filled($ficha->saudacao)) {
+            $falas[] = self::fale($conversa, (string) $ficha->saudacao);
+        }
+
+        if (self::vaiPedirONome($conversa)) {
+            $falas[] = self::fale($conversa, $ficha->textoPerguntaNome());
+        }
+
+        return $falas;
+    }
+
+    /**
+     * O pedido de nome desta rodada: ligado quando a casa manda pedir, a pessoa ainda não tem nome
+     * na conversa e o teto de `assistente.nome.perguntas_max` não foi gasto. A contagem é gravada
+     * aqui, e não na fala, porque quem decide parar de perguntar precisa de prova — e porque a
+     * máquina que pergunta o nome no meio de uma conferência de dados é a que entrega a fatura de
+     * qualquer um.
+     */
+    private static function vaiPedirONome(Conversa $conversa): bool
+    {
+        if (filled($conversa->nome) || ! Nome::pedir()) {
+            return false;
+        }
+
+        if ((int) $conversa->nome_pedidos >= Nome::perguntasMax()) {
+            return false;
+        }
+
+        $conversa->update(['nome_pedidos' => (int) $conversa->nome_pedidos + 1]);
+
+        return true;
+    }
+
+    /**
+     * A ordem de sistema desta conversa: a persona da ficha mais o que se sabe de quem está do
+     * outro lado. É aqui que o nome entra na boca da máquina, porque o atendimento formal da casa
+     * não pode depender de a IA ter lido a frase em que a pessoa se apresentou.
+     */
+    private static function ordemDaConversa(Conversa $conversa, Assistente $ficha, bool $pedeONome): array
+    {
+        $ordem = explode("\n", $ficha->instrucoes());
+
+        if (filled($conversa->nome)) {
+            $ordem[] = 'A pessoa do outro lado se chama '.$conversa->nome.'. Trate-a pelo nome quando fizer sentido, sem repeti-lo em toda frase.';
+        } elseif ($pedeONome) {
+            $ordem[] = 'Você ainda não sabe o nome desta pessoa: pergunte-o nesta resposta, com naturalidade e uma única vez, e siga atendendo o assunto.';
+        } elseif (Nome::pedir()) {
+            $ordem[] = 'Esta pessoa não quis se identificar. Atenda sem nome e não volte a pedir.';
+        }
+
+        return $ordem;
     }
 
     /**
@@ -172,8 +335,11 @@ final class Atendedor
      * mesmo endereço que recebe chamado e pedido, porque duas caixas de entrada para a mesma
      * equipe é como se perde um aviso. O envio é uma tentativa: sem SMTP no ar a conversa continua
      * marcada como pendente na caixa do painel, e o cliente já tem a resposta que a tela deu.
+     *
+     * É público porque a parada não vem só do `Motor`: uma ação que não conseguiu enviar precisa do
+     * mesmo caminho, e o que muda entre os dois é apenas a prova de por que parou.
      */
-    private static function escalar(Conversa $conversa, string $motivo, ConversaMensagem $pergunta): void
+    public static function chameEquipe(Conversa $conversa, string $motivo, string $prova): void
     {
         $conversa->escalar($motivo);
 
@@ -182,7 +348,7 @@ final class Atendedor
         Notifica::disparar(
             'conversa_escalada',
             'Conversa esperando a equipe: '.($conversa->nome ?: 'visitante do site'),
-            $pergunta->textoVisivel(),
+            $prova,
             (string) $conversa->id,
             [
                 'conversa_id' => $conversa->id,
@@ -201,7 +367,7 @@ final class Atendedor
         }
 
         try {
-            Mail::to($destino)->queue(new ConversaEscalada($conversa, $motivo, $pergunta));
+            Mail::to($destino)->queue(new ConversaEscalada($conversa, $motivo, $prova));
         } catch (Throwable $falha) {
             report($falha);
         }

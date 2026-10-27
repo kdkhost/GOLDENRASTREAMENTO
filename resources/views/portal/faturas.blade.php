@@ -7,7 +7,7 @@
     $quantas = count($itens);
     $abreNoFinanceiro = Veiculacao::mostraLink();
     $emAbertoCents = collect($itens)
-        ->filter(fn (array $fatura): bool => in_array($fatura['status'], ['Unpaid', 'Payment Pending', 'Collections'], true))
+        ->filter(fn (array $fatura): bool => Veiculacao::faturaEmAberto($fatura))
         ->sum('saldo_cents');
     $descricaoPagina = match (true) {
         $situacao !== 'ok' => 'As faturas e mensalidades da sua conta, direto do financeiro da Golden.',

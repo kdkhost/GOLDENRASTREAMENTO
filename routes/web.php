@@ -486,5 +486,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/whatsapp', [SettingController::class, 'whatsapp'])->name('whatsapp');
         Route::post('/chaves', [SettingController::class, 'chaves'])->name('chaves');
         Route::post('/whmcs-sondar', [SettingController::class, 'sondarWhmcs'])->name('whmcs.sondar');
+        Route::post('/email-sondar', [SettingController::class, 'sondarEmail'])->name('email.sondar');
     });
 });

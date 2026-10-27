@@ -248,6 +248,24 @@ class VeiculacaoDoWhmcsTest extends TestCase
         $this->assertStringNotContainsString('#GR-500', $soEmAberto, 'Fatura paga apareceu com a veiculação desligada.');
     }
 
+    /**
+     * A resposta única para "ainda há o que pagar?". O aviso do portal soma com ela e a segunda via
+     * do chat escolhe com ela: quitsada é passado, e sem estado devolvido quem decide é o saldo.
+     */
+    public function test_a_mesma_regra_de_fatura_em_aberto_vale_para_o_portal_e_para_o_envio(): void
+    {
+        $emAberto = fn (array $fatura): bool => Veiculacao::faturaEmAberto($fatura);
+
+        $this->assertTrue($emAberto(['status' => 'Unpaid', 'saldo_cents' => 5990]));
+        $this->assertTrue($emAberto(['status' => 'Payment Pending', 'saldo_cents' => 5990]), 'Pagamento a caminho ainda é cobrança.');
+        $this->assertTrue($emAberto(['status' => 'Collections', 'saldo_cents' => 5990]));
+        $this->assertFalse($emAberto(['status' => 'Paid', 'saldo_cents' => 0]), 'Segunda via de fatura paga é cobrar duas vezes.');
+        $this->assertFalse($emAberto(['status' => 'Refunded', 'saldo_cents' => 5990]));
+        $this->assertFalse($emAberto(['status' => 'Cancelled', 'saldo_cents' => 5990]));
+        $this->assertFalse($emAberto(['status' => '', 'saldo_cents' => 0]), 'Sem estado e sem saldo não há dívida.');
+        $this->assertTrue($emAberto(['status' => '', 'saldo_cents' => 100]), 'Sem estado, o saldo é a única prova.');
+    }
+
     public function test_os_grupos_autorizados_filtram_a_lista_sem_caixa_e_sem_espacejamento(): void
     {
         $this->credenciais();

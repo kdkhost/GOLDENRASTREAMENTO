@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,7 +21,7 @@ class Customer extends Model implements AuthenticatableContract
 
     protected $fillable = [
         'whmcs_id',
-        'nome', 'documento', 'tipo', 'telefone', 'email', 'email_portal', 'password',
+        'nome', 'documento', 'nascimento', 'placas', 'tipo', 'telefone', 'email', 'email_portal', 'password',
         'endereco', 'cidade', 'uf', 'cep',
         'segmento', 'frota_tamanho', 'status', 'owner_id', 'lead_id', 'valor_anual_cents', 'observacoes',
     ];
@@ -33,6 +33,7 @@ class Customer extends Model implements AuthenticatableContract
         'whmcs_id' => 'integer',
         'frota_tamanho' => 'integer',
         'valor_anual_cents' => 'integer',
+        'nascimento' => 'date',
         'password' => 'hashed',
         'ultimo_acesso_em' => 'datetime',
     ];
@@ -95,7 +96,7 @@ class Customer extends Model implements AuthenticatableContract
      */
     public function vincularPedidosSemFicha(): int
     {
-        $email = mb_strtolower((string) ($this->email_portal ?: $this->email));
+        $email = mb_strtolower((string) $this->emailDeAcesso());
 
         if ($email === '') {
             return 0;
@@ -104,6 +105,51 @@ class Customer extends Model implements AuthenticatableContract
         return Order::whereNull('customer_id')
             ->whereRaw('LOWER(email) = ?', [$email])
             ->update(['customer_id' => $this->id]);
+    }
+
+    /**
+     * O endereço pelo qual esta pessoa é alcançada: o de acesso ao portal quando ela tem conta,
+     * o da ficha comercial nos outros casos. É a única fonte desta resposta no sistema — o aviso
+     * de chamado, o link de senha e a segunda via da fatura saem todos por aqui, e é por isso
+     * também que um endereço digitado num chat nunca decide o destino de um envio.
+     */
+    public function emailDeAcesso(): ?string
+    {
+        return $this->email_portal ?: $this->email;
+    }
+
+    /** As placas da ficha, normalizadas: maiúsculas, sem espaço, sem traço, sem repetida. */
+    public function placasListadas(): array
+    {
+        $placas = array_map(
+            fn (string $placa): string => strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $placa)),
+            explode(',', (string) $this->placas)
+        );
+
+        return array_values(array_unique(array_filter($placas, fn (string $p): bool => $p !== '')));
+    }
+
+    /**
+     * A ficha que atende por este e-mail, seja ele o de acesso ao portal ou o comercial.
+     *
+     * A comparação é insensível a maiúsculas porque ninguém digita e-mail igual duas vezes, e o
+     * `limit(1)` não é descuido: e-mail repetido em duas fichas é um problema de cadastro da casa,
+     * e a primeira é a que o CRM mostra em toda listagem também.
+     */
+    public static function porEmail(string $email): ?self
+    {
+        $normalizado = mb_strtolower(trim($email));
+
+        if ($normalizado === '') {
+            return null;
+        }
+
+        return static::query()
+            ->where(fn ($q) => $q
+                ->whereRaw('LOWER(email) = ?', [$normalizado])
+                ->orWhereRaw('LOWER(email_portal) = ?', [$normalizado]))
+            ->orderBy('id')
+            ->first();
     }
 
     public function registrarAcesso(): void
@@ -126,6 +172,7 @@ class Customer extends Model implements AuthenticatableContract
         ]);
         $c->save();
         $lead->update(['customer_id' => $c->id]);
+
         return $c;
     }
 }

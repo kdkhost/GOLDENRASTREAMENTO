@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Setting;
+use App\Services\Mail\Sonda as Correio;
 use App\Services\Whmcs\Cliente as Financeiro;
 use App\Support\ChavesDeIntegracao;
 use Illuminate\Http\RedirectResponse;
@@ -14,7 +15,7 @@ use Illuminate\View\View;
 
 class SettingController extends Controller
 {
-    public function index(Financeiro $financeiro): View
+    public function index(Correio $correio, Financeiro $financeiro): View
     {
         return view('admin.settings.index', [
             'settings' => Setting::all_values(),
@@ -22,6 +23,13 @@ class SettingController extends Controller
                 'configurado' => $financeiro->configurado(),
                 'faltando' => $financeiro->faltando(),
                 'endpoint' => $financeiro->endpointParaExibir(),
+            ],
+            // O mesmo resumo que a aba Financeiro faz do WHMCS, agora do outro lado da casa: sem
+            // ele, a tela de chaves mostraria campos e nunca o que aqueles campos vão causar.
+            'correio' => [
+                'configurado' => $correio->configurado(),
+                'faltando' => $correio->faltando(),
+                'viagem' => $correio->viagem(),
             ],
             'veiculacao' => ChavesDeIntegracao::grupos()[ChavesDeIntegracao::GRUPO_VEICULACAO],
         ]);
@@ -250,6 +258,36 @@ class SettingController extends Controller
         Activity::log('whmcs_sondado', "Conexão com o WHMCS testada ({$resultado['estado']}).");
 
         return back()->with('sonda', $resultado)->with($tom, $resultado['titulo'].' '.$resultado['texto']);
+    }
+
+    /**
+     * A prova do disparo: uma mensagem de verdade, pelo transporte do painel, para a caixa que o
+     * administrador digitar.
+     *
+     * Ao contrário da consulta ao WHMCS, aqui o resultado é uma mensagem no inbox de alguém, e é
+     * exatamente isso que a torna útil: credencial errada, porta errada e remetente que não é a
+     * conta autenticada são três falhas que nenhum resumo de tela mostra — só o envio mostra. O
+     * endereço testado é sempre digitado por quem administra, nunca tirado de uma ficha de cliente,
+     * para o botão não virar ferramenta de assédio a cliente.
+     */
+    public function sondarEmail(Request $request, Correio $correio): RedirectResponse
+    {
+        $dados = $request->validate(
+            ['sonda_email_destino' => ['required', 'email', 'max:190']],
+            [],
+            ['sonda_email_destino' => 'e-mail de destino do teste'],
+        );
+
+        $resultado = $correio->sonda($dados['sonda_email_destino']);
+        $tom = match ($resultado['estado']) {
+            'ok' => 'success',
+            'sem_disparo' => 'warning',
+            default => 'error',
+        };
+
+        Activity::log('email_sondado', "Disparo de e-mail testado ({$resultado['estado']}).");
+
+        return back()->with('sonda_email', $resultado)->with($tom, $resultado['titulo'].' '.$resultado['texto']);
     }
 
     /** Liga/desliga a loja virtual imediatamente, sem recarregar o formulário. */

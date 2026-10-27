@@ -142,7 +142,7 @@ class ChavesDeIntegracaoTest extends TestCase
                 'mail_mailer' => 'smtp',
                 'mail_host' => 'smtp.kdkhost.com.br',
                 'mail_port' => '465',
-                'mail_scheme' => 'ssl',
+                'mail_scheme' => 'smtps',
                 'mail_username' => 'disparos@goldenrastreamento.com.br',
                 'mail_password' => 'senha-de-teste',
                 'mail_from_address' => 'avisos@goldenrastreamento.com.br',
@@ -155,9 +155,37 @@ class ChavesDeIntegracaoTest extends TestCase
 
         $this->assertSame('smtp.kdkhost.com.br', config('mail.mailers.smtp.host'));
         $this->assertSame(465, config('mail.mailers.smtp.port'));
-        $this->assertSame('ssl', config('mail.mailers.smtp.scheme'));
+        // O seletor oferece as palavras de sempre da tela, mas o que chega no transporte tem que
+        // ser o nome que o Symfony conhece: `ssl` ali dentro levanta `UnsupportedSchemeException`
+        // e derruba cada disparo do sistema, do link de senha à segunda via.
+        $this->assertSame('smtps', config('mail.mailers.smtp.scheme'));
         $this->assertSame('senha-de-teste', config('mail.mailers.smtp.password'));
         $this->assertSame('avisos@goldenrastreamento.com.br', config('mail.from.address'));
+    }
+
+    public function test_a_criptografia_existe_no_nome_que_o_transporte_aceita(): void
+    {
+        // O `.env` do mundo fala `tls` e `ssl` — está em todo tutorial e em todo painel de
+        // hospedagem. O transporte do Symfony só conhece `smtp` (STARTTLS) e `smtps` (SSL desde o
+        // abraço), e um nome que ele não entende não é aviso: é a exceção que derruba o primeiro
+        // disparo de verdade, do link de senha do portal à segunda via da fatura.
+        $traducoes = [
+            'tls' => 'smtp', 'starttls' => 'smtp', 'SMTP' => 'smtp',
+            'ssl' => 'smtps', 'smtps' => 'smtps',
+            '' => null, 'null' => null, 'nenhuma' => null, 'esqueci-de-novo' => null,
+        ];
+
+        foreach ($traducoes as $palavra => $esperado) {
+            $this->assertSame($esperado, ChavesDeIntegracao::esquema($palavra), 'A palavra ['.$palavra.'] não foi traduzida.');
+        }
+
+        // E o config que a aplicação bootou tem que estar num desses nomes, nunca o que estava
+        // escrito no `.env` — é a mesma porta que a tela passa quando grava.
+        $declarado = config('mail.mailers.smtp.scheme');
+        $this->assertTrue(
+            $declarado === null || in_array($declarado, ['smtp', 'smtps'], true),
+            'O transporte recebeu um nome de criptografia que ele não conhece: '.var_export($declarado, true)
+        );
     }
 
     /** Os dois ajustes numéricos do Google Ads: a tela é o lugar deles, e o cast volta inteiro. */

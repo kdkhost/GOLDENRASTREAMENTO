@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use App\Models\Conversa;
-use App\Models\ConversaMensagem;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -17,6 +16,10 @@ use Illuminate\Queue\SerializesModels;
  * olha para dentro dela, e o atendimento ao público não pode depender de alguém estar de plantão.
  * O motivo vai escrito porque a equipe precisa saber se faltou fonte, faltou chave ou o provedor
  * respondeu errado: os três têm consertos diferentes.
+ *
+ * `prova` é texto, e não uma mensagem do banco, porque a máquina também escala quando uma *ação*
+ * parou — e aí o que aconteceu não foi uma fala do cliente, foi o resultado de uma conferência.
+ * Quem escreve a prova é sempre o código que parou: dado de cadastro não entra neste e-mail.
  */
 class ConversaEscalada extends Mailable
 {
@@ -25,7 +28,7 @@ class ConversaEscalada extends Mailable
     public function __construct(
         public Conversa $conversa,
         public string $motivo,
-        public ConversaMensagem $pergunta,
+        public string $prova,
     ) {}
 
     public function envelope(): Envelope
@@ -38,7 +41,7 @@ class ConversaEscalada extends Mailable
         return new Content(view: 'mail.conversa-escalada', with: [
             'conversa' => $this->conversa,
             'motivo' => $this->motivo,
-            'pergunta' => $this->pergunta,
+            'prova' => $this->prova,
         ]);
     }
 }

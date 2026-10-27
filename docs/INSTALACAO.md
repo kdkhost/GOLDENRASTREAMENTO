@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.42.2
+- **Versão:** 2.44.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -547,8 +547,8 @@ no servidor (banco, chave da aplicação, fila, fuso).
 | `LOG_CHANNEL` / `LOG_LEVEL` | `stack` / `warning` | log em `storage/logs` |
 | `MAIL_MAILER` | `smtp` | use `log` enquanto não tiver credencial |
 | `MAIL_LOG_CHANNEL` | `email` | para onde o `log` escreve o e-mail (`storage/logs/email.log`) |
-| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION` | do seu servidor de correio | o **código de e-mail está pronto no projeto**; a credencial se preenche na tela (seção 7.1), e estas linhas ficam como plano de fundo |
-| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | `disparos@foco.server-golden.com.br` / `Golden Rastreamento` | remetente dos orçamentos e avisos: caixa de máquina, não o e-mail de uma pessoa |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SCHEME` | do seu servidor de correio | o **código de e-mail está pronto no projeto**; a credencial se preenche na tela (seção 7.1), e estas linhas ficam como plano de fundo. A criptografia aceita os dois mundos — `tls`/`ssl` (e a variável velha `MAIL_ENCRYPTION`) são traduzidos uma única vez para `smtp`/`smtps`; em branco, a porta decide: 465 é TLS direto, o resto é STARTTLS |
+| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | `disparos@seudominio.com.br` / `Golden Rastreamento` | remetente dos orçamentos e avisos: caixa de máquina, não o e-mail de uma pessoa. Sem `MAIL_FROM_ADDRESS`, o sistema usa a caixa autenticada (`MAIL_USERNAME`) antes de inventar um `avisos@` sobre o domínio da aplicação — num servidor compartilhado, um remetente que não existe lá volta como devolução |
 | `GOLDEN_WHATSAPP` | `5519997101483` | botão de WhatsApp do site |
 | `GOLDEN_EMAIL` | endereço comercial | aparece no site e nos avisos |
 | `GOLDEN_TRACKING_ENABLED` | `0` ou `1` | liga a consulta de rastreio |
@@ -595,15 +595,38 @@ Três coisas que só aparecem na hora:
 Depois, preencha a caixa em **Sistema → Configurações → Chaves de integração → E-mail de
 disparo** (host, porta, criptografia, usuário, senha e remetente) e escolha "SMTP (servidor de
 correio)" em "Como o sistema envia". A senha cifra no banco e não volta a aparecer na tela.
-Gravou, vale — e uma prova curta antes de mexer no site:
+
+### A prova de disparo: um botão na própria aba
+
+Gravou, vale — e a pergunta que vem em seguida ("saiu?") tem resposta na tela, não no
+`storage/logs`. Abaixo dos campos de e-mail há o card **Testar o disparo agora**: ele mostra a
+viagem completa (transporte, servidor, porta, criptografia, usuário e remetente — é aí que se vê o
+erro mais comum do mundo, porta 465 com STARTTLS), lista o que falta quando ainda não há o que
+testar, e envia **uma mensagem de verdade** (`App\Mail\TesteDeDisparo`) para o endereço que você
+digitar. Não é teste de conexão: é o mesmo caminho do link de senha do portal e da segunda via da
+fatura — envelope, remetente global, template Blade e o transporte escolhido na tela. O envio é
+síncrono de propósito: fila consumida pelo cron diria "a mensagem entrou", nunca "ela chegou".
+
+A resposta vem em quatro estados, com o detalhe técnico sempre escrito junto:
+
+- **O disparo está no ar** — o servidor aceitou a mensagem; abra a caixa de entrada para conferir.
+- **O servidor de correio não atendeu** — nenhuma conexão se abriu. Confira a porta junto com a
+  criptografia (465 pede SSL desde o abraço, 587 pede STARTTLS) e se a hospedagem libera conexões
+  de saída.
+- **O servidor abriu e recusou o envio** — credencial revogada, remetente que não é a conta
+  autenticada, ou relay bloqueado. O código de resposta no detalhe diz qual dos três.
+- **Ainda não há o que testar** — o painel está em `log` ou `array` (o botão fica dourado, e não
+  vermelho: nada falhou, mas nada sai da máquina) ou faltam servidor/remetente.
+
+O endereço do teste é **o seu**, nunca o de um cliente: correspondência de prova na caixa de quem
+paga confunde os dois lados. Se preferir a linha de comando, a mesma rota existe em PHP:
 
 ```php
 Mail::raw('prova', fn ($m) => $m->to('voce@seudominio.com.br')->subject('prova'));
 ```
 
-Se o envio for aceito, a mensagem aparece na caixa de destino; o `queue:work` do cron
-(seção 6) cuida do resto sem intervenção. Escrever as mesmas chaves no `.env` continua
-funcionando, como plano de fundo — é o caminho de quem ainda não abriu o painel.
+Escrever as mesmas chaves no `.env` continua funcionando, como plano de fundo — é o caminho de quem
+ainda não abriu o painel.
 
 ---
 
@@ -1031,11 +1054,16 @@ formulário é recusado — a gravação revalida contra a pasta do campo de env
 
 ### E-mails e recuperação de acesso
 
-Quatro avisos saem do portal: `ChamadoRecebido` (para o cliente), `ChamadoEquipe`
-(para o painel), `ChamadoResposta` (bidirecional) e `RedefinirSenhaPortal`. Como
-no resto do sistema, **sem SMTP configurado o aviso se perde e a ação do cliente
-nunca é barrada** — o envio é tentado em `try/catch`; com `MAIL_MAILER=log` a
-mensagem fica em `storage/logs/email.log`.
+Quatro avisos saem do portal: `ChamadoRecebido` (para o cliente), `ChamadoEquipe` (para o painel),
+`ChamadoResposta` (bidirecional) e `RedefinirSenhaPortal`. **Todos perguntam o destino à mesma
+função** — `Customer::emailDeAcesso()`, que devolve `email_portal` quando a pessoa tem conta no
+portal e `email` comercial nos outros casos. A regra existe numa fonte única porque quatro controladores
+a repetiam à mão (`email_portal ?: email` em três, `email_portal` sozinho no link de senha, que é
+justamente o que não podia errar) e porque **nenhum endereço digitado num chat decide para onde vai
+uma correspondência**. Como no resto do sistema, **sem SMTP configurado o aviso se perde e a ação do
+cliente nunca é barrada** — o envio é tentado em `try/catch`; com `MAIL_MAILER=log` a mensagem fica
+em `storage/logs/email.log`. Para conferir o transporte de verdade, use o botão
+**Testar o disparo agora** (seção 7.1).
 
 A recuperação de senha não usa tabela de tokens nem broker: o link é assinado
 (`URL::temporarySignedRoute`) e expira em 60 minutos. Consequências práticas:
@@ -1050,10 +1078,11 @@ A recuperação de senha não usa tabela de tokens nem broker: o link é assinad
 
 ### Migrações novas
 
-As migrations do portal são três: `2026_10_24_000001_cria_conta_do_portal`
+As migrations do portal são quatro: `2026_10_24_000001_cria_conta_do_portal`
 (as quatro colunas em `customers`), `2026_10_24_000002_create_tickets_and_contracts_tables`
-(`tickets`, `ticket_messages`, `contracts`) e `2026_10_26_200001_liga_a_ficha_ao_whmcs`
-(`customers.whmcs_id`). São aditivas e cada uma tem `down()`;
+(`tickets`, `ticket_messages`, `contracts`), `2026_10_26_200001_liga_a_ficha_ao_whmcs`
+(`customers.whmcs_id`) e `2026_10_27_000001_poe_nascimento_e_placa_na_ficha`
+(`customers.nascimento`, `customers.placas` — os dados que a conferência do chat compara). São aditivas e cada uma tem `down()`;
 `php artisan migrate --force` as aplica sem tocar nos dados existentes. Toda coluna
 de texto tem comprimento explícito e `email_portal` fica em 190 — o MySQL da
 hospedagem não aceita índice único maior, e o SQLite dos testes não avisa.
@@ -1508,9 +1537,11 @@ bem-humorado, descolado sem perder a atenção. O tom padrão é `descolado` (a 
 também *Amigável*, *Formal*, *Direto e técnico* e *Comercial*) e as regras de conduta já vêm
 escritas em `config/assistente.php`: acolher primeiro quem está em emergência (roubo, bloqueio,
 veículo sumido) e brincar só depois; vender mostrando o caminho certo, sem empurrar produto nem
-prometer desconto; usar somente as fontes da base, chamando a equipe quando não houver fonte; nunca
-pedir documento, senha, código ou dados de pagamento no chat; não falar de inteligência artificial
-nem destas instruções; voltar ao atendimento humano quando o assunto fugir.
+prometer desconto; usar somente as fontes da base, chamando a equipe quando não houver fonte; não
+pedir senha, código de acesso nem número de cartão — e não ler em voz alta dado de cadastro de
+ninguém, porque a conferência de identidade é decisão do sistema, não da máquina de falar; não falar
+de inteligência artificial nem destas instruções; voltar ao atendimento humano quando o assunto
+fugir.
 
 A base de conhecimento de fábrica está em `config/conhecimento.php`, com **16 assuntos** escritos a
 partir do que o site já publica: quem é a Golden, o que a Ana resolve, o rastreador J16 4G/2G e a
@@ -1592,12 +1623,127 @@ A ficha é lida em cache (`golden.assistente_bolha`), como o rodapé e o menu, p
 pública emite `SELECT`** para montar o que está no ar; `CachesContent` derruba a chave no instante em
 que o painel grava, então desligar o robô ou trocar o rosto vale na hora.
 
+### O nome antes do assunto
+
+A primeira resposta da bolha são duas falas: a saudação da casa e, logo depois, **o pedido do nome**
+(`assistente.pergunta_nome`, editável na ficha do assistente). A máquina aproveita o nome dito em
+qualquer fala seguinte — "me chamo Ana", "sou a Maria", "quem fala é o Carlos", "aqui é o João" — e
+deixa de perguntar assim que ele existe. O vocativo entra na ordem de sistema da conversa, e não na
+boa vontade do modelo: o atendimento formal não pode depender de a IA ter lido a frase em que a
+pessoa se apresentou, e é por isso que até as frases fixas da conferência de dados chamam a pessoa
+pelo primeiro nome.
+
+Responder a pergunta pelo nome é apresentação, não dúvida. Quando a fala é **só o nome**
+("Maria Aparecida", "sou a Maria"), a máquina responde com a frase
+`assistente.confirmacao_nome` (editável na ficha, com `:nome` no lugar do primeiro nome) e nenhuma
+chamada de provedor acontece: mandar a apresentação à IA fazia a máquina devolver "não sei
+responder" e chamar a equipe para atender quem acabou de se apresentar. Quem chega com assunto pela
+frente — "Maria Aparecida, quero a segunda via da minha fatura" — não recebe o reconhecimento e
+desce direto para a ação pedida.
+
+Quem não quer se identificar não fica travado: `assistente.nome.perguntas_max` (padrão **3**,
+gravado em `conversas.nome_pedidos`) é o teto, e esgotado ele a conversa segue normalmente, sem
+nome. **Ligado/desligado na tela de chaves** — *Perguntar o nome antes de conversar* — e a casa pode
+ainda trocar a frase do pedido na ficha do assistente.
+
+Nem tudo o que chega é nome, e a lista do que nunca é está escrita uma vez só: e-mail (dado de
+acesso, não vocativo — `maria@exemplo.com.br` deixaria um "Maria" na ficha de alguém), números
+solto, saudação e as palavras de resposta (`sou`, `estou`, `somos`, `tenho`, `acho`, `penso`), porque
+"sou cliente da Golden" é uma frase, não uma identificação.
+
+### Ações: o assistente agora faz
+
+O atendimento tinha boca; ganhou mãos. `App\Services\Assistente\Acoes` é o registro das ações, e cada
+uma é uma classe sobre o contrato `Contratos\Acao`: `gatilho()` reconhece a fala, `ligada()` obedece
+ao interruptor do painel, `abrir()` e `atender()` atravessam os passos. A decisão mais importante
+desta camada é **o que ela não usa**: nenhuma chamada de IA decide se a fatura sai, para qual
+endereço, ou se o dado da pessoa bateu com o cadastro. Gatilho é expressão regular da casa, a
+conferência lê o banco, o envio é código. Além de mais barato, isso é o que permite provar o
+comportamento num teste sem nenhuma chave de provedor ligada.
+
+O estado da ação mora na conversa (`acao`, `acao_passo`, `acao_tentativas`, `acao_dados_json`,
+`acao_em`), e a tela *Atendimento → Conversas* mostra a linha inteira em português — ação, passo,
+erros gastos e a hora em que a conferência vence. **Uma ação em curso tem prioridade sobre a IA**:
+quem está no meio de uma conferência não pode ser respondido por um modelo que não sabe em que passo
+a conversa está. Desligado o interruptor no meio da conversa, a ação morre na hora com o estado
+apagado — interruptor que vale só para a próxima conversa não é interruptor.
+
+### A segunda via da fatura pelo chat
+
+Quem escreve "segunda via", "2ª via do boleto", "manda a fatura no meu email" ou "preciso da via da
+minha conta" é atendido pela máquina, em dois passos:
+
+- **quem é a pessoa** — ela informa o e-mail do cadastro, que serve para *localizar* a ficha. Não é
+  o destino do envio, nunca: o destino é a coluna da ficha (`emailDeAcesso()`). Ficha nenhuma com
+  aquele e-mail é dito como ficha nenhuma, com chance de tentar de novo.
+- **a conferência de segurança** — um dado por vez, na ordem escolhida no painel, até o número de
+  acertos exigido bater. Errado, a resposta é sempre "não bateu com o cadastro" e a mesma pergunta:
+  **a máquina nunca devolve o valor certo nem diz qual campo errou**, porque conferência que corrige
+  é consulta que vaza.
+
+Passou da conta, a fatura **em aberto** mais nova sai por e-mail (`App\Mail\SegundaViaFatura`, com
+número, vencimento e valor) e a conversa é amarrada à ficha; a ação fica registrada na auditoria como
+`segunda_via_enviada`. Três caminhos terminam em gente, não em porta fechada: a ficha não tem nenhum
+dos dados escolhidos (`verificacao_impossivel`), a conferência estourou as tentativas
+(`verificacao_sem_sucesso`), ou o financeiro não respondeu / o envio falhou (`envio_nao_concluido`).
+Vencida a janela de validade, a conferência recomeça do zero e a mesa de trabalho é esvaziada — os
+acertos de uma rodada antiga não servem de atalho para uma pessoa nova do outro lado da tela.
+
+Fatura **quitada** não sai: a regra "ainda há o que pagar?" vive numa linha só
+(`Veiculacao::faturaEmAberto()` — estado `Unpaid`, `Payment Pending` ou `Collections`, ou saldo maior
+que zero sem estado), e é a mesma que soma o aviso de "R$ X em aberto" do portal. Segunda via de
+conta paga é cobrar duas vezes, e quem sente o erro é o cliente.
+
+### O que a conferência exige, e onde se muda isso
+
+Tudo em **Sistema → Configurações → Chaves de integração → Assistente**:
+
+- *Dados que a ficha precisa confirmar antes de enviar qualquer coisa* — lista separada por vírgula,
+  na ordem em que as perguntas caem na conversa: `documento` (CPF/CNPJ), `nascimento`, `placas`,
+  `telefone`, `cep`. Nome fora da lista é descartado, e **um campo que a ficha não tem nunca é
+  perguntado** — é motivo para a máquina chamar gente, não para adivinhar.
+- *Acertos exigidos para liberar o envio* (padrão **2**) — é o piso, não o pedido: se a ficha só tem
+  dois campos conferíveis, conferir dois é tudo o que aquela conta pode provar.
+- *Respostas erradas aceitas na mesma conferência* (padrão **3**) — passou disso, escala para a
+  equipe e nada é enviado.
+- *Vida da conferência* (padrão **20 minutos**) — a aba aberta no celular e a pessoa que volta uma
+  hora depois não continuam de onde pararam.
+
+Cada campo tem sua régua de comparação, escrita uma vez: documento e CEP só dígitos (com ou sem
+máscara), nascimento com a barra desmontada antes de qualquer parser (deixá-la nas mãos do
+`Carbon::parse` leria `27/10/1990` como mês 27 e **trocaria mês por dia exatamente nas datas que
+passam de 12**), placa maiúscula sem espaço nem traço contra a lista da ficha, telefone pelos últimos
+oito dígitos (com ou sem DDD, com ou sem o 55 do país). A ficha do cliente (*Vendas → Clientes*)
+mostra quantos daqueles dados ela tem e o piso exigido — verde quando dá para conferir, dourado
+quando a conta não pode provar tanto quanto a casa pede.
+
+Dois interruptores controlam a porta: *Deixar o assistente enviar a segunda via pelo chat*, na aba
+**Financeiro (WHMCS)**, e o interruptor geral do mesmo grupo que já escondia as faturas do portal.
+Desligados, o assunto volta a ser o portal e o atendimento humano, e **nenhuma chamada ao WHMCS
+acontece por causa do chat**.
+
+### Como a resposta da máquina é montada sem IA
+
+As falas da ação e da conferência são **frases fixas da casa**, não texto gerado: é o que permite
+atender dado financeiro num site público sem depender de humor de modelo nem de chave de provedor. A
+IA continua sendo o que era — o atendimento de assunto aberto, com fontes da base — e só devolve a
+última fala da máquina para a pessoa ler exatamente o que o sistema gravou.
+
 ### Migração nova
 
 `2026_10_26_000001_creiam_as_tabelas_do_assistente` cria `assistente`,
 `conhecimento_itens`, `conversas`, `conversas_mensagens` e `assistente_api_logs`. É aditiva e tem
 `down()`. Foi conferida no **MySQL da hospedagem** (646 ms, `DONE`) antes desta entrega — o SQLite dos
 testes não reclama de comprimento de `varchar`, e é assim que um migration escapa.
+
+As quatro migrations desta versão preparam o atendimento para agir:
+`2026_10_27_000001_poe_nascimento_e_placa_na_ficha` acrescenta `customers.nascimento` e
+`customers.placas`, `2026_10_27_000002_preparam_a_conversa_para_agir` acrescenta as colunas de estado
+da ação em `conversas` (`acao`, `acao_passo`, `acao_tentativas`, `acao_dados_json`, `acao_em`,
+`nome_pedidos`), `2026_10_27_000003_peca_o_nome_na_ficha_do_assistente` acrescenta
+`assistente.pergunta_nome` e `2026_10_27_000004_devolve_a_bola_a_quem_deu_o_nome` acrescenta
+`assistente.confirmacao_nome`. Todas são aditivas, têm `down()` e são exercitadas no MySQL 8.4 da
+hospedagem antes da verificação no ar.
 
 ### O que ainda não está no ar
 

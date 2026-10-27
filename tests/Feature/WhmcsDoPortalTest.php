@@ -309,6 +309,39 @@ class WhmcsDoPortalTest extends TestCase
         $this->assertSame('Maria Atualizada', $cliente->fresh()->nome);
     }
 
+    /**
+     * O WHMCS real responde `SUCCESS` em caixa alta, e é assim que a tela do cliente precisa ler.
+     * Comparar o campo em minúsculas deitava toda conversa bem-sucedida: o financeiro estaria no
+     * ar, respondendo certo, e o cliente veria "Área financeira em preparação".
+     */
+    public function test_o_sucesso_do_whmcs_em_caixa_alta_entra_na_tela_do_cliente(): void
+    {
+        $this->ligar();
+        $cliente = $this->conta(['whmcs_id' => 77]);
+
+        $this->fingirWhmcs([
+            'GetClientsProducts' => Http::response([
+                'result' => 'SUCCESS',
+                'products' => ['product' => [[
+                    'id' => 12,
+                    'name' => 'Rastreador J16 4G',
+                    'groupname' => 'Rastreamento veicular',
+                    'domain' => 'ABC1D23',
+                    'status' => 'Active',
+                    'nextduedate' => '2026-11-10',
+                    'recurringamount' => '59.90',
+                    'billingcycle' => 'Monthly',
+                    'regdate' => '2025-11-10',
+                ]]],
+            ]),
+        ]);
+
+        $this->actingAs($cliente, 'cliente')->get(route('portal.servicos'))
+            ->assertOk()
+            ->assertSee('Rastreador J16 4G')
+            ->assertDontSee('Área financeira em preparação.');
+    }
+
     public function test_o_segredo_do_whmcs_fica_cifrado_e_o_grupo_aparece_no_painel(): void
     {
         ChavesDeIntegracao::guardar('whmcs_secret', 'segredo-cru-do-whmcs');

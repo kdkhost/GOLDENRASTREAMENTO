@@ -7,6 +7,7 @@ use App\Services\Atribuidor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 /**
  * A ficha do assistente: nome, rosto, tom e as regras de conduta que o administrador escreveu.
@@ -34,7 +35,7 @@ class Assistente extends Model
     protected $table = 'assistente';
 
     protected $fillable = [
-        'nome', 'cargo', 'saudacao', 'tom', 'regras',
+        'nome', 'cargo', 'saudacao', 'pergunta_nome', 'confirmacao_nome', 'tom', 'regras',
         'avatar', 'avatar_alt', 'dica', 'status', 'placeholder', 'humano', 'icone',
         'voz', 'ativo', 'no_site', 'no_funil', 'no_chamado', 'criado_por',
     ];
@@ -66,6 +67,8 @@ class Assistente extends Model
             'nome' => (string) config('assistente.persona.nome'),
             'cargo' => (string) config('assistente.persona.cargo'),
             'saudacao' => (string) config('assistente.persona.saudacao'),
+            'pergunta_nome' => (string) config('assistente.persona.pergunta_nome'),
+            'confirmacao_nome' => (string) config('assistente.persona.confirmacao_nome'),
             'tom' => (string) config('assistente.persona.tom'),
             'regras' => (string) config('assistente.persona.regras'),
         ]);
@@ -130,6 +133,26 @@ class Assistente extends Model
     public function textoStatus(): string
     {
         return (string) ($this->status ?: config('assistente.bolha.status'));
+    }
+
+    /**
+     * A frase que abre a conversa pedindo o nome. É texto da ficha (a pessoa escreve o tom que
+     * quer), e o padrão da config só vale para quem nunca entrou nesta tela.
+     */
+    public function textoPerguntaNome(): string
+    {
+        return (string) ($this->pergunta_nome ?: config('assistente.persona.pergunta_nome'));
+    }
+
+    /**
+     * A fala que reconhece quem acabou de dizer o nome. `:nome` recebe o primeiro nome, do mesmo
+     * jeito que o vocativo das ações: é assim que a casa chama a pessoa, não o cadastro inteiro.
+     */
+    public function textoConfirmacaoNome(string $nome): string
+    {
+        $texto = (string) ($this->confirmacao_nome ?: config('assistente.persona.confirmacao_nome'));
+
+        return str_replace(':nome', Str::before($nome, ' '), $texto);
     }
 
     public function textoPlaceholder(): string

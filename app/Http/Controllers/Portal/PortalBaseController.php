@@ -43,7 +43,7 @@ abstract class PortalBaseController extends Controller
             return (int) $cliente->whmcs_id;
         }
 
-        $email = $cliente->email_portal ?: $cliente->email;
+        $email = $cliente->emailDeAcesso();
 
         if (blank($email)) {
             return null;
@@ -108,7 +108,7 @@ abstract class PortalBaseController extends Controller
      */
     protected function avisarCliente(mixed $mensagem): void
     {
-        $destino = $this->cliente()->email_portal ?: $this->cliente()->email;
+        $destino = $this->cliente()->emailDeAcesso();
 
         if ($destino === null || $destino === '') {
             return;

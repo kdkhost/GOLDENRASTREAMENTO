@@ -3,6 +3,125 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.44.0] - 2026-10-27
+
+### Adicionado
+- **O e-mail do servidor passou a ser decidido na tela, com prova.** *"Reconfigure o SMTP por
+  dentro do painel"* começa num detalhe que derrubava todo disparo sem ninguém tocar no código: o
+  Symfony só conhece `smtp` (STARTTLS) e `smtps` (TLS desde o abraço), e o mundo inteiro escreve
+  `tls` e `ssl` nos `.env`. A tradução mora numa linha só — `ChavesDeIntegracao::esquema()` — e a
+  aba de e-mail passou a oferecer os dois mundos com as palavras de sempre. O nome da variável é
+  agora `MAIL_SCHEME`, com `MAIL_ENCRYPTION` ainda lida como plano de fundo; `mail.host` perdeu o
+  `127.0.0.1` de fábrica (uma configuração incompleta não pode disfarçar conexão legítima) e a
+  porta padrão virou a 587 de hospedagem. O remetente segue três passos — painel, `.env`, caixa
+  autenticada — porque num servidor compartilhado um `from` inventado volta como devolução.
+- **A sonda de disparo.** O WHMCS tinha a dela; o correio não tinha nenhuma, e o "não saiu" demorava
+  dias para chegar — pelo cliente que esperou o link de senha e nunca o recebeu.
+  `App\Services\Mail\Sonda` manda **uma mensagem de verdade** (`App\Mail\TesteDeDisparo`) pelo
+  mesmo caminho do link de senha e da segunda via: envelope, remetente global, template Blade,
+  transporte escolhido na tela. Não é `connection test`: abrir a porta e deixar passar o template
+  quebrado é justamente o erro que sobra. A resposta vira frase de painel em quatro estados
+  (`ok`, `sem_disparo`, `sem_resposta`, `recusada`, `falhou`), com o detalhe técnico sempre junto,
+  porque quem administra servidor pensa em código de resposta, não em prosa. Síncrona de propósito
+  — fila consumida pelo cron diria "entrou", nunca "chegou". O destino é o que a pessoa digita,
+  nunca a caixa de um cliente.
+- **O assistente agora faz, não só fala.** `App\Services\Assistente\Acoes` é o registro das ações, e
+  cada uma é uma classe sobre o contrato `Contratos\Acao` (gatilho, interruptor, passos). A
+  escolha é deliberada: **nada aqui é ferramenta de IA**. Quem decide se a fala é um pedido de
+  segunda via é uma regex da casa; quem confere é o banco; quem envia é o código. O estado da ação
+  mora na conversa (`conversas.acao`, `acao_passo`, `acao_tentativas`, `acao_dados_json`,
+  `acao_em`), e a tela de conversas mostra a linha inteira — ação, passo, erros gastos e a hora em
+  que a conferência vence — em `Acoes::descrever()`. Desligado o interruptor no meio de uma
+  conversa, a ação morre na hora com o estado apagado: interruptor que vale só para a próxima
+  conversa não é interruptor.
+- **A segunda via da fatura pelo chat, atrás de conferência.** `SegundaViaDaFatura` atravessa dois
+  passos: localizar a ficha pelo e-mail informado e conferir os dados que **já estão gravados
+  nela**, um por vez, até `assistente.verificacao.minimo` bater. `Verificacao::CAMPOS` é a régua
+  única — CPF/CNPJ e CEP por dígitos, nascimento com a barra desmontada antes de qualquer parser
+  (deixá-la nas mãos do `Carbon::parse` trocaria mês por dia nas datas que passam de 12), placa
+  normalizada contra a lista da ficha, telefone pelos últimos oito dígitos. Três coisas não mudam
+  em lugar nenhum: **a resposta errada nunca é devolvida** (conferência que corrige é consulta que
+  vaza), **o e-mail digitado no chat nunca é destino** — sai sempre para `Customer::emailDeAcesso()`,
+  que é coluna do banco — e **estouradas as tentativas a conversa inteira vai para a equipe** com o
+  motivo, nunca abandona quem pediu. O envio é síncrono e fica registrado como
+  `segunda_via_enviada`.
+- **O que a ficha pode provar.** `customers.nascimento` e `customers.placas` (separadas por vírgula)
+  entraram por migration, com campo na ficha, e a tela ganhou *Verificação no chat*: quantos dos
+  dados escolhidos aquela conta tem, quais são, e o piso exigido. Ficha sem nada conferível não é
+  atalho — é a máquina chamando gente.
+- **O nome antes do assunto.** A primeira resposta da bolha agora é a saudação seguida do pedido de
+  nome (`assistente.pergunta_nome`, editável na ficha do assistente), e o `App\Services\Assistente\Nome`
+  aproveita o nome dito em qualquer fala — "me chamo Ana", "sou a Maria", "quem fala é o Carlos" —
+  com teto de `assistente.nome.perguntas_max` (3) gravado em `conversas.nome_pedidos`, para que
+  quem não quer se identificar não fique travado. O nome entra na ordem de sistema da conversa e no
+  vocativo das frases fixas da conferência: a formalidade não pode depender de a IA ter lido a
+  frase em que a pessoa se apresentou.
+- **Quem disse o nome recebe resposta da casa, não do provedor.** `assistente.confirmacao_nome`
+  (editável em *Assistente → Persona*, com `:nome` no lugar do nome dito) devolve
+  "Prazer, Maria! Pode dizer — o que eu resolvo por aqui hoje?" na hora. `Nome::soONome()` é o que
+  separa a fala que é **só o nome** da que traz assunto pela frente: "Maria Aparecida" é
+  apresentação e fica com a frase fixa; "Maria Aparecida, quero a segunda via da fatura" continua
+  descendo para a ação. Custa zero chamada de IA e trava o custo de um detalhe que parecia
+  educação: mandar o nome puro ao provedor fazia a máquina responder "não entendi" e chamar a
+  equipe para atender quem acabou de se apresentar.
+- **Quatro interruptores novos na tela de chaves**: *Deixar o assistente enviar a segunda via pelo
+  chat* (aba Financeiro), *Perguntar o nome antes de conversar*, *Vezes que o nome é pedido*, e os
+  quatro números da conferência — campos, acertos exigidos, erros aceitos e vida da janela
+  (aba Assistente). Como sempre, **o painel grava no banco e o banco manda**; o `.env` só conduz o
+  que o banco não tem.
+
+### Corrigido
+- **O chat estava prestes a reencobrar quem já pagou.** A escolha da fatura usava o saldo e, sem
+  saldo, caía em `$faturas[0]` — e o `whmcs.veiculacao.faturas_pagas` padrão traz a quitada na
+  lista. Segunda via de fatura paga é cobrança repetida, e é o cliente que sente o erro. A regra
+  "ainda há o que pagar?" passou a morar numa fonte só, `Veiculacao::faturaEmAberto()` (estado
+  `Unpaid`/`Payment Pending`/`Collections`, ou saldo maior que zero sem estado), que agora é a
+  mesma do aviso de "R$ X em aberto" do portal — dois lados que não podem discordar.
+- **O e-mail da pessoa virava o nome dela.** "Como você se chama?" responde-se, no chat, com o
+  endereço; `maria@exemplo.com.br` deixaria um "Maria" na ficha de alguém. E-mail é dado de acesso,
+  não vocativo, e é aparado antes de qualquer tentativa. O mesmo vale para "sou cliente da Golden":
+  as palavras de resposta (`sou`, `estou`, `somos`, `tenho`, `acho`, `penso`) estão na lista do que
+  nunca é nome.
+- **O WHMCS respondia `SUCCESS`, e o sistema lia como falha.** A comparação do campo `result` era
+  com a palavra minúscula, e a API devolve `SUCCESS`/`FAILURE` em caixa alta: toda chamada
+  bem-sucedida caía em `recusada`. Na tela, o cliente veria *"Área financeira em preparação"* com o
+  painel mostrando a conexão verde, e a segunda via do chat pararia em "o financeiro não respondeu
+  agora". Agora é `Str::lower()` antes de comparar — um bug que só aparece com o provedor de
+  verdade, porque todo falso da bancada escrevia do jeito que o código esperava.
+- **Cinco caminhos de disparo, quatro destinos diferentes.** O link de senha lia só
+  `email_portal`; o aviso de chamado e de pedido liam `email_portal ?: email` duplicado em três
+  controladores; a segunda via não existia. Todos passaram por `Customer::emailDeAcesso()`, a única
+  fonte da resposta — que é também o que garante que nada digitado num chat decide para onde vai
+  uma correspondência.
+- **A escala levava dado de cadastro no corpo.** `ConversaEscalada` recebia a última
+  `ConversaMensagem`; agora recebe uma frase de prova escrita pelo código que parou, porque a
+  máquina também escala quando uma *ação* parou — e aí não houve fala de cliente, houve resultado
+  de conferência.
+
+### Testado
+- `ProvaDeDisparoTest` (8) cobre a régua do que falta, os transportes que não saem da máquina, a
+  tradução dos nomes de criptografia, e os três modos de falha em frase de painel.
+- `SegundaViaPeloAssistenteTest` (15) roda a conversa sem nenhuma chave de IA ligada — prova de
+  que atendeu o código, não o modelo — e trava o gatilho sem acento, a ficha inexistente, a
+  resposta errada que não devolve o valor certo, o teto de tentativas que escala, a janela vencida
+  que recomeça com a mesa de trabalho vazia, o envio sempre para o e-mail cadastrado e a
+  inexistência de fatura em aberto.
+- `NomeNaConversaTest` (9) cobre a primeira fala que pede o nome, o nome aproveitado na mesma fala,
+  o que nunca é nome (e-mail, dígitos, saudação, "sou cliente"), o teto de perguntas e a casa
+  desligando o pedido pela tela de chaves — e os dois lados do reconhecimento: a fala que é só nome
+  recebe a frase da casa e **não** entra na fila da equipe, e a fala que traz assunto pela frente não
+  é trocada por ele. O `tearDown` desta classe é lição aprendida: a cópia em memória de `Setting` é
+  estática e sobrevive ao rollback, então o `aplicar()` do boot do teste seguinte lia o config de um
+  banco que já não tinha aquela chave.
+- `WhmcsDoPortalTest` ganhou o teste que finge a resposta do WHMCS em `SUCCESS` (caixa alta, como a
+  API real escreve) e exige que *Meus serviços* liste o plano em vez de "Área financeira em
+  preparação".
+- `VeiculacaoDoWhmcsTest` ganhou o par que amarra portal e chat na mesma regra de fatura em aberto.
+- Suíte inteira em **582 testes e 6.688 asserções**. As quatro migrations novas
+  (`nascimento`/`placas`, as colunas de ação em `conversas`, `assistente.pergunta_nome`,
+  `assistente.confirmacao_nome`) são exercitadas no MySQL 8.4 da hospedagem antes de qualquer clique
+  de verificação, porque o SQLite dos testes não mede comprimento de coluna.
+
 ## [2.43.0] - 2026-10-27
 
 ### Adicionado

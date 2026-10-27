@@ -42,7 +42,7 @@
                 </table>
 
                 <p style="font-size:13px;line-height:1.6;margin:18px 0 0;padding:14px 16px;background:#faf7f0;border-left:3px solid #e0a33e;border-radius:0 10px 10px 0">
-                    {{ str($pergunta->textoVisivel())->limit(600) }}
+                    {{ str($prova)->limit(600) }}
                 </p>
 
                 <p style="margin:22px 0">

@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Setting;
 use App\Services\Assistente\Provedores\Fabrica;
+use App\Services\Assistente\Verificacao;
 use Illuminate\Support\Facades\Crypt;
 use Throwable;
 
@@ -51,8 +52,9 @@ class ChavesDeIntegracao
      * `config` é o caminho que o valor passa a valer; `ambiente` é a variável de plano de fundo
      * correspondente, mostrada entre parênteses para quem administra o servidor reconhecer a
      * chave na hora; `segredo` cifra no banco e esconde na tela; `cast` diz o tipo que o config
-     * espera — `int`, `float`, `bool` (a tela mostra Sim/Não) ou `lista` (a tela recebe separado
-     * por vírgula, o config quer array); `opcoes` transforma o campo em seletor e, sem `regras`
+     * espera — `int`, `float`, `bool` (a tela mostra Sim/Não), `lista` (a tela recebe separado
+     * por vírgula, o config quer array) ou `esquema` (a pessoa escolhe "tls"/"ssl", o transporte
+     * do Laravel entende "smtp"/"smtps"); `opcoes` transforma o campo em seletor e, sem `regras`
      * escritas à mão, vira também a lista fechada que o validador aceita.
      *
      * É método, não constante, por causa do assistente: as opções dos seletores de modelo e de voz
@@ -231,9 +233,8 @@ class ChavesDeIntegracao
                         'ambiente' => 'MAIL_SCHEME',
                         'label' => 'Criptografia',
                         'opcional' => true,
-                        'regras' => ['in:tls,ssl'],
-                        'opcoes' => ['tls' => 'STARTTLS (a mais comum)', 'ssl' => 'SSL/TLS direto'],
-                        'dica' => 'Em branco, decide o .env. Não há "sem criptografia" aqui: um servidor de correio que fala texto puro na porta 25 costuma ser o que está errado.',
+                        'opcoes' => ['smtp' => 'STARTTLS — a mais comum, porta 587', 'smtps' => 'SSL/TLS desde o abraço — porta 465'],
+                        'dica' => 'Em branco, decide o `.env`, e sem valor em nenhum dos dois o transporte deduz pela porta. Os nomes velhos (`tls`, `ssl`, `MAIL_ENCRYPTION`) ainda são aceitos no `.env` e traduzidos aqui.',
                     ],
                     [
                         'chave' => 'mail_username',
@@ -377,6 +378,13 @@ class ChavesDeIntegracao
                         'São os botões "Pagar", "Abrir" e o link da fatura. Desligado, o portal mostra a lista sem levar ninguém para fora — quem paga é pelo atendimento.'
                     ),
                     self::campoSimNao(
+                        'whmcs_veicula_segunda_via',
+                        'whmcs.veiculacao.segunda_via',
+                        'WHMCS_VEICULA_SEGUNDA_VIA',
+                        'Deixar o assistente enviar a segunda via pelo chat',
+                        'Ligado, quem pedir a via da fatura na conversa é atendido pela máquina — depois de conferir os dados da ficha, e sempre para o e-mail cadastrado. Desligado, o assunto volta a ser só o portal e a equipe, e nenhuma chamada ao WHMCS acontece por causa do chat.'
+                    ),
+                    self::campoSimNao(
                         'whmcs_veicula_espelhar_dados',
                         'whmcs.veiculacao.espelhar_dados',
                         'WHMCS_VEICULA_ESPELHAR_DADOS',
@@ -475,6 +483,68 @@ class ChavesDeIntegracao
                 'icone' => 'fa-comments',
                 'descricao' => 'Permissão, não capacidade técnica: o provedor sabe ler PDF e mesmo assim o administrador pode não querer arquivo no chat público. Os tetos abaixo são a defesa de uma hospedagem compartilhada.',
                 'campos' => [
+                    self::campoSimNao(
+                        'assistente_pedir_nome',
+                        'assistente.nome.pedir',
+                        'ASSISTENTE_PEDIR_NOME',
+                        'Perguntar o nome antes de conversar',
+                        'É a primeira coisa que a pessoa lê no chat. Ligado, a máquina se apresenta e pede o nome para tratar alguém que não fez login por quem ela é; desligado, ela responde desde a primeira pergunta e chama todo mundo de "você".'
+                    ),
+                    [
+                        'chave' => 'assistente_nome_perguntas',
+                        'config' => 'assistente.nome.perguntas_max',
+                        'ambiente' => 'ASSISTENTE_NOME_PERGUNTAS',
+                        'label' => 'Vezes que o nome é pedido na mesma conversa',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1', 'max:5'],
+                        'placeholder' => '3',
+                        'dica' => 'Insistir demais é o que faz a pessoa desistir do chat. Esgotado o número, a máquina segue atendendo sem nome.',
+                    ],
+                    [
+                        'chave' => 'assistente_verificacao_campos',
+                        'config' => 'assistente.verificacao.campos',
+                        'ambiente' => 'ASSISTENTE_VERIFICACAO_CAMPOS',
+                        'label' => 'Dados que a ficha precisa confirmar antes de enviar qualquer coisa',
+                        'opcional' => true,
+                        'cast' => 'lista',
+                        'regras' => ['string', 'max:255'],
+                        'placeholder' => implode(', ', array_keys(Verificacao::CAMPOS)),
+                        'dica' => 'Separados por vírgula, na ordem em que são perguntados. Os nomes aceitos são '.implode(' · ', collect(Verificacao::opcoes())->map(fn (string $rotulo, string $codigo): string => '`'.$codigo.'` ('.$rotulo.')')->all()).' — nome fora desta lista é descartado. Um campo que a ficha não tem nunca é perguntado.',
+                    ],
+                    [
+                        'chave' => 'assistente_verificacao_minimo',
+                        'config' => 'assistente.verificacao.minimo',
+                        'ambiente' => 'ASSISTENTE_VERIFICACAO_MINIMO',
+                        'label' => 'Acertos exigidos para liberar o envio',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1', 'max:5'],
+                        'placeholder' => '2',
+                        'dica' => 'É o piso, não o pedido: se a ficha só tem dois dos campos acima, conferir dois é tudo o que existe. Um a mais custa fricção; um a menos entrega dado para quem não é dono.',
+                    ],
+                    [
+                        'chave' => 'assistente_verificacao_tentativas',
+                        'config' => 'assistente.verificacao.tentativas',
+                        'ambiente' => 'ASSISTENTE_VERIFICACAO_TENTATIVAS',
+                        'label' => 'Respostas erradas aceitas na mesma conferência',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1', 'max:5'],
+                        'placeholder' => '3',
+                        'dica' => 'Passou disto, a conversa é escalada para a equipe e nada é enviado. A máquina não diz qual dos dados errou nem qual é o certo — só repete a pergunta.',
+                    ],
+                    [
+                        'chave' => 'assistente_verificacao_minutos',
+                        'config' => 'assistente.verificacao.minutos',
+                        'ambiente' => 'ASSISTENTE_VERIFICACAO_MINUTOS',
+                        'label' => 'Vida da conferência (minutos)',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1', 'max:120'],
+                        'placeholder' => '20',
+                        'dica' => 'Uma conferência parada há uma hora não é mais a pessoa na frente do computador: vencido o prazo, os acertos são esquecidos e recomeça.',
+                    ],
                     self::campoSimNao(
                         'assistente_audio_entrada',
                         'assistente.permissoes.audio_entrada',
@@ -835,6 +905,30 @@ class ChavesDeIntegracao
     }
 
     /**
+     * Traduz o nome de criptografia do SMTP para a única forma que o transporte aceita.
+     *
+     * O Symfony conhece só `smtp` (conexão limpa e STARTTLS quando o servidor anuncia) e `smtps`
+     * (SSL desde o abraço). O que o mundo escreve, porém, é `tls` e `ssl` — está no `.env` de
+     * qualquer tutorial e em todo painel de hospedagem. Um nome desconhecido ali não é aviso: é a
+     * exceção `UnsupportedSchemeException` que derruba **todo** disparo, do link de senha à
+     * segunda via, sem que ninguém tenha tocado no código. A tradução mora aqui, uma vez, e é por
+     * isso que a tela oferece os dois mundos com as palavras de sempre.
+     *
+     * Palavra que não se reconhece devolve `null`, que é o estado em que o transporte deduz pela
+     * porta (465 vira `smtps`, o resto fica `smtp`) — errado digitado é melhor inferido do que
+     * fatal.
+     */
+    public static function esquema(?string $esquema): ?string
+    {
+        return match (strtolower(trim((string) $esquema))) {
+            '', 'null', 'none' => null,
+            'smtps', 'ssl' => 'smtps',
+            'smtp', 'tls', 'starttls' => 'smtp',
+            default => null,
+        };
+    }
+
+    /**
      * Grava um campo. Vazio apaga a linha do banco — e o `.env` volta a valer, que é o
      * "desfazer" honesto: o painel não escreve por cima do ambiente, passa na frente dele.
      *
@@ -944,6 +1038,33 @@ class ChavesDeIntegracao
     {
         return collect(self::grupos()['whmcs']['campos'])
             ->filter(fn (array $campo): bool => in_array($campo['chave'], ['whmcs_url', 'whmcs_identifier', 'whmcs_secret'], true))
+            ->filter(fn (array $campo): bool => blank(self::vigente($campo['chave'])))
+            ->map(fn (array $campo): string => $campo['label'].' ('.$campo['ambiente'].')')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * O que falta para o e-mail sair de verdade.
+     *
+     * Diferente das listas acima, aqui a régua não é "cada campo é obrigatório": servidor e
+     * remetente são, mas usuário e senha andam em par — um sem o outro é uma conexão que abre e é
+     * recusada no AUTH, e os dois vazios é um relay local legítimo de hospedagem compartilhada.
+     * Por isso o par é acusado uma vez só, pelo campo que falta, em vez de dois avisos que a
+     * pessoa corrigiria um de cada vez.
+     *
+     * @return array<int, string>
+     */
+    public static function faltantesDoEmail(): array
+    {
+        $necessarios = ['mail_host', 'mail_from_address'];
+
+        if (filled(self::vigente('mail_username')) !== filled(self::vigente('mail_password'))) {
+            $necessarios[] = filled(self::vigente('mail_username')) ? 'mail_password' : 'mail_username';
+        }
+
+        return collect(self::grupos()['email']['campos'])
+            ->filter(fn (array $campo): bool => in_array($campo['chave'], $necessarios, true))
             ->filter(fn (array $campo): bool => blank(self::vigente($campo['chave'])))
             ->map(fn (array $campo): string => $campo['label'].' ('.$campo['ambiente'].')')
             ->values()

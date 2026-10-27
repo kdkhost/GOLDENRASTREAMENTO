@@ -25,6 +25,9 @@ class Veiculacao
     /** Estados de fatura que já foram quitadas — o passado da conta. */
     public const ESTADOS_PAGAS = ['Paid', 'Refunded'];
 
+    /** Estados de fatura que ainda são uma cobrança em andamento. */
+    public const ESTADOS_EM_ABERTO = ['Unpaid', 'Payment Pending', 'Collections'];
+
     /** As duas telas de financeiro do portal. */
     public const TELAS = ['servicos', 'faturas'];
 
@@ -54,6 +57,28 @@ class Veiculacao
 
         return (bool) config('whmcs.veiculacao.faturas_pagas')
             || ! in_array($status, self::ESTADOS_PAGAS, true);
+    }
+
+    /**
+     * Esta fatura ainda é uma cobrança em aberto?
+     *
+     * A pergunta existe numa fonte só porque ela é feita de dois lugares que não podem discordar: a
+     * soma do aviso do portal ("R$ 59,90 em aberto") e a segunda via do chat, que só pode sair com
+     * fatura em aberto — mandar uma já quitada seria cobrar de novo quem pagou. O que decide é o
+     * estado quando o financeiro o devolve; sem estado, o saldo é a única prova de que ainda há o
+     * que pagar, e saldo zero não é dívida de ninguém.
+     *
+     * @param  array<string, mixed>  $fatura
+     */
+    public static function faturaEmAberto(array $fatura): bool
+    {
+        $status = (string) ($fatura['status'] ?? '');
+
+        if ($status !== '') {
+            return in_array($status, self::ESTADOS_EM_ABERTO, true);
+        }
+
+        return (int) ($fatura['saldo_cents'] ?? 0) > 0;
     }
 
     /** O grupo de serviços está na vitrine? Lista vazia é "todos", porque foi assim que a
@@ -110,5 +135,18 @@ class Veiculacao
     public static function minutosDeSupervisao(): int
     {
         return max(1, (int) config('whmcs.veiculacao.supervisao_minutos'));
+    }
+
+    /**
+     * O assistente do site pode entregar a segunda via da fatura pelo chat?
+     *
+     * É a veiculação mais delicada das lista: as anteriores decidem o que o cliente *vê* dentro do
+     * portal, e esta decide se o financeiro sai daqui para um e-mail sem que ninguém faça login.
+     * Desligada, o gatilho do chat nem chega a existir — a conversa segue normal, e nenhuma
+     * requisição é feita ao WHMCS a partir do atendimento público.
+     */
+    public static function segundaVia(): bool
+    {
+        return (bool) config('whmcs.veiculacao.segunda_via') && self::abre('faturas');
     }
 }

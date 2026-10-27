@@ -122,7 +122,7 @@ class TicketController extends Controller
     /** O mesmo cuidado do pedido: sem SMTP no ar a resposta continua gravada no chamado. */
     private function avisarCliente(Ticket $chamado, TicketMessage $mensagem): void
     {
-        $destino = $chamado->customer?->email_portal ?: $chamado->customer?->email;
+        $destino = $chamado->customer?->emailDeAcesso();
 
         if ($destino === null || $destino === '') {
             return;

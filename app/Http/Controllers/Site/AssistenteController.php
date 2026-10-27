@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Http\Controllers\Controller;
 use App\Models\Assistente;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
@@ -28,7 +29,7 @@ use Illuminate\Support\Str;
  * user-agent de indexador não abre conversa — o outro jeito é o painel encher de "conversas" que
  * nenhum humano leu.
  */
-class AssistenteController extends \App\Http\Controllers\Controller
+class AssistenteController extends Controller
 {
     public function __construct(private readonly Rastreio $rastreio) {}
 
@@ -43,15 +44,11 @@ class AssistenteController extends \App\Http\Controllers\Controller
         $conversa = $this->conversa($request);
         $novas = $conversa->mensagens()->where('id', '>', (int) $request->input('de', 0))->get();
 
-        // A saudação é a primeira fala e só existe uma vez: voltar à página não pode repetir o
-        // "olá" na tela de quem já está no meio de uma conversa.
-        if ($novas->isEmpty() && $conversa->mensagens()->count() === 0 && filled($ficha->saudacao)) {
-            $novas = collect([ConversaMensagem::create([
-                'conversa_id' => $conversa->id,
-                'autor' => 'assistente',
-                'tipo' => 'texto',
-                'corpo' => (string) $ficha->saudacao,
-            ])]);
+        // A abertura é a primeira fala e só existe uma vez: voltar à página não pode repetir o
+        // "olá" na tela de quem já está no meio de uma conversa. Ela sai pela boca do atendedor
+        // porque é ele quem tem a régua do nome — a saudação e o pedido vêm juntos daqui.
+        if ($novas->isEmpty() && $conversa->mensagens()->count() === 0) {
+            $novas = collect(Atendedor::abertura($conversa, $ficha));
         }
 
         return response()->json([

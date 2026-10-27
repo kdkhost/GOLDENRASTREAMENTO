@@ -326,6 +326,13 @@ return [
             'ok' => 'green', 'sem_conta' => 'gold', 'sem_credencial' => 'neutral',
             'sem_resposta' => 'red', 'http_erro' => 'red', 'recusada' => 'red',
         ],
+        // Resposta da prova de disparo (App\Services\Mail\Sonda::sonda). Dourado é o painel
+        // usando um transporte que não sai da máquina (log, array): nada falhou, mas nada saiu —
+        // estado que merece cor própria porque é decisão, não erro.
+        'sonda_email' => [
+            'ok' => 'green', 'sem_disparo' => 'gold', 'sem_resposta' => 'red',
+            'recusada' => 'red', 'falhou' => 'red',
+        ],
         // Campanha de Google Ads, pelo enum que o serviço devolve em `status` — o rótulo em
         // português já vem de config('google_ads.status_campanha'); o tom é por cima dele, e
         // status que não está aqui cai no neutro em vez de inventar cor.

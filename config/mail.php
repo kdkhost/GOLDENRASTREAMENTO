@@ -1,5 +1,26 @@
 <?php
 
+use App\Support\ChavesDeIntegracao;
+
+/*
+|--------------------------------------------------------------------------
+| Como o sistema envia e-mail
+|--------------------------------------------------------------------------
+|
+| Nada aqui é opcional nem some por falta de chave: o código dos disparos vive no sistema para
+| sempre, e o que muda de servidor para servidor é só a credencial. Esta página é o plano de
+| fundo; o painel (Sistema → Configurações → Chaves de integração → E-mail de disparo) passa na
+| frente dela assim que alguém preenche qualquer campo, gravado no banco.
+|
+| O endereço que assina os envios segue a mesma lógica em três passos: o valor do painel, depois
+| o `.env`, depois a caixa autenticada (`MAIL_USERNAME`) — porque num servidor de hospedagem o
+| remetente costuma ter que ser uma conta que existe lá, e um `from` inventado volta como
+| devolução. Só na falta dos três é que se chuta um `avisos@` sobre o domínio da aplicação.
+*/
+
+$remetente = env('MAIL_FROM_ADDRESS') ?: env('MAIL_USERNAME') ?: null;
+$dominio_app = parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost';
+
 return [
 
     /*
@@ -39,10 +60,16 @@ return [
 
         'smtp' => [
             'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
+            // Os nomes que o mundo usa (`tls`, `ssl`, a variável velha `MAIL_ENCRYPTION`) entram
+            // aqui e saem na única forma que o transporte aceita. Sem essa tradução, um `.env` de
+            // tutorial derruba todo disparo com `UnsupportedSchemeException`.
+            'scheme' => ChavesDeIntegracao::esquema(env('MAIL_SCHEME', env('MAIL_ENCRYPTION'))),
             'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
-            'port' => env('MAIL_PORT', 2525),
+            // Sem padrão para o servidor: `127.0.0.1` disfarça uma configuração incompleta de
+            // conexão legítima, e a tela de Configurações precisa poder dizer "falta o servidor".
+            // A porta 587 é a do STARTTLS de hospedagem — a que quase todo painel de correio usa.
+            'host' => env('MAIL_HOST'),
+            'port' => env('MAIL_PORT', 587),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
@@ -111,8 +138,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+        'address' => $remetente ?: 'avisos@'.$dominio_app,
+        'name' => env('MAIL_FROM_NAME', config('golden.marca.nome')),
     ],
 
 ];

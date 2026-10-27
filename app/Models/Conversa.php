@@ -29,15 +29,21 @@ class Conversa extends Model
         'pediu_humano' => 'O cliente pediu uma pessoa',
         'provedor_sem_chave' => 'Nenhum provedor de IA ligado',
         'provedor_com_erro' => 'A chamada de IA falhou',
+        'verificacao_impossivel' => 'A ficha não tinha dado para conferir',
+        'verificacao_sem_sucesso' => 'A conferência de dados não passou',
+        'envio_nao_concluido' => 'Ação do assistente não pôde ser concluída',
     ];
 
     protected $fillable = [
         'canal', 'status', 'visit_id', 'lead_id', 'customer_id', 'ticket_id',
         'nome', 'contato', 'pagina', 'escala_motivo',
+        'acao', 'acao_passo', 'acao_tentativas', 'acao_dados_json', 'acao_em', 'nome_pedidos',
         'respondido_por_equipe_em', 'resolvido_em', 'ultima_fala_em',
     ];
 
     protected $casts = [
+        'acao_dados_json' => 'array',
+        'acao_em' => 'datetime',
         'respondido_por_equipe_em' => 'datetime',
         'resolvido_em' => 'datetime',
         'ultima_fala_em' => 'datetime',
@@ -173,6 +179,53 @@ class Conversa extends Model
         }
 
         $this->save();
+    }
+
+    /**
+     * Abre uma ação na conversa. A data é o relógio da janela de validade, e os dados são a mesa
+     * de trabalho do passo — nunca o que a pessoa respondeu: as respostas são comparadas e
+     * descartadas na própria hora.
+     *
+     * @param  array<string, mixed>  $dados
+     */
+    public function abrirAcao(string $codigo, string $passo, array $dados = []): void
+    {
+        $this->forceFill([
+            'acao' => $codigo,
+            'acao_passo' => $passo,
+            'acao_tentativas' => 0,
+            'acao_dados_json' => $dados,
+            'acao_em' => now(),
+        ])->save();
+    }
+
+    /**
+     * Grava o passo seguinte da ação em curso, com a mesa de trabalho renovada. `null` em
+     * `tentativas` é "não mexe na conta" — o erro é que soma, o simples andar não apaga as
+     * tentativas já gastas.
+     *
+     * @param  array<string, mixed>  $dados
+     */
+    public function passoDaAcao(string $passo, array $dados = [], ?int $tentativas = null): void
+    {
+        $this->forceFill([
+            'acao_passo' => $passo,
+            'acao_dados_json' => $dados,
+            'acao_tentativas' => $tentativas ?? $this->acao_tentativas,
+            'acao_em' => now(),
+        ])->save();
+    }
+
+    /** Fecha a ação: deu certo, venceu ou chamou a equipe. A conversa volta a ser só conversa. */
+    public function encerrarAcao(): void
+    {
+        $this->forceFill([
+            'acao' => null,
+            'acao_passo' => null,
+            'acao_tentativas' => 0,
+            'acao_dados_json' => null,
+            'acao_em' => null,
+        ])->save();
     }
 
     /** Quem a tela mostra: o nome dito no chat, o cliente do portal, ou "visitante anônimo". */

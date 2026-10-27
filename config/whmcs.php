@@ -50,6 +50,11 @@ return [
     | conta de um cliente no portal, pelas mesmas telas e com os mesmos filtros que o cliente vê,
     | em modo somente leitura. `supervisao_minutos` é o prazo dessa janela — vencido, a sessão cai
     | e ninguém fica dentro da conta de outra pessoa por descuido.
+    |
+    | `segunda_via` é o financeiro saindo pelo chat: ligado, o assistente do site e da página de
+    | funil pode enviar as faturas em aberto ao e-mail cadastrado da pessoa, depois de conferir os
+    | dados de segurança da ficha (`config/assistente.php` → `verificacao`). Desligado, o assunto
+    | volta a ser só o portal e o atendimento humano — nenhuma chamada é feita ao WHMCS pelo chat.
     */
     'veiculacao' => [
         'servicos' => (bool) env('WHMCS_VEICULA_SERVICOS', true),
@@ -62,6 +67,7 @@ return [
         'grupos' => env('WHMCS_VEICULA_GRUPOS', ''),
         'supervisao' => (bool) env('WHMCS_VEICULA_SUPERVISAO', true),
         'supervisao_minutos' => (int) env('WHMCS_VEICULA_SUPERVISAO_MINUTOS', 45),
+        'segunda_via' => (bool) env('WHMCS_VEICULA_SEGUNDA_VIA', true),
     ],
 
     /*

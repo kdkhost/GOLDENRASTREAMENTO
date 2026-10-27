@@ -95,10 +95,12 @@
             </form>
 
             <dl class="defs mt-3 mb-0">
+                @php $acao_em_curso = \App\Services\Assistente\Acoes::descrever($conversa); @endphp
                 <dt>De onde</dt><dd>{{ $conversa->canalLabel() }}</dd>
                 <dt>Página</dt><dd>{{ $conversa->pagina ?: '—' }}</dd>
                 <dt>Contato dito no chat</dt><dd>{{ $conversa->contato ?: '—' }}</dd>
                 <dt>Por que chamou a equipe</dt><dd>{{ $conversa->escala_motivo ? $conversa->escalaLabel() : '—' }}</dd>
+                <dt>Ação da máquina</dt><dd>{{ $acao_em_curso !== '' ? $acao_em_curso : 'nenhuma em curso' }}</dd>
                 <dt>Equipe assumiu</dt><dd>{{ $conversa->respondido_por_equipe_em ? $conversa->respondido_por_equipe_em->format('d/m/Y H:i') : 'ainda é da máquina' }}</dd>
                 <dt>Resolvida em</dt><dd>{{ $conversa->resolvido_em ? $conversa->resolvido_em->format('d/m/Y H:i') : '—' }}</dd>
             </dl>

@@ -180,6 +180,7 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertSame(0, Conversa::count());
     }
 
+    /** A abertura são duas falas: a saudação da casa e, logo depois, a pergunta pelo nome. */
     public function test_a_bolha_abre_a_conversa_na_sessao_e_sauda_uma_unica_vez(): void
     {
         $abertura = $this->postJson('/assistente/abrir', ['pagina' => '/planos'])
@@ -189,13 +190,15 @@ class BolhaDoAssistenteTest extends TestCase
         $conversa = Conversa::findOrFail((int) $abertura->json('conversa'));
         $this->assertSame('site', $conversa->canal);
         $this->assertSame('/planos', $conversa->pagina);
-        $this->assertCount(1, $conversa->mensagens);
+        $this->assertCount(2, $conversa->mensagens);
         $this->assertSame('assistente', $conversa->mensagens()->first()->autor);
+        $this->assertSame(Assistente::paraABolha()->textoPerguntaNome(), $conversa->mensagens()->latest('id')->firstOrFail()->corpo);
+        $this->assertSame(1, $conversa->refresh()->nome_pedidos);
 
         // Voltar à página não repete o "olá" na tela de quem já está no meio da conversa.
         $this->postJson('/assistente/abrir')->assertOk();
         $this->assertSame(1, Conversa::count(), 'A bolha abriu uma conversa nova na segunda visita.');
-        $this->assertSame(1, ConversaMensagem::count(), 'A saudação se repetiu na mesma conversa.');
+        $this->assertSame(2, ConversaMensagem::count(), 'A abertura se repetiu na mesma conversa.');
     }
 
     public function test_a_ficha_desligada_recusa_os_tres_enderecos(): void
@@ -325,11 +328,12 @@ class BolhaDoAssistenteTest extends TestCase
         $this->travel(2)->minutes();
         $resposta = $this->postJson('/assistente/fala', ['texto' => 'Qual o preço do rastreador?'])->assertOk();
 
-        // Voltam só as falas novas — a do cliente e a da máquina — mas são três no banco: sem a
-        // última fala certa, a resposta da máquina simplesmente não acontece.
+        // Voltam só as falas novas — a do cliente e a da máquina — mas são quatro no banco (saudação,
+        // pergunta pelo nome, pergunta e resposta): sem a última fala certa, a resposta da máquina
+        // simplesmente não acontece.
         $this->assertCount(2, $resposta->json('falas'));
         $this->assertSame('assistente', $resposta->json('falas.1.autor'));
-        $this->assertSame(3, $conversa->mensagens()->count());
+        $this->assertSame(4, $conversa->mensagens()->count());
         $this->assertSame('aguardando_equipe', $conversa->refresh()->status);
 
         $this->travel(2)->minutes();

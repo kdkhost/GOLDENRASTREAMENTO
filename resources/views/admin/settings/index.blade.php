@@ -17,6 +17,7 @@
     // tabela de config('golden.tons_status'), e sem sonda feita o pacote é nulo — a tela fica em
     // branco, não em vermelho.
     $sonda = session('sonda');
+    $sondaEmail = session('sonda_email');
 @endphp
 
 @section('page_actions')
@@ -392,6 +393,53 @@
                                     </div>
                                 </form>
                             </x-admin.card>
+
+                            {{-- O grupo do e-mail é o único que tem prova de fogo na própria aba: as
+                                 outras chaves se conferem usando a integração, e o SMTP não tem tela
+                                 nenhuma para "usar" — só a mensagem que sai ou não sai. --}}
+                            @if($id === 'email')
+                                <x-admin.card title="Testar o disparo agora" icon="fa-paper-plane" class="mt-3"
+                                    :descricao="'Pelo transporte e pelo remetente abaixo, uma mensagem de verdade — o mesmo caminho do link de senha do portal e da segunda via da fatura.'">
+                                    <dl class="defs mb-3">
+                                        @foreach($correio['viagem'] as $rotulo => $valor)
+                                            <dt>{{ $rotulo }}</dt><dd><code>{{ $valor }}</code></dd>
+                                        @endforeach
+                                    </dl>
+
+                                    @if(!$correio['configurado'])
+                                        <p class="small text-secondary mb-3">
+                                            Ainda não há o que testar: {{ implode(', ', $correio['faltando']) }}.
+                                            Preencha acima e salve — o valor passa a valer nesta hora, sem tocar no servidor.
+                                        </p>
+                                    @endif
+
+                                    <form method="POST" action="{{ route('admin.settings.email.sondar') }}" class="row g-3">
+                                        @csrf
+                                        <x-admin.field name="sonda_email_destino" type="email" label="Receber a mensagem de prova em"
+                                            :value="$settings['contato_email'] ?? ''" :col="''" maxlength="190" :required="true"
+                                            placeholder="voce@seudominio.com.br"
+                                            hint="Digite a sua própria caixa, nunca o e-mail de um cliente: isto é prova de transporte, não correspondência." />
+
+                                        <div class="col-12">
+                                            <button class="btn btn-outline-secondary" @if(!$correio['configurado']) disabled @endif>
+                                                <i class="fas fa-bolt me-1"></i> Enviar a prova
+                                            </button>
+                                            @if(!$correio['configurado'])
+                                                <span class="form-hint ms-2">Complete o transporte para liberar o teste.</span>
+                                            @endif
+                                        </div>
+
+                                        @if($sondaEmail)
+                                            <div class="col-12">
+                                                <div class="d-flex align-items-start gap-2">
+                                                    <x-admin.status :rotulo="$sondaEmail['titulo']" :tom="tom_por_status('sonda_email', $sondaEmail['estado'])" class="flex-shrink-0 mt-1" />
+                                                    <p class="small text-secondary mb-0">{{ $sondaEmail['texto'] }}</p>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </form>
+                                </x-admin.card>
+                            @endif
                         </div>
                     @endforeach
                 </div>

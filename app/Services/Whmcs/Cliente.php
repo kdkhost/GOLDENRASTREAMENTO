@@ -289,7 +289,10 @@ class Cliente
             return ['estado' => 'recusada', 'resposta' => null, 'status' => $resposta->status(), 'detalhe' => 'A resposta não é JSON.'];
         }
 
-        if (($json['result'] ?? null) !== 'success') {
+        // O campo `result` é comparado sem caixa de propósito: o WHMCS responde `SUCCESS` e
+        // `FAILURE` em letra maiúscula, e uma comparação exata por `success` jogaria no chão toda
+        // conversa bem-sucedida — o financeiro diria que está no ar e o portal veria uma falha.
+        if (Str::lower((string) ($json['result'] ?? '')) !== 'success') {
             return ['estado' => 'recusada', 'resposta' => $json, 'status' => $resposta->status(), 'detalhe' => (string) ($json['message'] ?? 'sem mensagem')];
         }
 
