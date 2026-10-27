@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Setting;
 use App\Services\Whmcs\Cliente as Financeiro;
+use App\Services\Whmcs\Veiculacao;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
@@ -59,17 +60,21 @@ abstract class PortalBaseController extends Controller
 
     /**
      * Espelha no financeiro o que o portal já gravou. `null` quando não há o que espelhar
-     * (integração desligada ou conta não localizada lá) e `false` quando havia e a chamada
-     * falhou — é o `false` que merece um aviso na tela. A gravação local nunca é desfeita por
-     * causa do financeiro: a ficha do CRM e a senha do portal são a verdade daqui.
+     * (integração desligada, veiculação desligada para aquele escrevente, ou conta não
+     * localizada lá) e `false` quando havia e a chamada falhou — é o `false` que merece um aviso
+     * na tela. A gravação local nunca é desfeita por causa do financeiro: a ficha do CRM e a
+     * senha do portal são a verdade daqui.
+     *
+     * O `$oQue` é o interruptor de veiculação correspondente (`dados` ou `senha`): desligado, nem
+     * se gasta a descoberta de id, porque perguntar "quem é esta pessoa lá" já é uma chamada.
      *
      * @param  callable(Financeiro, int): bool  $acao
      */
-    protected function espelharNoFinanceiro(callable $acao): ?bool
+    protected function espelharNoFinanceiro(string $oQue, callable $acao): ?bool
     {
         $financeiro = $this->financeiro();
 
-        if (! $financeiro->configurado()) {
+        if (! $financeiro->configurado() || ! Veiculacao::espelha($oQue)) {
             return null;
         }
 

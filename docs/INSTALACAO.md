@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.41.0
+- **Versão:** 2.42.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -909,6 +909,48 @@ A migration desta entrega é `2026_10_26_200001_liga_a_ficha_ao_whmcs`: acrescen
 `customers.whmcs_id` (`int unsigned`, nulo, índice único). É aditiva, tem `down()`
 e já foi exercitada no MySQL 8.4 — o SQLite dos testes não avisa, mas o MySQL da
 hospedagem exige o comprimento e o índice dentro do limite.
+
+### O que a conexão veicula: a aba Financeiro (WHMCS)
+
+Credencial é a porta; o que passa por ela é decisão da casa, e se muda em *Sistema
+→ Configurações → Financeiro (WHMCS)*. A aba tem três cartões: o estado da conexão
+(credenciais completas ou a lista do que falta, com o nome do campo e a variável do
+`.env` correspondente), os **sete interruptores** de veiculação, e a **sonda**.
+
+| Interruptor | Padrão | O que muda no portal |
+| --- | --- | --- |
+| `whmcs_veicula_servicos` | ligado | A tela *Meus serviços* existe para o cliente. |
+| `whmcs_veicula_faturas` | ligado | A tela *Minhas faturas* existe para o cliente. |
+| `whmcs_veicula_servicos_encerrados` | **desligado** | Serviços `Terminated`, `Cancelled` e `Fraud` entram ou somem da lista. |
+| `whmcs_veicula_faturas_pagas` | ligado | Faturas `Paid` e `Refunded` ficam no histórico ou sai só o que está em aberto. |
+| `whmcs_veicula_grupos` | vazio = todos | Só os grupos de produtos listados aparecem; a comparação ignora caixa e espaços. |
+| `whmcs_veicula_link_externo` | ligado | Os botões *Abrir* e *Pagar* levam ao WHMCS; desligado, o cliente não salta para fora do portal. |
+| `whmcs_veicula_espelhar_dados` / `whmcs_veicula_espelhar_senha` | ligados | O portal escreve (`UpdateClient`) no financeiro, ou grava só em si mesmo. |
+
+**Desligado não é botão escondido.** Fechada a veiculação de uma tela, o controller
+devolve "Esta área do portal está fechada." antes de qualquer HTTP, o item do menu
+sai esmaecido com o aviso, e o financeiro não recebe uma requisição sequer. Fechado
+o espelho, a ação do cliente grava no portal e **não** dispara a chamada — e, como
+desligar não é falha, a tela não mostra o aviso de "o financeiro não respondeu".
+Fechado o link externo, a coluna de pagamento diz *Pelo atendimento*.
+
+**A sonda** responde à pergunta que nenhuma tela de cliente responde: *a conexão
+está ligada mesmo?* Informe o e-mail de um cliente e o painel devolve o que o WHMCS
+disse, em português, com selo de cor:
+
+| Estado | O que a tela diz |
+| --- | --- |
+| `ok` | "A conexão está no ar", com o id da conta confirmado no financeiro. |
+| `sem_conta` | "Conexão ok — conta, não." A credencial presta; aquele e-mail não tem ficha lá. |
+| `recusada` | "O financeiro recusou a chamada", citando a mensagem dele (`Invalid credentials`, permissão de API desligada). |
+| `http_erro` | "O financeiro respondeu com erro" com o código HTTP e a dica do `/includes/api.php`. |
+| `sem_resposta` | "O financeiro não respondeu": timeout, DNS ou barreira da hospedagem de saída. |
+| `sem_credencial` | "Ainda não há o que testar", e nada sai pela rede. |
+
+Cada campo desta aba obedece a mesma regra do resto do painel: o que estiver
+gravado no banco manda; **campo em branco devolve a decisão ao `.env`**
+(`WHMCS_VEICULA_*`), e nenhum valor precisa de `config:clear` nem de reinício — a
+sobreposição roda no `boot()` de cada requisição.
 
 ### O que a equipe faz com isso
 

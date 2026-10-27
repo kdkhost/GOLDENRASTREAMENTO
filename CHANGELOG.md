@@ -3,6 +3,59 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.42.0] - 2026-10-26
+
+### Adicionado
+- **`App\Services\Whmcs\Veiculacao`: a conexão com o financeiro passou a ter o que veicular.**
+  Até aqui, preencher as três credenciais abria a porta e tudo que cabia nela saía para o
+  cliente — as duas telas, os serviços encerrados, as faturas pagas, o link que leva para fora
+  do portal e as duas escritas no `UpdateClient`. Não havia onde decidir o contrário. Agora cada
+  uma dessas é um interruptor, e a regra vive numa classe só, lida pelo controller, pela sidebar,
+  pelo `Cliente` e pela tela de Configurações: `abre('servicos')`, `abre('faturas')`,
+  `mostraServico($status)`, `mostraFatura($status)`, `mostraGrupo($grupo)`, `mostraLink()` e
+  `espelha('dados'|'senha')`. Sete chaves `Sim/Não` mais a lista `whmcs_veicula_grupos` ficam no
+  grupo `whmcs-veiculacao` de `ChavesDeIntegracao`, gravam no banco e valem na hora; em branco,
+  o `.env` (`WHMCS_VEICULA_*`) conduz, como em toda integração da casa.
+- **Desligar deixou de ser esconder botão: é não gastar a chamada.** `PortalFinanceiroController`
+  consulta o interruptor antes de instanciar qualquer HTTP — fechada a tela, o cliente lê "Esta
+  área do portal está fechada." com o caminho de volta, e o financeiro não recebe uma requisição
+  sequer (travado por `Http::assertNothingSent()`). O menu do portal acompanha: o item perde a
+  cor e ganha o aviso *desligada*, para a pessoa saber que a área existe sem cair numa porta
+  trancada. Desligar o espelho é a mesma lógica do outro lado — o portal grava só em si, e como
+  desligado não é falha, nenhum *toast* de "o financeiro não respondeu" aparece.
+- **Filtro de vitrine: estado, grupo e saída para fora.** Serviços `Terminated`, `Cancelled` e
+  `Fraud` ficam de fora por padrão (o passado do contrato não é oferta), `Suspended` continua
+  dentro porque suspenso ainda é contrato, e fatura paga só aparece para quem quer o histórico.
+  `whmcs_veicula_grupos` mostra apenas os grupos listados — comparação sem caixa e sem
+  espaço, lista vazia é "todos", que é como a integração nasceu. Desligado o `link_externo`, a
+  coluna de pagamento passa a dizer *Pelo atendimento* e nenhum `clientarea.php` sai no HTML.
+- **Aba Financeiro (WHMCS) em Configurações, com o estado da conexão e a sonda.** Um cartão diz
+  se as credenciais estão completas ou lista o que falta pelo nome do campo e a variável do
+  `.env`, com ligação direta para a aba interna das chaves; outro mostra o endereço exato que
+  será consultado (com o `/includes/api.php` que o painel completa), o tempo de espera, o limite
+  de itens e os grupos autorizados; o terceiro reúne os interruptores. A **sonda** pergunta ao
+  WHMCS por um e-mail e devolve em português o que ele respondeu — `ok` com o id da conta,
+  `sem_conta` ("Conexão ok — conta, não."), `recusada` citando a mensagem dele, `http_erro` com
+  o código, `sem_resposta` com o detalhe da rede, ou `sem_credencial` sem tocar na rede. Cada
+  estado veste o selo pela tabela `config/golden.tons_status.sonda_whmcs`, e o segredo nunca
+  volta para o HTML.
+- `Cliente::chamarCrua()` e `Cliente::sonda()`: a chamada crua, que preserva estado, status HTTP
+  e mensagem original. `chamar()` achata todo erro em `null` porque a página do cliente não tem o
+  que fazer com a diferença entre credencial revogada e servidor mudo — quem está ligando a
+  integração tem, e é para isso que os dois métodos novos existem. `endpointParaExibir()` mostra
+  o endereço realmente consultado, e `faltando()` responde "o que falta" em nomes de tela.
+- **Os interruptores têm aba própria, não mais um cartão na lista de chaves.** O grupo
+  `whmcs-veiculacao` declara `aba_propria`, e `ChavesDeIntegracao::gruposDeChaves()` o deixa de
+  fora da lista de abas internas de *Chaves de integração* — assim nenhum campo aparece em duas
+  telas. O salvamento é o endpoint genérico (`POST /configuracoes/chaves`), sem uma linha de
+  gravação duplicada, e `test_salvar_os_interruptores_no_painel_grava_no_banco_e_manda_na_frente_do_env`
+  prova que o que a tela gravou é o que `Veiculacao` lê.
+- **17 testes em `tests/Feature/VeiculacaoDoWhmcsTest.php`**, mais o mapa de abas e o teste da aba
+  própria em `AbasDasConfiguracoesTest.php`. O arquivo fixa também uma armadilha do Laravel:
+  `Http::fake()` **acumula** stubs e o primeiro que casa vence, então cada teste instala um único
+  fake roteado pela `action` recebida — dois fakes no mesmo teste deixariam o segundo mudo, e um
+  teste mudo passa por acidente.
+
 ## [2.41.0] - 2026-10-26
 
 ### Adicionado

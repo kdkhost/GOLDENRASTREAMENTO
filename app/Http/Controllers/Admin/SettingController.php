@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Setting;
+use App\Services\Whmcs\Cliente as Financeiro;
 use App\Support\ChavesDeIntegracao;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,10 +14,16 @@ use Illuminate\View\View;
 
 class SettingController extends Controller
 {
-    public function index(): View
+    public function index(Financeiro $financeiro): View
     {
         return view('admin.settings.index', [
             'settings' => Setting::all_values(),
+            'financeiro' => [
+                'configurado' => $financeiro->configurado(),
+                'faltando' => $financeiro->faltando(),
+                'endpoint' => $financeiro->endpointParaExibir(),
+            ],
+            'veiculacao' => ChavesDeIntegracao::grupos()[ChavesDeIntegracao::GRUPO_VEICULACAO],
         ]);
     }
 
@@ -214,6 +221,35 @@ class SettingController extends Controller
         return back()->with('success', $mexidas === 0
             ? "Nada mudou em {$rotulo}."
             : "{$rotulo}: {$mexidas} campo(s) atualizados. Vale a partir desta tela; o que ficou em branco voltou a obedecer ao .env.");
+    }
+
+    /**
+     * A prova de que a conexão existe: uma pergunta real ao WHMCS, respondida em português.
+     *
+     * O e-mail consultado vem digitado pelo administrador, nunca de um cliente do portal — a
+     * sonda serve para conferir credencial e leitura, não para expor a ficha de alguém. O
+     * relatório completo vai como flash (`sonda`) para a aba mostrar o que aconteceu, e a mesma
+     * frase sai como toastr, porque "testar" sem resposta visual é a mesma coisa que não ter
+     * testado.
+     */
+    public function sondarWhmcs(Request $request, Financeiro $financeiro): RedirectResponse
+    {
+        $dados = $request->validate(
+            ['sonda_email' => ['required', 'email', 'max:190']],
+            [],
+            ['sonda_email' => 'e-mail consultado'],
+        );
+
+        $resultado = $financeiro->sonda($dados['sonda_email']);
+        $tom = match ($resultado['estado']) {
+            'ok' => 'success',
+            'sem_conta' => 'warning',
+            default => 'error',
+        };
+
+        Activity::log('whmcs_sondado', "Conexão com o WHMCS testada ({$resultado['estado']}).");
+
+        return back()->with('sonda', $resultado)->with($tom, $resultado['titulo'].' '.$resultado['texto']);
     }
 
     /** Liga/desliga a loja virtual imediatamente, sem recarregar o formulário. */

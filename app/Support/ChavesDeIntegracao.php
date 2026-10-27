@@ -24,11 +24,19 @@ use Throwable;
  * Apagar um campo na tela apaga a linha do banco, e o `.env` volta a valer. É o mesmo princípio
  * do "voltar à foto original" das imagens do site: o painel não grava por cima do ambiente, ele
  * passa na frente dele.
+ *
+ * Além das credenciais, este registro carrega os interruptores de veiculação do WHMCS, que não
+ * são chave nenhuma mas pedem exatamente as mesmas três coisas: cast, regra de validação e
+ * plano de fundo no `.env`. São um grupo marcado com `aba_propria`, exibido na aba própria do
+ * financeiro em vez da lista de chaves — e é por isso que `gruposDeChaves()` existe.
  */
 class ChavesDeIntegracao
 {
     /** Para onde apontar quando falta uma chave: o caminho da tela, escrito uma vez só. */
     public const CAMINHO_NO_PAINEL = 'Sistema → Configurações → Chaves de integração';
+
+    /** O grupo da veiculação do WHMCS, que tem aba própria em vez de pilha na lista de chaves. */
+    public const GRUPO_VEICULACAO = 'whmcs-veiculacao';
 
     /** Como a tela chama cada origem. Nenhuma view escreve essas três palavras. */
     public const ROTULOS_ORIGEM = [
@@ -214,7 +222,7 @@ class ChavesDeIntegracao
                         'label' => 'Porta',
                         'opcional' => true,
                         'cast' => 'int',
-                        'regras' => ['integer','min:1','max:65535'],
+                        'regras' => ['integer', 'min:1', 'max:65535'],
                         'placeholder' => '587',
                     ],
                     [
@@ -251,7 +259,7 @@ class ChavesDeIntegracao
                         'label' => 'Remetente',
                         'opcional' => true,
                         'type' => 'email',
-                        'regras' => ['email','max:160'],
+                        'regras' => ['email', 'max:160'],
                         'placeholder' => 'avisos@seudominio.com.br',
                     ],
                     [
@@ -319,6 +327,79 @@ class ChavesDeIntegracao
                         'cast' => 'int',
                         'regras' => ['integer', 'min:5', 'max:200'],
                         'placeholder' => '50',
+                    ],
+                ],
+            ],
+
+            'whmcs-veiculacao' => [
+                'rotulo' => 'WHMCS — o que a conexão veicula',
+                'icone' => 'fa-satellite-dish',
+                'descricao' => 'A porta aberta, e agora? Estes interruptores decidem o que o cliente vê e o que o portal escreve no financeiro. São de veiculação, não de acesso: quem desliga não esconde botão — deixa de consultar e tira a tela do menu do portal.',
+                // A aba própria (Configurações → Financeiro (WHMCS)) mostra o estado da conexão e a
+                // sonda ao lado destes campos, coisa que um grupo de credenciais não tem. Por isso
+                // ela e não a lista de chaves os exibe: o mesmo campo em duas telas seria a
+                // primeira discordância entre duas fontes da mesma verdade.
+                'aba_propria' => true,
+                'campos' => [
+                    self::campoSimNao(
+                        'whmcs_veicula_servicos',
+                        'whmcs.veiculacao.servicos',
+                        'WHMCS_VEICULA_SERVICOS',
+                        'Mostrar "Meus serviços" no portal',
+                        'Desligado, a tela sai do menu do portal e a consulta ao financeiro deixa de ser feita.'
+                    ),
+                    self::campoSimNao(
+                        'whmcs_veicula_faturas',
+                        'whmcs.veiculacao.faturas',
+                        'WHMCS_VEICULA_FATURAS',
+                        'Mostrar "Minhas faturas" no portal',
+                        'É pela tela de faturas que o cliente vê o que está em aberto e paga a mensalidade.'
+                    ),
+                    self::campoSimNao(
+                        'whmcs_veicula_servicos_encerrados',
+                        'whmcs.veiculacao.servicos_encerrados',
+                        'WHMCS_VEICULA_SERVICOS_ENCERRADOS',
+                        'Mostrar serviços encerrados, cancelados ou em análise',
+                        'Padrão desligado: encerrado não é contrato em andamento, e misturar os dois confunde mais do que informa. Suspenso e pendente continuam aparecendo — desses o cliente ainda deve.'
+                    ),
+                    self::campoSimNao(
+                        'whmcs_veicula_faturas_pagas',
+                        'whmcs.veiculacao.faturas_pagas',
+                        'WHMCS_VEICULA_FATURAS_PAGAS',
+                        'Mostrar faturas já pagas e reembolsadas',
+                        'Ligado, a tela é o histórico completo; desligado, ficam só as que ainda pedem pagamento.'
+                    ),
+                    self::campoSimNao(
+                        'whmcs_veicula_link_externo',
+                        'whmcs.veiculacao.link_externo',
+                        'WHMCS_VEICULA_LINK_EXTERNO',
+                        'Deixar o cliente abrir o financeiro pelo portal',
+                        'São os botões "Pagar", "Abrir" e o link da fatura. Desligado, o portal mostra a lista sem levar ninguém para fora — quem paga é pelo atendimento.'
+                    ),
+                    self::campoSimNao(
+                        'whmcs_veicula_espelhar_dados',
+                        'whmcs.veiculacao.espelhar_dados',
+                        'WHMCS_VEICULA_ESPELHAR_DADOS',
+                        'Espelhar no financeiro o cadastro que o cliente corrigir',
+                        'A ficha do CRM continua sendo gravada de qualquer jeito; este interruptor só manda a cópia para o WHMCS.'
+                    ),
+                    self::campoSimNao(
+                        'whmcs_veicula_espelhar_senha',
+                        'whmcs.veiculacao.espelhar_senha',
+                        'WHMCS_VEICULA_ESPELHAR_SENHA',
+                        'Espelhar no financeiro a senha nova do portal',
+                        'Desligado, o cliente passa a ter duas senhas diferentes — a do portal e a do site de pagamento.'
+                    ),
+                    [
+                        'chave' => 'whmcs_veicula_grupos',
+                        'config' => 'whmcs.veiculacao.grupos',
+                        'ambiente' => 'WHMCS_VEICULA_GRUPOS',
+                        'label' => 'Exibir só estes grupos de serviços',
+                        'opcional' => true,
+                        'cast' => 'lista',
+                        'regras' => ['string', 'max:255'],
+                        'placeholder' => 'Rastreamento veicular, Monitoramento de frota',
+                        'dica' => 'Nomes exatamente como o WHMCS os escreve em Configurações do sistema → Grupos de produtos, separados por vírgula. Vazio exibe todos.',
                     ],
                 ],
             ],
@@ -619,6 +700,19 @@ class ChavesDeIntegracao
     {
         return collect(self::grupos())
             ->flatMap(fn (array $grupo): array => $grupo['campos'])
+            ->all();
+    }
+
+    /**
+     * Os grupos que vivem na lista de Chaves de integração. Um grupo com `aba_propria` tem a sua
+     * própria tela — a lista não o mostra, e nada é gravado duas vezes em lugares diferentes.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function gruposDeChaves(): array
+    {
+        return collect(self::grupos())
+            ->reject(fn (array $grupo): bool => (bool) ($grupo['aba_propria'] ?? false))
             ->all();
     }
 

@@ -1,10 +1,16 @@
 @extends('portal.layout')
-@php use App\Services\Whmcs\Cliente as Financeiro; @endphp
+@php use App\Services\Whmcs\Cliente as Financeiro; use App\Services\Whmcs\Veiculacao; @endphp
 
 @section('title', 'Meus serviços — Portal do cliente')
 @section('page_title', 'Meus serviços')
 @php
     $quantos = count($itens);
+    $abreNoFinanceiro = Veiculacao::mostraLink();
+    // Sem o salto para o financeiro, a coluna "Abrir" ficaria uma fileira de vazios — ela sai,
+    // e a tabela conta só o que o cliente pode ver.
+    $colunas = $abreNoFinanceiro
+        ? ['Serviço', 'end:Valor', 'center:Vencimento', 'center:Situação', 'end:Abrir']
+        : ['Serviço', 'end:Valor', 'center:Vencimento', 'center:Situação'];
     $descricaoPagina = match (true) {
         $situacao !== 'ok' => 'Os produtos e planos que você contratou com a Golden.',
         $quantos === 0 => 'Nenhum serviço contratado no financeiro desta conta ainda.',
@@ -22,7 +28,7 @@
 @include('portal.partials.financeiro-situacao')
 
 @if($situacao === 'ok')
-    <x-admin.table :headers="['Serviço', 'end:Valor', 'center:Vencimento', 'center:Situação', 'end:Abrir']"
+    <x-admin.table :headers="$colunas"
         empty="Nenhum serviço contratado no financeiro desta conta ainda. Se você comprou um rastreador recentemente, fale com a equipe para conferir o cadastro.">
         @foreach($itens as $servico)
         <tr>
@@ -40,9 +46,11 @@
             </td>
             <td class="text-center small text-nowrap">{{ $servico['proximo_vencimento'] ? $servico['proximo_vencimento']->format('d/m/Y') : '—' }}</td>
             <td class="text-center"><x-admin.status :rotulo="Financeiro::rotuloDoServico($servico['status'])" :tom="Financeiro::tomDoServico($servico['status'])" /></td>
+            @if($abreNoFinanceiro)
             <td class="text-end">
                 <a class="btn btn-sm btn-outline-secondary" href="{{ $servico['url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Abrir {{ $servico['nome'] }} no financeiro"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
             </td>
+            @endif
         </tr>
         @endforeach
     </x-admin.table>

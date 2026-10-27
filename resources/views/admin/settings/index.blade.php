@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Configurações')
 @section('page_title', 'Configurações do sistema')
-@section('page_description', 'Cada tipo de configuração na sua aba: contato, acessos do site, loja, WhatsApp, medição e chaves de integração.')
+@section('page_description', 'Cada tipo de configuração na sua aba: contato, acessos do site, loja, WhatsApp, medição, financeiro (WHMCS) e chaves de integração.')
 
 @php
     $lojaAtiva = ($settings['loja_ativa'] ?? '1') === '1';
@@ -12,7 +12,11 @@
     $numeroPadrao = $settings['contato_whatsapp'] ?? config('golden.whatsapp');
     $textosAcesso = config('golden.acessos.textos');
     $iconesAcesso = config('golden.acessos.icones');
-    $gruposDeChaves = \App\Support\ChavesDeIntegracao::grupos();
+    $gruposDeChaves = \App\Support\ChavesDeIntegracao::gruposDeChaves();
+    // A sonda volta por flash como um pacote (estado, título, texto): o estado veste o selo pela
+    // tabela de config('golden.tons_status'), e sem sonda feita o pacote é nulo — a tela fica em
+    // branco, não em vermelho.
+    $sonda = session('sonda');
 @endphp
 
 @section('page_actions')
@@ -63,6 +67,13 @@
                     data-bs-toggle="tab" data-bs-target="#aba-medicao" data-aba="medicao"
                     aria-controls="aba-medicao" aria-selected="false">
                     <i class="fas fa-chart-area" aria-hidden="true"></i><span>Medição</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" type="button" role="tab" id="aba-financeiro-botao"
+                    data-bs-toggle="tab" data-bs-target="#aba-financeiro" data-aba="financeiro"
+                    aria-controls="aba-financeiro" aria-selected="false">
+                    <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i><span>Financeiro (WHMCS)</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -266,7 +277,88 @@
             </form>
         </div>
 
-        {{-- 6. Chaves: um grupo por aba interna, com o ambiente explicado no pé. --}}
+        {{-- 6. Financeiro (WHMCS): o estado da porta, o que passa por ela e a prova de que abre.
+             As credenciais ficam na aba Chaves porque são segredo; o comportamento delas vive
+             aqui, porque é decisão de negócio e não chave de servidor. --}}
+        <div class="tab-pane fade" id="aba-financeiro" data-aba-painel="financeiro" role="tabpanel" aria-labelledby="aba-financeiro-botao" tabindex="0">
+            <div class="row g-3">
+                <div class="col-xl-5">
+                    <x-admin.card title="Estado da conexão" icon="fa-plug-circle-bolt"
+                        :descricao="'O que o portal do cliente vai consultar no financeiro, no endereço abaixo.'">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <x-admin.status :rotulo="$financeiro['configurado'] ? 'Credenciais completas' : 'Falta configurar'" :tom="tom_por_flag($financeiro['configurado'])" />
+                            <span class="form-hint">{{ $financeiro['configurado'] ? 'há o que consultar' : 'nenhuma chamada é feita' }}</span>
+                        </div>
+
+                        <dl class="defs mb-0">
+                            <dt>Endereço consultado</dt>
+                            <dd><code>{{ $financeiro['endpoint'] !== '' ? $financeiro['endpoint'] : '— sem endereço —' }}</code></dd>
+                            <dt>Tempo de espera</dt>
+                            <dd>{{ (int) config('whmcs.timeout') }}s <span class="form-hint">por chamada</span></dd>
+                            <dt>Limite de itens</dt>
+                            <dd>{{ (int) config('whmcs.limite') }} <span class="form-hint">por lista</span></dd>
+                            <dt>Grupos exibidos</dt>
+                            <dd>{{ \App\Services\Whmcs\Veiculacao::grupos() === [] ? 'todos' : implode(' · ', \App\Services\Whmcs\Veiculacao::grupos()) }}</dd>
+                        </dl>
+
+                        @if(!$financeiro['configurado'])
+                            <p class="small text-secondary mb-0 mt-3">
+                                Faltam: {{ implode(', ', $financeiro['faltando']) }}.
+                                <a href="#chaves-whmcs">Preencher na aba Chaves</a> — o valor fica cifrado no banco, e o <code>.env</code> deste servidor continua conduzindo o que o banco não tem.
+                            </p>
+                        @endif
+                    </x-admin.card>
+                </div>
+
+                <div class="col-xl-7">
+                    <x-admin.card title="Testar a conexão agora" icon="fa-satellite-dish"
+                        descricao="Uma chamada de verdade ao financeiro, na frente de quem aperta o botão.">
+                        <form method="POST" action="{{ route('admin.settings.whmcs.sondar') }}" class="row g-3">
+                            @csrf
+                            <x-admin.field name="sonda_email" type="email" label="E-mail de uma conta do WHMCS"
+                                :value="$settings['contato_email'] ?? ''" :col="''" maxlength="190" :required="true"
+                                placeholder="cliente@exemplo.com.br"
+                                hint="Informe o e-mail de um cliente seu. A sonda pergunta ao financeiro se aquela conta existe — é assim que se sabe se a credencial abre a porta." />
+
+                            <div class="col-12">
+                                <button class="btn btn-outline-secondary" @if(!$financeiro['configurado']) disabled @endif>
+                                    <i class="fas fa-bolt me-1"></i> Sondar o financeiro
+                                </button>
+                                @if(!$financeiro['configurado'])
+                                    <span class="form-hint ms-2">Complete as credenciais para liberar o teste.</span>
+                                @endif
+                            </div>
+
+                            @if($sonda)
+                                <div class="col-12">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <x-admin.status :rotulo="$sonda['titulo']" :tom="tom_por_status('sonda_whmcs', $sonda['estado'])" class="flex-shrink-0 mt-1" />
+                                        <p class="small text-secondary mb-0">{{ $sonda['texto'] }}</p>
+                                    </div>
+                                </div>
+                            @endif
+                        </form>
+                    </x-admin.card>
+                </div>
+
+                <div class="col-12">
+                    <x-admin.card :title="$veiculacao['rotulo']" :icon="$veiculacao['icone']" :descricao="$veiculacao['descricao']">
+                        <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3">
+                            @csrf
+                            <input type="hidden" name="grupo" value="{{ \App\Support\ChavesDeIntegracao::GRUPO_VEICULACAO }}">
+                            @foreach ($veiculacao['campos'] as $campo)
+                                <x-admin.campo-chave :campo="$campo" />
+                            @endforeach
+                            <div class="col-12">
+                                <button class="btn btn-golden"><i class="fas fa-save me-1"></i> Salvar veiculação</button>
+                            </div>
+                        </form>
+                    </x-admin.card>
+                </div>
+            </div>
+        </div>
+
+        {{-- 7. Chaves: um grupo por aba interna, com o ambiente explicado no pé. --}}
         <div class="tab-pane fade" id="aba-chaves" data-aba-painel="chaves" role="tabpanel" aria-labelledby="aba-chaves-botao" tabindex="0">
             <p class="form-hint">O que for gravado aqui vale na hora, sem tocar no servidor, e fica cifrado no banco quando é segredo. Campo vazio é o painel se retirando do caminho: o <code>.env</code> deste servidor volta a conduzir aquele valor.</p>
 
@@ -309,7 +401,7 @@
                 <dl class="defs mb-0">
                     <dt>Banco ativo</dt><dd>{{ config('database.default') }}@if(config('database.default') === 'sqlite') <span class="form-hint">(<code>database/database.sqlite</code>)</span>@endif</dd>
                     <dt>Módulos</dt><dd>CRM (leads, clientes, interações) · CMS (páginas, depoimentos, FAQs) · ERP (produtos, estoque, fornecedores, pedidos)</dd>
-                    <dt>Chaves</dt><dd>{{ count(\App\Support\ChavesDeIntegracao::campos()) }} campos, todos editáveis nesta tela. O <code>.env</code> deste servidor só conduz o que o banco não tem.</dd>
+                    <dt>Chaves</dt><dd>{{ count(\App\Support\ChavesDeIntegracao::campos()) }} campos, todos editáveis nesta tela: os de acesso ficam aqui, os de veiculação do financeiro na aba Financeiro (WHMCS). O <code>.env</code> deste servidor só conduz o que o banco não tem.</dd>
                 </dl>
                 <p class="small text-secondary mb-0 mt-2">Ficam no <code>.env</code> só o que é deste servidor e não decisão de ninguém: a ligação com o banco (<code>DB_CONNECTION=mysql</code>, <code>php artisan migrate --force</code> — as migrations rodam nos dois bancos), a chave da aplicação e o transporte do Google Ads (<code>GOOGLE_ADS_TRANSPORT</code>, <code>GOOGLE_ADS_CACHE_STORE</code>), que dependem do que a máquina tem.</p>
             </x-admin.card>

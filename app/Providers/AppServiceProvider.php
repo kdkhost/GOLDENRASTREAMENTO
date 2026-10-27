@@ -12,6 +12,7 @@ use App\Models\Page;
 use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Services\Whmcs\Veiculacao;
 use App\Support\Agendador;
 use App\Support\Carrinho;
 use App\Support\ChavesDeIntegracao;
@@ -85,7 +86,7 @@ class AppServiceProvider extends ServiceProvider
         // O portal tem a mesma sidebar do painel: mesmo renderizador, mesma árvore resolvida
         // por MenuPainel, só que com as rotas e as contas do cliente.
         View::composer('portal.layout', function ($view) {
-            $view->with('menu_portal', $this->menuDoPortal($this->dadosDoSite()['loja_ativa']));
+            $view->with('menu_portal', $this->menuDoPortal());
         });
 
         // As memórias acima valem para UMA requisição: o provider sobrevive entre duas
@@ -117,13 +118,21 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Árvore da sidebar do portal: o mesmo MenuPainel do painel administrativo, com a árvore
      * do cliente e as contas dele. Ninguém que entra no portal é administrador.
+     *
+     * As três bandeiras de `desligada` decidem o que some do menu: a loja, e as duas telas de
+     * financeiro que a veiculação do WHMCS pode fechar. Fechar aqui é o que evita a porta
+     * trancada — o cliente não vê link de uma área que não consulta nada.
      */
-    private function menuDoPortal(bool $lojaAtiva): array
+    private function menuDoPortal(): array
     {
         return $this->menuPortal ??= MenuPainel::montar(
             $this->pendenciasDoPortal(),
             false,
-            ['loja_ativa' => $lojaAtiva],
+            [
+                'loja_ativa' => $this->dadosDoSite()['loja_ativa'],
+                'whmcs_servicos' => Veiculacao::abre('servicos'),
+                'whmcs_faturas' => Veiculacao::abre('faturas'),
+            ],
             'golden.menu_portal',
         );
     }

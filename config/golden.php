@@ -319,6 +319,13 @@ return [
         'pagina_funil' => ['rascunho' => 'neutral', 'publicada' => 'green', 'pausada' => 'amber'],
         // Conexão de Google Ads (GoogleAdsAccount::STATUS): o selo da tela e o aviso do e-mail.
         'conexao_ads' => ['ativo' => 'green', 'desconectado' => 'red'],
+        // Resposta da sonda do WHMCS (App\Services\Whmcs\Cliente::sonda): verde só quando o
+        // financeiro confirmou a conta. Dourado é "a porta abre, a ficha não" — meio-termo que
+        // merece cor própria, porque a credencial está certa.
+        'sonda_whmcs' => [
+            'ok' => 'green', 'sem_conta' => 'gold', 'sem_credencial' => 'neutral',
+            'sem_resposta' => 'red', 'http_erro' => 'red', 'recusada' => 'red',
+        ],
         // Campanha de Google Ads, pelo enum que o serviço devolve em `status` — o rótulo em
         // português já vem de config('google_ads.status_campanha'); o tom é por cima dele, e
         // status que não está aqui cai no neutro em vez de inventar cor.
@@ -867,6 +874,10 @@ return [
     // AdminLTE) e mesma organização do painel: o cliente vê a área dele com a cara do painel,
     // só que com as rotas dele. As bolhas vêm de AppServiceProvider::pendenciasDoPortal(),
     // que conta o que está no nome do cliente, não o total da empresa.
+    //
+    // `desligada` nomeia a bandeira que esmaece o item: a loja virtual e as duas telas que a
+    // veiculação do WHMCS pode fechar. O item esmaecido continua levando à tela, que explica o
+    // fechamento em vez de fingir lista vazia.
     'menu_portal' => [
         ['titulo' => 'Início', 'rota' => 'portal.inicio', 'prefixo' => 'portal.inicio', 'icone' => 'fa-house'],
 
@@ -880,8 +891,8 @@ return [
         ['titulo' => 'Contratos', 'rota' => 'portal.contratos', 'prefixo' => 'portal.contratos', 'icone' => 'fa-file-signature'],
 
         ['titulo' => 'Financeiro', 'icone' => 'fa-file-invoice-dollar', 'filhos' => [
-            ['titulo' => 'Minhas faturas', 'rota' => 'portal.faturas', 'prefixo' => 'portal.faturas', 'icone' => 'fa-receipt'],
-            ['titulo' => 'Meus serviços', 'rota' => 'portal.servicos', 'prefixo' => 'portal.servicos', 'icone' => 'fa-satellite-dish'],
+            ['titulo' => 'Minhas faturas', 'rota' => 'portal.faturas', 'prefixo' => 'portal.faturas', 'icone' => 'fa-receipt', 'desligada' => 'whmcs_faturas'],
+            ['titulo' => 'Meus serviços', 'rota' => 'portal.servicos', 'prefixo' => 'portal.servicos', 'icone' => 'fa-satellite-dish', 'desligada' => 'whmcs_servicos'],
         ]],
 
         ['titulo' => 'Deixar um depoimento', 'rota' => 'portal.depoimento', 'prefixo' => 'portal.depoimento', 'icone' => 'fa-quote-left'],

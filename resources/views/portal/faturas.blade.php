@@ -1,10 +1,11 @@
 @extends('portal.layout')
-@php use App\Services\Whmcs\Cliente as Financeiro; @endphp
+@php use App\Services\Whmcs\Cliente as Financeiro; use App\Services\Whmcs\Veiculacao; @endphp
 
 @section('title', 'Minhas faturas — Portal do cliente')
 @section('page_title', 'Minhas faturas')
 @php
     $quantas = count($itens);
+    $abreNoFinanceiro = Veiculacao::mostraLink();
     $emAbertoCents = collect($itens)
         ->filter(fn (array $fatura): bool => in_array($fatura['status'], ['Unpaid', 'Payment Pending', 'Collections'], true))
         ->sum('saldo_cents');
@@ -29,7 +30,11 @@
     <i class="fas fa-file-invoice-dollar fs-5 mt-1" aria-hidden="true"></i>
     <div class="small">
         <strong class="d-block">{{ brl($emAbertoCents) }} em aberto.</strong>
-        Abra a fatura no financeiro para pagar ou pegar a segunda via. O rastreamento continua funcionando enquanto a mensalidade estiver em dia.
+        @if($abreNoFinanceiro)
+            Abra a fatura no financeiro para pagar ou pegar a segunda via. O rastreamento continua funcionando enquanto a mensalidade estiver em dia.
+        @else
+            Acerte o pagamento com a equipe pelo atendimento — ela envia o Pix ou a segunda via e confirma por aqui. O rastreamento continua funcionando enquanto a mensalidade estiver em dia.
+        @endif
     </div>
 </div>
 @endif
@@ -58,9 +63,13 @@
                 @endif
             </td>
             <td class="text-end">
-                <a class="btn btn-sm text-nowrap {{ $fatura['saldo_cents'] > 0 ? 'btn-golden' : 'btn-outline-secondary' }}" href="{{ $fatura['url'] }}" target="_blank" rel="noopener noreferrer">
-                    {{ $fatura['saldo_cents'] > 0 ? 'Pagar' : 'Abrir' }}
-                </a>
+                @if($fatura['url'] !== '')
+                    <a class="btn btn-sm text-nowrap {{ $fatura['saldo_cents'] > 0 ? 'btn-golden' : 'btn-outline-secondary' }}" href="{{ $fatura['url'] }}" target="_blank" rel="noopener noreferrer">
+                        {{ $fatura['saldo_cents'] > 0 ? 'Pagar' : 'Abrir' }}
+                    </a>
+                @else
+                    <span class="small text-secondary">Pelo atendimento</span>
+                @endif
             </td>
         </tr>
         @endforeach

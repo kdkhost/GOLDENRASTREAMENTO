@@ -22,6 +22,11 @@ use Throwable;
  * o financeiro fora do ar, a chamada volta `null` e a página segue de pé. O único lugar que
  * registra o erro é o log do servidor, com a ação e a mensagem — nunca o segredo, nunca a
  * senha, nunca o parâmetro inteiro.
+ *
+ * Duas portas além das telas do cliente: `Veiculacao` filtra o que sai daqui para o portal
+ * (estado, grupo e o link externo), e `sonda()` responde à pergunta que a tela de Configurações
+ * faz — a `chamar()` não serve para isso porque achata todo erro em `null`, e quem está ligando
+ * a integração precisa saber *o que* o financeiro disse.
  */
 class Cliente
 {
@@ -37,6 +42,16 @@ class Cliente
     public function faltando(): array
     {
         return ChavesDeIntegracao::faltantesDoWhmcs();
+    }
+
+    /**
+     * O endereço exato que será consultado, já com o `/includes/api.php` que a classe completa.
+     * A tela de Configurações mostra este valor porque é adivinhação demais pedir à pessoa que
+     * confira se o domínio que ela digitou virou a URL certa.
+     */
+    public function endpointParaExibir(): string
+    {
+        return $this->endpoint();
     }
 
     /**
@@ -64,6 +79,10 @@ class Cliente
      * Os serviços/produtos contratados no financeiro, já traduzidos para a tela.
      * `null` é falha de conversa; lista vazia é "não tem nenhum".
      *
+     * O filtro de veiculação acontece aqui, depois de a API responder: `Terminated` continua
+     * existindo lá, o que a decisão da casa diz é se ele ainda merece um lugar na vitrine do
+     * cliente. Filtrar antes de chamar seria inventar um parâmetro que a API não tem.
+     *
      * @return array<int, array<string, mixed>>|null
      */
     public function servicos(int $clientId, ?int $limite = null): ?array
@@ -90,6 +109,8 @@ class Cliente
                 'contratado_em' => $this->data($servico['regdate'] ?? null),
                 'url' => $this->linkDaArea('productdetails', (int) ($servico['id'] ?? 0)),
             ])
+            ->filter(fn (array $servico): bool => Veiculacao::mostraServico($servico['status'])
+                && Veiculacao::mostraGrupo($servico['grupo']))
             ->values()
             ->all();
     }
@@ -124,6 +145,7 @@ class Cliente
                 'metodo' => (string) ($fatura['paymentmethod'] ?? ''),
                 'url' => $this->linkDaArea('viewinvoice', (int) ($fatura['id'] ?? 0), 'id'),
             ])
+            ->filter(fn (array $fatura): bool => Veiculacao::mostraFatura($fatura['status']))
             ->values()
             ->all();
     }
@@ -207,10 +229,37 @@ class Cliente
      */
     private function chamar(string $acao, array $parametros): ?array
     {
+        $sonda = $this->chamarCrua($acao, $parametros);
+
+        if ($sonda['estado'] === 'ok') {
+            return $sonda['resposta'];
+        }
+
+        if ($sonda['estado'] !== 'sem_credencial') {
+            Log::warning('WHMCS não atendeu.', ['acao' => $acao, 'estado' => $sonda['estado'], 'detalhe' => $sonda['detalhe']]);
+        }
+
+        return null;
+    }
+
+    /**
+     * A mesma chamada, sem o filtro de sucesso — a forma que a tela de Configurações precisa
+     * para responder em português *o que* o financeiro disse. `chamar()` achata tudo em `null`
+     * porque a página do cliente não tem o que fazer com a diferença entre credencial inválida
+     * e servidor mudo; quem está ligando a integração tem, e é por isso que os estados e a
+     * mensagem original continuam acessíveis aqui.
+     *
+     * Nenhum caminho deste método escreve segredo: a mensagem vem do WHMCS ou da exceção de
+     * rede, e o corpo da requisição não é repassado a lugar nenhum.
+     *
+     * @return array{estado: string, resposta: array<string, mixed>|null, status: int|null, detalhe: string}
+     */
+    public function chamarCrua(string $acao, array $parametros): array
+    {
         $url = $this->endpoint();
 
-        if ($url === '') {
-            return null;
+        if ($url === '' || blank(config('whmcs.identifier')) || blank(config('whmcs.secret'))) {
+            return ['estado' => 'sem_credencial', 'resposta' => null, 'status' => null, 'detalhe' => 'Falta endereço, identificador ou segredo.'];
         }
 
         $corpo = array_merge([
@@ -226,29 +275,97 @@ class Cliente
                 ->timeout(max(3, (int) config('whmcs.timeout', 12)))
                 ->post($url, $corpo);
         } catch (Throwable $e) {
-            Log::warning('WHMCS não respondeu.', ['acao' => $acao, 'erro' => $e->getMessage()]);
-
-            return null;
+            return ['estado' => 'sem_resposta', 'resposta' => null, 'status' => null, 'detalhe' => $e->getMessage()];
         }
 
         if (! $resposta->successful()) {
-            Log::warning('WHMCS respondeu com erro HTTP.', ['acao' => $acao, 'status' => $resposta->status()]);
-
-            return null;
+            return ['estado' => 'http_erro', 'resposta' => null, 'status' => $resposta->status(), 'detalhe' => 'HTTP '.$resposta->status()];
         }
 
         $json = $resposta->json();
 
-        if (! is_array($json) || ($json['result'] ?? null) !== 'success') {
-            Log::warning('WHMCS recusou a chamada.', [
-                'acao' => $acao,
-                'mensagem' => is_array($json) ? (string) ($json['message'] ?? 'sem mensagem') : 'resposta não era JSON',
-            ]);
-
-            return null;
+        if (! is_array($json)) {
+            return ['estado' => 'recusada', 'resposta' => null, 'status' => $resposta->status(), 'detalhe' => 'A resposta não é JSON.'];
         }
 
-        return $json;
+        if (($json['result'] ?? null) !== 'success') {
+            return ['estado' => 'recusada', 'resposta' => $json, 'status' => $resposta->status(), 'detalhe' => (string) ($json['message'] ?? 'sem mensagem')];
+        }
+
+        return ['estado' => 'ok', 'resposta' => $json, 'status' => $resposta->status(), 'detalhe' => (string) ($json['message'] ?? '')];
+    }
+
+    /**
+     * A prova de fogo que a tela de Configurações oferece: pergunta ao financeiro por um e-mail
+     * e devolve o que aconteceu, em português, sem meio-termo. Usa `GetClientsDetails`, a única
+     * ação que existe para conferir credencial *e* leitura ao mesmo tempo — se a resposta vier,
+     * o identificador e o segredo estão certos.
+     *
+     * @return array{estado: string, titulo: string, texto: string, id: int|null}
+     */
+    public function sonda(string $email): array
+    {
+        if (! $this->configurado()) {
+            return [
+                'estado' => 'sem_credencial',
+                'titulo' => 'Ainda não há o que testar.',
+                'texto' => 'Preencha o endereço, o identificador e o segredo do WHMCS nas Chaves de integração; só então a conexão pode ser sondada.',
+                'id' => null,
+            ];
+        }
+
+        $sonda = $this->chamarCrua('GetClientsDetails', ['email' => $email]);
+
+        return match ($sonda['estado']) {
+            'sem_resposta' => [
+                'estado' => 'sem_resposta',
+                'titulo' => 'O financeiro não respondeu.',
+                'texto' => 'Nenhum retorno chegou do endereço configurado (timeout, DNS ou barreira da hospedagem). Confirme o endereço informado nas Chaves de integração e se o servidor permite conexões de saída.'.($sonda['detalhe'] !== '' ? ' Detalhe: '.$sonda['detalhe'].'.' : ''),
+                'id' => null,
+            ],
+            'http_erro' => [
+                'estado' => 'http_erro',
+                'titulo' => 'O financeiro respondeu com erro.',
+                'texto' => 'A URL da API devolveu '.$sonda['detalhe'].'. Confira se o endereço informado é o da instalação e se o arquivo da API existe (o painel completa /includes/api.php quando você informa só o domínio).',
+                'id' => null,
+            ],
+            'recusada' => [
+                'estado' => 'recusada',
+                'titulo' => 'O financeiro recusou a chamada.',
+                'texto' => 'Ele respondeu, e o motivo veio junto: "'.$sonda['detalhe'].'". Credencial revogada, permissão desligada em Configurações do sistema → API ou endereço errado costumam ser isso.',
+                'id' => null,
+            ],
+            default => $this->descreveSondaBem($sonda['resposta'], $email),
+        };
+    }
+
+    /**
+     * `success` no `result` não significa conta encontrada: o WHMCS responde sucesso com
+     * `clientid` vazio quando o e-mail não existe lá. É a diferença entre "a conexão funciona"
+     * e "esta pessoa tem ficha no financeiro", e o administrador precisa das duas frases.
+     *
+     * @param  array<string, mixed>|null  $resposta
+     * @return array{estado: string, titulo: string, texto: string, id: int|null}
+     */
+    private function descreveSondaBem(?array $resposta, string $email): array
+    {
+        $id = $resposta['clientid'] ?? $resposta['userid'] ?? null;
+
+        if (! is_numeric($id) || (int) $id <= 0) {
+            return [
+                'estado' => 'sem_conta',
+                'titulo' => 'Conexão ok — conta, não.',
+                'texto' => 'O financeiro respondeu à chamada, então identificador e segredo estão certos. Ele não acha ficha nenhuma para '.$email.', que é o caso de quem cadastrou no portal com outro e-mail.',
+                'id' => null,
+            ];
+        }
+
+        return [
+            'estado' => 'ok',
+            'titulo' => 'A conexão está no ar.',
+            'texto' => 'O financeiro respondeu e confirmou a conta '.$email.' como cliente '.(int) $id.'. Serviços e faturas já podem ser lidos no portal.',
+            'id' => (int) $id,
+        ];
     }
 
     /** A raiz do WHMCS, com `/includes/api.php` quando a pessoa informou só o domínio. */
@@ -267,9 +384,16 @@ class Cliente
             : rtrim($url, '/').'/includes/api.php';
     }
 
-    /** O endereço da área do cliente, para onde o botão "abrir no financeiro" leva. */
+    /**
+     * O endereço da área do cliente, para onde o botão "abrir no financeiro" leva. Vazio quando
+     * a veiculação manda não tirar o cliente do portal — a view só pinta o botão se houver link.
+     */
     private function linkDaArea(string $pagina, int $id, string $parametro = 'id'): string
     {
+        if (! Veiculacao::mostraLink()) {
+            return '';
+        }
+
         $raiz = preg_replace('#(?:/includes)?/[^/]+\.php$#i', '', rtrim(trim((string) config('whmcs.url')), '/'));
 
         return ($raiz ?: rtrim(trim((string) config('whmcs.url')), '/'))

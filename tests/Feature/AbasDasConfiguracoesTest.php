@@ -45,6 +45,7 @@ class AbasDasConfiguracoesTest extends TestCase
             'loja' => 'Loja virtual',
             'whatsapp' => 'WhatsApp',
             'medicao' => 'Medição',
+            'financeiro' => 'Financeiro (WHMCS)',
             'chaves' => 'Chaves de integração',
         ];
 
@@ -67,10 +68,32 @@ class AbasDasConfiguracoesTest extends TestCase
     {
         $html = $this->tela();
 
-        foreach (array_keys(ChavesDeIntegracao::grupos()) as $id) {
+        foreach (array_keys(ChavesDeIntegracao::gruposDeChaves()) as $id) {
             $this->assertStringContainsString('id="aba-chaves-'.$id.'"', $html, "O grupo {$id} não tem painel próprio.");
             $this->assertStringContainsString('data-aba="'.$id.'"', $html, "O grupo {$id} não tem botão de aba.");
         }
+    }
+
+    public function test_o_grupo_de_veiculacao_tem_aba_propria_e_nao_aparece_na_lista_de_chaves(): void
+    {
+        // O grupo tem `aba_propria` porque a tela dele mostra o estado da conexão e a sonda ao
+        // lado dos interruptores. Renderizá-lo nos dois lugares seria dar duas respostas à mesma
+        // pergunta — e a primeira discordância entre elas apareceria na hora de salvar.
+        $html = $this->tela();
+        $grupo = ChavesDeIntegracao::grupos()[ChavesDeIntegracao::GRUPO_VEICULACAO];
+
+        $this->assertArrayHasKey('aba_propria', $grupo);
+        $this->assertArrayNotHasKey(ChavesDeIntegracao::GRUPO_VEICULACAO, ChavesDeIntegracao::gruposDeChaves());
+
+        foreach ($grupo['campos'] as $campo) {
+            $this->assertSame(1, substr_count($html, 'name="'.$campo['chave'].'"'), "O campo {$campo['chave']} não aparece exatamente uma vez na tela.");
+        }
+
+        $fimDaVeiculacao = strpos($html, 'value="'.ChavesDeIntegracao::GRUPO_VEICULACAO.'"');
+        $inicioDasChaves = strpos($html, 'id="aba-chaves"');
+
+        $this->assertNotFalse($fimDaVeiculacao, 'O formulário da veiculação não viajou com a tela.');
+        $this->assertLessThan($inicioDasChaves, $fimDaVeiculacao, 'Os interruptores de veiculação vazaram para a aba de chaves.');
     }
 
     public function test_cada_painel_e_filho_direto_do_tab_content_e_tem_o_proprio_formulario(): void
@@ -78,7 +101,7 @@ class AbasDasConfiguracoesTest extends TestCase
         // O Bootstrap só esconde os painéis que são filhos diretos de .tab-content — com um
         // invólucro no meio, todas as abas aparecem empilhadas. E formulário não se aninha:
         // por isso cada painel tem o seu, em vez de um form envolvendo a tela inteira.
-        $dom = new \DOMDocument();
+        $dom = new \DOMDocument;
         libxml_use_internal_errors(true);
         $dom->loadHTML('<?xml encoding="utf-8" ?>'.$this->tela());
         libxml_clear_errors();

@@ -614,6 +614,16 @@ a dimensão ideal.
   sem o e-mail, que é o login do financeiro); se o espelho falhar, um *toast* avisa e a
   gravação local continua valendo. As três credenciais ficam em *Sistema → Configurações →
   Chaves de integração → WHMCS* (segredo cifrado no banco, `.env` só como plano de fundo).
+- **O que a conexão veicula** (`App\Services\Whmcs\Veiculacao`, aba *Sistema → Configurações →
+  Financeiro (WHMCS)*): sete interruptores e uma lista de grupos decidem quanto do financeiro o
+  cliente vê — as duas telas, se serviço encerrado e fatura paga entram na vitrine, quais grupos
+  de produtos aparecem, se o cliente pode saltar para o WHMCS e se o portal escreve lá. Fechado,
+  o efeito é de verdade: o controller devolve "Esta área do portal está fechada." **sem abrir
+  o cliente HTTP**, o item sai esmaecido do menu, e o espelho desligado não gera aviso de erro
+  porque desligar não é falha. Na mesma aba, a **sonda** pergunta ao financeiro por um e-mail e
+  traduz a resposta em `ok`, `sem_conta`, `recusada`, `http_erro`, `sem_resposta` ou
+  `sem_credencial` — cada uma com selo da tabela `golden.tons_status.sonda_whmcs`. Travado por
+  `tests/Feature/VeiculacaoDoWhmcsTest.php` (17).
 - **Recuperação sem broker**: link assinado (`URL::temporarySignedRoute`, 60 minutos), sem
   tabela de tokens, e a mesma frase para e-mail com ou sem conta.
 - **O cliente escreve o próprio depoimento** (*Deixar um depoimento*): só a ficha `ativo`

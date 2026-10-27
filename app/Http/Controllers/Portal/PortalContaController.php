@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Models\Activity;
 use App\Services\Whmcs\Cliente as Financeiro;
+use App\Services\Whmcs\Veiculacao;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -27,6 +28,7 @@ class PortalContaController extends PortalBaseController
             'financeiro' => [
                 'configurado' => $this->financeiro()->configurado(),
                 'ligado' => (bool) $this->cliente()->whmcs_id,
+                'faturas' => Veiculacao::abre('faturas'),
             ],
         ]);
     }
@@ -53,6 +55,7 @@ class PortalContaController extends PortalBaseController
         Activity::log('portal_dados_atualizados', 'Cadastro atualizado pelo portal.', $cliente, por: $cliente->nome);
 
         $espelhou = $this->espelharNoFinanceiro(
+            'dados',
             fn (Financeiro $financeiro, int $id): bool => $financeiro->atualizarDados($id, $dados + ['tipo' => $cliente->tipo])
         );
 
@@ -84,6 +87,7 @@ class PortalContaController extends PortalBaseController
         Activity::log('portal_senha_trocada', 'Senha do portal alterada na tela Meus dados.', $cliente, por: $cliente->nome);
 
         $espelhou = $this->espelharNoFinanceiro(
+            'senha',
             fn (Financeiro $financeiro, int $id): bool => $financeiro->atualizarSenha($id, $dados['password'])
         );
 

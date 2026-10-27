@@ -34,8 +34,8 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalChamadoController;
 use App\Http\Controllers\Portal\PortalContaController;
-use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalContratoController;
+use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalDepoimentoController;
 use App\Http\Controllers\Portal\PortalFinanceiroController;
 use App\Http\Controllers\Portal\PortalPedidoController;
@@ -472,5 +472,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/loja-regras', [SettingController::class, 'regras'])->name('loja-regras');
         Route::post('/whatsapp', [SettingController::class, 'whatsapp'])->name('whatsapp');
         Route::post('/chaves', [SettingController::class, 'chaves'])->name('chaves');
+        Route::post('/whmcs-sondar', [SettingController::class, 'sondarWhmcs'])->name('whmcs.sondar');
     });
 });
