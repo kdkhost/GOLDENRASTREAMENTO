@@ -622,7 +622,10 @@ a dimensão ideal.
   o cliente HTTP**, o item sai esmaecido do menu, e o espelho desligado não gera aviso de erro
   porque desligar não é falha. Na mesma aba, a **sonda** pergunta ao financeiro por um e-mail e
   traduz a resposta em `ok`, `sem_conta`, `recusada`, `http_erro`, `sem_resposta` ou
-  `sem_credencial` — cada uma com selo da tabela `golden.tons_status.sonda_whmcs`. Travado por
+  `sem_credencial` — cada uma com selo da tabela `golden.tons_status.sonda_whmcs`. O estado
+  `sem_conta` cobre as duas formas que o WHMCS real usa para "não conheço este e-mail": o
+  `success` com `clientid` vazio e o erro autenticado `Client Not Found`, para uma credencial
+  boa nunca ser lida como revogada. Travado por
   `tests/Feature/VeiculacaoDoWhmcsTest.php` (17).
 - **Recuperação sem broker**: link assinado (`URL::temporarySignedRoute`, 60 minutos), sem
   tabela de tokens, e a mesma frase para e-mail com ou sem conta.

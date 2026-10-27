@@ -56,6 +56,13 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   fake roteado pela `action` recebida — dois fakes no mesmo teste deixariam o segundo mudo, e um
   teste mudo passa por acidente.
 
+- **A sonda lê o WHMCS que existe, não o que a documentação descreve.** Na primeira prova em
+  produção, um e-mail sem ficha respondeu `result: error` com `Client Not Found` e HTTP 200 —
+  credencial boa, conta ausente. Como todo `result` diferente de `success` era tratado como
+  recusa, a tela diria "credencial revogada" justamente para quem configurou tudo certo. Agora
+  essa resposta cai em `sem_conta` ("Conexão ok — conta, não."), o mesmo estado do `success` com
+  `clientid` vazio; a recusa de verdade (`Invalid credentials`) continua citando o motivo.
+
 ## [2.41.0] - 2026-10-26
 
 ### Adicionado

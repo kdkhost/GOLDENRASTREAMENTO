@@ -360,6 +360,8 @@ class VeiculacaoDoWhmcsTest extends TestCase
         Http::fake(function () use (&$esteCaso) {
             return match ($esteCaso) {
                 'sem_conta' => Http::response(['result' => 'success', 'clientid' => '']),
+                // A forma como o WHMCS real responde "não conheço este e-mail": erro autenticado.
+                'nao_encontrado' => Http::response(['result' => 'error', 'message' => 'Client Not Found'], 200),
                 'recusada' => Http::response(['result' => 'error', 'message' => 'Invalid credentials'], 200),
                 'http_erro' => Http::response('forbidden', 403),
                 'sem_resposta' => throw new ConnectionException('cURL error 28: Operation timed out'),
@@ -399,6 +401,14 @@ class VeiculacaoDoWhmcsTest extends TestCase
             $this->assertSame($titulo, $resultado['titulo']);
             $this->assertNotSame('', $resultado['texto']);
         }
+
+        // No WHMCS que existe, "não conheço este e-mail" vem como erro autenticado (`result:
+        // error`, `Client Not Found`, HTTP 200). Ler isso como credencial recusada faria o
+        // administrador desconfiar de uma configuração que está certa.
+        $esteCaso = 'nao_encontrado';
+        $naoEncontrado = $sondar();
+        $this->assertSame('sem_conta', $naoEncontrado['estado'], 'Conta inexistente virou recusa de credencial: '.json_encode($naoEncontrado));
+        $this->assertSame('Conexão ok — conta, não.', $naoEncontrado['titulo']);
 
         // A recusa cita o motivo que veio do WHMCS, e o timeout cita a rede — é o que diferencia
         // credencial revogada de endereço errado sem que ninguém precise abrir o log do servidor.

@@ -6,6 +6,7 @@ use App\Support\ChavesDeIntegracao;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -316,6 +317,14 @@ class Cliente
 
         $sonda = $this->chamarCrua('GetClientsDetails', ['email' => $email]);
 
+        // "Client Not Found" não é credencial recusada: é o WHMCS tendo autenticado a chamada e
+        // respondido que aquele e-mail não tem ficha. Algumas instalações devolvem `success` com
+        // `clientid` vazio, outras devolvem este erro — as duas significam a mesma coisa, e a
+        // pessoa que acabou de configurar o painel precisa ouvir "a porta abre, a ficha não".
+        if ($sonda['estado'] === 'recusada' && str_contains(Str::lower($sonda['detalhe']), 'client not found')) {
+            return $this->descreveSemConta($email);
+        }
+
         return match ($sonda['estado']) {
             'sem_resposta' => [
                 'estado' => 'sem_resposta',
@@ -352,12 +361,7 @@ class Cliente
         $id = $resposta['clientid'] ?? $resposta['userid'] ?? null;
 
         if (! is_numeric($id) || (int) $id <= 0) {
-            return [
-                'estado' => 'sem_conta',
-                'titulo' => 'Conexão ok — conta, não.',
-                'texto' => 'O financeiro respondeu à chamada, então identificador e segredo estão certos. Ele não acha ficha nenhuma para '.$email.', que é o caso de quem cadastrou no portal com outro e-mail.',
-                'id' => null,
-            ];
+            return $this->descreveSemConta($email);
         }
 
         return [
@@ -365,6 +369,23 @@ class Cliente
             'titulo' => 'A conexão está no ar.',
             'texto' => 'O financeiro respondeu e confirmou a conta '.$email.' como cliente '.(int) $id.'. Serviços e faturas já podem ser lidos no portal.',
             'id' => (int) $id,
+        ];
+    }
+
+    /**
+     * A frase das duas formas de "não tem ficha": o `success` com `clientid` vazio e o erro
+     * `Client Not Found`. Nas duas o financeiro autenticou a chamada, então o recado é sobre o
+     * cadastro daquela pessoa, nunca sobre a credencial do painel.
+     *
+     * @return array{estado: string, titulo: string, texto: string, id: int|null}
+     */
+    private function descreveSemConta(string $email): array
+    {
+        return [
+            'estado' => 'sem_conta',
+            'titulo' => 'Conexão ok — conta, não.',
+            'texto' => 'O financeiro respondeu à chamada, então identificador e segredo estão certos. Ele não acha ficha nenhuma para '.$email.', que é o caso de quem cadastrou no portal com outro e-mail.',
+            'id' => null,
         ];
     }
 

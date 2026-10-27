@@ -941,7 +941,7 @@ disse, em português, com selo de cor:
 | Estado | O que a tela diz |
 | --- | --- |
 | `ok` | "A conexão está no ar", com o id da conta confirmado no financeiro. |
-| `sem_conta` | "Conexão ok — conta, não." A credencial presta; aquele e-mail não tem ficha lá. |
+| `sem_conta` | "Conexão ok — conta, não." A credencial presta; aquele e-mail não tem ficha lá — seja pelo `success` com `clientid` vazio, seja pelo erro `Client Not Found`, que várias instalações devolvem com a credencial certa. |
 | `recusada` | "O financeiro recusou a chamada", citando a mensagem dele (`Invalid credentials`, permissão de API desligada). |
 | `http_erro` | "O financeiro respondeu com erro" com o código HTTP e a dica do `/includes/api.php`. |
 | `sem_resposta` | "O financeiro não respondeu": timeout, DNS ou barreira da hospedagem de saída. |
