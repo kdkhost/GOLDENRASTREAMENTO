@@ -3,6 +3,48 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.48.1] - 2026-10-28
+
+### Corrigido
+- **O histórico volta três horas.** O 2.48.0 consertou o fuso a partir dele; o que já estava no
+  banco continuou com o instante errado, porque a hospedagem acorda em UTC e o MySQL vive em UTC−3.
+  A fala da Ana gravada às 22:30 de Brasília estava registrada como `01:30`, e é ela que a fila, a
+  ficha do lead e o relatório do portal mostram. `App\Support\FusoHistorico` atrasa o que o próprio
+  sistema carimbou, na conta que a parede do banco devolve.
+- **A seleção não é um `UPDATE` cego: são duas metades provadas.** Valor **abaixo da virada**
+  (`2026-10-27 22:46:45`, a hora em que o 2.48.0 assumiu a produção) é prova basta — linha do regime
+  novo não pode valer menos que o instante em que ela nasceu. Entre a virada e a virada + 3h o valor
+  sozinho não diz nada (o velho já adiantado cai exatamente na hora do novo); ali quem decide é a
+  **sequência de ids**, que é a ordem real de gravação: a maior volta de pelo menos uma hora dentro
+  da faixa é o momento em que o código novo assumiu, e o corte vem impresso no relatório. Sem volta
+  clara, nada é mexido na faixa — a linha é contada e fica para um humano, porque chute aqui custa
+  dado certo.
+- **O que não é relógio adiantado fica onde está.** `contracts.celebrado_em` e `vigencia_ate`,
+  `customers.nascimento`, `interactions.proxima_acao_em`, `funnel_blocks.limite_em`,
+  `notificacoes.expira_em`, `conversas.acao_pendente_em`: data digitada por gente ou calculada para a
+  frente nunca saiu do fuso da casa. Carimbo de fila (`jobs.created_at` é inteiro) e tabelas de
+  framework (`cache`, `sessions`, `migrations`, `failed_jobs`) também ficaram de fora; a checagem de
+  tipo pelo `Schema::getColumns()` é o que impede a conta de transformar `1730000000` em 1969.
+- **Escreve pelo query builder, não pelo modelo**, coluna por coluna, com o mesmo formato com que a
+  leitura veio — salvar em Eloquent recarimbaria `updated_at` e faria o histórico de outubro parecer
+  atividade de hoje.
+
+### Adicionado
+- **Um passe, uma vez só, com volta.** A migration
+  `2026_10_28_000001_atrasam_o_historico_para_a_hora_do_cliente` roda com o deploy, diz em voz alta
+  quantas linhas atrasou, quantas resolveu pelo corte de ids e quantas sobraram para um humano, e
+  grava a marca `fuso_correcao_do_registro_em` na tabela de configurações — sem ela, um `migrate`
+  desavisado jogaria o histórico seis horas para trás. O `down()` desfaz o passe inteiro.
+
+### Travado com testes
+- `tests/Feature/CorrecaoDoHorarioDoRegistroTest`, dez travas: o atraso do que a hospedagem gravou
+  adiantado (carimbos da conversa, da última fala e de cada fala andando juntos), o que é anterior à
+  virada sem faixa a discutir, a intactabilidade do que já nasceu na hora da casa, a faixa duvidosa
+  resolvida pela volta do relógio na sequência de ids, a faixa sem volta deixando tudo para o humano,
+  a lista de alvos vigiada contra as colunas intactáveis e as de framework, o `updated_at` que não
+  ganha data de hoje, o passe único protegido pela marca no banco, o desfazer que devolve as três
+  horas e a faixa de três horas no fuso de Brasília.
+
 ## [2.48.0] - 2026-10-27
 
 ### Corrigido
