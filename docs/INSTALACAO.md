@@ -535,7 +535,7 @@ no servidor (banco, chave da aplicação, fila, fuso).
 | `APP_DEBUG` | `false` | `true` vaza pilha de erro para o visitante |
 | `APP_URL` | `https://seudominio.com.br` | usado em links de e-mail e assets |
 | `APP_KEY` | gerado por `key:generate` | se trocar, sessões e dados criptografados somem |
-| `APP_TIMEZONE` | `America/Sao_Paulo` | datas de pedidos e leads |
+| `APP_TIMEZONE` | `America/Sao_Paulo` | relógio de tudo: a hora em cada fala do chat, as datas do painel, do portal e dos e-mails. O painel escreve por cima em **Sistema → Configurações → Contato e endereço → Fuso horário**; em branco, vale esta linha |
 | `APP_LOCALE` / `APP_FALLBACK_LOCALE` | `pt_BR` | textos e moeda |
 | `DB_CONNECTION` | `mysql` | `sqlite` apenas em teste |
 | `DB_HOST`, `DB_PORT` | `127.0.0.1`, `3306` | no cPanel costuma ser `localhost` |

@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Services\Mail\Sonda as Correio;
 use App\Services\Whmcs\Cliente as Financeiro;
 use App\Support\ChavesDeIntegracao;
+use App\Support\Fuso;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -32,6 +33,9 @@ class SettingController extends Controller
                 'viagem' => $correio->viagem(),
             ],
             'veiculacao' => ChavesDeIntegracao::grupos()[ChavesDeIntegracao::GRUPO_VEICULACAO],
+            // O fuso em vigor vai para a tela porque o campo pode estar vazio de propósito: vazio
+            // é "manda o ambiente", e sem isto ninguém saberia o que está valendo hoje.
+            'fuso' => ['opcoes' => Fuso::opcoes(), 'vigente' => Fuso::vigente()],
         ]);
     }
 
@@ -58,6 +62,9 @@ class SettingController extends Controller
             'empresa_endereco' => ['nullable', 'string', 'max:255'],
             'empresa_cidade' => ['nullable', 'string', 'max:120'],
             'empresa_cep' => ['nullable', 'string', 'max:12'],
+            // Lista fechada de `config/golden.php`: fuso inventado aqui atrasaria o relógio de
+            // todo o sistema, e é a escolha da tela — não do servidor — que tem que valer.
+            'fuso_horario' => ['nullable', 'in:'.implode(',', array_keys(Fuso::opcoes()))],
             'acesso_financeiro_url' => ['nullable', 'url', 'max:255'],
             'acesso_servidor_1_url' => ['nullable', 'url', 'max:255'],
             'acesso_servidor_2_url' => ['nullable', 'url', 'max:255'],

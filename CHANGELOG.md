@@ -3,6 +3,41 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.48.0] - 2026-10-27
+
+### Corrigido
+- **O relógio da Ana volta a marcar a hora do cliente.** Na bolha, a hora ao lado de cada fala saía
+  três horas adiantada para quem escreve de São Paulo, e a mesma hora errada aparecia nas datas do
+  painel, do portal e dos e-mails. A causa era uma linha: `config/app.php` escrevia
+  `'timezone' => 'UTC'` **fixo**, então o `APP_TIMEZONE=America/Sao_Paulo` que o instalador grava no
+  `.env` da hospedagem nunca chegou a valer nada — e o `now()` do framework obedece ao fuso da
+  aplicação, não ao do visitante. Medido no servidor: o MySQL da hospedagem já vive em UTC−3
+  (`NOW()` 22:40 contra `UTC_TIMESTAMP()` 01:40), de modo que a casa gravava a hora de Brasília como
+  se fosse UTC e o instante armazenado saía três horas para frente. Com o fuso da casa certo, a
+  escrita, a leitura e a tela passam a concordar.
+- **Uma escolha, não um efeito colateral do servidor.** `App\Support\Fuso` é a nova casa da regra: o
+  fuso vigente é o que o painel gravou, senão o do `.env`, senão o da casa (`America/Sao_Paulo`,
+  primeiro item da lista fechada em `config/golden.php`). Aplicar não é só escrever em `config()` —
+  o framework define o fuso do PHP no bootstrap, antes de qualquer provider, então `aplicar()` avisa
+  `date_default_timezone_set()` também, que é o que `now()` e cada `format()` perguntam. Um código
+  gravado à mão no banco fora da lista não desregula nada: volta ao padrão.
+
+### Adicionado
+- **Fuso horário na tela de Configurações.** Campo novo em **Sistema → Configurações → Contato e
+  endereço**, ao lado do endereço e do CEP — é a localidade da casa, não uma chave de integração.
+  Seletor com a lista fechada dos fusos do Brasil (Brasília, Amazonas, Mato Grosso, Acre) e UTC para
+  quem precisa conferir registro no fuso do servidor; em branco significa "manda o do ambiente", e a
+  própria tela diz qual está valendo hoje. Validação na mesma lista, sem regra escrita em dois
+  lugares, e o guia do painel conta o campo.
+
+### Travado com testes
+- `tests/Feature/FusoHorarioDoSistemaTest`, sete travas: o fuso da casa sem nada escolhido, a hora
+  que sai no JSON da bolha para um instante UTC congelado (21:00 UTC → `18:00` na tela), o seletor com
+  a lista fechada na tela, a escolha do painel mandando sobre o ambiente, o fuso inventado barrado no
+  POST, o valor escrito à mão no banco perdendo para o padrão, e nenhuma outra folha do sistema
+  chamando `date_default_timezone_set()` por conta própria — duas casas para a mesma regra é exatamente
+  como o relógio volta a divergir.
+
 ## [2.47.3] - 2026-10-27
 
 ### Corrigido

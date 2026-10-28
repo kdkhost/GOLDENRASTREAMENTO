@@ -26,6 +26,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Fuso horário
+    |--------------------------------------------------------------------------
+    | A lista fechada que a tela de Configurações oferece, e nada fora dela. O relógio
+    | do sistema inteiro (a hora ao lado de cada fala da Ana, as datas do painel, do
+    | portal e dos e-mails) é o fuso daqui, não o do servidor: a hospedagem acorda em
+    | UTC e, sem esta escolha, Brasília veria o chat três horas adiantado.
+    |
+    | O padrão é o primeiro da lista. O `.env` (`APP_TIMEZONE`) escreve por cima dele,
+    | e o painel escreve por cima dos dois, gravado no banco — `App\Support\Fuso`.
+    | Desde 2019 o Brasil não tem horário de verão, então cada fuso abaixo é fixo.
+    */
+    'fusos' => [
+        'America/Sao_Paulo' => 'Horário de Brasília (UTC−3) — SP, RJ, MG, ES, BA, SE, AL, PE, PB, RN, CE, PI, MA, PA, AP, DF, GO, TO, PR, SC, RS',
+        'America/Manaus' => 'Horário do Amazonas (UTC−4) — AM e RR (Manaus, Boa Vista)',
+        'America/Cuiaba' => 'Horário de Mato Grosso (UTC−4) — MT e MS (Cuiabá, Campo Grande)',
+        'America/Rio_Branco' => 'Horário do Acre (UTC−5) — AC e sudoeste do AM (Rio Branco, Cruzeiro do Sul)',
+        'UTC' => 'UTC — só para quem precisa conferir registro no fuso do servidor',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Imagens do site (CMS)
     |--------------------------------------------------------------------------
     | Cada fotografia exposta no site é um "slot" daqui, organizado por página.

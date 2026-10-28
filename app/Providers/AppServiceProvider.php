@@ -16,6 +16,7 @@ use App\Services\Whmcs\Veiculacao;
 use App\Support\Agendador;
 use App\Support\Carrinho;
 use App\Support\ChavesDeIntegracao;
+use App\Support\Fuso;
 use App\Support\MenuPainel;
 use App\Support\Notifica;
 use Illuminate\Pagination\Paginator;
@@ -60,6 +61,11 @@ class AppServiceProvider extends ServiceProvider
         // config('google_ads.developer_token') sem saber de onde o valor veio — e por isso
         // salvar na tela vale na hora, sem config:clear nem reinício de servidor.
         ChavesDeIntegracao::aplicar();
+
+        // O relógio da casa é o fuso que o painel escolheu, não o do servidor: sem esta linha o
+        // horário ao lado de cada fala da Ana sai no fuso da hospedagem (UTC), três horas
+        // adiantado para quem escreve de São Paulo.
+        Fuso::aplicar();
 
         // Toda lista paginada do painel e do portal passa por um único view. O padrão do
         // framework é o do Tailwind: dentro do Bootstrap ele sai sem estilo e com SVG de

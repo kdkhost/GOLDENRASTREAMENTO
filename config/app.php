@@ -63,9 +63,15 @@ return [
     | will be used by the PHP date and date-time functions. The timezone
     | is set to "UTC" by default as it is suitable for most use cases.
     |
+    | A casa é brasileira, então o fuso da casa é Brasília: o servidor da hospedagem
+    | acorda em UTC, e um `now()` em UTC faz o relógio de cada fala da Ana sair três
+    | horas adiantado para quem escreve de São Paulo — o mesmo vale para toda data do
+    | painel, do portal e do e-mail. `APP_TIMEZONE` do instalador escreve por cima, e
+    | o painel escreve por cima dos dois (App\Support\Fuso).
+    |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'America/Sao_Paulo'),
 
     /*
     |--------------------------------------------------------------------------

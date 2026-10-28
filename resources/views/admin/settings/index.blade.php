@@ -110,6 +110,10 @@
                                 <x-admin.field name="empresa_endereco" label="Endereço" :value="$settings['empresa_endereco'] ?? ''" maxlength="255" :opcional="true" placeholder="R. Pref. Olinto Réis Campos, 104 - Centro" />
                                 <x-admin.field name="empresa_cidade" label="Cidade / UF" :value="$settings['empresa_cidade'] ?? ''" col="col-8" maxlength="120" :opcional="true" placeholder="Três Pontas - MG" />
                                 <x-admin.field name="empresa_cep" label="CEP" :value="$settings['empresa_cep'] ?? ''" col="col-4" maxlength="12" :opcional="true" placeholder="37185-016" />
+                                <x-admin.field name="fuso_horario" type="select" label="Fuso horário"
+                                    :value="$settings['fuso_horario'] ?? ''" :options="$fuso['opcoes']"
+                                    empty="Sem escolha — vale o do servidor ({{ $fuso['vigente'] }})"
+                                    hint="É o relógio da hora em cada fala da Ana e de toda data do painel, do portal e dos e-mails. O servidor da hospedagem acorda em UTC: sem escolher, o chat sai três horas adiantado para quem escreve do Brasil." />
                             </div>
                         </x-admin.card>
                     </div>
