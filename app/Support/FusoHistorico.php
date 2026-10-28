@@ -161,7 +161,7 @@ class FusoHistorico
         $deInstante = [];
 
         foreach ($alvos as [$tabela, $coluna]) {
-            if (in_array($tabela, self::FORA_DA_CORRECAO, true) || ! self::eInstante($tabela, $coluna)) {
+            if (in_array($tabela, self::FORA_DA_CORRECAO, true) || ! self::temId($tabela) || ! self::eInstante($tabela, $coluna)) {
                 continue;
             }
 
@@ -169,6 +169,25 @@ class FusoHistorico
         }
 
         return $deInstante;
+    }
+
+    /**
+     * Se a tabela tem a coluna `id`: sem ela não há como percorrer a faixa em ordem de gravação, nem
+     * como escrever linha por linha. `password_reset_tokens` é chaveada pelo e-mail e fica de fora.
+     */
+    private static function temId(string $tabela): bool
+    {
+        static $memoria = [];
+
+        if (! isset($memoria[$tabela])) {
+            try {
+                $memoria[$tabela] = Schema::hasColumn($tabela, 'id');
+            } catch (Throwable) {
+                $memoria[$tabela] = false;
+            }
+        }
+
+        return $memoria[$tabela];
     }
 
     /** As tabelas do banco de agora, menos as do framework, que o `alvos()` já recusa. */

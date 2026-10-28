@@ -194,6 +194,10 @@ class CorrecaoDoHorarioDoRegistroTest extends TestCase
             $this->assertNotContains($tabela.'.created_at', $alvos);
         }
 
+        // Tabela sem coluna `id` — a de token de redefinição é chaveada pelo e-mail: sem ordem de
+        // gravação não há como achar o corte da faixa, nem como escrever linha por linha.
+        $this->assertNotContains('password_reset_tokens.created_at', $alvos);
+
         $this->assertContains('conversas_mensagens.created_at', $alvos);
         $this->assertContains('visits.aberta_em', $alvos);
         $this->assertContains('leads.primeiro_toque_em', $alvos);
