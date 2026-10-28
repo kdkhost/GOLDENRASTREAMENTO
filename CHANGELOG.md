@@ -36,6 +36,18 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   grava a marca `fuso_correcao_do_registro_em` na tabela de configurações — sem ela, um `migrate`
   desavisado jogaria o histórico seis horas para trás. O `down()` desfaz o passe inteiro.
 
+### Na produção
+- O passe atrasou **8.597 células** de uma só vez: 8.309 com valor anterior à virada (prova basta) e
+  288 na faixa duvidosa, resolvidas pelo corte de ids — os cortes caíram exatamente sobre a hora do
+  deploy (`visits` em 925, `conversas_mensagens` em 45, `cron_execucoes` em 2244), conferido contra o
+  log de acesso do Apache, que estampa a hora real do servidor em UTC−3: a fala 43 passou a ler
+  `22:30:43` e o log marca `POST /assistente/fala` às `27/Oct/2026:22:30:43 -0300`.
+- **As 7 células sem volta clara no meio da sequência foram provadas uma a uma pelo mesmo log** e
+  atrasadas à mão, porque a prova é externa ao banco: `activities` 130/131/132 correspondem a
+  `POST /login` 22:24:32 e ao abre-e-fecha da supervisão do portal às 22:25:46 e 22:25:57 — todas
+  gravadas como 01:2x, portanto do regime velho; e o `lost_at` do lead 41 é `criado_em + 5 dias`
+  exatos, com o `criado_em` da mesma linha já provado como anterior à virada.
+
 ### Travado com testes
 - `tests/Feature/CorrecaoDoHorarioDoRegistroTest`, dez travas: o atraso do que a hospedagem gravou
   adiantado (carimbos da conversa, da última fala e de cada fala andando juntos), o que é anterior à
