@@ -188,6 +188,21 @@ final class Identificacao
      */
     public static function soOEmail(string $fala): bool
     {
+        return self::eApresentacao($fala);
+    }
+
+    /**
+     * A fala é uma apresentação que traz o e-mail, sem pergunta nenhuma?
+     *
+     * "Oi, sou a Maria. Meu e-mail é maria@exemplo.com" não pergunta nada — é uma pessoa chegando e
+     * se identificando, e o nome que ela escreveu também é parte da apresentação, não assunto. Sem
+     * esse reconhecimento, a frase inteira ia ao provedor e, sem fonte, voltava como "chamei a
+     * equipe" para quem só tinha chegado. O que sobra depois de tirar o endereço e as palavras de
+     * apresentação é assunto; sobrando alguma palavra de verdade, a fala segue o caminho normal —
+     * "meu email é ..., quero a segunda via" continua sendo um pedido.
+     */
+    public static function eApresentacao(string $fala, ?string $nome = null): bool
+    {
         if (self::extrair($fala) === null) {
             return false;
         }
@@ -195,7 +210,22 @@ final class Identificacao
         $semEndereco = (string) preg_replace(self::ENDERECO, ' ', self::descole($fala));
         $palavras = preg_split('/\s+/u', trim((string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', $semEndereco)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
-        return array_diff(array_map(self::esqueleto(...), $palavras), self::apresentacoes()) === [];
+        $permitidas = array_merge(self::apresentacoes(), self::palavrasDoNome($nome));
+
+        return array_diff(array_map(self::esqueleto(...), $palavras), $permitidas) === [];
+    }
+
+    /** As palavras do nome dito por quem se apresenta — o que a máquina pode riscar da frase. */
+    private static function palavrasDoNome(?string $nome): array
+    {
+        if (blank($nome)) {
+            return [];
+        }
+
+        return array_map(
+            self::esqueleto(...),
+            preg_split('/\s+/u', trim($nome), -1, PREG_SPLIT_NO_EMPTY) ?: []
+        );
     }
 
     /**

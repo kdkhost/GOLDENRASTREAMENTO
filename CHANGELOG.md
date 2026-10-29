@@ -45,6 +45,12 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   (áudio, imagem, documento).
 
 ### Corrigido
+- **Quem se apresenta e dá o e-mail na mesma frase é reconhecido, não escalado.** "Oi, sou a Maria. Meu
+  e-mail é maria@exemplo.com" é uma apresentação inteira: `Identificacao::eApresentacao()` desconta o
+  endereço, as palavras de apresentação e o nome que a pessoa acabou de dizer, e, se não sobra assunto, a
+  máquina confirma o cadastro com a fala fixa em vez de mandar a frase ao provedor — que sem fonte
+  respondia "já chamei a equipe" para quem só tinha chegado. Perguntas de verdade com e-mail no meio
+  ("meu email é ..., quero a segunda via") continuam seguindo o caminho normal.
 - **Resposta de erro não fecha mais a bolha.** O JavaScript tratava qualquer retorno sem `ativo` como
   "máquina desligada" e desaparecia com o widget; uma recusa de arquivo (422) ou um CSRF vencido (419) agora
   mostram a frase da regra e a conversa continua na tela.
@@ -54,9 +60,10 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 ### Testado
 - `BolhaDoAssistenteTest` cobre o documento lido com a legenda como pergunta, a imagem indo ao provedor de
   visão, o áudio transcrito seguindo a conversa e a pergunta curta herdando o assunto e o histórico;
-  `IdentificacaoEAvaliacaoPeloAssistenteTest` prova o vínculo pelo e-mail, a confirmação de cadastro, a nota
-  das estrelas e o encerramento com a pesquisa já respondida; `SegundaViaPeloAssistenteTest` acompanha o fio
-  pelo e-mail até a segunda via. Suite completa: 724 testes, 11.914 asserções.
+  `IdentificacaoEAvaliacaoPeloAssistenteTest` prova o vínculo pelo e-mail, a apresentação com e-mail
+  confirmada sem chamar o provedor, a confirmação de cadastro, a nota das estrelas e o encerramento com a
+  pesquisa já respondida; `SegundaViaPeloAssistenteTest` acompanha o fio pelo e-mail até a segunda via.
+  Suite completa: 725 testes, 11.923 asserções.
 
 ## [2.52.0] - 2026-10-29
 

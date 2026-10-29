@@ -447,9 +447,10 @@ final class Atendedor
      * Ao contrário do nome, o endereço não precisa de a casa ter perguntado para ser confirmado: um
      * e-mail sozinho no chat não se confunde com outra coisa, e fingir não entender o que a pessoa
      * ofereceu seria empurrá-la para a IA com uma frase que já tem dono. Devolve o endereço quando a
-     * fala é só ele — caso em que não há pergunta nenhuma a mandar ao provedor, e a máquina confirma
-     * com a fala fixa da ficha. O endereço nunca vira destino de envio por aqui: quem manda é a
-     * ação, e ela manda para a coluna da ficha.
+     * fala é só ele ou uma apresentação em volta dele ("oi, sou a Maria, meu email é ...") — caso em
+     * que não há pergunta nenhuma a mandar ao provedor, e a máquina confirma com a fala fixa da
+     * ficha. O endereço nunca vira destino de envio por aqui: quem manda é a ação, e ela manda para
+     * a coluna da ficha.
      *
      * @return ?array{email: string, cliente: ?Customer}
      */
@@ -470,7 +471,11 @@ final class Atendedor
         // foi reconhecida ou se o e-mail é de quem ainda não é cliente da casa.
         $cliente = Identificacao::vincular($conversa, $email);
 
-        return Identificacao::soOEmail($pergunta) ? ['email' => $email, 'cliente' => $cliente] : null;
+        // O nome já foi guardado por `guardeONome()` na linha de cima: passar a conversa atualizada
+        // permite à apresentação riscar o nome que a pessoa acabou de dizer e confirmar sem IA.
+        return Identificacao::eApresentacao($pergunta, $conversa->nome)
+            ? ['email' => $email, 'cliente' => $cliente]
+            : null;
     }
 
     /** A última fala da máquina foi exatamente o pedido da nota? */

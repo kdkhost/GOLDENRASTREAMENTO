@@ -472,6 +472,33 @@ class IdentificacaoEAvaliacaoPeloAssistenteTest extends TestCase
     }
 
     /**
+     * Quem se apresenta e dá o e-mail na mesma frase também é reconhecido, e sem chamar a IA.
+     *
+     * "Oi, sou o João. Meu e-mail é joao@..." é uma frase inteira de identificação: não há pergunta
+     * nenhuma ali. Mandá-la ao provedor terminava em "isso eu não sei responder, já chamei a
+     * equipe" — a máquina escalando o atendimento de quem só chegou e se apresentou, que é a
+     * primeira impressão que a casa dá.
+     */
+    public function test_a_apresentacao_com_email_acha_o_cadastro_sem_chamar_o_provedor(): void
+    {
+        $cliente = $this->ficha();
+        Http::fake();
+        $conversa = $this->conversa();
+
+        $texto = $this->diga($conversa, 'Oi, sou a Maria. Meu email é maria@exemplo.com.br');
+
+        $conversa->refresh();
+        $this->assertSame($cliente->id, $conversa->customer_id, 'A apresentação não ligou a conversa ao cadastro.');
+        $this->assertSame('maria@exemplo.com.br', $conversa->email);
+        $this->assertSame(
+            str_replace(':nome', 'Maria', config('assistente.persona.confirmacao_cadastro')),
+            $texto
+        );
+
+        Http::assertNothingSent();
+    }
+
+    /**
      * O endereço no meio de um assunto também acha o cadastro — e, achando, destranca o pedido.
      *
      * "meu email é ..., quero a segunda via" chega numa fala só no celular. O e-mail é aproveitado
