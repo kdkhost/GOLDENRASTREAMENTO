@@ -16,7 +16,7 @@ class User extends Authenticatable
     ];
 
     protected $hidden = [
-        'password', 'remember_token',
+        'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes',
     ];
 
     protected function casts(): array
@@ -24,7 +24,19 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            // A segunda chave da casa não pode sobreviver a um despejo do banco: cifrada aqui,
+            // ela só existe em texto na memória de quem está verificando um código. Os códigos de
+            // recuperação são uma lista, e a cifra dela entra como lista e sai como lista.
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /** Com o segredo guardado e o aplicativo confirmado: é isto que fecha a porta no login. */
+    public function doisFatoresAtivo(): bool
+    {
+        return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
     }
 
     public function isAdmin(): bool

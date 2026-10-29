@@ -335,6 +335,21 @@ define QUEUE_CONNECTION database
 define FILESYSTEM_DISK public
 define LOG_LEVEL "$([ "$AMBIENTE" = production ] && echo warning || echo debug)"
 
+# O cookie de sessão é a chave da porta: se ele viaja em texto claro, quem escuta a
+# rede entra sem senha nenhuma. Por isso ele só é marcado como seguro quando o próprio
+# endereço do site é HTTPS — num bench local em http:// o painel continuaria abrindo.
+case "$URL" in
+  https://*)
+    define SESSION_SECURE_COOKIE true
+    ok "Cookie de sessão marcado como seguro (endereço HTTPS)"
+    ;;
+  *)
+    aviso "SESSION_SECURE_COOKIE fica desligado: $URL não é HTTPS. Num servidor de verdade, o cookie viaja solto."
+    ;;
+esac
+define SESSION_HTTP_ONLY true
+define SESSION_SAME_SITE lax
+
 chmod 600 .env
 ok ".env escrito com permissão 600 (banco: $BANCO, ambiente: $AMBIENTE)"
 
@@ -475,6 +490,29 @@ fi
 passo "Disponibilizando public/storage"
 rodar "$PHP_BIN" artisan storage:link || [ -e public/storage ] || ln -s ../storage public/storage
 ok "public/storage pronto"
+
+# O que o painel recebe por upload sai por public/storage, que é um link simbólico para
+# storage/app/public. A folha que manda naquele diretório vem no repositório; ela só é
+# reescrita aqui quando está faltando — uma instalação feita sem git (cópia manual,
+# restauração de backup) não pode deixar aberto justamente o buraco do único diretório
+# que o público alcança.
+if [ ! -f storage/app/public/.htaccess ]; then
+  cat > storage/app/public/.htaccess <<'EXECUCAO'
+# Nada nesta pasta é programa: é arquivo que alguém subiu pelo painel.
+Options -Indexes -ExecCGI
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phar .pl .py .cgi .rb
+RemoveType .php .phtml .phar
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|phar|pl|py|cgi|rb|htaccess)$">
+    Require all denied
+</FilesMatch>
+EXECUCAO
+  ok "storage/app/public/.htaccess escrito (arquivo não estava na instalação)"
+else
+  ok "storage/app/public/.htaccess presente: arquivo subido não vira programa"
+fi
 
 if [ "$HTACCESS" -eq 1 ]; then
   passo "Escrevendo o .htaccess de proteção da raiz"

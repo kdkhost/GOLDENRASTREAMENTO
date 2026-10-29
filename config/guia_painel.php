@@ -609,6 +609,32 @@ return [
         ],
 
         [
+            'id' => 'seguranca',
+            'grupo' => 'Sistema',
+            'titulo' => 'Segurança do acesso',
+            'icone' => 'fa-user-lock',
+            'rota' => 'admin.seguranca.index',
+            'resumo' => 'A porta do painel: a sua segunda chave, os aparelhos logados em seu nome e o que a casa decidiu sobre tentativas de senha.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'Todo perfil do painel abre esta tela — as janelas e a segunda chave são de quem está logado. O que é da **casa** (a lista da equipe, o histórico dos outros, destravar uma conta e apagar a chave de um colega) é de administrador, e a rota confere isso de novo: esconder o botão não é autorização.'],
+                ['tipo' => 'passos', 'itens' => [
+                    ['icone' => 'fa-qrcode', 'titulo' => 'Acender a segunda chave', 'texto' => 'O botão leva a uma tela que desenha o próprio código QR. O aplicativo de autenticação lê, devolve seis números e a chave só entra no banco depois que um número real bate — junto com oito códigos de recuperação, mostrados uma vez. Perdeu a folha? "Renovar os códigos" queima os oito atuais e gera outros oito.'],
+                    ['icone' => 'fa-window-maximize', 'titulo' => 'Ver e fechar aparelhos', 'texto' => 'Uma linha por janela aberta na sua conta, com o par rede + navegador, o endereço de IP e o último sinal. "Encerrar esta janela" derruba aquele navegador na batida seguinte; "Sair das outras janelas" fecha todas menos a que você usa agora.'],
+                    ['icone' => 'fa-hourglass-half', 'titulo' => 'A aba esquecida fecha sozinha', 'texto' => 'Vencido o tempo de inatividade da casa, o painel pede a senha de novo e a linha sai do índice. É o que impede o computador do estoque de continuar trabalhando às oito da noite com uma janela aberta às oito da manhã.'],
+                    ['icone' => 'fa-unlock-keyhole', 'titulo' => 'Destravar uma conta', 'texto' => 'Estourou a janela de tentativas? O cartão mostra quanto falta para a porta reabrir sozinha, e o administrador pode apagar as batidas agora sem esperar o prazo.'],
+                    ['icone' => 'fa-users', 'titulo' => 'A equipe e as chaves dela', 'texto' => 'Quem tem a segunda chave acesa, quantos códigos de recuperação sobraram e quando entrou pela última vez. O botão de desligar existe para o administrador, não para o colega do lado.'],
+                ]],
+                ['tipo' => 'lista', 'itens' => [
+                    'Os números que mandam aqui — tentativas, janela, duração do bloqueio, política do dois fatores, minutos de inatividade e aparelhos simultâneos — são preenchidos em Sistema → Configurações → Chaves de integração → Segurança do acesso, e o que o painel grava no banco vale por cima do `.env`.',
+                    'A política do dois fatores é da casa, não da vitrine: ela alcança administradores e vendedores, e nunca o cliente do portal.',
+                    'Quem é obrigado pela política e ainda não tem a chave é levado à ativação no primeiro acesso — a porta não tranca ninguém que só precisa acender.',
+                    'Cada movimento deixa linha na Auditoria: entrada, saída, conta travada, janela encerrada, chave acesa ou desligada.',
+                ]],
+                ['tipo' => 'aviso', 'tom' => 'amber', 'conteudo' => 'A segunda chave é cifrada no banco, junto com os códigos de recuperação: um despejo da tabela de usuários entrega exatamente o que entregava antes, que é nada. Trocar a senha derruba todas as janelas abertas daquela conta — inclusive a que alguém abriu com a cookie antes da troca.'],
+            ],
+        ],
+
+        [
             'id' => 'auditoria',
             'grupo' => 'Sistema',
             'titulo' => 'Auditoria',
@@ -697,6 +723,7 @@ return [
         'admin.settings.' => 'configuracoes',
         'admin.crons.' => 'crons',
         'admin.usuarios.' => 'usuarios',
+        'admin.seguranca.' => 'seguranca',
         'admin.activities.' => 'auditoria',
     ],
 ];

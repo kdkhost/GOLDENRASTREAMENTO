@@ -766,6 +766,96 @@ return [
             'nota' => 'O que decide se a mensagem cai no spam é o domínio autenticado (SPF, DKIM, DMARC) no DNS da hospedagem, não o nome escrito aqui.',
         ],
 
+        /* ---------------------------------------------------------------- Chaves: segurança do acesso */
+
+        'seguranca' => [
+            'onde' => 'Os números da porta de entrada do painel: quantas senhas erradas até a conta travar, quem é obrigado a ter o aplicativo de autenticação e quanto tempo uma janela aberta sobrevive sem ninguém mexendo.',
+            'passos' => [
+                ['icone' => 'fa-sliders', 'titulo' => 'Decida a regra da casa aqui', 'texto' => 'Nada desta aba é código: cada campo grava no banco e vale no minuto seguinte, sem reiniciar nada. Em branco, cada um volta a obedecer ao `.env` deste servidor.'],
+                ['icone' => 'fa-user-lock', 'titulo' => 'O efeito se vê em Segurança do acesso', 'texto' => 'Sistema → Segurança do acesso mostra o contador de tentativas da janela, as janelas abertas na sua conta e o estado da segunda chave de cada pessoa — é por ali que se confere se o número escolhido está fazendo o que se queria.'],
+                ['icone' => 'fa-file-shield', 'titulo' => 'Toda decisão fica registrada', 'texto' => 'Entrada, saída, conta travada, janela encerrada e segunda chave ligada ou desligada deixam linha na Auditoria, com autor, endereço de rede e hora do fuso da casa.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver o movimento da porta', 'rota' => 'admin.seguranca.index'],
+                ['rotulo' => 'Ler o guia de uso do painel', 'rota' => 'admin.guia.index'],
+            ],
+            'nota' => 'Travar a conta não é punição: é o que derruba o script que roda lista de senhas vazadas sem atrapalhar quem errou o teclado duas vezes.',
+        ],
+
+        'seguranca_login_tentativas' => [
+            'onde' => 'Quantas senhas erradas uma mesma conta pode receber antes de a porta fechar sozinha.',
+            'passos' => [
+                ['icone' => 'fa-keyboard', 'titulo' => 'Contadas por e-mail e por endereço de rede juntos', 'texto' => 'Um escritório inteiro atrás do mesmo roteador não trava a conta de um colega, e quem troca de rede não zera o próprio contador.'],
+                ['icone' => 'fa-scale-balanced', 'titulo' => 'Cinco é a medida da casa', 'texto' => 'Derruba o script que experimenta dezenas de senhas por minuto e ainda deixa quem errou o teclado duas vezes tentar de novo sem ligar para ninguém.'],
+                ['icone' => 'fa-eraser', 'titulo' => 'Em branco, vale o arquivo de configuração', 'texto' => 'Sem valor aqui, o número do `.env` deste servidor continua mandando — a porta nunca fica sem regra por campo vazio.'],
+                ['icone' => 'fa-eye', 'titulo' => 'Confira na tela de Segurança', 'texto' => 'O cartão de números mostra "trava em N tentativas" e quantas batidas cabem na janela de agora.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver as tentativas de agora', 'rota' => 'admin.seguranca.index'],
+            ],
+        ],
+
+        'seguranca_login_janela' => [
+            'onde' => 'O tamanho da janela de tempo em que as tentativas erradas são somadas — fora dela, a conta recomeça do zero.',
+            'passos' => [
+                ['icone' => 'fa-hourglass-half', 'titulo' => 'Janela curta castiga o script', 'texto' => 'Quinze minutos é o bastante para segurar quem tenta dezenas de senhas, e curto o bastante para quem errou por engano poder tentar de novo no café seguinte.'],
+                ['icone' => 'fa-arrows-left-right', 'titulo' => 'Ela manda no tamanho do bloqueio', 'texto' => 'O tempo de espera abaixo costuma ser do mesmo tamanho ou maior que a janela: fechar a porta por menos tempo do que ela leva para encher não segura ninguém.'],
+                ['icone' => 'fa-check-to-slot', 'titulo' => 'O contador envelhece sozinho', 'texto' => 'Ninguém limpa nada à mão: a cada batida o sistema descarta o que ficou para trás na janela.'],
+            ],
+        ],
+
+        'seguranca_login_bloqueio' => [
+            'onde' => 'Quanto tempo a conta fica fechada depois de estourar a janela de tentativas.',
+            'passos' => [
+                ['icone' => 'fa-clock', 'titulo' => 'A porta reabre sozinha', 'texto' => 'Vencido o prazo, a conta volta a aceitar senha sem intervenção de ninguém — o script já desistiu e quem se enganou nem percebeu que esteve fora.'],
+                ['icone' => 'fa-unlock-keyhole', 'titulo' => 'Adiantar a reabertura é decisão de administrador', 'texto' => 'Sistema → Segurança do acesso tem o cartão "Destravar uma conta": ele apaga as batidas daquela conta agora, e só quem administra usa.'],
+                ['icone' => 'fa-triangle-exclamation', 'titulo' => 'Não zerar o número para "ver se funciona"', 'texto' => 'Bloqueio de um minuto é convite para o script tentar de novo; ele foi desenhado para incomodar quem bate, não quem entra.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Destravar uma conta', 'rota' => 'admin.seguranca.index'],
+            ],
+        ],
+
+        'seguranca_dois_fatores' => [
+            'onde' => 'Quem é obrigado a ter o aplicativo de autenticação além da senha: ninguém, só quem administra, ou toda a equipe do painel.',
+            'passos' => [
+                ['icone' => 'fa-shield-halved', 'titulo' => 'A escolha vale para a próxima entrada', 'texto' => 'Quem ainda não tem a segunda chave é levado à ativação no primeiro acesso, e não barrado na porta — a política educa, não tranca.'],
+                ['icone' => 'fa-qrcode', 'titulo' => 'Acender leva um minuto', 'texto' => 'Sistema → Segurança do acesso → "Acender a segunda chave": a própria tela desenha o código QR, o aplicativo do celular devolve seis números e a chave só é gravada depois que um número real bate. A pessoa ainda recebe oito códigos de recuperação.'],
+                ['icone' => 'fa-phone', 'titulo' => 'Perdeu o celular?', 'texto' => 'Um código de recuperação abre a porta uma vez e se apaga. Um administrador pode desligar a chave de qualquer conta na tela de Segurança — o colega ao lado não pode.'],
+                ['icone' => 'fa-store', 'titulo' => 'O cliente do portal não passa por aqui', 'texto' => 'A política é da casa, não da vitrine: quem usa o portal do cliente não é alcançado por este campo.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Acender a minha segunda chave', 'rota' => 'dois-fatores.configurar'],
+                ['rotulo' => 'Ver a equipe e as chaves', 'rota' => 'admin.seguranca.index'],
+            ],
+            'nota' => 'A senha sozinha é a única chave quando este campo está em "ninguém". Vazada em alguém da sua lista de distribuição, ela abre o painel em qualquer navegador.',
+        ],
+
+        'seguranca_sessao_minutos' => [
+            'onde' => 'Quanto tempo o painel fica aberto sem ninguém mexer, antes de pedir a senha de novo.',
+            'passos' => [
+                ['icone' => 'fa-display', 'titulo' => 'É por janela, não por navegador', 'texto' => 'A contagem é renovada a cada clique dentro do painel; uma aba esquecida aberta num computador do estoque às oito da manhã não é um acesso em uso às oito da noite.'],
+                ['icone' => 'fa-mobile-screen', 'titulo' => 'Trocar de aparelho não reinicia o relógio', 'texto' => 'Cada janela aberta na conta tem o seu carimbo e o seu último sinal — a tela de Segurança mostra um por aparelho.'],
+                ['icone' => 'fa-ruler-combined', 'titulo' => 'Meça pelo trabalho real', 'texto' => 'Duas horas serve a quem usa o painel o dia inteiro; vinte minutos serve a quem só entra para conferir um chamado.'],
+                ['icone' => 'fa-eraser', 'titulo' => 'Em branco, vale o arquivo de configuração', 'texto' => 'Sem valor aqui, o `.env` deste servidor decide — e a cookie de sessão continua vivendo pelo tempo do painel.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver as janelas abertas', 'rota' => 'admin.seguranca.index'],
+            ],
+        ],
+
+        'seguranca_sessoes_simultaneas' => [
+            'onde' => 'Quantas janelas do painel uma mesma pessoa pode ter abertas ao mesmo tempo — celular, notebook e o computador da loja.',
+            'passos' => [
+                ['icone' => 'fa-window-maximize', 'titulo' => 'As mais antigas caem fora do número', 'texto' => 'Ao estourar o limite, a janela que ficou de fora perde o painel no pedido seguinte; é o que faz "encerrar o notebook do escritório" ser um clique, e não uma espera.'],
+                ['icone' => 'fa-circle-half-stroke', 'titulo' => 'Zero deixa todas viverem', 'texto' => 'Use zero só quando outro sistema divide a mesma conta com a pessoa — sem limite, o controle é manual, na tela de Segurança.'],
+                ['icone' => 'fa-user-large-slash', 'titulo' => 'Uma janela que não é sua', 'texto' => 'Feche ali mesmo: o botão derruba aquele aparelho na batida seguinte, e o acesso continua funcionando no navegador que você usa agora.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver e encerrar janelas', 'rota' => 'admin.seguranca.index'],
+            ],
+        ],
+
         /* ---------------------------------------------------------------- Chaves: assistente */
 
         'assistente-chaves' => [

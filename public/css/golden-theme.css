@@ -167,3 +167,12 @@ optgroup{font-weight:600}
 .text-tone-green{color:var(--t-green-fg)!important}
 .text-tone-amber{color:var(--t-amber-fg)!important}
 .text-tone-red{color:var(--t-red-fg)!important}
+
+/* O QR do dois fatores: fundo branco opaco sempre, nos dois temas. Um código de barras escuro sobre
+   fundo escuro existe para a tela, não para a câmera — e a câmera do celular é quem lê isto. */
+.qr-golden{background:#fff;border:1px solid var(--login-line);border-radius:14px;padding:14px;color:#111}
+.qr-golden svg{display:block;max-width:100%;height:auto}
+/* Os oito códigos de recuperação: uma grade que se copia olhando, sem precisar de planilha. */
+.codigos-recuperacao{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.codigos-recuperacao code{display:block;text-align:center;padding:12px 8px;font-size:1.02rem;letter-spacing:.06em;
+    background:var(--t-neutral-bg);border:1px dashed var(--login-line);border-radius:10px;color:var(--bs-body-color)}

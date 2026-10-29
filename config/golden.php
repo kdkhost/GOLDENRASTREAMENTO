@@ -888,6 +888,7 @@ return [
             ['titulo' => 'Configurações', 'rota' => 'admin.settings.index', 'prefixo' => 'admin.settings.', 'icone' => 'fa-sliders'],
             ['titulo' => 'Crons', 'rota' => 'admin.crons.index', 'prefixo' => 'admin.crons.', 'icone' => 'fa-clock', 'bolha' => 'crons_com_falha', 'tom' => 'red'],
             ['titulo' => 'Usuários', 'rota' => 'admin.usuarios.index', 'prefixo' => 'admin.usuarios.', 'icone' => 'fa-user-shield'],
+            ['titulo' => 'Segurança do acesso', 'rota' => 'admin.seguranca.index', 'prefixo' => 'admin.seguranca.', 'icone' => 'fa-user-lock'],
             ['titulo' => 'Auditoria', 'rota' => 'admin.activities.index', 'prefixo' => 'admin.activities.', 'icone' => 'fa-shield-halved'],
         ]],
 

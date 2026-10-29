@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.50.1
+- **Versão:** 2.51.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -545,6 +545,9 @@ no servidor (banco, chave da aplicação, fila, fuso).
 | `QUEUE_CONNECTION` | `database` | exige `php artisan queue:work` |
 | `FILESYSTEM_DISK` | `public` | onde os envios vão parar |
 | `LOG_CHANNEL` / `LOG_LEVEL` | `stack` / `warning` | log em `storage/logs` |
+| `SEGURANCA_LOGIN_TENTATIVAS`, `SEGURANCA_LOGIN_JANELA`, `SEGURANCA_LOGIN_BLOQUEIO` | `5`, `15`, `30` | quantas senhas erradas, em quanto tempo e por quanto tempo a porta fecha; **decida na tela** (seção 21.1), o `.env` é o plano de fundo de quem ainda não gravou nada |
+| `SEGURANCA_DOIS_FATORES` | `ninguem` | `ninguem`, `administradores` ou `equipe`: quem é obrigado a ter o aplicativo de autenticação (seção 21.2) |
+| `SEGURANCA_SESSAO_MINUTOS`, `SEGURANCA_SESSOES_SIMULTANEAS` | `120`, `5` | inatividade antes de pedir a senha de novo e teto de aparelhos abertos na mesma conta (seção 21.3) |
 | `MAIL_MAILER` | `smtp` | use `log` enquanto não tiver credencial |
 | `MAIL_LOG_CHANNEL` | `email` | para onde o `log` escreve o e-mail (`storage/logs/email.log`) |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SCHEME` | do seu servidor de correio | o **código de e-mail está pronto no projeto**; a credencial se preenche na tela (seção 7.1), e estas linhas ficam como plano de fundo. A criptografia aceita os dois mundos — `tls`/`ssl` (e a variável velha `MAIL_ENCRYPTION`) são traduzidos uma única vez para `smtp`/`smtps`; em branco, a porta decide: 465 é TLS direto, o resto é STARTTLS |
@@ -2414,6 +2417,9 @@ ele, os dados criptografados e as sessões não voltam.
 | O link de redefinir a senha morre no caminho | expira em 60 minutos e a assinatura depende da `APP_KEY` | reenviar por `/portal/esqueci-senha`; se a `APP_KEY` foi trocada, os links anteriores deixam de valer (é o esperado) |
 | Contrato anexado não aparece no portal | o status está como `rascunho` | passar para assinado/vigente — rascunho é invisível para o cliente por projeto |
 | O PDF do contrato abre 404 no portal | arquivo fora de `storage/contratos/`, ou o download tentou por URL direta | reanexar pelo dropzone e usar `/portal/contratos/{id}/arquivo`, que é a única porta de saída |
+| Ao entrar, a tela diz que há tentativas demais e não aceita a senha certa | a janela de tentativas daquela conta (ou daquele endereço de rede) estourou, e o porteiro fechou a porta por cautela | espere o prazo da casa (30 minutos, por padrão) — ela reabre sozinha. Para adiantar: **Sistema → Segurança do acesso → Destravar uma conta**, com login de administrador. A dona da conta recebeu aviso por e-mail e no sino (seção 21.1) |
+| O aplicativo de autenticação diz que o código está errado, logo depois de acender a chave | o relógio do celular está adiantado ou atrasado — o código de seis números nasce do horário, e a casa tolera três períodos de 30 segundos para cada lado | acerte o relógio do aparelho (ajuste automático) e tente de novo; sem o celular à mão, use um dos oito códigos de recuperação, que abrem uma única vez (seção 21.2) |
+| O painel devolve "Sua sessão foi encerrada por segurança" | a janela que aquele navegador tinha foi encerrada pelo botão, caiu no teto de aparelhos, venceu por inatividade ou a senha da conta foi trocada | entre de novo. Se não foi você quem encerrou: **Sistema → Segurança do acesso** fecha as janelas que sobraram e troca a senha — trocar a senha derruba todas as janelas da conta, inclusive a cookie roubada (seção 21.3) |
 
 Os logs ficam em `storage/logs/laravel.log`; no cPanel também existe
 `public/error_log`, que o `.htaccess` bloqueia para visitantes, e o erro real
@@ -2452,6 +2458,134 @@ continua visível para você pelo painel ou SSH.
   depois de conferir o dono e que não é rascunho. O caminho gravado no formulário é
   revalidado contra a pasta do campo de envio.
 
+A partir de 2.51.0 a porta do painel tem regra própria, e ela inteira se configura
+na tela. Os quatro itens abaixo existem no código de verdade — nada de "parece
+seguro" — e cada um tem teste que o trava.
+
+### 21.1 A porta: tentativas, janela e bloqueio
+
+`VigiaDeAcesso` conta as senhas erradas em dois baldes separados, na cache: **por
+e-mail** e **por endereço de rede**. Um escritório inteiro atrás do mesmo roteador
+não trava a conta de um colega, e quem troca de rede não zera o próprio contador.
+Estourado o limite, a conta e aquele endereço ficam de fora pelo prazo da casa — e o
+que reabre é o tempo, não um telefonema: ninguém precisa mexer em banco nem em
+arquivo para a porta voltar.
+
+Na batida que fecha a porta, a dona da conta recebe **aviso por e-mail** (`TentativasDeLogin`,
+com endereço, navegador e hora) e o mesmo recado entra no sino da Central de notificações; a
+linha sai por `log` se a instalação ainda não tem SMTP, e o registro não depende do transporte.
+Toda batida, o trava e o destrava deixam linha na Auditoria.
+
+| Onde decidir | O que faz |
+| --- | --- |
+| **Sistema → Configurações → Chaves de integração → Segurança do acesso → Tentativas de senha até travar** | quantas senhas erradas cabem na janela (padrão 5) |
+| **Janela das tentativas (minutos)** | o tempo em que elas são somadas (15); o contador envelhece sozinho |
+| **Duração do bloqueio (minutos)** | o prazo da porta fechada (30), com piso de um minuto |
+| **Sistema → Segurança do acesso → Destravar uma conta** | o administrador apaga as batidas agora, sem esperar o prazo |
+
+Em branco em cada campo, vale o `.env` (`SEGURANCA_LOGIN_*`, `SEGURANCA_DOIS_FATORES`,
+`SEGURANCA_SESSAO_*`): a instalação já nasce blindada, e o painel manda por cima assim
+que alguém grava.
+
+### 21.2 A segunda chave: dois fatores (TOTP) com código de recuperação
+
+Quem tem a chave acesa entra com a senha **e** o código de seis números do aplicativo
+de autenticação. A senha certa sozinha não abre: ela para na meia-porta
+(`/login/dois-fatores`), que guarda só a identidade, com prazo de dez minutos, e tira a
+autenticação de propósito — sessão já logada antes do código seria o dois fatores como
+enfeite de tela. A opção "lembrar de mim" só passa a valer depois do código bater; na
+meia-porta ela é uma porta que se abre sozinha, e por isso não atravessa.
+
+- **Acender**: Sistema → Segurança do acesso → "Acender a segunda chave". A própria
+  tela desenha o código QR em SVG — nada de PNG em `storage/app/public`, que seria a
+  chave secreta de alguém publicada em URL. O segredo **só entra no banco depois que um
+  código real bate**: gravar segredo sem prova deixaria a conta pedindo código que
+  ninguém tem. Em seguida aparecem os **oito códigos de recuperação** (`XXXXX-XXXXX`),
+  uma vez só; "Renovar os códigos" queima a fornada inteira.
+- **Cifra, não texto**: o segredo e os códigos vão para a tabela `users` pelo cast
+  `encrypted` da framework. Um despejo do banco entrega exatamente o que entregava
+  antes, que é nada.
+- **Código de recuperação abre uma vez** e se apaga da lista — o que alguém imprime não
+  serve duas vezes.
+- **O campo do código é contado**: seis dígitos sem limite são um milhão de combinações
+  na espera do script que a porta da senha acabou de dispensar. Estourado o limite, o
+  campo fecha pelo prazo, e a tela diz quantas tentativas restam.
+- **A política da casa decide quem é obrigado**: *ninguém*, *só administradores* ou
+  *toda a equipe*, no mesmo campo de Configurações. Quem é alcançado pela política e
+  ainda não tem chave é **levado à ativação** no primeiro acesso, não barrado na porta —
+  por isso a tela de acendimento mora fora do prefixo `/admin`: é a rota que quebra o laço.
+- **Desligar custa código**, e a política manda: se a casa exige a chave, ninguém desliga
+  a própria por fora dela. O administrador apaga a chave de quem perdeu o celular; o
+  colega ao lado recebe **403**.
+- **O cliente do portal nunca é alcançado** pela política: ela é da casa, não da
+  vitrine, e as telas de acendimento pertencem ao guarda do painel (`auth:web`).
+
+### 21.3 Roubo de sessão e de cookie
+
+A cookie de sessão sai `HttpOnly` (nada de script de terceiros a lendo), `SameSite=lax`
+(não viaja em pedido de outro endereço) e `Secure` quando o site é HTTPS — é o que o
+instalador escreve no `.env` (`SESSION_SECURE_COOKIE=true`), e o navegador só obedece o
+que vem daqui. No login a sessão é **renovada**: uma cookie entregue por um atacante não
+herda a janela que a pessoa acabou de abrir.
+
+O painel mantém o índice das janelas abertas (`sessoes_do_painel`: usuário, carimbo do
+aparelho, endereço de rede, navegador e último sinal), e **Sistema → Segurança do acesso**
+o mostra. Três coisas derrubam o acesso na batida seguinte:
+
+- o botão **Encerrar esta janela** e o **Sair das outras janelas** — apagam a linha do
+  índice, e o middleware `AtestarSessaoDoPainel` consulta a lista em todo pedido da
+  equipe: o notebook do escritório não continua trabalhando por cima do botão;
+- o **teto de aparelhos abertos ao mesmo tempo** — as mais antigas caem fora do número
+  (zero deixa todas viverem);
+- o **tempo de inatividade** — a aba esquecida num computador do estoque às 8h não é um
+  acesso em uso às 20h.
+
+**Trocar a senha fecha todas as janelas daquela conta**, inclusive a que alguém abriu com
+a cookie roubada antes da troca: é `$middleware->authenticateSessions()`, o mecanismo da
+própria framework, que compara a cifra guardada na sessão com a da conta a cada pedido e
+amarra a cookie "lembrar de mim" à senha. Sair (`logout`) invalida a sessão, troca o
+identificador da cookie e apaga a janela.
+
+### 21.4 Cabeçalhos HTTP e injeção
+
+`CabecalhosDeSeguranca` é global (anexado, não no grupo `web`), então toda resposta da casa
+sai carimbada — inclusive os pontos de entrada anônimos, que são justamente onde um
+navegador é induzido a confiar numa página que não é nossa:
+
+| Cabeçalho | O que impede |
+| --- | --- |
+| `Content-Security-Policy` com `default-src 'self'`, `frame-ancestors 'self'`, `object-src 'none'`, `base-uri 'self'` e **`form-action 'self'`** | o painel embutido num quadro espião, o `<base>` reescrito por um campo de texto e o `csrf_token` do administrador enviado a um endereço de fora no próximo "Salvar" |
+| `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` | clickjacking em navegador velho e arquivo enviado pelo cliente lido como script |
+| `Referrer-Policy: strict-origin-when-cross-origin` | vazar a URL da ficha de cliente no próximo clique |
+| `Cross-Origin-Opener-Policy: same-origin` | a janela de fora ler o que a sua tem na memória |
+| `Strict-Transport-Security` (só em conexão cifrada) | o navegador voltar a pedir http:// depois do primeiro HTTPS — em http:// seria um recado que ele joga fora |
+| `Permissions-Policy` com `camera=()`, `geolocation=()` e `interest-cohort=()` | as permissões do navegador ligadas para quem vem de fora, e o cohort de publicidade |
+
+A CSP autoriza exatamente o que os layouts carregam, e um teste confere isso: cada endereço
+externo em `resources/views/layouts` e `resources/views/partials` precisa estar na lista. Uma
+política que não casa com as próprias páginas é a política que alguém desliga no primeiro susto.
+
+Contra injeção, o que protege é o caminho por onde os dados entram e saem: Eloquent com
+*bindings* em toda consulta (nenhuma concatenação de SQL a partir de entrada do usuário), as
+regras de validação por campo na hora de gravar, o escape automático do Blade em cada saída,
+`e()` onde o texto entra em atributo ou URL montada à mão, e os segredos cifrados no banco —
+`password`, `remember_token`, `two_factor_secret` e `two_factor_recovery_codes` fora de
+`toArray()` e de qualquer resposta JSON.
+
+`storage/app/public/.htaccess` é a última barreira do único diretório que o público alcança:
+`RemoveHandler`, `Require all denied`, `-ExecCGI` e `-Indexes` — um PHP que caia ali por
+upload não vira código executável. O arquivo é ignorado pelo git do diretório, para continuar
+existindo depois de um `composer install`.
+
+### 21.5 Testes que travam tudo isso
+
+| Teste | O que não pode voltar a estar solto |
+| --- | --- |
+| `ForcaBrutaDoLoginTest` | a contagem por e-mail **e** por endereço, o prazo, o piso de um minuto, o aviso à dona da conta |
+| `AutenticacaoDoisFatoresTest` | a senha abrindo sozinha, o segredo gravado sem prova, o segredo em texto claro, o código de recuperação valendo duas vezes, o campo do código sem limite, a política alcançando o portal |
+| `BlindagemDaSessaoTest` | a cookie sem `HttpOnly`/`SameSite`, a resposta sem carimbos, a janela encerrada continuando logada, a aba esquecida, o teto de aparelhos, a troca de senha que não fecha as janelas, o upload que vira programa |
+| `PerfilTravadoTest` | o próprio perfil não salvar o que é seu (e continuar recusando o que é da casa) |
+
 ---
 
 ## 22. Checklist depois de instalar
@@ -2464,6 +2598,25 @@ continua visível para você pelo painel ou SSH.
 - [ ] Campo de envio: arrastar imagem, vídeo e documento mostra preview e progresso
 - [ ] Arquivo enviado pelo painel abre pela URL de `/storage/...` (200, não 403)
 - [ ] Teste de barreira: `.env`, `app/` e `storage/logs/laravel.log` respondem 403
+- [ ] Carimbos da resposta: `curl -sI https://seudominio.com.br/login` devolve
+      `content-security-policy` com `frame-ancestors 'self'` e `form-action 'self'`,
+      `x-frame-options: SAMEORIGIN`, `x-content-type-options: nosniff`,
+      `referrer-policy: strict-origin-when-cross-origin`, `cross-origin-opener-policy: same-origin`
+      e, sob HTTPS, `strict-transport-security: max-age=31536000` (seção 21.4)
+- [ ] Cookie da sessão: `set-cookie` do login traz `HttpOnly` e `SameSite=lax`, e traz `Secure`
+      porque o site é HTTPS — conferida na mesma resposta, sem abrir o DevTools (seção 21.3)
+- [ ] Força-bruta: cinco senhas erradas na conta de teste travam a porta, a dona da conta recebe
+      o aviso por e-mail e no sino, e **Sistema → Segurança do acesso → Destravar uma conta**
+      reabre sem esperar o prazo (seção 21.1)
+- [ ] Dois fatores: com a política em "toda a equipe", o primeiro acesso do vendedor abre a tela
+      de acendimento com o QR desenhado pela própria página, um código real do aplicativo grava a
+      chave e um código de recuperação abre a porta uma vez só (seção 21.2)
+- [ ] Janelas: entre no painel pelo navegador e pelo celular, e *Sistema → Segurança do acesso*
+      mostra as duas linhas com endereço de rede e último sinal; "Encerrar esta janela" derruba
+      aquele aparelho na batida seguinte, sem mexer no que você está usando (seção 21.3)
+- [ ] Perfil próprio: em *Sistema → Usuários*, abra a sua própria ficha — nome, telefone, avatar e
+      senha salvam; "Perfil" e "Situação" aparecem preenchidos e travados, e continuar
+      recusando escrita de quem não é administrador é o esperado (seção 21.5)
 - [ ] Configurações do painel com WhatsApp, telefone, e-mail e endereço corretos
 - [ ] *Conteúdo → Imagens do site* lista as 19 fotos, e *Conteúdo → Textos das páginas* lista
       as sete páginas — trocar uma foto e salvar muda a página pública na hora

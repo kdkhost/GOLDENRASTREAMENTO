@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SegurancaController;
 use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TestimonialController;
@@ -31,6 +32,14 @@ use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VideoController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\DoisFatoresController;
+use App\Http\Controllers\Site\AssistenteController as SiteAssistenteController;
+use App\Http\Controllers\Site\FunnelController;
+use App\Http\Controllers\Site\LeadController as SiteLeadController;
+use App\Http\Controllers\Site\PageController;
+use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
+use App\Http\Controllers\Site\StoreController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalChamadoController;
 use App\Http\Controllers\Portal\PortalContaController;
@@ -40,13 +49,6 @@ use App\Http\Controllers\Portal\PortalDepoimentoController;
 use App\Http\Controllers\Portal\PortalFinanceiroController;
 use App\Http\Controllers\Portal\PortalPedidoController;
 use App\Http\Controllers\Portal\PortalSupervisaoController;
-use App\Http\Controllers\Site\AssistenteController as SiteAssistenteController;
-use App\Http\Controllers\Site\FunnelController;
-use App\Http\Controllers\Site\LeadController as SiteLeadController;
-use App\Http\Controllers\Site\PageController;
-use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
-use App\Http\Controllers\Site\StoreController;
-use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -207,6 +209,36 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 /*
 |--------------------------------------------------------------------------
+| A segunda chave: o código que nasce no celular de quem está entrando
+|--------------------------------------------------------------------------
+|
+| Três telas, três papéis. `/login/dois-fatores` é a meia-porta: a senha abriu, o código ainda não,
+| e a pessoa sai da autenticação de propósito até digitar os seis dígitos. `/dois-fatores/configurar`
+| acende a chave em uma conta que ainda não tem; `/dois-fatores/codigos` mostra os oito códigos de
+| recuperação **uma única vez**, direto da sessão, porque um segredo que pode ser relido depois é um
+| segredo que alguém vai encontrar.
+|
+| O `throttle` aqui não é enfeite: um código de seis dígitos tem um milhão de combinações, e sem
+| contagem alguma ele seria o elo mais fraco da corrente que a senha acabou de reforçar.
+*/
+Route::get('/login/dois-fatores', [AuthController::class, 'showDesafio'])->name('login.dois-fatores');
+Route::post('/login/dois-fatores', [AuthController::class, 'desafio'])->middleware('throttle:10,1')->name('login.dois-fatores.post');
+Route::post('/login/dois-fatores/cancelar', [AuthController::class, 'abandonarDesafio'])->name('login.dois-fatores.cancelar');
+
+// `auth:web`, e não `auth`: a segunda chave é da conta do painel. O `auth` solto seguiria o guarda
+// padrão do pedido, e uma sessão de portal (que é outra tabela, sem segredo nenhum) bateria nessas
+// telas pedindo para acender uma chave que ela não tem.
+Route::prefix('dois-fatores')->name('dois-fatores.')->middleware('auth:web')->group(function () {
+    Route::get('/configurar', [DoisFatoresController::class, 'configurar'])->name('configurar');
+    Route::post('/confirmar', [DoisFatoresController::class, 'confirmar'])->middleware('throttle:10,1')->name('confirmar');
+    Route::get('/codigos', [DoisFatoresController::class, 'codigos'])->name('codigos');
+    Route::post('/codigos/guardei', [DoisFatoresController::class, 'guardarCodigos'])->name('codigos.guardar');
+    Route::post('/codigos/renovar', [DoisFatoresController::class, 'renovarCodigos'])->name('codigos.renovar');
+    Route::post('/desligar', [DoisFatoresController::class, 'desligar'])->middleware('throttle:10,1')->name('desligar');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Conectar a conta Google Ads de quem está no painel
 |--------------------------------------------------------------------------
 |
@@ -223,8 +255,13 @@ Route::prefix('auth/google-ads')->name('google-ads.')->middleware(['auth'])->gro
 |--------------------------------------------------------------------------
 | Painel Administrativo
 |--------------------------------------------------------------------------
+|
+| O `dois_fatores` no grupo inteiro é o que transforma a política da tela de Configurações em
+| porta: enquanto a casa exigir a segunda chave e a conta não tiver uma acesa, nada do painel abre —
+| a pessoa vai direto para a tela de acendimento e volta com o mesmo login. Uma rota fora do prefixo
+| (`/dois-fatores`) quebra o laço por construção.
 */
-Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->group(function () {
     Route::get('/', fn () => redirect()->route('admin.dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -479,6 +516,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     // Auditoria, usuários e configurações (somente admin)
     Route::get('/auditoria', [ActivityController::class, 'index'])->name('activities.index')->middleware('role:admin');
+
+    /*
+    | Segurança do acesso. Aberta a todo perfil do painel, porque as janelas abertas e a segunda
+    | chave são da pessoa que está logada. O que é da *casa* — ver a lista da equipe, o histórico de
+    | tentativas dos outros, destravar uma conta e apagar a chave de um colega — leva `role:admin` na
+    | rota e é conferido de novo no controller: esconder o botão na view não é autorização.
+    */
+    Route::prefix('seguranca')->name('seguranca.')->group(function () {
+        Route::get('/', [SegurancaController::class, 'index'])->name('index');
+        Route::post('/janela/{janela}/encerrar', [SegurancaController::class, 'encerrarJanela'])
+            ->whereNumber('janela')->name('janela.encerrar');
+        Route::post('/janelas/as-outras', [SegurancaController::class, 'encerrarAsOutras'])->name('janelas.outras');
+        Route::post('/destravar', [SegurancaController::class, 'destravar'])->middleware('role:admin')->name('destravar');
+        Route::post('/dois-fatores/{usuario}/desligar', [SegurancaController::class, 'desligarDoisFatores'])
+            ->whereNumber('usuario')->middleware('role:admin')->name('dois-fatores.desligar');
+    });
 
     Route::prefix('usuarios')->name('usuarios.')->middleware('role:admin')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');

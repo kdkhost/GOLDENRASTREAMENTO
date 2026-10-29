@@ -12,6 +12,7 @@
     'required' => false,
     'opcional' => false,
     'ajuda' => null,
+    'travado' => false,
 ])
 @php
     $id = 'f-'.preg_replace('/[^a-z0-9]+/i', '-', $name);
@@ -39,12 +40,21 @@
         @if($hint)<span class="form-hint d-block">{{ $hint }}</span>@endif
     </div>
 
+    @if($travado)
+        {{-- Campo travado é o que a pessoa vê preenchido e não pode mudar. `disabled` sozinho não
+             serve: controle desabilitado não viaja no envio, e a validação do servidor passa a
+             reclamar de um obrigatório que está na tela, diante dos olhos — foi assim que o
+             administrador ficou sem salvar o próprio perfil. O valor vai num oculto; o que trava é
+             a aparência, nunca o pedido. --}}
+        <input type="hidden" name="{{ $name }}" value="{{ $atual }}">
+    @endif
+
     @if($type === 'textarea')
         <textarea id="{{ $id }}" name="{{ $name }}" rows="{{ $rows }}" class="{{ $classe }} {{ $attributes->get('class') }}"
-            @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required) required @endif {!! $extra !!}>{{ $atual }}</textarea>
+            @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required && !$travado) required @endif @if($travado) disabled @endif {!! $extra !!}>{{ $atual }}</textarea>
     @elseif($type === 'select')
         <select id="{{ $id }}" name="{{ $name }}" class="{{ $classe }} {{ $attributes->get('class') }}"
-            @if($required) required @endif {!! $extra !!}>
+            @if($required && !$travado) required @endif @if($travado) disabled @endif {!! $extra !!}>
             @if($empty !== null)<option value="">{{ $empty }}</option>@endif
             {{-- Os nomes abaixo não podem ser $chave: ela guarda a chave pontuada do validador,
                  e um laço que a reescreve cala o @error() do campo — a caixa fica vermelha e
@@ -56,7 +66,7 @@
     @else
         <input type="{{ $type }}" id="{{ $id }}" name="{{ $name }}" value="{{ $atual }}"
             class="{{ $classe }} {{ $attributes->get('class') }}"
-            @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required) required @endif {!! $extra !!}>
+            @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required && !$travado) required @endif @if($travado) disabled @endif {!! $extra !!}>
     @endif
 
     @error($chave)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror

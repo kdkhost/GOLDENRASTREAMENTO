@@ -3,6 +3,112 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.51.0] - 2026-10-29
+
+### Adicionado
+- **A porta do painel ganhou fechadura dupla, e ela inteira se configura na tela.** `config/seguranca.php`
+  traz os números (`tentativas`, `janela_minutos`, `bloqueio_minutos`, `dois_fatores`, `sessao_minutos`,
+  `sessoes_simultaneas`, mais a tolerância do TOTP e o prazo do desafio), os seis campos novos em
+  **Sistema → Configurações → Chaves de integração → Segurança do acesso** mandam neles primeiro
+  (grupo `seguranca` do `ChavesDeIntegracao`, gravado no banco e aplicado no começo de cada pedido), e o
+  `.env` fica como plano de fundo de quem ainda não preencheu nada — é o que faz uma instalação recém-clonada
+  já nascer blindada, sem depender de alguém lembrar de configurar antes da primeira senha errada.
+- **Força-bruta tem porteiro próprio**: `App\Services\Seguranca\VigiaDeAcesso` conta em dois baldes
+  separados, **por e-mail e por endereço de rede** (um escritório inteiro atrás do mesmo roteador não trava
+  a conta de um colega; quem troca de rede não zera o próprio contador), fecha conta e endereço pelo prazo
+  da casa com piso de um minuto, e na batida que tranca avisa a dona da conta por **e-mail**
+  (`App\Mail\TentativasDeLogin`: endereço, navegador, hora e o prazo) **e** pelo sino
+  (`acesso_suspeito`, uma vez por hora, sem encher a caixa de entrada de quem está sendo testado). Cada
+  batida, o trava e o destrava deixam linha na Auditoria.
+- **Dois fatores de verdade (TOTP)**: `App\Services\Seguranca\DoisFatores` + `DoisFatoresController` e as
+  telas `admin/dois-fatores/*` e `auth/dois-fatores`. O QR é **desenhado pela própria página em SVG**
+  (`bacon/bacon-qr-code`) — um PNG em `storage/app/public` seria a chave secreta de alguém publicada em
+  URL, segurada pelo cache do navegador depois da saída. O segredo **só entra no banco depois que um código
+  real bate**, cifrado pelo cast `encrypted` do model, e a pessoa recebe **oito códigos de recuperação**
+  (`XXXXX-XXXXX`, `encrypted:array`) mostrados uma vez só, que abrem a porta **uma** vez e se apagam. A
+  senha certa sozinha para na **meia-porta** (`/login/dois-fatores`, com prazo de dez minutos, guardando só
+  a identidade e sem o "lembrar de mim", que é uma porta que se abre sozinha); o campo do código é contado
+  pelo mesmo porteiro, porque seis dígitos sem limite são um milhão de combinações; e a política da casa
+  (*ninguém* / *só administradores* / *toda a equipe*) obriga por `GarantirDoisFatores` (`dois_fatores`),
+  levando quem ainda não tem chave à **ativação**, não à barra na porta — por isso a tela de acendimento
+  mora fora do prefixo `/admin`, para o caminho não virar laço.
+- **Roubo de sessão deixou de ser cego**: a migration `2026_10_29_000001_armam_a_porta_do_painel` cria
+  `sessoes_do_painel` (usuário, carimbo do aparelho, rede, navegador, último sinal) e as três colunas do
+  dois fatores em `users`. O driver de sessão é arquivo e a hospedagem não entrega o conteúdo das sessões
+  alheias — sem esta tabela, "encerrar o notebook do escritório" não teria o que encerrar.
+  `App\Http\Middleware\AtestarSessaoDoPainel` consulta a lista em **todo** pedido da equipe: janela
+  encerrada está encerrada de verdade, a aba esquecida fecha com o tempo de inatividade e o teto de
+  aparelhos derruba a mais antiga. Somado a `$middleware->authenticateSessions()`, **trocar a senha fecha
+  todas as janelas daquela conta**, inclusive a que alguém abriu com a cookie roubada antes da troca.
+- **Tela nova: Sistema → Segurança do acesso** (`Admin\SegurancaController`, `admin/seguranca/index`),
+  aberta a todo perfil do painel — as janelas e a chave são de quem está logado. Quatro números no topo
+  (janelas abertas, tentativas na janela, segunda chave, sessão sem uso), "Minha segunda chave" (acender,
+  renovar, ver a folha, desligar com código), "Janelas abertas nesta conta" com **Encerrar esta janela** e
+  **Sair das outras janelas**, e para o administrador: "Os limites da casa", "Equipe e segunda chave" com
+  o botão de apagar a chave de quem perdeu o celular, "Destravar uma conta" e os movimentos da última
+  semana. O que é da casa leva `role:admin` na rota **e** conferência no controller — esconder o botão na
+  view não é autorização.
+- **Toda resposta da casa sai carimbada**: `App\Http\Middleware\CabecalhosDeSeguranca`, anexado ao grupo
+  global (não só `web`), porque os pontos de entrada anônimos — login, portal, captura de lead — são
+  justamente onde um navegador é induzido a confiar numa página que não é nossa. CSP com `default-src
+  'self'`, `frame-ancestors 'self'`, `object-src 'none'`, `base-uri 'self'` e **`form-action 'self'`** (o
+  que impede um campo de texto com HTML colado de mandar o `csrf_token` do administrador para um endereço
+  de fora no próximo "Salvar"), `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `Cross-Origin-Opener-Policy: same-origin`,
+  `Permissions-Policy` desligando câmera/geolocalização/`interest-cohort` e `Strict-Transport-Security` só
+  quando a conexão é cifrada.
+- **O upload não vira programa**: `storage/app/public/.htaccess` (`RemoveHandler`, `Require all denied`,
+  `-ExecCGI`, `-Indexes`) no único diretório da instalação que o público alcança, com a entrada no
+  `.gitignore` da pasta para o arquivo sobreviver ao `composer install`.
+- **A ajuda acompanha o que foi criado**: sete gavetas novas em `config/guia_configuracao.php` (o grupo +
+  os seis campos, cada uma com a frase do que é, a ordem para configurar e o atalho para a tela onde o
+  efeito se vê) e a seção **"Segurança do acesso"** em `config/guia_painel.php`, com o prefixo
+  `admin.seguranca.` no mapa de rotas — sem isso a tela nova existiria sem quem explicasse.
+- Dependências: `pragmarx/google2fa` (^8.0) e `bacon/bacon-qr-code` (^3.0). O instalador passou a escrever
+  `SESSION_SECURE_COOKIE=true`, `SESSION_HTTP_ONLY=true` e `SESSION_SAME_SITE=lax` quando a URL começa com
+  `https://` (em http:// ele avisa em vez de marcar o cookie que o navegador descartaria).
+
+### Corrigido
+- **Editar o próprio perfil voltou a salvar.** `<x-admin.field>` com `:travado` desenhava `disabled`, e
+  campo desabilitado não viaja no pedido: `role` e `status` simplesmente não chegavam ao controller, a
+  validação os exigia e o "Salvar" do administrador na própria ficha não gravava nada — nem nome, nem
+  telefone, nem avatar, nem senha. O campo travado agora mostra o valor **dentro** do controle
+  (`readonly` + `aria-readonly`) e envia por baixo um escondido com o valor que já estava no banco, então a
+  pessoa guarda o que é seu sem conseguir escrever o que é da casa.
+- **`two_factor_recovery_codes` saía como texto e voltava como lista.** O cast era `encrypted`, que chama
+  `openssl_encrypt` com o array e morria em `TypeError`. Passou a `encrypted:array`, que entra como lista e
+  sai como lista, cifrada.
+- **A tela de Segurança quebrou no primeiro `diffForHumans()`.** `MAX(created_at)` é consulta bruta: o banco
+  devolve texto, nunca Carbon, e a "última entrada" da equipe derrubava a página em produção. O corte agora
+  acontece uma vez, no controller, para a view receber data de verdade.
+- **As telas do dois fatores obedecem ao guarda do painel** (`auth:web`). Com o `auth` solto, uma sessão de
+  portal — outra tabela, `Customer`, sem segredo nenhum — batia em `/dois-fatores/configurar` e devolvia
+  500 em `Customer::doisFatoresAtivo()`; a política da casa não alcança a vitrine, nem por engano.
+
+### Testado
+- Quatro suítes novas, **45 testes**: `ForcaBrutaDoLoginTest` (11 — os dois baldes, o prazo, o piso de um
+  minuto, o aviso por e-mail e no sino, o contador que envelhece), `AutenticacaoDoisFatoresTest`
+  (14 — a senha que não abre sozinha, o segredo gravado só com prova, a cifra no banco lida na coluna crua,
+  o código de recuperação que vale uma vez, o limite do campo do código, a meia-porta que expira, a
+  política por perfil, a folha que aparece uma vez e a renovação que queima a anterior, o admin que desliga
+  e o colega que recebe 403, e o portal fora do alcance), `BlindagemDaSessaoTest` (15 — a cookie
+  `HttpOnly`/`SameSite`/`Secure`, o identificador trocado no login, os carimbos de cada resposta, a CSP
+  conferida contra os endereços que os próprios layouts carregam, HSTS só sob HTTPS, a janela registrada com
+  aparelho e rede, encerrar/sair-das-outras/aba esquecida/teto de aparelhos, a troca de senha que fecha as
+  janelas e o arquivo enviado que não vira código) e `PerfilTravadoTest` (5).
+- `tests/TestCase.php`: `be()` agora limpa o carimbo de janela e as cifras de senha da sessão quando o teste
+  troca de personagem. Sem isto, `authenticateSessions()` derrubava o pedido seguinte de quem nunca abriu
+  janela — 29 erros que eram o teste atravessando duas janelas com um corpo só, não o sistema.
+- **Suite completa verde: 706 testes, 11 781 asserções.**
+
+### Documentado
+- `docs/INSTALACAO.md`: a seção 21 virou 21.1–21.5 (a porta e seus três números, a segunda chave com as oito
+  regras que a fazem ser de verdade, o que cada carimbo de cabeçalho impede, e os testes que travam cada
+  item); as linhas `SEGURANCA_*` entraram na referência do `.env` (seção 7); quatro linhas novas no quadro
+  de problemas (porta travada, código do aplicativo que não bate, "sessão encerrada por segurança" e o
+  upload no `/storage`); e sete itens no checklist depois de instalar, todos conferíveis por `curl` sem
+  abrir o DevTools. O PDF de instalação foi regenerado da mesma fonte.
+
 ## [2.50.1] - 2026-10-29
 
 ### Corrigido

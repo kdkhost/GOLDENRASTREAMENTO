@@ -15,12 +15,14 @@
     ],
     "require": {
         "php": "^8.3",
+        "bacon/bacon-qr-code": "^3.0",
         "googleads/google-ads-php": "^35.2",
         "guzzlehttp/guzzle": "^8.3",
         "laravel/framework": "^13.17",
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
-        "livewire/livewire": "^3"
+        "livewire/livewire": "^3",
+        "pragmarx/google2fa": "^8.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

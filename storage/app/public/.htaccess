@@ -1,0 +1,19 @@
+# Nada nesta pasta é programa: é arquivo que alguém subiu pelo painel.
+#
+# O upload do Golden já confere a extensão antes de gravar, e a pasta serve por um
+# link simbólico dentro de `public/` — mas conferência de extensão é regra escrita
+# por alguém, e um dia alguém amplia a lista para "atender mais um formato". Este
+# arquivo é o que continua valendo nesse dia: mesmo com um `.php` escrito por cima,
+# o servidor devolve bytes, não executa.
+Options -Indexes -ExecCGI
+
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phar .pl .py .cgi .rb
+RemoveType .php .phtml .phar
+
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+<FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|phar|pl|py|cgi|rb|htaccess)$">
+    Require all denied
+</FilesMatch>

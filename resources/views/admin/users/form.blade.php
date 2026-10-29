@@ -20,9 +20,9 @@
                     <x-admin.field name="name" label="Nome" :value="$usuario->name" :required="true" maxlength="120" autocomplete="off" />
                     <x-admin.field name="email" type="email" label="E-mail de acesso" :value="$usuario->email" :required="true" col="col-12 col-md-6" maxlength="160" autocomplete="off" />
                     <x-admin.field name="telefone" label="Telefone" :value="$usuario->telefone" col="col-12 col-md-6" maxlength="32" :opcional="true" />
-                    <x-admin.field name="role" type="select" label="Perfil" :value="$usuario->role ?: 'vendedor'" :options="$perfis" col="col-6 col-md-4" :required="true" :disabled="$usuario->id === auth()->id()" />
+                    <x-admin.field name="role" type="select" label="Perfil" :value="$usuario->role ?: 'vendedor'" :options="$perfis" col="col-6 col-md-4" :required="true" :travado="$usuario->id === auth()->id()" />
                     @if($editando)
-                        <x-admin.field name="status" type="select" label="Situação" :value="$usuario->status" :options="$situacoes" col="col-6 col-md-4" :required="true" :disabled="$usuario->id === auth()->id()" hint="Você não pode desativar a si mesmo." />
+                        <x-admin.field name="status" type="select" label="Situação" :value="$usuario->status" :options="$situacoes" col="col-6 col-md-4" :required="true" :travado="$usuario->id === auth()->id()" hint="Você não pode desativar a si mesmo." />
                         <x-admin.field name="password" type="password" label="Nova senha" col="col-12 col-md-4" :opcional="true" minlength="8" autocomplete="new-password" hint="Deixe em branco para manter a senha atual." />
                     @else
                         <x-admin.field name="password" type="password" label="Senha inicial" :required="true" minlength="8" autocomplete="new-password" hint="Mínimo de 8 caracteres." />

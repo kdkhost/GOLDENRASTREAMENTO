@@ -18,6 +18,10 @@ input:focus{outline:none;border-color:var(--brand-gold);box-shadow:0 0 0 4px var
 input[type=checkbox]{accent-color:var(--brand-gold)}
 button{width:100%;padding:14px;border:0;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--brand-gold),var(--brand-gold-2));color:var(--brand-gold-ink);font-weight:700;font-size:1rem;cursor:pointer;font-family:var(--font-head)}
 button:hover{filter:brightness(1.06)}
+/* Botão que se faz passar por link: "cancelar" não compete com "entrar". O `button` de cima dá
+   largura e fundo dourado a tudo que é botão desta folha, e aqui isso seria um segundo call-to-action. */
+button.sutil{width:auto;display:block;margin:18px auto 0;padding:4px 8px;background:none;color:var(--login-muted);font-family:var(--font-sans);font-size:.85rem;font-weight:500;text-decoration:underline;text-underline-offset:3px}
+button.sutil:hover{filter:none;color:var(--t-gold-fg)}
 .back{text-align:center;margin-top:20px;font-size:.85rem;color:var(--login-muted)}
 .back a{color:var(--login-muted)}
 .demo{margin-top:16px;font-size:.78rem;color:var(--login-muted);background:var(--t-neutral-bg);border:1px dashed var(--login-line);border-radius:var(--radius-md);padding:10px 12px;text-align:center}

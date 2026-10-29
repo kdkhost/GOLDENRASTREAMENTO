@@ -192,8 +192,8 @@
                             @csrf
                             <x-admin.switch name="loja_livre" label="Frete combinado (não cobra valor fixo)" :checked="$livre" />
                             <x-admin.switch name="loja_retirada" label="Permitir retirada na loja" :checked="$retirada" />
-                            <x-admin.field name="loja_frete" type="number" label="Frete fixo (R$)" :value="$paraExibir($settings['loja_frete_cents'] ?? 0)" col="col-6" step="0.01" min="0" max="99999" placeholder="0,00" :disabled="$livre" />
-                            <x-admin.field name="loja_frete_gratis_acima" type="number" label="Frete grátis acima de (R$)" :value="$paraExibir($settings['loja_frete_gratis_acima_cents'] ?? 0)" col="col-6" step="0.01" min="0" max="99999" placeholder="ex.: 997,00" :disabled="$livre" />
+                            <x-admin.field name="loja_frete" type="number" label="Frete fixo (R$)" :value="$paraExibir($settings['loja_frete_cents'] ?? 0)" col="col-6" step="0.01" min="0" max="99999" placeholder="0,00" :travado="$livre" />
+                            <x-admin.field name="loja_frete_gratis_acima" type="number" label="Frete grátis acima de (R$)" :value="$paraExibir($settings['loja_frete_gratis_acima_cents'] ?? 0)" col="col-6" step="0.01" min="0" max="99999" placeholder="ex.: 997,00" :travado="$livre" />
                             <x-admin.field name="loja_pix_chave" label="Chave Pix exibida no checkout" :value="$settings['loja_pix_chave'] ?? ''" maxlength="120" :opcional="true" placeholder="CPF, CNPJ, e-mail ou aleatória" />
                             <x-admin.field name="loja_email_equipe" type="email" label="E-mail da equipe" :value="$settings['loja_email_equipe'] ?? ''" maxlength="160" :opcional="true" hint="Recebe o alerta de cada venda nova." placeholder="vendas@seudominio.com.br" />
                             <div class="col-12">
