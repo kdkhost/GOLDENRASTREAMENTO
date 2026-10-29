@@ -233,6 +233,7 @@ class ChavesDeIntegracao
                         'ambiente' => 'MAIL_SCHEME',
                         'label' => 'Criptografia',
                         'opcional' => true,
+                        'cast' => 'esquema',
                         'opcoes' => ['smtp' => 'STARTTLS — a mais comum, porta 587', 'smtps' => 'SSL/TLS desde o abraço — porta 465'],
                         'dica' => 'Em branco, decide o `.env`, e sem valor em nenhum dos dois o transporte deduz pela porta. Os nomes velhos (`tls`, `ssl`, `MAIL_ENCRYPTION`) ainda são aceitos no `.env` e traduzidos aqui.',
                     ],
@@ -1019,6 +1020,10 @@ class ChavesDeIntegracao
             'float' => (string) (float) str_replace(',', '.', $valor),
             'bool' => $valor === '1' || strtolower($valor) === 'true' ? '1' : '0',
             'lista' => implode(', ', self::lista($valor)),
+            // A tela oferece `smtp`/`smtps`, mas a pessoa pode colar `tls`/`ssl` de um tutorial, e
+            // uma instalação antiga pode já ter a palavra velha gravada. Guardar a forma traduzida
+            // é o que faz o campo mostrar amanhã exatamente o que o transporte vai usar.
+            'esquema' => (string) (self::esquema($valor) ?? strtolower(trim($valor))),
             default => $valor,
         };
     }
@@ -1031,6 +1036,10 @@ class ChavesDeIntegracao
             'float' => (float) str_replace(',', '.', $valor),
             'bool' => $valor === '1' || strtolower($valor) === 'true',
             'lista' => self::lista($valor),
+            // Traduzido também na saída, porque a string do banco é o que chega ao `config()` do
+            // transporte: um `ssl` gravado antes desta regra chegaria cru ao Symfony, que não
+            // conhece esse esquema e derruba **todo** disparo com `UnsupportedSchemeException`.
+            'esquema' => self::esquema($valor),
             default => $valor,
         };
     }

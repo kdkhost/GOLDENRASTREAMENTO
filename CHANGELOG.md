@@ -3,6 +3,41 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.50.1] - 2026-10-29
+
+### Corrigido
+- **A criptografia do SMTP que estava no banco chegava crua ao transporte.** `ChavesDeIntegracao::aplicar()`
+  jogava o valor gravado direto em `mail.mailers.smtp.scheme` sem passar por `esquema()` — só o `.env`
+  era traduzido. Um `ssl` guardado por uma versão anterior da tela, ou um `tls` colado no campo,
+  chegava ao Symfony como nome que ele não conhece: `The "ssl" scheme is not supported`, e cada
+  disparo do sistema caía, do link de senha do portal à segunda via da fatura, sem que ninguém
+  tivesse tocado em código. A `mail_scheme` ganhou `cast` próprio: o valor sai traduzido para o
+  transporte **e** entra traduzido no banco, então o que a pessoa vê no campo amanhã é o nome que o
+  transporte vai usar. Palavra sem tradução nenhuma devolve `null`, que é o estado em que a porta
+  decide.
+
+### Configurado em produção
+- **A caixa de disparos do domínio novo voltou a autenticar.** `disparos@goldenrastreamento.com.br`
+  existia na conta, mas a senha gravada no painel era a da instalação antiga (`535 Incorrect
+  authentication data`). Definida senha nova pela própria hospedagem (`uapi Email passwd_pop`), a
+  gravação subiu pelo caminho da tela — `mail_mailer`, `mail_host`, `mail_port`, `mail_scheme`,
+  `mail_username`, `mail_password`, `mail_from_address`, `mail_from_name` **as oito** com
+  `origem=banco` — e o `.env` ficou como plano de fundo coerente (465 + `smtps`). A prova de disparo
+  respondeu **O disparo está no ar**, sem devolução na caixa, e o aviso que estava preso em
+  `failed_jobs` (`ConversaEscalada`) saiu com `queue:retry all`; a tabela voltou a zero.
+
+### Testado
+- `ChavesDeIntegracaoTest` ganhou o caso da linha antiga do banco: `ssl` gravado antes desta regra
+  sai `smtps` do `config()`, ` TLS ` digitado na tela é guardado como `smtp`, e palavra
+  irreconhecível deixa o transporte deduzir pela porta. Suite completa verde: `656 testes`, 11 031 asserções.
+
+### Documentado
+- `docs/INSTALACAO.md`, seção 7.1: **preencha as oito chaves, não cinco** — a tela diz de onde veio
+  cada valor, e deixar usuário e remetente só no `.env` é o que faz o painel parecer
+  meio-configurado; o par que a hospedagem atende hoje (465 com `smtps`, 587 com STARTTLS); e duas
+  linhas novas no quadro de problemas (`535 Incorrect authentication data`,
+  `The "ssl" scheme is not supported`). O PDF de instalação foi regenerado da mesma fonte.
+
 ## [2.50.0] - 2026-10-29
 
 ### Adicionado

@@ -188,6 +188,29 @@ class ChavesDeIntegracaoTest extends TestCase
         );
     }
 
+    public function test_a_criptografia_ja_gravada_no_banco_tambem_sai_traduzida(): void
+    {
+        // A tradução do `.env` não bastava: o que a pessoa salva na tela entra no `config()` por
+        // outro caminho, e uma instalação que gravou `ssl` antes desta regra continuaria com o
+        // nome cru na linha — pronta para derrubar cada disparo sem que ninguém toque em nada.
+        Setting::set('mail_scheme', 'ssl');
+        ChavesDeIntegracao::aplicar();
+
+        $this->assertSame('smtps', config('mail.mailers.smtp.scheme'), 'O banco entregou a palavra velha cru ao transporte.');
+
+        // E o campo mostra, no dia seguinte, o nome que o transporte vai usar, não o que foi
+        // digitado: gravar `tls` pelo painel é dizer STARTTLS, que é `smtp`.
+        ChavesDeIntegracao::guardar('mail_scheme', ' TLS ');
+        $this->assertSame('smtp', ChavesDeIntegracao::doBanco('mail_scheme'));
+
+        // Palavra que nada traduz não é recusada na cara: some do caminho e a porta decide.
+        ChavesDeIntegracao::guardar('mail_scheme', 'criptografia-de-mentira');
+        ChavesDeIntegracao::aplicar();
+        $this->assertTrue(
+            config('mail.mailers.smtp.scheme') === null || in_array(config('mail.mailers.smtp.scheme'), ['smtp', 'smtps'], true)
+        );
+    }
+
     /** Os dois ajustes numéricos do Google Ads: a tela é o lugar deles, e o cast volta inteiro. */
     public function test_o_painel_grava_os_numeros_do_google_ads_e_o_config_le_inteiro(): void
     {

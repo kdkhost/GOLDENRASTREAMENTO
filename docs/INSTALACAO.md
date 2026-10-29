@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.50.0
+- **Versão:** 2.50.1
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -595,6 +595,15 @@ Três coisas que só aparecem na hora:
 Depois, preencha a caixa em **Sistema → Configurações → Chaves de integração → E-mail de
 disparo** (host, porta, criptografia, usuário, senha e remetente) e escolha "SMTP (servidor de
 correio)" em "Como o sistema envia". A senha cifra no banco e não volta a aparecer na tela.
+
+**Preencha as oito, não cinco.** Cada campo da tela diz de onde veio o valor que está valendo —
+`banco`, `ambiente` ou `ausente`. Deixar usuário e remetente só no `.env` faz a tela parecer
+pela metade, e é assim que se confunde "configurado no painel" com "configurado em lugar nenhum":
+com as oito linhas marcadas `banco`, a tela é o retrato exato do disparo. O par que a hospedagem
+cPanel atende hoje é **porta 465 com "SSL/TLS desde o abraço"** (`smtps`); 587 pede "STARTTLS"
+(`smtp`). Os dois nomes velhos (`ssl`, `tls`) continuam aceitos no `.env` e na tela, mas são
+traduzidos antes de chegar ao transporte — um `ssl` cru ali dentro derruba cada disparo com
+`UnsupportedSchemeException`, inclusive um que já estava gravado no banco por uma versão anterior.
 
 ### A prova de disparo: um botão na própria aba
 
@@ -2397,6 +2406,8 @@ ele, os dados criptografados e as sessões não voltam.
 | Aparece `validation.required` na tela em vez da mensagem | falta a tradução da framework, ou há cache de view velho | `php artisan optimize:clear`; confira `APP_LOCALE=pt_BR` e a pasta `lang/pt_BR/` (seção 17) |
 | `550 ... account or domain may not exist` no `failed_jobs` | o destinatário é um endereço que não existe fora do exemplo (domínio sem MX, como `@exemplo.com.br`) | esperado em conta de demonstração com e-mail fictício; o aviso à equipe saiu, o que não existe é a caixa de exemplo. Troque o `email_portal` da ficha por um endereço real e o ciclo fecha |
 | Falha de login no SMTP com senha certa no `.env` | `MAIL_PASSWORD` sem aspas e com `#` | escreva `MAIL_PASSWORD="..."` — sem aspas o `#` vira comentário |
+| `535 Incorrect authentication data` na sonda | a senha gravada no painel é a de outra instalação (trocar de domínio não troca a caixa) | `uapi Email passwd_pop email=disparos password="..."` e salve de novo a chave `mail_password` na tela; confira com **Testar o disparo agora** |
+| `The "ssl" scheme is not supported` | havia `ssl`/`tls` cru no banco ou no `.env` | a partir de 2.50.1 o valor é traduzido na saída do banco; se aparecer, é linha antiga em `settings` — regrave a criptografia na tela |
 | Página do site antiga depois de publicar | `opcache` do servidor | `php artisan optimize:clear`; em cPanel, reinicie o PHP |
 | A senha do painel "não funciona" no servidor | a senha instalada é forte, não é `golden123` | leia em `~/backups-golden/acesso-painel.txt` ou defina outra com `php artisan app:define-senha` |
 | O cliente não consegue entrar no `/portal` | o login do portal é o `email_portal`, não o e-mail da ficha do CRM | conferir o selo *conta ativa* na ficha (Admin → Clientes) e usar aquele e-mail; sem conta, ele cria em `/portal/cadastro` |
