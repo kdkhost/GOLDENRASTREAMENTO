@@ -31,19 +31,21 @@ final class Nome
     /**
      * O que se diz logo depois de uma destas expressões é o nome.
      *
-     * Cada padrão captura até o fim da linha e o aparador corta no primeiro sinal de pontuação:
+     * Cada padrão captura até o fim da frase, e o aparador corta no primeiro sinal de pontuação:
      * é assim que "meu nome é Marcelo, quero a via da fatura" devolve "Marcelo" e não a frase
-     * inteira. A ordem importa — o mais específico vem antes do `sou`, que é o único que aceita
-     * assunto pela frente.
+     * inteira. O ponto também encerra a captura, porque "sou a Maria. Meu e-mail é ..." é uma
+     * apresentação inteira e o que vem depois do ponto é outra frase — sem isso, o nome engolia
+     * o resto do texto e não era reconhecido. A ordem importa — o mais específico vem antes do
+     * `sou`, que é o único que aceita assunto pela frente.
      */
     private const PADROES = [
-        '/\bmeu nome\s*(?:[ée]h?\s*:?\s*)?([^\n?]{2,60})/iu',
-        '/\bnome\s*[:\-]\s*([^\n?]{2,60})/iu',
-        '/\b(?:me\s+chamo|chamo[-\s]?me|eu\s+chamo)\s+([^\n?]{2,60})/iu',
-        '/\bpod(?:e|em)\s+me\s+chamar\s+de\s+([^\n?]{2,60})/iu',
-        '/\b(?:quem\s+(?:est[aá]\s+)?falando|quem\s+fala)\s+(?:aqui\s+)?[ée]h?\s+([^\n?]{2,60})/iu',
-        '/\b(?:aqui\s+[ée]h?|do\s+outro\s+lado\s+[ée]h?)\s+(?:o|a|os|as)?\s*([^\n?]{2,60})/iu',
-        '/\bsou\s+(?:a|o|uma|um)?\s*([^\n?]{2,60})/iu',
+        '/\bmeu nome\s*(?:[ée]h?\s*:?\s*)?([^\n?.]{2,60})/iu',
+        '/\bnome\s*[:\-]\s*([^\n?.]{2,60})/iu',
+        '/\b(?:me\s+chamo|chamo[-\s]?me|eu\s+chamo)\s+([^\n?.]{2,60})/iu',
+        '/\bpod(?:e|em)\s+me\s+chamar\s+de\s+([^\n?.]{2,60})/iu',
+        '/\b(?:quem\s+(?:est[aá]\s+)?falando|quem\s+fala)\s+(?:aqui\s+)?[ée]h?\s+([^\n?.]{2,60})/iu',
+        '/\b(?:aqui\s+[ée]h?|do\s+outro\s+lado\s+[ée]h?)\s+(?:o|a|os|as)?\s*([^\n?.]{2,60})/iu',
+        '/\bsou\s+(?:a|o|uma|um)?\s*([^\n?.]{2,60})/iu',
     ];
 
     /**

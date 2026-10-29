@@ -490,6 +490,7 @@ class IdentificacaoEAvaliacaoPeloAssistenteTest extends TestCase
         $conversa->refresh();
         $this->assertSame($cliente->id, $conversa->customer_id, 'A apresentação não ligou a conversa ao cadastro.');
         $this->assertSame('maria@exemplo.com.br', $conversa->email);
+        $this->assertSame('Maria', $conversa->nome, 'O nome dito na apresentação se perdeu no ponto da frase.');
         $this->assertSame(
             str_replace(':nome', 'Maria', config('assistente.persona.confirmacao_cadastro')),
             $texto

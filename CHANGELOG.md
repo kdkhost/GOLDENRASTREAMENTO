@@ -51,6 +51,9 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   máquina confirma o cadastro com a fala fixa em vez de mandar a frase ao provedor — que sem fonte
   respondia "já chamei a equipe" para quem só tinha chegado. Perguntas de verdade com e-mail no meio
   ("meu email é ..., quero a segunda via") continuam seguindo o caminho normal.
+- **O nome não engole mais a frase seguinte.** O ponto final passou a encerrar a captura dos padrões de
+  nome: em "sou a Maria. Meu e-mail é ..." o nome é "Maria", e não "Maria. Meu e-mail é teste" — que
+  estourava o teto de palavras e deixava a pessoa anônima na ficha.
 - **Resposta de erro não fecha mais a bolha.** O JavaScript tratava qualquer retorno sem `ativo` como
   "máquina desligada" e desaparecia com o widget; uma recusa de arquivo (422) ou um CSRF vencido (419) agora
   mostram a frase da regra e a conversa continua na tela.
