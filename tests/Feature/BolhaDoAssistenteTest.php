@@ -231,6 +231,77 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertSame(Motor::fraseDeEscalada(), $falas[1]['texto']);
     }
 
+    /** Cortesia não pergunta fato: o provedor responde mesmo sem fonte e a conversa não escala. */
+    public function test_a_saudacao_e_respondida_sem_fonte_e_nao_escala(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste']);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [['content' => ['parts' => [['text' => 'Oi! Tudo bem por aqui. Como posso ajudar você hoje?']]]]],
+        ], 200)]);
+
+        $this->postJson('/assistente/fala', ['texto' => 'Oi, tudo bem?'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta', 'ativo' => true]);
+
+        Http::assertSentCount(1);
+        $this->assertNull(Conversa::firstOrFail()->escala_motivo);
+
+        // A ordem levada ao modelo diz que é saudação: sem isso, a regra "sem fonte, chame a
+        // equipe" da persona voltaria a valer e a resposta seria a frase de escalada.
+        Http::assertSent(fn ($pedido): bool => str_contains(
+            (string) data_get($pedido->data(), 'systemInstruction.parts.0.text'),
+            'saudação'
+        ));
+    }
+
+    /** "Boa tarde" de quem chega é saudação: o modelo responde, a conversa não se despede. */
+    public function test_a_saudacao_de_quem_chega_nao_fecha_o_atendimento(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste']);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [['content' => ['parts' => [['text' => 'Boa tarde! Como posso ajudar você hoje?']]]]],
+        ], 200)]);
+
+        $resposta = $this->postJson('/assistente/fala', ['texto' => 'Boa tarde'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        Http::assertSentCount(1);
+
+        $this->assertNull(Conversa::firstOrFail()->avaliacao_pedida_em, 'Quem chegou recebeu pedido de nota.');
+        $this->assertSame(
+            'Boa tarde! Como posso ajudar você hoje?',
+            collect($resposta->json('falas'))->last()['texto']
+        );
+    }
+
+    /** Saudação na frente da pergunta não é adeus: a resposta do modelo chega normalmente. */
+    public function test_a_saudacao_com_pergunta_atras_nao_e_tratada_como_despedida(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste']);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [['content' => ['parts' => [['text' => 'O rastreador tem o valor publicado na loja; te passo a proposta.']]]]],
+        ], 200)]);
+
+        ConhecimentoItem::create([
+            'titulo' => 'Preço do rastreador',
+            'corpo' => 'O valor do rastreador está publicado na loja; a proposta sai com a instalação inclusa.',
+            'tags' => 'rastreador, preco, valor',
+            'origem' => 'painel',
+            'ativo' => '1',
+        ]);
+
+        $resposta = $this->postJson('/assistente/fala', ['texto' => 'Boa tarde, quero saber o preço do rastreador'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        Http::assertSentCount(1);
+        $this->assertSame(
+            'O rastreador tem o valor publicado na loja; te passo a proposta.',
+            collect($resposta->json('falas'))->last()['texto']
+        );
+    }
+
     /** Com fonte e provedor, a resposta vem da máquina e a fonte fica gravada junto dela. */
     public function test_a_pergunta_com_fonte_recebe_a_resposta_do_provedor_com_a_prova_gravada(): void
     {

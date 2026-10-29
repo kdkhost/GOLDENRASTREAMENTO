@@ -323,6 +323,30 @@ class ChavesDeIntegracaoTest extends TestCase
         $this->assertSame(Fabrica::opcoesDeVoz(), $campos->firstWhere('chave', 'assistente_voz_padrao')['opcoes']);
     }
 
+    /**
+     * O provedor aposentou o modelo que estava gravado: a chamada cai no padrão da casa em vez de
+     * escalar todo cliente, e a tela de chaves diz que a escolha ficou no passado.
+     */
+    public function test_o_modelo_aposentado_cai_no_padrao_da_casa_em_vez_de_derrubar_o_chat(): void
+    {
+        ChavesDeIntegracao::guardar('assistente_rodada_conversa', 'gemini/gemini-2.5-flash');
+        ChavesDeIntegracao::aplicar();
+
+        $this->assertSame('gemini/gemini-2.5-flash', Fabrica::escolha('conversa'));
+
+        $rodada = Fabrica::rodada('conversa');
+        $this->assertSame(
+            (string) config('assistente.capacidades.conversa.padrao'),
+            $rodada['provedor'].'/'.$rodada['modelo']
+        );
+
+        $aviso = collect(Fabrica::faltando())
+            ->first(fn (string $linha): bool => str_contains($linha, 'saiu do catálogo'));
+
+        $this->assertNotNull($aviso, 'A tela não avisa que a escolha gravada saiu do catálogo.');
+        $this->assertStringContainsString('gemini/gemini-2.5-flash', $aviso);
+    }
+
     public function test_o_painel_recusa_o_modelo_que_nao_existe_naquela_capacidade(): void
     {
         $this->actingAs($this->admin)

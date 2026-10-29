@@ -21,6 +21,7 @@ final class Chamada
      * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string}>  $imagens
      * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string}>  $documentos
      * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string}>  $audios
+     * @param  bool  $cortesia  a fala é só saudação — não pergunta fato, e pode ser respondida sem fonte
      */
     public function __construct(
         public string $pergunta,
@@ -34,6 +35,7 @@ final class Chamada
         public ?int $userId = null,
         public ?string $capacidade = null,
         public ?string $voz = null,
+        public bool $cortesia = false,
     ) {}
 
     /** A chamada tem mídia? É o que liga a capacidade de visão/documento no lugar da conversa pura. */

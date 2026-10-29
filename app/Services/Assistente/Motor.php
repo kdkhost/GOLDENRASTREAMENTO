@@ -17,7 +17,9 @@ use Throwable;
  * **Sem fonte, não se responde.** Com `assistente.resposta.so_com_fonte` ligado, uma pergunta de
  * conversa sem item de conhecimento achado pela `Busca` não chega ao provedor: a máquina escala
  * para a equipe. É a regra que impede o preço inventado, e ela vale para o site, para o funil e
- * para o chamado igualmente porque está na frente, não nas views.
+ * para o chamado igualmente porque está na frente, não nas views. A exceção é a cortesia — "oi",
+ * "bom dia" —, que não pergunta nada e por isso não tem fonte a exigir; sem ela, o cliente que só
+ * cumprimentou recebia de volta "já chamei a equipe".
  *
  * **Nada de exceção no chat.** Uma chave que falta, um provedor que respondeu 429 ou um modelo que
  * mudou de nome viram `Resposta::escalada()` com o motivo gravado — o cliente lê "vou chamar
@@ -30,7 +32,7 @@ final class Motor
     {
         $capacidade = $chamada->capacidade ?? 'conversa';
 
-        if ($capacidade === 'conversa' && self::exigeFonte() && $chamada->fontes === []) {
+        if ($capacidade === 'conversa' && self::exigeFonte() && $chamada->fontes === [] && ! $chamada->cortesia) {
             return Resposta::escalada('sem_fonte', Assistente::fraseDeEscalada());
         }
 

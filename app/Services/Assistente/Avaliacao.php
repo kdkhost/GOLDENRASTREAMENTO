@@ -41,9 +41,12 @@ final class Avaliacao
         '/\b(?:era|eh)\s+(?:so|isso|apenas|só)\s+(?:isso|que\s+isso)?\b/',
         '/\bpor\s+hoje\s+eh\s+(?:isso|so\s+isso)\b/',
         '/\b(?:obrigad[ao]|obg|valeu|brigado)\s*[.,!]?\s*(?:era|por\s+agora|tanto|mesmo)?\b.{0,12}\b(?:isso|agora|mais)\b/',
-        '/\b(?:ate\s+(?:mais|logo|um\s+momento)|tenha\s+um\s+otimo\s+dia|boa\s+(?:noite|tarde|manha))\b/',
+        '/\b(?:ate\s+(?:mais|logo|um\s+momento)|tenha\s+um\s+otimo\s+dia)\b/',
         '/\b(?:pode\s+(?:encerrar|fechar)|encerra\s+(?:ai|por)\s+favou?|acabou\s+por\s+aqui)\b/',
     ];
+
+    /** A saudação que também é adeus — mas só quando é a fala inteira (ver `eDespedida()`). */
+    private const SAUDACAO = '/\bboa\s+(?:noite|tarde|manha)\b/';
 
     /** Os números por extenso, porque nem todo mundo digita 5 num celular. */
     private const EXTENSO = [
@@ -63,7 +66,13 @@ final class Avaliacao
         return max(1, (int) config('assistente.avaliacao.minimo_de_falas', 3));
     }
 
-    /** A fala é uma despedida? */
+    /**
+     * A fala é uma despedida?
+     *
+     * "Boa noite" sozinho encerra o atendimento de quem está saindo; "boa tarde, quero saber o
+     * preço" é pergunta com cortesia na frente, e fechar ali deixaria o cliente sem resposta — a
+     * saudação só conta como adeus quando é a fala inteira.
+     */
     public static function eDespedida(string $fala): bool
     {
         $texto = self::semAcento($fala);
@@ -74,7 +83,7 @@ final class Avaliacao
             }
         }
 
-        return false;
+        return preg_match(self::SAUDACAO, $texto) === 1 && Busca::eCortesia($fala);
     }
 
     /**

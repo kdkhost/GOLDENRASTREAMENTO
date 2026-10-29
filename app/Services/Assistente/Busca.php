@@ -19,6 +19,12 @@ use Illuminate\Support\Str;
  * título, 2 se está nos assuntos e 1 se está no corpo. O resultado é um número entre zero e um, e
  * `assistente.resposta.minimo_de_fonte` é o piso a partir do qual se pode chamar aquilo de fonte.
  * Abaixo do piso, a máquina não responde: escala.
+ *
+ * A cobertura sozinha puniria quem escreve uma pergunta comprida: "como acesso a plataforma de
+ * monitoramento?" cobre metade de um item cujo título é exatamente "plataforma" e fica abaixo do
+ * piso. Por isso existe a âncora — uma palavra que o administrador pôs no título ou nos assuntos
+ * daquele item é sinal curado de que o item trata do assunto, e vence o piso. Palavra achada só no
+ * corpo continua devendo a cobertura: o corpo é texto corrido, e ali toda palavra aparece.
  */
 final class Busca
 {
@@ -33,13 +39,24 @@ final class Busca
         'ja', 'já', 'sim', 'nao', 'não', 'oi', 'ola', 'olá', 'bom', 'boa', 'por favor',
     ];
 
+    /**
+     * Saudações e agradecimentos: as palavras que abrem ou fecham uma conversa sem perguntar fato
+     * nenhum. Ficam separadas das `PARADAS` porque o atendimento precisa distingui-las — uma fala
+     * feita só disto é cortesia, e cortesia se responde mesmo sem fonte; "tem como?" é feito só de
+     * palavras vazias, mas não é cortesia, e continua devendo uma fonte para ser respondida.
+     */
+    private const CORTESIAS = [
+        'oi', 'ola', 'opa', 'eai', 'ai', 'bom', 'boa', 'dia', 'tarde', 'noite', 'tudo', 'bem',
+        'beleza', 'saudacoes', 'favor', 'obrigado', 'obrigada', 'obg', 'valeu', 'brigado', 'agradeco',
+    ];
+
     /** Quantos itens a varredura lê por pergunta. Acima disto, a lista ativa está fora de uso. */
     private const LIMIAR_DE_VARREDURA = 800;
 
     /**
      * As fontes que respondem à pergunta, na ordem em que servem para a IA.
      *
-     * @return array<int, array{id: int, titulo: string, texto: string, procedencia: string, pontuacao: float}>
+     * @return array<int, array{id: int, titulo: string, texto: string, procedencia: string, pontuacao: float, ancorado: bool}>
      */
     public static function fontes(string $pergunta, ?int $limite = null): array
     {
@@ -58,7 +75,7 @@ final class Busca
             ->limit(self::LIMIAR_DE_VARREDURA)
             ->get()
             ->map(fn (ConhecimentoItem $item): array => self::comPontuacao($item, $palavras))
-            ->filter(fn (array $item): bool => $item['pontuacao'] >= $piso)
+            ->filter(fn (array $item): bool => $item['pontuacao'] >= $piso || $item['ancorado'])
             ->sortByDesc('pontuacao')
             ->take($limite)
             ->values()
@@ -71,6 +88,36 @@ final class Busca
     public static function temFonte(string $pergunta): bool
     {
         return self::fontes($pergunta, 1) !== [];
+    }
+
+    /**
+     * A fala é só cortesia — "oi", "bom dia", "tudo bem?" — e não pergunta fato nenhum? Nela não há
+     * o que o conhecimento da casa responda: a máquina cumprimenta de volta, e é o único caso em
+     * que o atendimento pode abrir a boca sem fonte.
+     */
+    public static function eCortesia(string $texto): bool
+    {
+        $palavras = self::dividir($texto);
+
+        if ($palavras === []) {
+            return false;
+        }
+
+        $saudou = false;
+
+        foreach ($palavras as $palavra) {
+            if (in_array($palavra, self::CORTESIAS, true)) {
+                $saudou = true;
+
+                continue;
+            }
+
+            if (! in_array($palavra, self::PARADAS, true)) {
+                return false;
+            }
+        }
+
+        return $saudou;
     }
 
     /**
@@ -92,6 +139,9 @@ final class Busca
      * A nota de um item: para cada palavra da pergunta, o melhor lugar em que ela foi achada
      * (título pesa 3, assuntos 2, corpo 1) sobre o máximo possível. Dividir pelo total de palavras
      * é o que torna a nota comparável entre perguntas de três e de quinze palavras.
+     *
+     * `ancorado` nasce verdadeiro quando uma palavra da pergunta está no título ou nos assuntos —
+     * os dois campos que o administrador escreve à mão para dizer do que o item trata.
      */
     private static function comPontuacao(ConhecimentoItem $item, array $palavras): array
     {
@@ -101,14 +151,17 @@ final class Busca
 
         $alcance = 0;
         $nota = 0.0;
+        $ancorado = false;
 
         foreach ($palavras as $palavra) {
             $alcance += 3;
 
             if (in_array($palavra, $titulos, true)) {
                 $nota += 3;
+                $ancorado = true;
             } elseif (in_array($palavra, $assuntos, true)) {
                 $nota += 2;
+                $ancorado = true;
             } elseif (in_array($palavra, $corpo, true)) {
                 $nota += 1;
             }
@@ -120,6 +173,7 @@ final class Busca
             'texto' => $item->textoParaIA(),
             'procedencia' => $item->procedencia(),
             'pontuacao' => $alcance === 0 ? 0.0 : round($nota / $alcance, 4),
+            'ancorado' => $ancorado,
         ];
     }
 

@@ -3,6 +3,44 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.52.0] - 2026-10-29
+
+### Corrigido
+- **As chaves estavam certas e o robô não respondia porque os modelos tinham sido aposentados.** Toda
+  capacidade estava presa na geração Gemini 2.5 (`gemini-2.5-flash`, `gemini-2.5-pro`,
+  `gemini-2.5-flash-preview-tts`), e o Google passou a responder **404 "não está mais disponível para novas
+  contas"** para esses nomes — o `Motor` convertia o 404 na frase de escalada, e o cliente lia "já chamei
+  alguém da equipe" logo depois de a chave ter sido salva. O log de chamadas provava: desde a gravação das
+  chaves não houve **uma única** chamada à IA. A lista do painel passou aos modelos vivos (conversa, visão e
+  documento no `gemini-3-flash-preview`, voz no `gemini-3.8-flash-tts`, com as alternativas testadas uma a
+  uma com a chave da casa) e o padrão da casa acompanhou.
+- **Modelo que sai do catálogo não cala mais o atendimento.** `Fabrica::rodada()` confere a escolha gravada
+  no painel contra a lista daquela capacidade e, quando o provedor aposentou o nome, cai no padrão da casa
+  em vez de deixar a chamada morrer — a tela de chaves avisa que a escolha ficou no passado e mostra em que
+  modelo o atendimento está até alguém escolher outro. A troca de geração acontece sem aviso; o sistema
+  agora se cura sozinho.
+- **A pergunta comprida deixou de esconder a fonte.** A cobertura da busca era dividida pelo número de
+  palavras da pergunta, e "quero testar a plataforma tem como?" ficava em `0,3333` contra um piso de `0,34`
+  mesmo com um item cujo título é "plataforma" — o cliente ouvia a frase de escalada. A palavra que o
+  administrador pôs no **título ou nos assuntos** agora ancora o item e vence o piso; a palavra achada só no
+  corpo continua devendo a cobertura mínima, porque no corpo toda palavra aparece.
+- **Cortesia não vai mais para a fila da equipe.** "Oi, tudo bem?" era mandado ao provedor sem fonte e o
+  piso de fonte obrigatória transformava a saudação em "chamei a equipe". `Busca::eCortesia()` reconhece as
+  falas feitas só de saudação (ao menos uma palavra de cortesia e nenhuma de conteúdo), o `Motor` as isenta
+  da fonte obrigatória e a ordem da conversa diz ao modelo que ali é só cumprimentar — sem inventar preço,
+  prazo ou condição. "Tem como?", feita só de palavras vazias, **não** é cortesia e continua devendo fonte.
+- **"Boa tarde" deixou de ser tratado como despedida.** O padrão de despedida da avaliação aceitava um
+  cumprimento solto, e quem abria a conversa com "boa tarde" ou "boa noite" recebia o pedido de nota e o
+  atendimento fechava antes de começar — pior ainda em "boa tarde, quero saber o preço", que é pergunta. O
+  cumprimento só conta como adeus quando a fala inteira é cortesia, e a primeira fala do cliente nunca
+  encerra o atendimento.
+
+### Testado
+- `BuscaDoAssistenteTest` prova a âncora do título, o piso ainda valendo para o corpo e a fronteira entre
+  cortesia e pergunta de conteúdo; `BolhaDoAssistenteTest` fecha uma saudação de ponta a ponta (provedor
+  chamado uma vez, conversa sem escalada e a ordem de saudação no pedido); `ChavesDeIntegracaoTest` grava um
+  modelo aposentado e confere que a chamada cai no padrão e que a tela avisa. Suite completa: 714 testes.
+
 ## [2.51.1] - 2026-10-29
 
 ### Corrigido

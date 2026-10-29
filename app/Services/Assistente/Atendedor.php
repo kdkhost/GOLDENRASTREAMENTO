@@ -150,7 +150,12 @@ final class Atendedor
         // chamei a equipe" — a pior maneira de fechar um atendimento concluído, ainda mais com a
         // pesquisa aberta na tela esperando nota. É aqui, e não depois da resposta, que ela vira o
         // fim de conversa: sem IA no ar o atendimento ainda se despede, e sem custo de token.
-        if (Avaliacao::eDespedida($pergunta)) {
+        //
+        // A exceção é a saudação de abertura: "boa tarde" de quem chega é o começo, não o fim —
+        // pedir nota e se despedir da primeira pessoa que chegou seria o atendimento mais curto.
+        $cortesia = Busca::eCortesia($pergunta);
+
+        if (Avaliacao::eDespedida($pergunta) && ! ($cortesia && self::primeiraFalaDoCliente($conversa))) {
             return self::pecaAValiacao($conversa, $ficha)
                 ?? self::fale($conversa, $ficha->textoDespedida($conversa->nome));
         }
@@ -164,10 +169,11 @@ final class Atendedor
 
         $resposta = Motor::responder(new Chamada(
             pergunta: $pergunta,
-            instrucoes: self::ordemDaConversa($conversa, $ficha, $pedeONome),
+            instrucoes: self::ordemDaConversa($conversa, $ficha, $pedeONome, $cortesia),
             historico: self::historico($conversa, $ultima),
             fontes: $fontes,
             conversaId: $conversa->id,
+            cortesia: $cortesia,
         ));
 
         $fala = ConversaMensagem::create([
@@ -421,6 +427,16 @@ final class Atendedor
     }
 
     /**
+     * A fala é a primeira do cliente nesta conversa? Serve à saudação ambígua: "boa tarde" de
+     * quem chega abre o atendimento, e "boa tarde" no meio dele fecha — a mesma frase, dois
+     * significados, decididos por onde ela está.
+     */
+    private static function primeiraFalaDoCliente(Conversa $conversa): bool
+    {
+        return $conversa->mensagens()->where('autor', 'cliente')->count() <= 1;
+    }
+
+    /**
      * A fala de agradecimento depois de uma nota dada por outro caminho que não o chat — hoje, o
      * toque nas estrelas da bolha. É pública porque quem grava a nota não é este atendedor, mas a
      * régua de quem responde é: a frase continua sendo a da ficha, e a conversa continua da máquina.
@@ -454,9 +470,14 @@ final class Atendedor
      * outro lado. É aqui que o nome entra na boca da máquina, porque o atendimento formal da casa
      * não pode depender de a IA ter lido a frase em que a pessoa se apresentou.
      */
-    private static function ordemDaConversa(Conversa $conversa, Assistente $ficha, bool $pedeONome): array
+    private static function ordemDaConversa(Conversa $conversa, Assistente $ficha, bool $pedeONome, bool $cortesia = false): array
     {
         $ordem = explode("\n", $ficha->instrucoes());
+
+        if ($cortesia) {
+            $ordem[] = 'Esta fala é só uma saudação: cumprimente de volta em uma frase e diga como você pode ajudar. '
+                .'Não diga que não sabe, não chame a equipe e não invente preço, prazo, cobertura, especificação, desconto ou condição.';
+        }
 
         if (filled($conversa->nome)) {
             $ordem[] = 'A pessoa do outro lado se chama '.$conversa->nome.'. Trate-a pelo nome quando fizer sentido, sem repeti-lo em toda frase.';

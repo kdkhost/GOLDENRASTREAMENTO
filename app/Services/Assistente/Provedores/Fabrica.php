@@ -7,6 +7,7 @@ use App\Services\Assistente\Contratos\PodeFalar;
 use App\Services\Assistente\Contratos\PodeTranscrever;
 use App\Services\Assistente\Excecoes\CapacidadeNaoOferecida;
 use App\Services\Assistente\Excecoes\CredenciaisAusentes;
+use App\Support\ChavesDeIntegracao;
 
 /**
  * Quem atende cada capacidade, agora.
@@ -35,11 +36,25 @@ final class Fabrica
      */
     public static function rodada(string $capacidade): array
     {
-        $escolhido = trim((string) config("assistente.rodada.{$capacidade}"));
-        $escolhido = $escolhido !== '' ? $escolhido : (string) config("assistente.capacidades.{$capacidade}.padrao");
-        $partes = explode('/', $escolhido, 2);
+        $escolhida = self::escolha($capacidade);
 
-        return ['provedor' => $partes[0] ?? '', 'modelo' => $partes[1] ?? ''];
+        // Um modelo que o provedor aposentou (a troca de geração acontece sem aviso: o Gemini 2.5
+        // passou a responder 404 "no longer available to new users" com a chave certa na mão) não
+        // pode calar o atendimento. A casa volta ao padrão da capacidade, e a tela de chaves diz
+        // que a escolha ficou no passado — em vez de escalar todo cliente para a equipe.
+        if (! self::oferecida($capacidade, $escolhida)) {
+            $escolhida = trim((string) config("assistente.capacidades.{$capacidade}.padrao"));
+        }
+
+        return self::partir($escolhida);
+    }
+
+    /** A escolha como o painel a gravou (`provedor/modelo`), ou o padrão da casa quando não há. */
+    public static function escolha(string $capacidade): string
+    {
+        $escolhida = trim((string) config("assistente.rodada.{$capacidade}"));
+
+        return $escolhida !== '' ? $escolhida : trim((string) config("assistente.capacidades.{$capacidade}.padrao"));
     }
 
     public static function rotuloDe(string $provedor): string
@@ -96,10 +111,13 @@ final class Fabrica
         $faltando = [];
 
         foreach ((array) config('assistente.capacidades') as $capacidade => $definicao) {
+            $escolhida = self::escolha($capacidade);
             $rodada = self::rodada($capacidade);
 
-            if (! isset(self::CLASSES[$rodada['provedor']])) {
-                $faltando[] = $definicao['rotulo'].': o provedor "'.$rodada['provedor'].'" não é conhecido.';
+            if (! self::oferecida($capacidade, $escolhida)) {
+                $faltando[] = $definicao['rotulo'].': o modelo escolhido ('.$escolhida.') saiu do catálogo; '
+                    .'o atendimento está no padrão '.$rodada['provedor'].'/'.$rodada['modelo']
+                    .' até alguém escolher outro em '.ChavesDeIntegracao::CAMINHO_NO_PAINEL.'.';
 
                 continue;
             }
@@ -108,11 +126,6 @@ final class Fabrica
                 $faltando[] = $definicao['rotulo'].': falta a chave de '.self::rotuloDe($rodada['provedor']).'.';
 
                 continue;
-            }
-
-            if (! self::modeloOferecido($capacidade, $rodada['provedor'], $rodada['modelo'])) {
-                $faltando[] = $definicao['rotulo'].': o modelo "'.$rodada['modelo'].'" não está na lista de '
-                    .self::rotuloDe($rodada['provedor']).' para esta capacidade.';
             }
         }
 
@@ -172,6 +185,23 @@ final class Fabrica
         }
 
         return $opcoes;
+    }
+
+    /** A escolha tem provedor conhecido e modelo na lista desta capacidade? */
+    private static function oferecida(string $capacidade, string $escolhida): bool
+    {
+        $rodada = self::partir($escolhida);
+
+        return isset(self::CLASSES[$rodada['provedor']])
+            && self::modeloOferecido($capacidade, $rodada['provedor'], $rodada['modelo']);
+    }
+
+    /** @return array{provedor: string, modelo: string} */
+    private static function partir(string $escolhida): array
+    {
+        $partes = explode('/', $escolhida, 2);
+
+        return ['provedor' => $partes[0] ?? '', 'modelo' => $partes[1] ?? ''];
     }
 
     private static function modeloOferecido(string $capacidade, string $provedor, string $modelo): bool
