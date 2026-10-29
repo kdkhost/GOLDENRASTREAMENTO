@@ -289,7 +289,7 @@ class IdentificacaoEAvaliacaoPeloAssistenteTest extends TestCase
         $texto = $this->diga($conversa, '5, parabéns pelo atendimento');
 
         $conversa->refresh();
-        $this->assertSame(config('assistente.persona.agradecimento_avaliacao'), $texto);
+        $this->assertSame(str_replace(':nome', 'Maria', config('assistente.persona.agradecimento_avaliacao')), $texto);
         $this->assertSame(5, (int) $conversa->avaliacao_nota);
         $this->assertStringContainsString('parabéns', (string) $conversa->avaliacao_texto);
         $this->assertNotNull($conversa->avaliada_em);
@@ -313,7 +313,10 @@ class IdentificacaoEAvaliacaoPeloAssistenteTest extends TestCase
             'conversa_id' => $conversa->id, 'autor' => 'sistema',
             'corpo' => 'Avaliação do atendimento: 4/5',
         ]);
-        $this->assertSame(config('assistente.persona.agradecimento_avaliacao'), (string) collect($resposta->json('falas'))->last()['texto']);
+        $this->assertSame(
+            str_replace(':nome', 'Maria', config('assistente.persona.agradecimento_avaliacao')),
+            (string) collect($resposta->json('falas'))->last()['texto']
+        );
 
         // Pesquisa respondida não se responde duas vezes: o toque repetido devolve a conversa como
         // está, e a bolha apaga as estrelas.
@@ -433,6 +436,65 @@ class IdentificacaoEAvaliacaoPeloAssistenteTest extends TestCase
             ->assertSuccessful();
 
         $this->postJson(route('site.assistente.avaliar'), ['nota' => 5])->assertSuccessful();
+    }
+
+    /**
+     * O e-mail dito no chat acha a ficha do cliente — e a casa reconhece a pessoa pelo cadastro.
+     *
+     * É a promessa do atendimento personalizado: o endereço não é só anotado, é a chave que liga o
+     * fio à ficha que o vendedor cuida. A conversa ganha o cliente, o nome que ela ainda não tinha e
+     * a fala de sistema que explica à equipe por que aquela ficha está ali.
+     */
+    public function test_o_email_dito_na_conversa_localiza_o_cadastro_do_cliente(): void
+    {
+        $cliente = $this->ficha();
+        Http::fake();
+        $conversa = $this->conversa();
+
+        $texto = $this->diga($conversa, 'meu email é maria@exemplo.com.br');
+
+        $conversa->refresh();
+        $this->assertSame($cliente->id, $conversa->customer_id, 'O e-mail não ligou a conversa ao cadastro.');
+        $this->assertSame('maria@exemplo.com.br', $conversa->email);
+        $this->assertSame('Maria Compradora', $conversa->nome, 'A ficha não completou o nome que a conversa não tinha.');
+        $this->assertSame(
+            str_replace(':nome', 'Maria', config('assistente.persona.confirmacao_cadastro')),
+            $texto
+        );
+        $this->assertDatabaseHas('conversas_mensagens', [
+            'conversa_id' => $conversa->id,
+            'autor' => 'sistema',
+            'corpo' => 'Cadastro localizado pelo e-mail: cliente #'.$cliente->id.' — '.$cliente->nome.'.',
+        ]);
+
+        Http::assertNothingSent();
+        Mail::assertNothingSent();
+    }
+
+    /**
+     * O endereço no meio de um assunto também acha o cadastro — e, achando, destranca o pedido.
+     *
+     * "meu email é ..., quero a segunda via" chega numa fala só no celular. O e-mail é aproveitado
+     * sem esperar a casa perguntar, e o pedido que já vinha na frase abre na hora: pedir de novo o
+     * endereço que a pessoa acabou de escrever seria o formulário que ela não quer.
+     */
+    public function test_o_email_no_meio_do_assunto_destranca_o_pedido_personalizado(): void
+    {
+        $cliente = $this->ficha();
+        Http::fake();
+        $conversa = $this->conversa();
+
+        $this->diga($conversa, 'Maria Compradora');
+        $texto = $this->diga($conversa, 'oi, meu email é comercial@exemplo.com.br, quero a segunda via');
+
+        $conversa->refresh();
+        $this->assertSame($cliente->id, $conversa->customer_id);
+        $this->assertSame('comercial@exemplo.com.br', $conversa->email);
+        $this->assertSame('segunda_via', $conversa->acao, 'O pedido não abriu com o cadastro localizado.');
+        $this->assertSame('conferir', $conversa->acao_passo);
+        $this->assertStringContainsString('contrei a conta', $texto);
+
+        Http::assertNothingSent();
     }
 
     /** A conta do financeiro, no ar — só o que a ação consulta depois de os dados baterem. */

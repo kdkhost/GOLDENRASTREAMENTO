@@ -29,6 +29,8 @@
                         hint="O que ele diz quando o cliente pede atendimento personalizado sem ter se identificado. É por esse e-mail que a conta é encontrada. Quantas vezes a pergunta se repete se ajusta em Sistema → Configurações → Chaves de integração → Assistente." />
                     <x-admin.field name="confirmacao_email" type="textarea" label="Resposta a quem disse o e-mail" :value="$assistente->confirmacao_email" col="col-12" :rows="2" maxlength="500" :opcional="true"
                         hint="A frase de confirmação logo depois de a pessoa informar o endereço. Escreva :nome para usar o nome dela." />
+                    <x-admin.field name="confirmacao_cadastro" type="textarea" label="Resposta a quem foi reconhecido no cadastro" :value="$assistente->confirmacao_cadastro" col="col-12" :rows="2" maxlength="500" :opcional="true"
+                        hint="Dita no lugar da anterior quando o e-mail encontra um cliente na ficha do CRM. É o que avisa que a conta já foi localizada. Escreva :nome para chamá-lo." />
                     <x-admin.field name="pedido_avaliacao" type="textarea" label="Pedido de avaliação" :value="$assistente->pedido_avaliacao" col="col-12" :rows="2" maxlength="500" :opcional="true"
                         hint="Dito uma única vez no fim do atendimento — quando a máquina resolveu o assunto ou quando o cliente se despediu. Escreva :nome para chamá-lo." />
                     <x-admin.field name="agradecimento_avaliacao" type="textarea" label="Agradecimento pela nota" :value="$assistente->agradecimento_avaliacao" col="col-12" :rows="2" maxlength="500" :opcional="true"

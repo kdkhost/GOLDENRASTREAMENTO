@@ -6,14 +6,17 @@ use App\Mail\ConversaEscalada;
 use App\Models\Assistente;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
+use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\Setting;
 use App\Services\Assistente\Contratos\Acao;
 use App\Services\Atribuidor;
 use App\Support\Notifica;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
@@ -36,14 +39,31 @@ final class Atendedor
      */
     public static function dizer(Conversa $conversa, string $texto, string $tipo = 'texto'): ?ConversaMensagem
     {
+        $texto = mb_substr(trim($texto), 0, (int) config('assistente.resposta.caracteres_max', 900) * 3);
+
         ConversaMensagem::create([
             'conversa_id' => $conversa->id,
             'autor' => 'cliente',
             'tipo' => $tipo,
-            'corpo' => mb_substr(trim($texto), 0, (int) config('assistente.resposta.caracteres_max', 900) * 3),
+            'corpo' => $texto,
         ]);
 
         self::tocarUltimaFala($conversa);
+
+        // Quando quem responde é a equipe — ou a máquina está desligada — a identificação da fala
+        // continua valendo: o endereço escrito no chat é o que liga a conversa ao cadastro, e é na
+        // caixa do painel que a ficha do cliente aparece ao lado de quem está falando.
+        $daMaquina = Assistente::garanta()->ativo
+            && $conversa->respondido_por_equipe_em === null
+            && $conversa->status !== 'fechada';
+
+        if (! $daMaquina && blank($conversa->email)) {
+            $email = Identificacao::extrair($texto);
+
+            if ($email !== null) {
+                Identificacao::vincular($conversa, $email);
+            }
+        }
 
         return self::atender($conversa);
     }
@@ -80,7 +100,7 @@ final class Atendedor
     {
         $ficha = Assistente::garanta();
 
-        if (! $ficha->ativo || $conversa->respondido_por_equipe_em !== null) {
+        if (! $ficha->ativo || $conversa->respondido_por_equipe_em !== null || $conversa->status === 'fechada') {
             return null;
         }
 
@@ -107,7 +127,7 @@ final class Atendedor
         }
 
         $nomeDito = self::guardeONome($conversa, $pergunta, $ficha);
-        $emailDito = self::guardeOEmail($conversa, $pergunta, $ficha);
+        $emailDito = self::guardeOEmail($conversa, $pergunta);
 
         $pedida = Acoes::pedidaPela($pergunta) ?? self::acaoEsperandoIdentificacao($conversa);
 
@@ -130,7 +150,11 @@ final class Atendedor
         }
 
         if ($emailDito !== null) {
-            return self::fale($conversa, $ficha->textoConfirmacaoEmail($conversa->nome));
+            // O e-mail achou a ficha do cliente: a casa reconhece a pessoa pelo que já sabe dela,
+            // e não pela cortesia de ter guardado um endereço.
+            return self::fale($conversa, $emailDito['cliente'] !== null
+                ? $ficha->textoConfirmacaoCadastro($conversa->nome)
+                : $ficha->textoConfirmacaoEmail($conversa->nome));
         }
 
         // A nota também se colhe por regra, não por modelo: a última fala foi o pedido e esta é a
@@ -165,7 +189,7 @@ final class Atendedor
         // As fontes são achadas uma vez e servem às duas coisas: alimentar a chamada e registrar na
         // fala o que a sustentou. Pedir duas vezes à mesma busca sairia diferente se alguém
         // editasse o conhecimento entre as duas — e a prova gravada deixaria de ser a da resposta.
-        $fontes = Busca::fontes($pergunta);
+        $fontes = self::fontesDaConversa($conversa, $ultima, $pergunta);
 
         $resposta = Motor::responder(new Chamada(
             pergunta: $pergunta,
@@ -176,17 +200,7 @@ final class Atendedor
             cortesia: $cortesia,
         ));
 
-        $fala = ConversaMensagem::create([
-            'conversa_id' => $conversa->id,
-            'autor' => 'assistente',
-            'tipo' => 'texto',
-            'corpo' => mb_substr(trim($resposta->texto), 0, (int) config('assistente.resposta.caracteres_max')),
-            'fontes_json' => $resposta->respondeu() ? self::fontesParaLog($fontes) : [],
-            'provedor' => $resposta->provedor,
-            'modelo' => $resposta->modelo,
-            'tokens_entrada' => $resposta->tokensEntrada,
-            'tokens_saida' => $resposta->tokensSaida,
-        ]);
+        $fala = self::graveResposta($conversa, $resposta, $resposta->respondeu() ? self::fontesParaLog($fontes) : []);
 
         if (! $resposta->respondeu()) {
             self::chameEquipe($conversa, $resposta->motivoDeEscalada ?? 'sem_fonte', $pergunta);
@@ -195,6 +209,164 @@ final class Atendedor
         self::tocarUltimaFala($conversa);
 
         return $fala;
+    }
+
+    /**
+     * Um arquivo do cliente — voz, foto ou documento — entra na conversa e é lido.
+     *
+     * O arquivo é uma fala como qualquer outra: fica gravado com o caminho e o nome original, e o
+     * que a máquina entendeu dele vira a resposta da casa. A legenda que veio junto é a pergunta,
+     * porque quem manda uma nota fiscal e escreve "essa está paga?" já fez a pergunta certa.
+     *
+     * Áudio não é lido pela conversa: ele é transcrito primeiro, e a transcrição é a fala. Assim a
+     * pergunta falada passa pela mesma identificação e pela mesma busca de fonte de uma pergunta
+     * escrita — e a resposta que a pessoa ouve é a resposta que a casa daria por texto.
+     *
+     * As regras de tipo, extensão e tamanho são da `Midia`, que é onde o painel vira checagem. A
+     * recusa sai como `ValidationException` porque é o navegador que precisa ler a frase.
+     */
+    public static function receberArquivo(Conversa $conversa, UploadedFile $arquivo, string $legenda = ''): ?ConversaMensagem
+    {
+        $tipo = Midia::tipoDe($arquivo);
+        $recusa = Midia::recusa($arquivo, $tipo);
+
+        if ($recusa !== null) {
+            throw ValidationException::withMessages(['arquivo' => $recusa]);
+        }
+
+        $peca = [
+            'caminho' => Midia::guardar($arquivo, $tipo),
+            'mime' => (string) ($arquivo->getMimeType() ?: 'application/octet-stream'),
+            'nome' => (string) $arquivo->getClientOriginalName(),
+        ];
+
+        $legenda = mb_substr(trim(strip_tags($legenda)), 0, 1000);
+
+        $fala = ConversaMensagem::create([
+            'conversa_id' => $conversa->id,
+            'autor' => 'cliente',
+            'tipo' => $tipo,
+            'corpo' => $legenda !== '' ? $legenda : null,
+            'midia' => $peca['caminho'],
+            'midia_nome' => $peca['nome'],
+            'midia_mime' => $peca['mime'],
+            'midia_bytes' => (int) $arquivo->getSize(),
+        ]);
+
+        self::tocarUltimaFala($conversa);
+
+        return self::respondaMidia($conversa, $fala, $tipo, $peca, $legenda);
+    }
+
+    /**
+     * O fim que o cliente pediu: a conversa fecha e a tela troca o campo de envio pelo convite a
+     * começar outra.
+     *
+     * A nota é pedida antes do fechamento, e não depois, porque a pesquisa só nasce enquanto a
+     * conversa ainda é da máquina e ainda não foi parar nas mãos da equipe. Sem nota a pedir, a
+     * casa se despede com o texto da ficha — a mesma régua da despedida escrita no chat.
+     *
+     * A sessão continua apontando para esta conversa: é ela que a tela consulta para pintar o
+     * histórico e receber a nota das estrelas. Quem começa outra pede uma conversa nova.
+     */
+    public static function encerrar(Conversa $conversa): void
+    {
+        if ($conversa->status === 'fechada') {
+            return;
+        }
+
+        $ficha = Assistente::garanta();
+
+        if ($ficha->ativo && $conversa->respondido_por_equipe_em === null) {
+            if (self::pecaAValiacao($conversa, $ficha) === null) {
+                self::fale($conversa, $ficha->textoDespedida($conversa->nome));
+            }
+        }
+
+        ConversaMensagem::create([
+            'conversa_id' => $conversa->id,
+            'autor' => 'sistema',
+            'tipo' => 'texto',
+            'corpo' => 'Conversa encerrada pelo cliente.',
+        ]);
+
+        $conversa->encerrarAcao();
+        $conversa->registrarStatus('fechada');
+        self::tocarUltimaFala($conversa);
+    }
+
+    /**
+     * A resposta a um arquivo: voz passa pela transcrição e a conversa segue; imagem e documento
+     * vão ao provedor na capacidade que sabe lê-los.
+     *
+     * A leitura de imagem e documento não passa pela tranca de fonte: o que sustenta a resposta é
+     * o próprio arquivo que o cliente mandou, não um item do conhecimento — e a capacidade certa já
+     * é a que o painel ligou para isso. Sem a máquina no ar, o arquivo fica na conversa para a
+     * equipe abrir, e é só isso que o cliente vê.
+     */
+    private static function respondaMidia(Conversa $conversa, ConversaMensagem $fala, string $tipo, array $peca, string $legenda): ?ConversaMensagem
+    {
+        $ficha = Assistente::garanta();
+
+        if (! $ficha->ativo || $conversa->respondido_por_equipe_em !== null || $conversa->status === 'fechada') {
+            return null;
+        }
+
+        if ($tipo === 'audio') {
+            $transcricao = self::transcreva($conversa, $peca);
+
+            if ($transcricao === null) {
+                self::chameEquipe($conversa, 'midia_nao_lida', 'O áudio enviado pelo cliente não pôde ser transcrito.');
+
+                return self::fale($conversa, 'Recebi o seu áudio, mas não consegui ouvi-lo por aqui. '
+                    .'Chamei a equipe — e, se puder, escreva a sua dúvida que eu respondo na hora.');
+            }
+
+            $fala->forceFill(['transcricao' => $transcricao])->save();
+
+            // A transcrição é a fala: daqui para frente é o atendimento de sempre, com nome,
+            // e-mail, fonte e despedida passando pela mesma régua de uma pergunta escrita.
+            return self::atender($conversa);
+        }
+
+        $pergunta = $legenda !== '' ? $legenda : match ($tipo) {
+            'imagem' => 'O que você vê nesta imagem?',
+            default => 'O que este documento diz?',
+        };
+
+        $resposta = Motor::responder(new Chamada(
+            pergunta: $pergunta,
+            instrucoes: self::ordemDaConversa($conversa, $ficha, false),
+            historico: self::historico($conversa, $fala),
+            imagens: $tipo === 'imagem' ? [$peca] : [],
+            documentos: $tipo === 'arquivo' ? [$peca] : [],
+            conversaId: $conversa->id,
+            capacidade: $tipo === 'imagem' ? 'visao' : 'documento',
+        ));
+
+        $respostaGravada = self::graveResposta($conversa, $resposta, []);
+
+        if (! $resposta->respondeu()) {
+            self::chameEquipe($conversa, $resposta->motivoDeEscalada ?? 'midia_nao_lida', $pergunta);
+        }
+
+        self::tocarUltimaFala($conversa);
+
+        return $respostaGravada;
+    }
+
+    /** O que o áudio dizia, ou nulo quando o provedor não deu conta de ouvi-lo. */
+    private static function transcreva(Conversa $conversa, array $peca): ?string
+    {
+        $resposta = Motor::transcrever(new Chamada(
+            pergunta: 'Transcreva literalmente o áudio do cliente, em português, sem comentar.',
+            audios: [$peca],
+            conversaId: $conversa->id,
+        ));
+
+        $texto = trim((string) $resposta->texto);
+
+        return $resposta->respondeu() && $texto !== '' ? $texto : null;
     }
 
     /**
@@ -214,6 +386,26 @@ final class Atendedor
         self::tocarUltimaFala($conversa);
 
         return $fala;
+    }
+
+    /**
+     * A resposta do provedor virando fala da casa. A prova da chamada (provedor, modelo, tokens e
+     * fontes) vai junto porque é por ela que a equipe confere de onde saiu cada frase — e as duas
+     * portas da resposta, conversa e arquivo, gravam pelo mesmo caminho.
+     */
+    private static function graveResposta(Conversa $conversa, Resposta $resposta, array $fontes): ConversaMensagem
+    {
+        return ConversaMensagem::create([
+            'conversa_id' => $conversa->id,
+            'autor' => 'assistente',
+            'tipo' => 'texto',
+            'corpo' => mb_substr(trim($resposta->texto), 0, (int) config('assistente.resposta.caracteres_max')),
+            'fontes_json' => $fontes,
+            'provedor' => $resposta->provedor,
+            'modelo' => $resposta->modelo,
+            'tokens_entrada' => $resposta->tokensEntrada,
+            'tokens_saida' => $resposta->tokensSaida,
+        ]);
     }
 
     /**
@@ -258,8 +450,10 @@ final class Atendedor
      * fala é só ele — caso em que não há pergunta nenhuma a mandar ao provedor, e a máquina confirma
      * com a fala fixa da ficha. O endereço nunca vira destino de envio por aqui: quem manda é a
      * ação, e ela manda para a coluna da ficha.
+     *
+     * @return ?array{email: string, cliente: ?Customer}
      */
-    private static function guardeOEmail(Conversa $conversa, string $pergunta, Assistente $ficha): ?string
+    private static function guardeOEmail(Conversa $conversa, string $pergunta): ?array
     {
         if (filled($conversa->email)) {
             return null;
@@ -271,9 +465,12 @@ final class Atendedor
             return null;
         }
 
-        $conversa->update(['email' => $email]);
+        // Quem guarda o endereço é a `Identificacao`, que também procura a ficha do cliente: a
+        // conversa fica ligada ao cadastro desde a primeira frase, e a resposta sabe se a pessoa
+        // foi reconhecida ou se o e-mail é de quem ainda não é cliente da casa.
+        $cliente = Identificacao::vincular($conversa, $email);
 
-        return Identificacao::soOEmail($pergunta) ? $email : null;
+        return Identificacao::soOEmail($pergunta) ? ['email' => $email, 'cliente' => $cliente] : null;
     }
 
     /** A última fala da máquina foi exatamente o pedido da nota? */
@@ -477,6 +674,11 @@ final class Atendedor
         if ($cortesia) {
             $ordem[] = 'Esta fala é só uma saudação: cumprimente de volta em uma frase e diga como você pode ajudar. '
                 .'Não diga que não sabe, não chame a equipe e não invente preço, prazo, cobertura, especificação, desconto ou condição.';
+        } else {
+            // A persona escrita na ficha pode ter sido trocada por outra; esta linha é do código e
+            // vale sempre: a conversa é um fio só, e é ele que faz a Ana parecer uma pessoa.
+            $ordem[] = 'Esta é uma conversa em andamento: continue de onde ela está, sem repetir a saudação, '
+                .'a pergunta que a pessoa acabou de responder ou o que você já disse.';
         }
 
         if (filled($conversa->nome)) {
@@ -527,6 +729,34 @@ final class Atendedor
         ]);
 
         self::tocarUltimaFala($conversa);
+    }
+
+    /**
+     * As fontes desta fala — ouvindo a fala anterior quando a atual é curta.
+     *
+     * Conversa de gente não repete o assunto a cada frase: depois de "quanto custa o rastreador?",
+     * um "e a instalação?" é a mesma pergunta em duas partes. Uma busca feita só com a segunda
+     * metade não acharia nada e a Ana escalaria no meio de um assunto que ela já estava
+     * respondendo. Só a fala curta puxa a anterior, e só quando a busca sozinha não achou nada:
+     * uma pergunta completa continua sendo buscada exatamente como foi escrita.
+     *
+     * @return array<int, array{id: int, titulo: string, texto: string, procedencia: string, pontuacao: float, ancorado: bool}>
+     */
+    private static function fontesDaConversa(Conversa $conversa, ConversaMensagem $atual, string $pergunta): array
+    {
+        $fontes = Busca::fontes($pergunta);
+
+        if ($fontes !== [] || Busca::eCortesia($pergunta) || count(Busca::palavrasDaPergunta($pergunta)) >= 4) {
+            return $fontes;
+        }
+
+        $anterior = $conversa->mensagens()
+            ->where('autor', 'cliente')
+            ->where('id', '<', $atual->id)
+            ->reorder('id', 'desc')
+            ->first();
+
+        return $anterior === null ? $fontes : Busca::fontes($pergunta.' '.$anterior->textoVisivel());
     }
 
     /**

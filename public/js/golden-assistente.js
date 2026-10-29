@@ -1,8 +1,9 @@
 /* Atendimento com o assistente — o lado do navegador da conversa.
    O gatilho é o atendente virtual dentro da caixa do WhatsApp (`[data-ia-abrir]`), não um botão
-   próprio: o robô é um dos atendentes da casa. Fala com os três endereços JSON (abrir, fala,
-   falas) e não sabe nada de IA: quem decide responder, escalar ou calar é o servidor. Esta
-   folha só pinta, pergunta e fecha a caixa quando a conversa abre. */
+   próprio: o robô é um dos atendentes da casa. Fala com os endereços JSON da bolha (abrir, fala,
+   arquivo, falas, avaliar, encerrar, nova) e não sabe nada de IA: quem decide responder, escalar
+   ou calar é o servidor. Esta folha só pinta, anexa, pergunta e fecha a caixa quando a conversa
+   abre. */
 (function () {
   'use strict';
 
@@ -24,11 +25,25 @@
   var flutuante = document.getElementById('waFloat');
   var semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  var anexar = painel.querySelector('[data-ia-anexar]');
+  var entradaArquivo = painel.querySelector('[data-ia-arquivo]');
+  var chip = painel.querySelector('[data-ia-anexo]');
+  var chipNome = painel.querySelector('[data-ia-anexo-nome]');
+  var chipLimpar = painel.querySelector('[data-ia-anexo-limpar]');
+  var fecho = painel.querySelector('[data-ia-fecho]');
+  var botaoEncerrar = painel.querySelector('[data-ia-encerrar]');
+  var fim = painel.querySelector('[data-ia-fim]');
+  var botaoNova = painel.querySelector('[data-ia-nova]');
+
+  var placeholderOriginal = campo ? (campo.getAttribute('placeholder') || '') : '';
+  var arquivoEscolhido = null;
+
   var aberto = false;      // o balão está na tela
   var criada = false;      // a conversa já foi aberta com o servidor
   var de = 0;              // a última fala pintada — o servidor devolve só o que veio depois
   var ocupado = false;     // uma chamada está no ar
   var escalada = false;    // a equipe assumiu: pode chegar resposta humana
+  var encerrada = false;   // o cliente encerrou: o campo dá lugar ao convite a recomeçar
   var guardadas = [];      // o que foi pintado, para o resumo levado ao formulário
   var relógio = null;
 
@@ -60,7 +75,42 @@
       .catch(function () { return {}; });
   }
 
+  /* O arquivo vai por formulário multipart, e não por JSON: o corpo binário não cabe num campo de
+     texto. O `Accept` continua sendo JSON para a resposta ser lida como o resto da conversa. */
+  function enviar_arquivo(url, arquivo, texto) {
+    var dados = new FormData();
+    dados.append('arquivo', arquivo);
+    if (texto) dados.append('texto', texto);
+    dados.append('canal', cfg.canal);
+    dados.append('pagina', location.pathname);
+
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token() },
+      body: dados
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .catch(function () { return {}; });
+  }
+
   /* ---------- a tela ---------- */
+
+  /* A Ana pergunta por um arquivo justamente quando ele serve: "manda o comprovante", "envie o
+     print da tela". Nessa hora o clipe acende e o campo diz o que se espera — o anexo aparece no
+     contexto da conversa, e não como um botão perdido no canto. */
+  var PEDIDO_DE_ARQUIVO = /(?:envie|envia|anexe|anexa|mande|manda|mandar|anexar|compartilhe)[^.!?]{0,70}(?:arquivo|documento|foto|imagem|comprovante|nota|fatura|pdf|print|contrato|áudio|audio)/i;
+
+  function pedeAnexo(texto) {
+    if (!anexar || !campo) return;
+
+    var pediu = PEDIDO_DE_ARQUIVO.test(String(texto || ''));
+    anexar.classList.toggle('pede', pediu);
+
+    if (!arquivoEscolhido) {
+      campo.setAttribute('placeholder', pediu ? 'Anexe o arquivo aqui ou escreva a sua mensagem…' : placeholderOriginal);
+    }
+  }
 
   function pintura(fala) {
     var balao = document.createElement('div');
@@ -73,10 +123,69 @@
       balao.appendChild(quem);
     }
 
-    var texto = document.createElement('span');
-    // textContent, sempre: é o que o visitante escreveu, e nunca vira HTML na tela.
-    texto.textContent = fala.texto || '';
-    balao.appendChild(texto);
+    var legenda = String(fala.texto || '');
+    var nomeArquivo = String(fala.midia_nome || '');
+    var semLegenda = legenda === '' || legenda === nomeArquivo;
+
+    if (fala.tipo === 'imagem' && fala.midia) {
+      var moldura = document.createElement('a');
+      moldura.href = fala.midia;
+      moldura.target = '_blank';
+      moldura.rel = 'noopener noreferrer';
+
+      var imagem = document.createElement('img');
+      imagem.className = 'ia-midia';
+      imagem.src = fala.midia;
+      imagem.alt = semLegenda ? 'Imagem enviada' : legenda;
+      imagem.loading = 'lazy';
+      imagem.decoding = 'async';
+      // A foto muda a altura da conversa depois de pintada: com o balão aberto, a rolagem desce
+      // de novo para a última fala continuar à vista — ninguém fica procurando o fim do fio.
+      imagem.addEventListener('load', function () { if (aberto) rolar(); });
+
+      moldura.appendChild(imagem);
+      balao.appendChild(moldura);
+    } else if (fala.tipo === 'arquivo' && fala.midia) {
+      var link = document.createElement('a');
+      link.className = 'ia-arquivo';
+      link.href = fala.midia;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+
+      var clipe = document.createElement('i');
+      clipe.className = 'fa-solid fa-paperclip';
+      clipe.setAttribute('aria-hidden', 'true');
+
+      link.appendChild(clipe);
+      link.appendChild(document.createTextNode(nomeArquivo || 'Documento'));
+      balao.appendChild(link);
+    }
+
+    if (fala.tipo === 'audio' && fala.midia) {
+      var voz = document.createElement('audio');
+      voz.controls = true;
+      voz.preload = 'metadata';
+      voz.src = fala.midia;
+      balao.appendChild(voz);
+    }
+
+    // A imagem sem legenda já se explica: o nome do arquivo não é fala e não vai para a tela.
+    if (legenda !== '' && !(semLegenda && fala.tipo !== 'audio')) {
+      var texto = document.createElement('span');
+      // textContent, sempre: é o que o visitante escreveu, e nunca vira HTML na tela.
+      texto.textContent = legenda;
+      balao.appendChild(texto);
+    }
+
+    if (fala.audio) {
+      var falado = document.createElement('audio');
+      falado.controls = true;
+      falado.preload = 'metadata';
+      falado.src = fala.audio;
+      balao.appendChild(falado);
+    }
+
+    if (fala.autor === 'assistente') pedeAnexo(legenda);
 
     return balao;
   }
@@ -86,14 +195,12 @@
     rolar();
   }
 
-  function noFim() {
-    return corpo.scrollHeight - corpo.scrollTop - corpo.clientHeight < 120;
-  }
-
   function rolar() {
     corpo.scrollTop = corpo.scrollHeight;
   }
 
+  /* Toda fala nova leva a conversa ao fim: a mensagem mais recente é a que a pessoa precisa ler, e
+     ela nunca deve puxar a rolagem para encontrá-la. Fechado o balão, nada se mexe. */
   function pinta(falas) {
     var trouxe = false;
 
@@ -109,7 +216,7 @@
       trouxe = true;
     });
 
-    if (trouxe && aberto && noFim()) rolar();
+    if (trouxe && aberto) rolar();
 
     return trouxe;
   }
@@ -166,12 +273,96 @@
           return;
         }
         mostraPesquisa(d);
+        mostraFim(d);
         pinta(d.falas);
       }).finally(function () {
         ocupado = false;
       });
     });
   });
+
+  /* ---------- o fim da conversa ---------- */
+
+  /* Encerrada a conversa, o campo de envio sai de cena e o balão mostra o convite a começar outra:
+     reabrir sozinha seria a tela contrariando o fim que a pessoa pediu. A varredura para junto
+     porque não há mais resposta a esperar — a nota ainda pode ser dada pelas estrelas. */
+  function mostraFim(d) {
+    encerrada = d && d.encerrada === true;
+
+    if (form) form.hidden = encerrada;
+    if (fecho) fecho.hidden = encerrada;
+    if (fim) fim.hidden = !encerrada;
+
+    if (encerrada) {
+      limpaAnexo();
+      if (anexar) anexar.classList.remove('pede');
+      paraVarredura();
+    }
+  }
+
+  function confirmaEncerrar() {
+    if (ocupado || encerrada) return;
+
+    var aviso = window.GoldenAvisos;
+    var pedido = aviso && aviso.confirmar
+      ? aviso.confirmar('A conversa será encerrada e o campo de mensagem será fechado. Você pode começar outra depois.', 'Encerrar a conversa?')
+      : Promise.resolve(true);
+
+    pedido.then(function (aceitou) {
+      if (!aceitou) return;
+
+      ocupado = true;
+      envio.disabled = true;
+      if (anexar) anexar.disabled = true;
+      digitando.hidden = false;
+
+      enviar_post(cfg.encerrar, {}).then(function (d) {
+        if (d.ativo === false) { desaparece(); return; }
+        if (!d.falas) { mostraErros(d); return; }
+        escalada = d.status === 'aguardando_equipe' || escalada;
+        mostraPesquisa(d);
+        pinta(d.falas);
+        mostraFim(d);
+      }).finally(function () {
+        ocupado = false;
+        envio.disabled = false;
+        if (anexar) anexar.disabled = false;
+        digitando.hidden = true;
+      });
+    });
+  }
+
+  /* A conversa nova limpa a tela inteira: o id das falas não se mistura com o da anterior, e a
+     saudação da casa é pintada de novo no balão vazio. A limpeza só acontece com a resposta na
+     mão — se o servidor não criar a conversa, a anterior continua na tela em vez de sumir. */
+  function comecarNova() {
+    if (ocupado) return;
+
+    ocupado = true;
+    digitando.hidden = false;
+
+    enviar_post(cfg.nova, {}).then(function (d) {
+      if (d.ativo === false) { desaparece(); return; }
+      if (!d.falas) { mostraErros(d); return; }
+
+      corpo.innerHTML = '';
+      de = 0;
+      guardadas = [];
+      escalada = d.status === 'aguardando_equipe';
+      encerrada = false;
+      criada = true;
+      if (pesquisa) pesquisa.hidden = true;
+      pintaEstrelas(0);
+      mostraPesquisa(d);
+      mostraFim(d);
+      pinta(d.falas);
+      if (aberto && !encerrada) campo.focus();
+    }).finally(function () {
+      ocupado = false;
+      digitando.hidden = true;
+      ajustaVarredura();
+    });
+  }
 
   /* A caixa do WhatsApp e a conversa ocupam o mesmo canto da tela: abrir uma fecha a outra,
      senão os dois painéis se sobrepõem. */
@@ -198,6 +389,7 @@
       if (d.ativo === false) { desaparece(); return; }
       if (d.status === 'aguardando_equipe') escalada = true;
       mostraPesquisa(d);
+      mostraFim(d);
       pinta(d.falas);
     });
   }
@@ -205,6 +397,8 @@
   /* Com o balão aberto a resposta tem que chegar logo; fechado, só quem foi passado para a equipe
      é varrido — e devagar. Ninguém fica martelando o servidor de hospedagem compartilhada. */
   function ajustaVarredura() {
+    if (encerrada) { paraVarredura(); return; }
+
     var intervalo = aberto ? 5000 : 30000;
 
     if (!aberto && !(escalada && criada)) { paraVarredura(); return; }
@@ -232,6 +426,8 @@
 
     if (criada) {
       varre();
+      // A conversa já estava pintada de outra vez: o balão abre no fim do fio, não no começo.
+      rolar();
     } else {
       ocupado = true;
       digitando.hidden = false;
@@ -242,13 +438,15 @@
         criada = true;
         escalada = d.status === 'aguardando_equipe';
         mostraPesquisa(d);
+        mostraFim(d);
         pinta(d.falas);
+        rolar();
         ajustaVarredura();
       });
     }
 
     // O teclado só sobe em tela larga: no celular ele cobriria o balão recém-aberto.
-    if (window.matchMedia('(min-width: 900px)').matches) campo.focus();
+    if (!encerrada && window.matchMedia('(min-width: 900px)').matches) campo.focus();
   }
 
   function fecha() {
@@ -264,6 +462,37 @@
   // O golden-site.js avisa quando a caixa do WhatsApp abre: a conversa sai de cena para não
   // ficar embaixo dela.
   document.addEventListener('golden:wa-aberto', function () { if (aberto) fecha(); });
+
+  /* ---------- o anexo ---------- */
+
+  function limpaAnexo() {
+    arquivoEscolhido = null;
+    if (entradaArquivo) entradaArquivo.value = '';
+    if (chip) chip.hidden = true;
+    if (campo) campo.setAttribute('placeholder', placeholderOriginal);
+  }
+
+  function escolheuArquivo() {
+    var escolhido = entradaArquivo && entradaArquivo.files ? entradaArquivo.files[0] : null;
+    arquivoEscolhido = escolhido || null;
+
+    if (!chip || !chipNome) return;
+
+    if (!escolhido) {
+      limpaAnexo();
+      return;
+    }
+
+    chipNome.textContent = escolhido.name;
+    chip.hidden = false;
+    if (campo) campo.setAttribute('placeholder', 'Escreva uma legenda (opcional)…');
+  }
+
+  if (anexar) anexar.addEventListener('click', function () { if (entradaArquivo) entradaArquivo.click(); });
+  if (entradaArquivo) entradaArquivo.addEventListener('change', escolheuArquivo);
+  if (chipLimpar) chipLimpar.addEventListener('click', limpaAnexo);
+  if (botaoEncerrar) botaoEncerrar.addEventListener('click', confirmaEncerrar);
+  if (botaoNova) botaoNova.addEventListener('click', comecarNova);
 
   /* ---------- a fala do cliente ---------- */
 
@@ -283,43 +512,87 @@
     e.preventDefault();
 
     var texto = campo.value.trim();
-    if (!texto || ocupado) return;
+    var anexo = arquivoEscolhido;
+
+    if ((!texto && !anexo) || ocupado || encerrada) return;
 
     campo.value = '';
     campo.style.height = 'auto';
+    if (texto === '') campo.setAttribute('placeholder', placeholderOriginal);
+    limpaAnexo();
+
     ocupado = true;
     envio.disabled = true;
+    if (anexar) anexar.disabled = true;
     digitando.hidden = false;
 
     // O balão do cliente entra na hora; quando a resposta voltar, a fala real do servidor
     // ocupa o lugar dele. Sem isso, dez segundos de IA pareceriam nada acontecendo.
-    var balao = pintura({ autor: 'cliente', texto: texto });
+    var previa = { autor: 'cliente', tipo: 'texto' };
+    previa.texto = anexo
+      ? (texto !== '' ? texto + '\n' : '') + 'Anexo: ' + anexo.name
+      : texto;
+
+    var balao = pintura(previa);
     balao.setAttribute('data-pendente', '');
     corpo.appendChild(balao);
     rolar();
 
-    enviar_post(cfg.fala, { texto: texto }).then(function (d) {
-      if (!d.ativo) {
+    var pedido = anexo ? enviar_arquivo(cfg.arquivo, anexo, texto) : enviar_post(cfg.fala, { texto: texto });
+
+    pedido.then(function (d) {
+      // `ativo === false` é a máquina desligada; a recusa de um arquivo (422) não tem esse campo
+      // e precisa continuar na tela, com a frase da regra que foi quebrada.
+      if (d.ativo === false) {
         limpaPendente();
         desaparece();
         return;
       }
+
       if (!d.falas) {
         limpaPendente();
-        nota(d.message || 'A conversa travou aqui. Tente de novo em um instante.');
+        mostraErros(d);
+        if (texto !== '') campo.value = texto;
         return;
       }
+
       escalada = d.status === 'aguardando_equipe' || escalada;
       mostraPesquisa(d);
+      mostraFim(d);
       pinta(d.falas);
     }).finally(function () {
       ocupado = false;
       envio.disabled = false;
+      if (anexar) anexar.disabled = false;
       digitando.hidden = true;
-      if (aberto) campo.focus();
+      if (aberto && !encerrada) campo.focus();
       ajustaVarredura();
     });
   });
+
+  function erro(mensagem) {
+    if (window.GoldenAvisos && window.GoldenAvisos.erro) {
+      window.GoldenAvisos.erro(mensagem);
+      return;
+    }
+
+    nota(mensagem);
+  }
+
+  /* A recusa de um anexo chega como 422 com a frase presa ao campo `arquivo` — "Documento até
+     8 MB.", "Documento só nos formatos pdf, csv…". Mostrar essa frase é o que diz o que corrigir;
+     um "travou aqui" genérico obrigaria a pessoa a adivinhar o motivo. */
+  function mostraErros(d) {
+    var lista = d && d.errors ? Object.keys(d.errors).map(function (campo) { return d.errors[campo]; }) : [];
+    lista = [].concat.apply([], lista).filter(Boolean);
+
+    if (lista.length && window.GoldenAvisos && window.GoldenAvisos.erros) {
+      window.GoldenAvisos.erros(lista);
+      return;
+    }
+
+    erro(d && d.message ? d.message : 'A conversa travou aqui. Tente de novo em um instante.');
+  }
 
   /* ---------- a pessoa por trás do robô ---------- */
 
@@ -332,8 +605,13 @@
 
   function resumo() {
     var linhas = guardadas.slice(-8).map(function (fala) {
-      return (fala.autor === 'cliente' ? 'Eu: ' : (fala.assinatura || cfg.nome) + ': ')
-        + String(fala.texto || '').replace(/\s+/g, ' ');
+      var texto = String(fala.texto || '').replace(/\s+/g, ' ').trim();
+
+      if (fala.midia_nome) {
+        texto = (texto !== '' ? texto + ' ' : '') + '[arquivo: ' + fala.midia_nome + ']';
+      }
+
+      return (fala.autor === 'cliente' ? 'Eu: ' : (fala.assinatura || cfg.nome) + ': ') + texto;
     });
 
     var texto = 'Conversa com ' + cfg.nome + ' no site:\n' + linhas.join('\n');

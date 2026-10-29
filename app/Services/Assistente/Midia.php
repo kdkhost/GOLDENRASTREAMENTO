@@ -68,20 +68,22 @@ final class Midia
      */
     public static function recusa(UploadedFile $arquivo, string $tipo): ?string
     {
+        $nome = self::rotuloParaCliente($tipo);
+
         if (! self::permitido($tipo)) {
-            return 'O painel não aceita '.self::rotuloDoTipo($tipo).' neste chat.';
+            return 'O envio de '.$nome.' não está disponível neste atendimento.';
         }
 
         $extensao = strtolower((string) $arquivo->getClientOriginalExtension());
 
         if (! in_array($extensao, self::extensoesDe($tipo), true)) {
-            return self::rotuloDoTipo($tipo).' só nos formatos '.implode(', ', self::extensoesDe($tipo)).'.';
+            return ucfirst($nome).' só nos formatos '.implode(', ', self::extensoesDe($tipo)).'.';
         }
 
         $limite = self::bytesDe($tipo);
 
         if ($arquivo->getSize() > $limite) {
-            return self::rotuloDoTipo($tipo).' até '.self::limiteEmMb($tipo).' MB.';
+            return ucfirst($nome).' até '.self::limiteEmMb($tipo).' MB.';
         }
 
         return null;
@@ -116,6 +118,19 @@ final class Midia
     public static function rotuloDoTipo(string $tipo): string
     {
         return (string) (config('assistente.tipos_mensagem')[$tipo] ?? $tipo);
+    }
+
+    /**
+     * O nome do tipo na fala com o cliente. O chat chama a fala de "Arquivo", mas quem está mandando
+     * um PDF está mandando um documento — e é essa a palavra que a frase dele precisa usar.
+     */
+    public static function rotuloParaCliente(string $tipo): string
+    {
+        return match ($tipo) {
+            'audio' => 'áudio',
+            'imagem' => 'imagem',
+            default => 'documento',
+        };
     }
 
     /**

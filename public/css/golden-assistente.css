@@ -59,6 +59,13 @@
   font-size:.74rem;color:#8d99a6}
 .ia-fala audio{display:block;width:100%;margin-top:6px}
 .ia-fala a{color:var(--gold-soft,#f4d9a6)}
+.ia-fala img.ia-midia{display:block;max-width:100%;border-radius:10px;margin:4px 0 6px;
+  border:1px solid rgba(255,255,255,.1)}
+.ia-fala .ia-arquivo{display:inline-flex;align-items:center;gap:8px;margin:4px 0;padding:8px 10px;
+  border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  color:#eef2f6;text-decoration:none;font-size:.8rem;word-break:break-all}
+.ia-fala .ia-arquivo i{color:var(--gold);flex-shrink:0}
+.ia-fala .ia-arquivo:hover{background:rgba(255,255,255,.12);color:#fff}
 .ia-hora{display:block;font-size:.66rem;color:#7f8b98;margin-top:4px}
 
 .ia-digitando{margin:0;padding:0 12px 4px;font-size:.78rem;color:#9aa7b4;display:flex;align-items:center;gap:8px}
@@ -69,18 +76,67 @@
 .ia-pontos i:nth-child(3){animation-delay:.32s}
 @keyframes ia-pisca{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 
-.ia-passos{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;
+/* O campo de envio: uma cápsula só, com o anexo dentro e o botão de enviar ao lado. A borda
+   acende em dourado quando o campo tem o foco — a mesma régua de foco do resto do site. */
+.ia-passos{display:flex;gap:6px;align-items:flex-end;padding:8px 10px;
   border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
-.ia-passos textarea{flex:1;min-width:0;resize:none;max-height:112px;border-radius:12px;padding:9px 11px;
-  border:1px solid rgba(255,255,255,.12);background:rgba(18,22,26,.6);color:#fff;
-  font-family:var(--font-sans,Inter,sans-serif);font-size:.86rem;line-height:1.4}
-.ia-passos textarea::placeholder{color:#7f8b98}
-.ia-passos textarea:focus-visible{outline:2px solid var(--gold);outline-offset:1px;border-color:transparent}
+.ia-passos[hidden]{display:none}
+.ia-campo{display:flex;flex:1;align-items:flex-end;gap:2px;min-width:0;padding:4px;
+  border-radius:22px;border:1px solid rgba(255,255,255,.14);background:rgba(10,14,18,.62);
+  transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
+.ia-campo:focus-within{border-color:rgba(224,163,62,.72);box-shadow:0 0 0 3px rgba(224,163,62,.15);
+  background:rgba(10,14,18,.82)}
+.ia-campo textarea{flex:1;min-width:0;resize:none;max-height:112px;border:0;border-radius:18px;
+  padding:7px 8px;background:none;color:#fff;font-family:var(--font-sans,Inter,sans-serif);
+  font-size:.86rem;line-height:1.4;outline:none}
+.ia-campo textarea::placeholder{color:#7f8b98}
+.ia-anexar{flex-shrink:0;width:32px;height:32px;border:0;border-radius:50%;background:none;color:#9aa7b4;
+  cursor:pointer;display:grid;place-items:center;font-size:.86rem;
+  transition:color .2s,background .2s,transform .3s var(--ease,cubic-bezier(.22,.61,.36,1))}
+.ia-anexar:hover{color:var(--gold);background:rgba(224,163,62,.12)}
+.ia-anexar:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.ia-anexar:disabled{opacity:.4;cursor:not-allowed}
+/* A Ana pediu um arquivo na última fala: o clipe chama atenção em vez de esperar ser descoberto. */
+.ia-anexar.pede{color:#1b1206;background:linear-gradient(135deg,var(--gold),var(--gold-2));
+  animation:ia-pulsa 1.6s ease-in-out infinite}
+@keyframes ia-pulsa{
+  0%,100%{box-shadow:0 0 0 0 rgba(224,163,62,.42)}
+  50%{box-shadow:0 0 0 5px rgba(224,163,62,0)}
+}
 .ia-enviar{flex-shrink:0;width:38px;height:38px;border:0;border-radius:50%;cursor:pointer;display:grid;
   place-items:center;background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#1b1206;font-size:.9rem;
   transition:transform .2s var(--ease,cubic-bezier(.22,.61,.36,1)),opacity .2s ease}
 .ia-enviar:hover{transform:translateY(-2px) scale(1.05)}
 .ia-enviar[disabled]{opacity:.45;cursor:progress;transform:none}
+
+/* O arquivo escolhido, antes de sair: o nome na tela é a chance de trocar antes de a Ana ler. */
+.ia-anexo{display:flex;align-items:center;gap:8px;margin:0 10px 2px;padding:7px 10px;border-radius:12px;
+  background:rgba(224,163,62,.1);border:1px solid rgba(224,163,62,.28);font-size:.78rem;color:#f4d9a6}
+.ia-anexo[hidden]{display:none}
+.ia-anexo span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ia-anexo-limpar{border:0;background:none;color:inherit;cursor:pointer;padding:2px 5px;border-radius:6px;
+  transition:background .2s}
+.ia-anexo-limpar:hover{background:rgba(255,255,255,.12)}
+.ia-anexo-limpar:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+
+/* O fim da conversa: a linha discreta que encerra e, fechada a conversa, o convite a recomeçar. */
+.ia-fecho{display:flex;justify-content:center;padding:0 10px 8px;background:rgba(255,255,255,.03)}
+.ia-fecho[hidden]{display:none}
+.ia-encerrar{border:0;background:none;color:#9aa7b4;font-size:.76rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;
+  transition:color .2s,background .2s}
+.ia-encerrar:hover{color:#f4d9a6;background:rgba(224,163,62,.1)}
+.ia-encerrar:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.ia-fim{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 14px 14px;
+  border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.ia-fim[hidden]{display:none}
+.ia-fim-texto{display:flex;align-items:center;gap:8px;margin:0;font-size:.8rem;color:#9aa7b4}
+.ia-fim-texto i{color:#16a34a}
+.ia-nova{border:0;border-radius:999px;padding:8px 16px;cursor:pointer;font-size:.8rem;font-weight:700;
+  color:#1b1206;background:linear-gradient(135deg,var(--gold),var(--gold-2));
+  transition:transform .2s var(--ease,cubic-bezier(.22,.61,.36,1)),filter .2s}
+.ia-nova:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.ia-nova:focus-visible{outline:2px solid #fff;outline-offset:2px}
 
 /* A fileira da pesquisa de satisfação: acende quando a casa pergunta a nota e apaga no primeiro
    toque. Fora dos balões porque a nota não é fala — é o fecho de um atendimento terminado. */
@@ -115,5 +171,5 @@ body.nav-open .ia-painel{opacity:0;pointer-events:none}
 }
 
 @media(prefers-reduced-motion:reduce){
-  .ia-painel,.ia-enviar,.ia-fechar,.ia-pontos i,.ia-estrela{transition:none;animation:none}
+  .ia-painel,.ia-enviar,.ia-fechar,.ia-pontos i,.ia-estrela,.ia-anexar,.ia-nova,.ia-encerrar{transition:none;animation:none}
 }

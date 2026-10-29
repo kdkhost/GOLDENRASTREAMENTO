@@ -8,15 +8,19 @@ use App\Models\Conversa;
 use App\Models\ConversaMensagem;
 use App\Services\Assistente\Atendedor;
 use App\Services\Assistente\Avaliacao;
+use App\Services\Assistente\Midia;
 use App\Services\Rastreio;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * A bolha de atendimento no site e na página de funil.
  *
- * Quatro endereços JSON e nenhuma página: o robô mora num canto da tela que já existe, então não
+ * Sete endereços JSON — a conversa, o arquivo, o encerramento e o recomeço — e nenhuma página: o
+ * robô mora num canto da tela que já existe, então não
  * faz sentido ele ter URL própria — e o visitante que abre a bolha num funil de anúncio não pode
  * ser levado para fora dele bem na hora da conversão. O cadastro continua sendo do formulário
  * que a casa já tem (`site/partials/lead-form`): a bolha leva o visitante até ele e a conversa é
@@ -69,12 +73,94 @@ class AssistenteController extends Controller
         $conversa = $this->conversa($request);
         $antes = (int) $conversa->mensagens()->max('id');
 
+        // A conversa fechada não recebe fala nova: quem escrever numa aba antiga lê que ela foi
+        // encerrada, e o convite a começar outra está no mesmo balão. Reabrir sozinha seria a
+        // máquina contrariando o fim que a pessoa pediu.
+        if ($conversa->status === 'fechada') {
+            return $this->resposta($conversa, []);
+        }
+
         Atendedor::dizer($conversa, strip_tags($dados['texto']));
 
         // Voltam as duas falas — a do cliente e a do assistente — porque é a resposta que pinta a
         // tela, não o que o navegador achou que ia ser aceito: o texto do cliente passa pelo
         // aparador e pela régua de tamanho aqui, e o que o cliente lê é o que foi gravado.
         return $this->novasFalas($conversa, $antes);
+    }
+
+    /** Um arquivo do cliente — voz, foto ou documento — com a legenda como pergunta. */
+    public function arquivo(Request $request): JsonResponse
+    {
+        if (! $this->atende($request)) {
+            return response()->json(['ativo' => false], 403);
+        }
+
+        $arquivo = $request->file('arquivo');
+
+        if (! $arquivo instanceof UploadedFile) {
+            throw ValidationException::withMessages(['arquivo' => 'Escolha um arquivo para enviar.']);
+        }
+
+        // O teto é o do tipo do arquivo, e não um só para todos: um áudio de voz e um PDF de
+        // contrato não pesam o mesmo, e a tela de chaves edita os dois separadamente.
+        $tipo = Midia::tipoDe($arquivo);
+
+        $dados = $request->validate([
+            'arquivo' => ['required', 'file', 'max:'.(int) ceil(Midia::bytesDe($tipo) / 1024)],
+            'texto' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'arquivo.max' => 'O arquivo passa do limite de '.Midia::limiteEmMb($tipo).' MB para '
+                .Midia::rotuloParaCliente($tipo).'.',
+        ], [
+            'arquivo' => 'arquivo',
+            'texto' => 'mensagem',
+        ]);
+
+        $conversa = $this->conversa($request);
+
+        if ($conversa->status === 'fechada') {
+            return $this->resposta($conversa, []);
+        }
+
+        $antes = (int) $conversa->mensagens()->max('id');
+
+        Atendedor::receberArquivo($conversa, $dados['arquivo'], (string) ($dados['texto'] ?? ''));
+
+        return $this->novasFalas($conversa, $antes);
+    }
+
+    /**
+     * O fim pedido pelo cliente. A conversa fecha com a nota pedida antes do fechamento, e o
+     * histórico continua na sessão para a tela ler a despedida e receber a nota das estrelas.
+     */
+    public function encerrar(Request $request): JsonResponse
+    {
+        $conversa = Conversa::naSessao($request);
+
+        if (! $conversa) {
+            return response()->json(['ativo' => false]);
+        }
+
+        $antes = (int) $conversa->mensagens()->max('id');
+
+        Atendedor::encerrar($conversa);
+
+        return $this->resposta($conversa->refresh(), $conversa->mensagens()->where('id', '>', $antes)->get());
+    }
+
+    /** Começar outra: a conversa anterior fica no histórico da equipe e a sessão aponta para a nova. */
+    public function nova(Request $request): JsonResponse
+    {
+        if (! $this->atende($request)) {
+            return response()->json(['ativo' => false], 403);
+        }
+
+        $request->session()->forget(Conversa::SESSAO);
+
+        $conversa = $this->conversa($request);
+        $novas = collect(Atendedor::abertura($conversa, Assistente::paraABolha()));
+
+        return $this->resposta($conversa, $novas);
     }
 
     /** A varredura da bolha aberta: é por ela que a resposta da equipe chega ao cliente. */
@@ -123,13 +209,14 @@ class AssistenteController extends Controller
         return $this->resposta($conversa, $conversa->mensagens()->where('id', '>', $antes)->get());
     }
 
-    /** O envelope dos quatro endpoints da bolha: o que pintar, em que situação a conversa está. */
+    /** O envelope dos endpoints da bolha: o que pintar, em que situação a conversa está. */
     private function resposta(Conversa $conversa, iterable $falas): JsonResponse
     {
         return response()->json([
             'ativo' => true,
             'conversa' => (int) $conversa->id,
             'status' => $conversa->status,
+            'encerrada' => $conversa->status === 'fechada',
             'avaliacao' => Avaliacao::pedidaSemNota($conversa),
             'falas' => $this->falasParaTela($falas),
         ]);

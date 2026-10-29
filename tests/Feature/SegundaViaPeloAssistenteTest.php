@@ -134,9 +134,11 @@ class SegundaViaPeloAssistenteTest extends TestCase
             ->assertOk()
             ->assertJson(['status' => $conversa->refresh()->status]);
 
-        $fala = $resposta->json('falas.1');
+        $fala = collect($resposta->json('falas'))->last(fn (array $fala): bool => $fala['autor'] === 'assistente');
 
-        $this->assertSame('assistente', $fala['autor'], 'A fala não foi respondida pela máquina.');
+        // A ficha do cliente achada pelo e-mail deixa uma nota de sistema no fio antes da
+        // confirmação, e é por isso que a resposta da máquina não está num índice fixo.
+        $this->assertIsArray($fala, 'A fala não foi respondida pela máquina.');
 
         return (string) $fala['texto'];
     }

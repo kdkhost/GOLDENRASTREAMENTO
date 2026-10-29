@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.52.0
+- **Versão:** 2.53.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -1640,10 +1640,11 @@ A caixa, o balão e a conversa anônima vêm com a página, e a folha
 HTML quando o interruptor do canal está ligado** — desligado, não sobra um byte de robô na página do
 visitante. Com a caixa desligada em **Configurações**, o canto volta a ser o link direto do
 WhatsApp e o assistente perde a porta. Quando não sobra nenhum canal humano, o mesmo botão passa a
-ser a porta do assistente. As quatro rotas JSON são `POST /assistente/abrir`, `POST /assistente/fala`,
-`GET /assistente/falas` e `POST /assistente/avaliar`, com throttle de 30, 20, 120 e 10 por minuto e
-por visitante. **Cada uma tem contador próprio** (o prefixo no `throttle`): sem ele o navegador fica
-com um só teto para as quatro, e a varredura de `falas` — que roda a cada cinco segundos com o balão
+ser a porta do assistente. As sete rotas JSON são `POST /assistente/abrir`, `POST /assistente/fala`,
+`GET /assistente/falas`, `POST /assistente/avaliar`, `POST /assistente/arquivo`, `POST /assistente/encerrar`
+e `POST /assistente/nova`, com throttle próprio cada uma (30, 20, 120, 10, 12, 10 e 10 por minuto, por
+visitante). **Cada uma tem contador próprio** (o prefixo no `throttle`): sem ele o navegador fica
+com um só teto para todas, e a varredura de `falas` — que roda a cada cinco segundos com o balão
 aberto — esvaziaria o teto da fala no meio do atendimento.
 
 Como se comporta:
@@ -1724,6 +1725,15 @@ Na tela de chaves, o grupo *Assistente* tem *Perguntar o e-mail do cadastro*,
 mexer na conta da pessoa** — desligado, a ação abre com o que a conversa tiver, e a conferência
 continua valendo igual.
 
+O e-mail não fica só anotado: ele **localiza a ficha do cliente**. `Identificacao::vincular()`
+normaliza o endereço, procura em `Customer::porEmail`, amarra a conversa ao cadastro
+(`conversas.customer_id`) e completa nome e contato que estiverem em branco — o que a pessoa digita
+no chat poupa a equipe de procurar no CRM. Quem é reconhecido ouve isso na hora, com a frase
+`assistente.confirmacao_cadastro` ("Achei o seu cadastro, :nome…"), e a equipe vê no fio a linha de
+sistema `Cadastro localizado pelo e-mail: cliente #12 — Maria…`, que serve de rastro. A leitura vale
+**em qualquer ponto** da conversa e independe de a IA estar respondendo: com a equipe já no comando ou
+a máquina desligada, o endereço continua sendo aproveitado.
+
 ### A nota do atendimento no fim da conversa
 
 A casa só sabe se a Ana atende bem por uma coisa que a máquina não mede sozinha. `App\Services\Assistente\Avaliacao`
@@ -1754,9 +1764,57 @@ alguém da equipe" — escalando para a gente um atendimento concluído, com a p
 esperando nota. Hoje a fala de encerramento passa pela mesma régua do nome e do e-mail: com a pesquisa
 ainda em aberto, ela é o gatilho do pedido de nota; com a nota dada (ou com a porta de pesquisa fechada),
 sai a frase **Despedida** da ficha, com `:nome`, e a conversa continua `aberta` sem chamar ninguém.
-São sete textos fixos no caminho da identificação e do encerramento — pergunta e confirmação do nome,
-pergunta e confirmação do e-mail, pedido de avaliação, agradecimento pela nota e despedida — e todos se
-editam em **Atendimento → Assistente virtual**; em branco, vale o padrão de `config/assistente.php`.
+São oito textos fixos no caminho da identificação e do encerramento — pergunta e confirmação do nome,
+pergunta e confirmação do e-mail, confirmação do cadastro encontrado, pedido de avaliação,
+agradecimento pela nota e despedida — e todos se editam em **Atendimento → Assistente virtual**; em
+branco, vale o padrão de `config/assistente.php`.
+
+### Anexos: documento, imagem e áudio
+
+O clipe no campo de envio manda a peça para `POST /assistente/arquivo` e cada tipo segue por onde sabe
+ser lido — nada vira "não sei responder" só porque chegou como arquivo:
+
+- **áudio** é transcrito primeiro e a transcrição entra na conversa como se tivesse sido digitada,
+  passando pela mesma régua (nome, e-mail, ação, despedida) de uma fala escrita;
+- **imagem** vai ao provedor de visão e **documento** ao de leitura, com a legenda do envio como a
+  pergunta ("essa nota está paga?") — sem legenda, vale o texto de `capacidades.visao.texto` /
+  `capacidades.documento.texto`. Essas duas capacidades não passam pelo piso de fonte obrigatória:
+  quem responde ali é o próprio provedor lendo o arquivo que a pessoa mandou.
+
+O clipe só aparece quando **algum** tipo está permitido, e as permissões são as mesmas da tela de
+chaves — *O cliente pode mandar áudio*, *…imagem*, *…documento* —, com o documento vindo **ligado** de
+fábrica. Áudio de saída (a resposta falada) continua desligado por padrão porque custa por caractere.
+Os tetos também são de painel: `assistente.midia.audio_segundos_max` (180 s), `audio_mb_max` (4 MB),
+`imagem_mb_max` (4 MB) e `documento_mb_max` (8 MB), com as extensões aceitas por tipo
+(`imagem_extensoes`, `audio_extensoes`, `documento_extensoes`). A tela de chaves edita em megabyte; a
+troca para byte acontece num lugar só (`Midia::bytesDe()`), que alimenta tanto o `max` da validação
+quanto a dica do clipe — o limite que a tela promete é o mesmo que o servidor cobra.
+
+Arquivo recusado **não fecha a bolha**: a frase da regra quebrada (permissão desligada, formato fora da
+lista, tamanho acima do teto) chega no toastr, o campo continua na tela e o texto digitado volta para o
+compositor. Um anexo aceito deixa a peça no fio com o nome e, quando a máquina pediu ("me manda o
+print?"), o clipe pulsa até alguém anexar ou fechar o pedido.
+
+### Encerrar, começar outra e a conversa sempre à vista
+
+Encerrar é um botão discreto no cabeçalho da conversa (`POST /assistente/encerrar`). Ele **pede a nota
+antes de fechar** — a pesquisa não pode morrer com o fio —, grava a linha de sistema `Conversa
+encerrada pelo cliente.`, fecha a ação que estivesse em andamento e marca a conversa como `fechada`.
+Daí em diante o campo de envio sai de cena, o anexo perde o pulso e a bolha mostra o convite a começar
+outra (`POST /assistente/nova`): reabrir sozinha seria a tela contrariando o fim que a pessoa pediu. As
+estrelas continuam valendo para quem fechou sem dar nota, porque `falas` e `avaliar` seguem abertos
+numa conversa fechada — é só `fala` e `arquivo` que ficam em leitura.
+
+Começar outra apaga a sessão da conversa e abre uma nova, e a tela **só limpa depois** do `/nova`
+responder: falhou o pedido, o fio antigo continua ali em vez de virar uma bolha vazia.
+
+O campo de envio é uma cápsula só — texto, clipe e enviar dentro da mesma moldura, com anel dourado no
+foco —, o mesmo componente no site e no funil. E a conversa **rola sozinha** para a última fala a cada
+resposta, a cada anexo e ao abrir a bolha: ninguém precisa puxar o scroll para acompanhar o que chegou.
+A coerência entre falas vem de três lugares: os textos da ficha (sem repetir a saudação a cada volta,
+sem repetir a pergunta já respondida), `assistente.resposta.historico_mensagens` (16 falas de fio, em
+vez das 12 antigas) e a ordem de sistema que diz ao modelo que aquele atendimento **está em andamento**
+— por isso "e a instalação?" herda o assunto da pergunta anterior em vez de virar uma dúvida solta.
 
 ### Ações: o assistente agora faz
 

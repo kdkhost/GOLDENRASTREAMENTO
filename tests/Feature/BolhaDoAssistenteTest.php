@@ -10,7 +10,9 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\Assistente\Motor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -448,6 +450,236 @@ class BolhaDoAssistenteTest extends TestCase
     }
 
     /**
+     * O cliente encerra a conversa, e o encerramento respeita a hora da pesquisa.
+     *
+     * A nota é pedida **antes** do fechamento porque a pesquisa só nasce enquanto a conversa ainda
+     * é da máquina — fechar primeiro seria enterrar o único atendimento que a casa tinha para
+     * avaliar. Depois do fim, a conversa fica na sessão para a tela ler o histórico e receber a nota
+     * das estrelas, mas não aceita fala nova: quem escrever numa aba antiga não reabre o chat.
+     */
+    public function test_o_cliente_encerra_a_conversa_com_a_pesquisa_antes_do_fim(): void
+    {
+        $this->postJson('/assistente/abrir')->assertOk();
+        $conversa = Conversa::firstOrFail();
+
+        // O nome fecha a abertura e dá à casa a terceira fala da máquina — o piso da pesquisa.
+        $this->postJson('/assistente/fala', ['texto' => 'Maria Compradora'])->assertOk();
+
+        $resposta = $this->postJson('/assistente/encerrar')
+            ->assertOk()
+            ->assertJson(['ativo' => true, 'encerrada' => true, 'status' => 'fechada', 'avaliacao' => true]);
+
+        $conversa->refresh();
+        $this->assertSame('fechada', $conversa->status);
+        $this->assertNotNull($conversa->resolvido_em);
+        $this->assertNotNull($conversa->avaliacao_pedida_em);
+        $this->assertNull($conversa->avaliacao_nota);
+
+        $falas = $resposta->json('falas');
+        $this->assertCount(2, $falas, 'O fim não devolveu a despedida e a fala de sistema.');
+        $this->assertSame('assistente', $falas[0]['autor']);
+        $this->assertSame(config('assistente.persona.pedido_avaliacao'), (string) $falas[0]['texto']);
+        $this->assertSame('sistema', $falas[1]['autor']);
+        $this->assertSame('Conversa encerrada pelo cliente.', (string) $falas[1]['texto']);
+
+        // Escrita depois do fim não entra, e a conversa continua fechada.
+        $depois = ConversaMensagem::count();
+        $this->postJson('/assistente/fala', ['texto' => 'oi, ainda está aí?'])
+            ->assertOk()
+            ->assertJson(['encerrada' => true, 'falas' => []]);
+        $this->assertSame($depois, ConversaMensagem::count(), 'A conversa fechada aceitou uma fala nova.');
+
+        // A nota das estrelas ainda entra: a nota é o que o fim veio colher.
+        $this->postJson('/assistente/avaliar', ['nota' => 5])
+            ->assertOk()
+            ->assertJson(['ativo' => true, 'avaliacao' => false]);
+        $this->assertSame(5, (int) $conversa->refresh()->avaliacao_nota);
+    }
+
+    /** Depois do fim, "começar outra" abre uma conversa nova — a encerrada fica no histórico. */
+    public function test_depois_de_encerrada_a_bolha_comeca_uma_conversa_nova(): void
+    {
+        $this->postJson('/assistente/abrir')->assertOk();
+        $encerrada = Conversa::firstOrFail();
+        $this->postJson('/assistente/fala', ['texto' => 'Maria Compradora'])->assertOk();
+        $this->postJson('/assistente/encerrar')->assertOk()->assertJson(['encerrada' => true]);
+
+        $resposta = $this->postJson('/assistente/nova')
+            ->assertOk()
+            ->assertJson(['ativo' => true, 'encerrada' => false, 'status' => 'aberta']);
+
+        $nova = Conversa::findOrFail((int) $resposta->json('conversa'));
+        $this->assertNotSame($encerrada->id, $nova->id, 'O recomeço reaproveitou a conversa encerrada.');
+        $this->assertCount(2, $nova->mensagens, 'A conversa nova não abriu com saudação e pedido de nome.');
+        $this->assertSame(Assistente::paraABolha()->saudacao, $nova->mensagens()->first()->corpo);
+        $this->assertSame('fechada', $encerrada->refresh()->status, 'O recomeço reabriu a conversa encerrada.');
+        $this->assertSame($nova->id, (int) session(Conversa::SESSAO));
+    }
+
+    /** Desligado o documento na tela de chaves, o arquivo é recusado com frase — e sem gastar IA. */
+    public function test_o_documento_nao_entra_com_a_permissao_desligada(): void
+    {
+        config(['assistente.permissoes.documento' => false]);
+        Http::fake();
+        $this->postJson('/assistente/abrir')->assertOk();
+
+        $this->post('/assistente/arquivo', [
+            'arquivo' => UploadedFile::fake()->create('contrato.pdf', 40, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertStatus(422)->assertJsonValidationErrors('arquivo');
+
+        $this->assertSame(0, ConversaMensagem::where('tipo', 'arquivo')->count());
+        Http::assertNothingSent();
+    }
+
+    /** Extensão fora da lista também é recusa da casa, com o nome do formato que falta. */
+    public function test_o_arquivo_fora_dos_formatos_da_casa_nao_chega_ao_provedor(): void
+    {
+        config(['assistente.permissoes.documento' => true]);
+        Http::fake();
+        $this->postJson('/assistente/abrir')->assertOk();
+
+        $this->post('/assistente/arquivo', [
+            'arquivo' => UploadedFile::fake()->create('programa.exe', 40, 'application/octet-stream'),
+        ], ['Accept' => 'application/json'])->assertStatus(422)->assertJsonValidationErrors('arquivo');
+
+        $this->assertSame(0, ConversaMensagem::where('tipo', 'arquivo')->count());
+        Http::assertNothingSent();
+    }
+
+    /**
+     * Liberado o documento, o arquivo entra na conversa com nome e caminho, e o provedor o lê na
+     * capacidade certa — a legenda é a pergunta, e é por ela que a resposta existe.
+     */
+    public function test_o_documento_e_lido_pelo_provedor_com_a_legenda_como_pergunta(): void
+    {
+        Storage::fake('public');
+        config([
+            'assistente.permissoes.documento' => true,
+            'assistente.chaves.gemini' => 'chave-de-teste',
+            'assistente.chaves.openai' => null,
+        ]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [['content' => ['parts' => [['text' => 'A nota está em aberto, com vencimento em 10/10.']]]]],
+            'usageMetadata' => ['promptTokenCount' => 900, 'candidatesTokenCount' => 18],
+        ], 200)]);
+
+        $resposta = $this->post('/assistente/arquivo', [
+            'arquivo' => UploadedFile::fake()->create('nota-fiscal.pdf', 80, 'application/pdf'),
+            'texto' => 'essa nota está paga?',
+        ])->assertOk()->assertJson(['ativo' => true, 'status' => 'aberta']);
+
+        $conversa = Conversa::firstOrFail();
+        $enviada = $conversa->mensagens()->where('tipo', 'arquivo')->firstOrFail();
+        $this->assertSame('essa nota está paga?', $enviada->corpo);
+        $this->assertSame('nota-fiscal.pdf', $enviada->midia_nome);
+        $this->assertStringStartsWith('assistente/', (string) $enviada->midia);
+        Storage::disk('public')->assertExists((string) $enviada->midia);
+
+        $falas = $resposta->json('falas');
+        $this->assertCount(2, $falas);
+        $this->assertSame('arquivo', $falas[0]['tipo']);
+        $this->assertSame('nota-fiscal.pdf', $falas[0]['midia_nome']);
+        $this->assertSame('assistente', $falas[1]['autor']);
+        $this->assertSame('A nota está em aberto, com vencimento em 10/10.', (string) $falas[1]['texto']);
+
+        Http::assertSent(function ($pedido): bool {
+            $partes = $this->partesDoPedido($pedido);
+
+            return in_array('application/pdf', array_column($partes, 'mime'), true)
+                && str_contains($this->textoDoPedido($partes), 'essa nota está paga?');
+        });
+    }
+
+    /** A imagem segue a mesma porta, com a capacidade de visão e o arquivo em `inlineData`. */
+    public function test_a_imagem_e_lida_pelo_provedor_de_visao(): void
+    {
+        Storage::fake('public');
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [['content' => ['parts' => [['text' => 'Vejo um rastreador instalado no painel do carro.']]]]],
+        ], 200)]);
+
+        $this->post('/assistente/arquivo', [
+            'arquivo' => UploadedFile::fake()->create('instalacao.png', 60, 'image/png'),
+        ])->assertOk()->assertJson(['ativo' => true, 'status' => 'aberta']);
+
+        $conversa = Conversa::firstOrFail();
+        $enviada = $conversa->mensagens()->where('tipo', 'imagem')->firstOrFail();
+        $this->assertSame('instalacao.png', $enviada->midia_nome);
+        $this->assertNull($enviada->corpo, 'A legenda vazia virou texto na fala do cliente.');
+
+        $this->assertSame('Vejo um rastreador instalado no painel do carro.', (string) $conversa->ultimaMensagem()->corpo);
+        Http::assertSent(fn ($pedido): bool => in_array('image/png', array_column($this->partesDoPedido($pedido), 'mime'), true));
+    }
+
+    /**
+     * Áudio não é lido pela conversa: ele é transcrito primeiro, e a transcrição é a fala. Assim a
+     * pergunta falada passa pela mesma régua de uma pergunta escrita — nome, fonte e cortesia.
+     */
+    public function test_o_audio_e_transcrito_e_a_conversa_segue_com_a_transcricao(): void
+    {
+        Storage::fake('public');
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Oi, bom dia! Tudo bem?']]]]]], 200)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Tudo ótimo! Como posso ajudar você hoje?']]]]]], 200),
+        ]);
+
+        $this->post('/assistente/arquivo', [
+            'arquivo' => UploadedFile::fake()->create('recado.webm', 40, 'audio/webm'),
+        ])->assertOk()->assertJson(['ativo' => true, 'status' => 'aberta']);
+
+        $conversa = Conversa::firstOrFail();
+        $enviada = $conversa->mensagens()->where('tipo', 'audio')->firstOrFail();
+        $this->assertSame('Oi, bom dia! Tudo bem?', (string) $enviada->transcricao);
+        $this->assertSame('Tudo ótimo! Como posso ajudar você hoje?', (string) $conversa->ultimaMensagem()->corpo);
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($pedido): bool => in_array('audio/webm', array_column($this->partesDoPedido($pedido), 'mime'), true));
+    }
+
+    /**
+     * Conversa de gente não repete o assunto a cada frase: "e a instalação?" continua a pergunta
+     * anterior. A ordem levada ao modelo carrega o fio, e a busca ouve a fala anterior quando a
+     * atual é curta — sem isso a Ana escalaria no meio de um assunto que já estava respondendo.
+     */
+    public function test_a_pergunta_curta_continua_o_assunto_e_leva_o_fio_da_conversa(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'O rastreador custa o valor publicado na loja.']]]]]], 200)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'A instalação sai inclusa na proposta.']]]]]], 200),
+        ]);
+
+        ConhecimentoItem::create([
+            'titulo' => 'Preço do rastreador',
+            'corpo' => 'O valor do rastreador está publicado na loja e a proposta sai com tudo incluso.',
+            'tags' => 'rastreador, preco, valor',
+            'origem' => 'painel',
+            'ativo' => '1',
+        ]);
+
+        $this->postJson('/assistente/fala', ['texto' => 'Quanto custa o rastreador?'])->assertOk();
+        $this->postJson('/assistente/fala', ['texto' => 'e a instalação?'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $pedidos = Http::recorded();
+        $this->assertCount(2, $pedidos);
+
+        $segunda = $pedidos[1][0]->data();
+        $ordem = (string) data_get($segunda, 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('conversa em andamento', $ordem);
+
+        // A fala curta sozinha não tem palavra que ancore uma fonte; com a pergunta anterior, tem.
+        $texto = $this->textoDoPedido($this->partesDoPedido($pedidos[1][0]));
+        $this->assertStringContainsString('Preço do rastreador', $texto);
+
+        // E o que já foi dito vai junto: a Ana continua o fio em vez de recomeçar.
+        $this->assertStringContainsString('O rastreador custa o valor publicado na loja.', $texto);
+    }
+
+    /**
      * O JSON que a parcial entrega ao script — é o contrato entre os dois lados da bolha, e um
      * endereço errado aqui é um botão mudo na tela do cliente.
      */
@@ -460,5 +692,31 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertIsArray($rosto, 'O JSON da bolha não é legível para o script.');
 
         return $rosto;
+    }
+
+    /**
+     * As partes de uma chamada ao provedor, já decodificadas — a mídia viaja em `inlineData` e o
+     * JSON do corpo escapa barras e acentos, então comparar o texto cru da requisição não serve.
+     *
+     * @return array<int, array{mime: ?string, texto: ?string}>
+     */
+    private function partesDoPedido($pedido): array
+    {
+        $falas = (array) data_get($pedido->data(), 'contents', []);
+
+        return collect($falas)
+            ->flatMap(fn (array $fala): array => $fala['parts'] ?? [])
+            ->map(fn (array $parte): array => [
+                'mime' => $parte['inlineData']['mimeType'] ?? null,
+                'texto' => $parte['text'] ?? null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** O texto que foi na chamada, parte por parte — é onde a legenda do arquivo aparece. */
+    private function textoDoPedido(array $partes): string
+    {
+        return implode(' ', array_filter(array_column($partes, 'texto')));
     }
 }

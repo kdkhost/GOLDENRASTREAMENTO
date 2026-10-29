@@ -18,6 +18,22 @@
         $ficha = \App\Models\Assistente::paraABolha();
         $canal = $canal ?? 'site';
 
+        // O anexo só existe na tela quando o painel ligou o tipo: a lista de extensões que o
+        // seletor de arquivos mostra é a mesma que a `Midia` confere no upload, e a dica do botão
+        // repete o teto que o servidor aplica — a tela não promete o que o código recusa.
+        $anexos = collect(['imagem', 'arquivo', 'audio'])
+            ->filter(fn (string $tipo): bool => \App\Services\Assistente\Midia::permitido($tipo))
+            ->values();
+        $aceita = $anexos
+            ->flatMap(fn (string $tipo): array => \App\Services\Assistente\Midia::extensoesDe($tipo))
+            ->unique()
+            ->map(fn (string $ext): string => '.'.$ext)
+            ->implode(',');
+        $limites = $anexos
+            ->map(fn (string $tipo): string => \App\Services\Assistente\Midia::rotuloParaCliente($tipo)
+                .' até '.\App\Services\Assistente\Midia::limiteEmMb($tipo).' MB')
+            ->implode(' · ');
+
         // Endereço do rosto na ficha; sem foto, o painel mostra só o nome. O mesmo avatar
         // aparece no atendente da caixa e na cabeça do balão, para a conversa continuar com a
         // cara de quem abriu a porta.
@@ -27,6 +43,9 @@
             'fala' => route('site.assistente.fala'),
             'falas' => route('site.assistente.falas'),
             'avaliar' => route('site.assistente.avaliar'),
+            'arquivo' => route('site.assistente.arquivo'),
+            'encerrar' => route('site.assistente.encerrar'),
+            'nova' => route('site.assistente.nova'),
             'contato' => route('site.contato'),
             'canal' => $canal,
             'nome' => (string) $ficha->nome,
@@ -67,14 +86,41 @@
             {{ $ficha->nome }} está digitando…
         </p>
 
+        <div class="ia-anexo" data-ia-anexo hidden>
+            <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+            <span data-ia-anexo-nome></span>
+            <button type="button" class="ia-anexo-limpar" data-ia-anexo-limpar aria-label="Remover o arquivo">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+
         <form class="ia-passos" data-ia-form>
-            <label class="ia-oculto" for="iaTexto">Escreva sua mensagem para {{ $ficha->nome }}</label>
-            <textarea id="iaTexto" name="texto" rows="1" maxlength="1000" autocomplete="off"
-                      placeholder="{{ $ficha->textoPlaceholder() }}" required></textarea>
+            <div class="ia-campo">
+                @if($aceita !== '')
+                    <button type="button" class="ia-anexar" data-ia-anexar aria-label="Anexar um arquivo" title="Anexar — {{ $limites }}">
+                        <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+                    </button>
+                    <input type="file" class="ia-oculto" data-ia-arquivo accept="{{ $aceita }}" tabindex="-1">
+                @endif
+                <label class="ia-oculto" for="iaTexto">Escreva sua mensagem para {{ $ficha->nome }}</label>
+                <textarea id="iaTexto" name="texto" rows="1" maxlength="1000" autocomplete="off"
+                          placeholder="{{ $ficha->textoPlaceholder() }}" required></textarea>
+            </div>
             <button type="submit" class="ia-enviar" data-ia-enviar aria-label="Enviar mensagem">
                 <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
             </button>
         </form>
+
+        <div class="ia-fecho" data-ia-fecho>
+            <button type="button" class="ia-encerrar" data-ia-encerrar>
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Encerrar conversa
+            </button>
+        </div>
+
+        <div class="ia-fim" data-ia-fim hidden>
+            <p class="ia-fim-texto"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Conversa encerrada.</p>
+            <button type="button" class="ia-nova" data-ia-nova>Começar uma nova conversa</button>
+        </div>
 
         <a class="ia-humano" href="{{ route('site.contato') }}" data-ia-humano>{{ $ficha->textoHumano() }}</a>
     </div>

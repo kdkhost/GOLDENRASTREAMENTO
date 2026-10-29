@@ -36,7 +36,8 @@ class Assistente extends Model
 
     protected $fillable = [
         'nome', 'cargo', 'saudacao', 'pergunta_nome', 'confirmacao_nome', 'pergunta_email',
-        'confirmacao_email', 'pedido_avaliacao', 'agradecimento_avaliacao', 'despedida', 'tom', 'regras',
+        'confirmacao_email', 'confirmacao_cadastro', 'pedido_avaliacao', 'agradecimento_avaliacao',
+        'despedida', 'tom', 'regras',
         'avatar', 'avatar_alt', 'dica', 'status', 'placeholder', 'humano', 'icone',
         'voz', 'ativo', 'no_site', 'no_funil', 'no_chamado', 'criado_por',
     ];
@@ -72,6 +73,7 @@ class Assistente extends Model
             'confirmacao_nome' => (string) config('assistente.persona.confirmacao_nome'),
             'pergunta_email' => (string) config('assistente.persona.pergunta_email'),
             'confirmacao_email' => (string) config('assistente.persona.confirmacao_email'),
+            'confirmacao_cadastro' => (string) config('assistente.persona.confirmacao_cadastro'),
             'pedido_avaliacao' => (string) config('assistente.persona.pedido_avaliacao'),
             'agradecimento_avaliacao' => (string) config('assistente.persona.agradecimento_avaliacao'),
             'despedida' => (string) config('assistente.persona.despedida'),
@@ -171,6 +173,18 @@ class Assistente extends Model
     public function textoConfirmacaoEmail(?string $nome): string
     {
         $texto = (string) ($this->confirmacao_email ?: config('assistente.persona.confirmacao_email'));
+
+        return self::apliqueONome($texto, $nome);
+    }
+
+    /**
+     * A fala de quem reconheceu o cadastro pelo e-mail. Não é só cortesia: a pessoa precisa saber
+     * que a casa já sabe de quem é a conta — é isso que permite pedir a segunda via sem repetir o
+     * endereço a cada passo.
+     */
+    public function textoConfirmacaoCadastro(?string $nome): string
+    {
+        $texto = (string) ($this->confirmacao_cadastro ?: config('assistente.persona.confirmacao_cadastro'));
 
         return self::apliqueONome($texto, $nome);
     }

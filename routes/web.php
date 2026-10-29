@@ -92,6 +92,12 @@ Route::prefix('assistente')->name('site.assistente.')->group(function () {
         ->middleware('throttle:120,1,assistente-falas')->name('falas');
     Route::post('/avaliar', [SiteAssistenteController::class, 'avaliar'])
         ->middleware('throttle:10,1,assistente-avaliar')->name('avaliar');
+    Route::post('/arquivo', [SiteAssistenteController::class, 'arquivo'])
+        ->middleware('throttle:12,1,assistente-arquivo')->name('arquivo');
+    Route::post('/encerrar', [SiteAssistenteController::class, 'encerrar'])
+        ->middleware('throttle:10,1,assistente-encerrar')->name('encerrar');
+    Route::post('/nova', [SiteAssistenteController::class, 'nova'])
+        ->middleware('throttle:10,1,assistente-nova')->name('nova');
 });
 
 /*

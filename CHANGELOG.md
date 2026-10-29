@@ -3,6 +3,59 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.53.0] - 2026-10-29
+
+### Adicionado
+- **O e-mail dito no meio da conversa agora localiza o cadastro.** Antes ele era só anotado no fio; agora
+  `Identificacao::vincular()` normaliza o endereço, procura a ficha em `Customer::porEmail`, amarra a
+  conversa ao cliente e completa nome e contato que estiverem em branco. Quem é reconhecido ouve isso na
+  hora — a frase nova `confirmacao_cadastro` ("Achei o seu cadastro, :nome…"), editável no painel como
+  todas as outras —, e a equipe vê no fio a linha de sistema com o número e o nome da ficha. O e-mail é
+  lido **em qualquer ponto** da conversa, inclusive com a equipe já no comando ou a máquina desligada: a
+  identificação não depende de a IA estar respondendo.
+- **A conversa pode ser encerrada pela pessoa.** Encerrar pede a nota primeiro (a pesquisa não pode morrer
+  com o fio), grava a linha de sistema, fecha a ação em andamento e marca a conversa como `fechada`. A
+  partir daí o campo de envio sai de cena, o anexo perde o pulso e a bolha mostra o convite a começar outra
+  — reabrir sozinha seria a tela contrariando o fim que a pessoa pediu. As estrelas continuam valendo para
+  quem fechou sem dar nota.
+- **Anexar arquivo virou campo de verdade, e o documento passou a valer.** O clipe manda a peça pelo
+  endpoint `/assistente/arquivo`, com o limite de tamanho lido de `Midia::bytesDe()` (a mesma regra que o
+  aceita), e cada tipo segue por onde sabe ser lido: imagem e documento vão ao provedor de visão/leitura
+  com a legenda como pergunta, áudio é transcrito primeiro e a transcrição entra como se tivesse sido
+  digitada. O envio de documento passou a vir **ligado** (`assistente.permissoes.documento`), e o
+  interruptor do painel continua mandando; arquivo recusado volta com a frase da regra quebrada no toastr,
+  sem fechar a bolha.
+
+### Alterado
+- **A Ana fala como gente.** Os textos padrão da ficha foram reescritos (saudação, nome, e-mail, pedido de
+  nota, agradecimento, despedida) e as regras ganharam pé: respostas de duas a quatro frases, sem
+  repetir a saudação a cada volta, sem repetir a pergunta já respondida, uma pergunta por vez e nada de
+  preço, prazo ou condição sem lastro. A migration `2026_10_29_100001_a_ficha_reconhece_o_cadastro` troca
+  só os textos que ninguém editou — quem escreveu a própria frase no painel continua com ela.
+- **A conversa deixou de esquecer o assunto na segunda pergunta.** O fio entregue ao modelo passou a 16
+  falas e a ordem da conversa diz explicitamente que o atendimento está em andamento; pergunta curta
+  ("e a instalação?") herda o assunto da anterior em vez de virar uma pergunta solta sem contexto.
+- **O campo de envio é uma cápsula só.** Texto, clipe e enviar dividem a mesma moldura com anel dourado no
+  foco; o mesmo componente serve para o site e o funil. A conversa rola sozinha para a última fala a cada
+  resposta, a cada anexo e ao abrir — ninguém precisa puxar o scroll para acompanhar.
+- **Arquivo recusado fala a língua do cliente.** As mensagens de `Midia::recusa()` deixaram de citar o
+  painel e dizem "O envio de documento não está disponível neste atendimento", com o rótulo certo por tipo
+  (áudio, imagem, documento).
+
+### Corrigido
+- **Resposta de erro não fecha mais a bolha.** O JavaScript tratava qualquer retorno sem `ativo` como
+  "máquina desligada" e desaparecia com o widget; uma recusa de arquivo (422) ou um CSRF vencido (419) agora
+  mostram a frase da regra e a conversa continua na tela.
+- **Começar outra conversa não apaga mais o fio antes da hora.** A tela só limpava depois do `/nova`
+  responder; quando o pedido falhava, a pessoa ficava com a bolha vazia e a conversa antiga perdida.
+
+### Testado
+- `BolhaDoAssistenteTest` cobre o documento lido com a legenda como pergunta, a imagem indo ao provedor de
+  visão, o áudio transcrito seguindo a conversa e a pergunta curta herdando o assunto e o histórico;
+  `IdentificacaoEAvaliacaoPeloAssistenteTest` prova o vínculo pelo e-mail, a confirmação de cadastro, a nota
+  das estrelas e o encerramento com a pesquisa já respondida; `SegundaViaPeloAssistenteTest` acompanha o fio
+  pelo e-mail até a segunda via. Suite completa: 724 testes, 11.914 asserções.
+
 ## [2.52.0] - 2026-10-29
 
 ### Corrigido

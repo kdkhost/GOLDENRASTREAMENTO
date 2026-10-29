@@ -3,6 +3,8 @@
 namespace App\Services\Assistente;
 
 use App\Models\Conversa;
+use App\Models\ConversaMensagem;
+use App\Models\Customer;
 use App\Models\Setting;
 use Illuminate\Support\Str;
 
@@ -67,10 +69,62 @@ final class Identificacao
         return (bool) config('assistente.contato.exigir_para_personalizado');
     }
 
-    /** O que a casa resolveu pedir foi dito: é o piso de um atendimento que olha a conta da pessoa. */
+    /**
+     * O que a casa resolveu pedir foi dito: é o piso de um atendimento que olha a conta da pessoa.
+     */
     public static function pronta(Conversa $conversa): bool
     {
         return self::faltam($conversa) === [];
+    }
+
+    /**
+     * Grava o e-mail na conversa e, achando o cadastro, amarra a conversa à ficha do cliente.
+     *
+     * A busca é por `Customer::porEmail()`, que compara o endereço de contato e o de acesso ao
+     * portal sem diferenciar maiúsculas. Quando o cadastro aparece, a conversa ganha `customer_id`
+     * — é a ponte que a equipe lê na caixa de entrada — e o nome/telefone que a ficha ainda não
+     * tinha são completados dali. O que a pessoa já disse nunca é sobrescrito.
+     *
+     * O achado deixa uma fala de sistema no fio, do mesmo jeito que o cadastro do formulário deixa:
+     * sem ela, a equipe abre a conversa e não sabe por que a ficha do cliente está ali. Devolve o
+     * cliente para quem precisa escolher a frase de confirmação — ou nulo quando o endereço ainda
+     * não é de ninguém.
+     */
+    public static function vincular(Conversa $conversa, string $email): ?Customer
+    {
+        $normalizado = Str::lower(trim($email));
+
+        if ($normalizado === '') {
+            return null;
+        }
+
+        $cliente = Customer::porEmail($normalizado);
+        $dados = ['email' => $normalizado];
+
+        if ($cliente !== null) {
+            $dados['customer_id'] = $cliente->id;
+
+            if (blank($conversa->nome)) {
+                $dados['nome'] = $cliente->nome;
+            }
+
+            if (blank($conversa->contato)) {
+                $dados['contato'] = (string) ($cliente->telefone ?: $cliente->emailDeAcesso());
+            }
+        }
+
+        $conversa->update($dados);
+
+        if ($cliente !== null && ! $conversa->mensagens()->where('autor', 'sistema')->where('corpo', 'like', 'Cadastro localizado%')->exists()) {
+            ConversaMensagem::create([
+                'conversa_id' => $conversa->id,
+                'autor' => 'sistema',
+                'tipo' => 'texto',
+                'corpo' => 'Cadastro localizado pelo e-mail: cliente #'.$cliente->id.' — '.$cliente->nome.'.',
+            ]);
+        }
+
+        return $cliente;
     }
 
     /**
