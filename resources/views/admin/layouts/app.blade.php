@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-upload.css') }}?v={{ filemtime(public_path('css/golden-upload.css')) }}">
+    {{-- A folha do guia também veste a gaveta de ajuda, que existe em toda tela do painel: um
+         arquivo só para o passo a passo não ter duas versões de tipografia. --}}
+    <link rel="stylesheet" href="{{ asset('css/golden-guia.css') }}?v={{ filemtime(public_path('css/golden-guia.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/admin-golden.css') }}?v={{ filemtime(public_path('css/admin-golden.css')) }}">
     @yield('styles')
 </head>
@@ -78,9 +81,13 @@
             <div class="container-fluid">
                 <div class="row align-items-center g-2">
                     <div class="col-lg-7">
-                        <h3 class="mb-0 fw-bold text-body fs-4">@yield('page_title', 'Painel')</h3>
+                        {{-- O título e o ícone da ajuda na mesma linha: a explicação da tela não
+                             ocupa mais uma faixa abaixo do nome, e quem quer lê sem empurrar nada. --}}
+                        <div class="d-flex align-items-center gap-2">
+                            <h3 class="mb-0 fw-bold text-body fs-4">@yield('page_title', 'Painel')</h3>
+                            @include('admin.partials.ajuda-rota')
+                        </div>
                         <p class="text-secondary small mb-0">@yield('page_description')</p>
-                        @include('admin.partials.ajuda-rota')
                     </div>
                     <div class="col-lg-5"><div class="page-actions">@yield('page_actions')</div></div>
                 </div>
@@ -100,11 +107,13 @@
 </div>
 
 @include('partials.to-top')
+@include('admin.partials.ajuda-gaveta')
 
 @include('admin.partials.scripts')
 <script src="{{ asset('js/admin-abas.js') }}?v={{ filemtime(public_path('js/admin-abas.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
 <script src="{{ asset('js/golden-upload.js') }}?v={{ filemtime(public_path('js/golden-upload.js')) }}"></script>
+<script src="{{ asset('js/golden-ajuda.js') }}?v={{ filemtime(public_path('js/golden-ajuda.js')) }}"></script>
 <script src="{{ asset('js/admin-notificacoes.js') }}?v={{ filemtime(public_path('js/admin-notificacoes.js')) }}"></script>
 @yield('scripts')
 @stack('scripts')

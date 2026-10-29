@@ -11,6 +11,7 @@
     'rows' => 4,
     'required' => false,
     'opcional' => false,
+    'ajuda' => null,
 ])
 @php
     $id = 'f-'.preg_replace('/[^a-z0-9]+/i', '-', $name);
@@ -21,13 +22,22 @@
     $comErro = $errors->has($chave) ? ' is-invalid' : '';
     $classe = ($type === 'select' ? 'form-select' : 'form-control').$comErro;
     $extra = $attributes->except('class');
+    // A ajuda do campo é procurada pelo próprio nome: nenhuma view precisa lembrar de chamá-la, e
+    // `ajuda` só serve quando dois campos contam a mesma história (os dois servidores de acesso,
+    // por exemplo). Sem entrada no config, o ícone não existe e o rótulo fica como sempre esteve.
+    $gaveta = \App\Support\GuiaConfiguracao::gaveta($ajuda ?? $name, $label);
 @endphp
 <div class="{{ $col }}">
-    <label class="form-label" for="{{ $id }}">
-        {{ $label }}
-        @if($opcional)<span class="form-hint">(opcional)</span>@endif
+    {{-- O rótulo e o ícone na mesma linha; a dica embaixo. Dentro do `<label>` a dica empurrava o
+         ícone para a última linha do bloco, e ele ficava solto em campo com explicação. --}}
+    <div class="{{ $gaveta ? 'ajuda-rotulo' : '' }}">
+        <label class="form-label" for="{{ $id }}">
+            {{ $label }}
+            @if($opcional)<span class="form-hint">(opcional)</span>@endif
+        </label>
+        @if($gaveta)<x-admin.ajuda :gaveta="$gaveta" />@endif
         @if($hint)<span class="form-hint d-block">{{ $hint }}</span>@endif
-    </label>
+    </div>
 
     @if($type === 'textarea')
         <textarea id="{{ $id }}" name="{{ $name }}" rows="{{ $rows }}" class="{{ $classe }} {{ $attributes->get('class') }}"

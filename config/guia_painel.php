@@ -17,6 +17,7 @@
 |   lista   itens soltos;
 |   codigo  linhas monoespaçadas (comando, .env);
 |   tabela  cabeçalho e linhas;
+|   links   os endereços onde se busca cada credencial — `rotulo` + `url`;
 |   aviso   a frase que fica marcada à esquerda — `tom` usa os tokens do tema.
 |
 | 'rota' é a tela que a seção documenta: a página oferece o botão "Abrir a tela"

@@ -400,6 +400,10 @@ a dimensão ideal.
   usuário, sincronização em fila e prévia do anúncio responsivo — seção *Google Ads* abaixo.
 - **Guia de uso** (`/admin/guia`): a documentação do sistema dentro do sistema, aberta em outra
   aba, com busca, índice lateral e uma seção por vez — seção *Guia de uso* abaixo.
+- **Ajuda no item**: um ícone miúdo ao lado do título da tela e ao lado do rótulo de cada campo,
+  cartão ou *switch* — nada de parágrafo despejado na formulação. O clique abre uma gaveta à direita,
+  sobre a própria tela, com o passo a passo daquele item e o endereço de onde o token ou a credencial
+  nascem. O texto mora em `config/guia_configuracao.php`; item sem entrada escrita não mostra ícone.
 - **Auditoria**: trilha de ações administrativas (login, mudança de funil, exportação,
   configuração, cadastros de produto/página/pedido…), apenas para admin.
 - **Usuários & permissões**: perfis `admin`, `vendedor`, `visualizador` com middleware
@@ -553,30 +557,47 @@ a dimensão ideal.
 
 ### Guia de uso (`/admin/guia`) — a documentação dentro do sistema
 - **O texto vive numa fonte só**: `config/guia_painel.php`, lido por `App\Support\GuiaPainel`.
-  A tela do guia, o cartão dobrável da tela de Google Ads e a linha do cabeçalho consomem os
-  mesmos blocos, então a documentação e a tela não podem se desmentir. Seis tipos de bloco
-  (`texto`, `passos`, `lista`, `codigo`, `tabela`, `aviso`) e `**negrito**` / `` `código` ``
-  inline; passo nenhum com número — a ordem já está na lista.
+  A tela do guia e a gaveta de ajuda de cada tela consomem os mesmos blocos, então a documentação
+  e a tela não podem se desmentir. Sete tipos de bloco (`texto`, `passos`, `lista`, `codigo`,
+  `tabela`, `aviso`, `links`), com `**negrito**` e `` `código` `` inline; passo nenhum com número —
+  a ordem já está na lista.
 - **30 seções em 7 grupos** (Começando, Comercial, Vendas, Atendimento, Conteúdo do site, Portal
   do cliente, Sistema), da rotina do dia ao diagnóstico do servidor. O índice fica na coluna da
   esquerda, como a barra lateral, e o painel da direita mostra **uma seção por vez**: clicar troca
   o conteúdo sem rolar a página, e o `#secao` no endereço continua abrindo direto nela. A busca
   normaliza acento ("contrato" acha "Contratos"), esconde o que não casa e abre a primeira seção
   que casa.
-- **Abre em outra aba, sem sair do que se estava fazendo**: o item da barra lateral, o link "Como
-  usar esta tela" (`admin/partials/ajuda-rota.blade.php`, incluído no cabeçalho do layout) e o
-  botão "Guia do painel" do aviso de crons têm `target="_blank"` — o `@include` cobre as ~20 views
-  sem editar nenhuma, e a rota sem seção não oferece link. O guia é a única tela do painel que se
-  abre assim: é consulta, não navegação.
+- **O guia abre em outra aba, sem tirar ninguém do que estava fazendo**: o item da barra lateral, o
+  botão "Guia do painel" do aviso de crons e o link do rodapé da gaveta têm `target="_blank"`. O guia
+  é a única tela do painel que se abre assim: é consulta, não navegação.
+- **A ajuda da tela inteira é um ícone, não uma frase**: `admin/partials/ajuda-rota.blade.php`,
+  incluído no cabeçalho do layout, desenha o círculo de interrogação ao lado do título quando a rota
+  tem seção no mapa (`config/guia_painel.rotas`) — as ~20 telas sem uma linha de texto cada. A
+  descrição que antes ficava embaixo do título da tela de Configurações sumiu por inteiro.
+- **A ajuda de cada item, no item**: `App\Support\GuiaConfiguracao` lê `config/guia_configuracao.php`
+  e dá a gaveta de cada campo, cartão ou *switch*, procurada pelo próprio nome do campo (`x-admin.field`,
+  `x-admin.switch`, `x-admin.campo-chave`) ou pela chave do cartão (`ajuda="…"` em `x-admin.card`).
+  São os itens das sete abas de Configurações e dos oito grupos de chaves de integração, com o
+  endereço onde cada credencial nasce: rota interna vira endereço real, `{host}`, `{whmcs}` e
+  `{whatsapp}` saem do que o painel já sabe — e o link que depende de algo ainda não informado some
+  da gaveta, em vez de levar a lugar nenhum.
+- **Nada disso pesa em quem não pede**: os corpos vivem em `<template>` dentro da própria página,
+  que o navegador não desenha, e a gaveta (`admin/partials/ajuda-gaveta.blade.php`, uma *offcanvas*
+  à direita) existe sempre vazia. `golden-ajuda.js` copia o `<template>` escolhido pelo `data-ajuda`
+  do botão e abre — sem rede, sem meia tela carregando, sem o botão dentro de `<form>` enviar nada
+  (todo ícone é `type="button"`).
 - **O clique não rola a janela**: `golden-guia.js` marca a seção ativa, mede a altura que sobra na
   tela e dá ao painel rolagem própria (o corpo do cartão rola por dentro); o endereço muda por
   `history.replaceState`, sem âncora — âncora é justamente o que faz a janela pular. No celular,
   onde não existe "à direita", o painel é trazido para a tela depois da troca.
 - **Aberto a quem opera o painel**: vendedor, visualizador e admin lêem o mesmo texto; não há
   versão "só do administrador" da documentação.
-- Testes: `tests/Feature/GuiaDoPainelTest.php` (16) — conferem cada rota citada, cada item do menu
-  com seção, cada tom de aviso no dark e no light, a aba própria do guia, o painel de uma seção
-  por vez e o cartão que nasce aberto quando falta credencial do Google Ads.
+- Testes: `tests/Feature/GuiaDoPainelTest.php` (16) — cada rota citada, cada item do menu com seção,
+  cada tom de aviso no dark e no light, a aba própria do guia, o painel de uma seção por vez, o ícone
+  do cabeçalho e a gaveta que ele abre. `tests/Feature/AjudaDeConfiguracaoTest.php` (9) — cada campo
+  de integração com ajuda escrita, cada segredo com o endereço de onde nasce, cada rota citada ainda
+  existindo, passo sem número, texto em português sem marca crua e a tela de Configurações oferecendo
+  a ajuda sem despejá-la na frente de ninguém.
 
 ### Portal do cliente (`/portal`) — a casa do cliente sem pedir nada à equipe
 - **É o mesmo painel, com a porta do cliente**: a barra lateral, o tema claro/escuro, os
@@ -706,11 +727,13 @@ app/
   Console/Commands/SyncGoogleAdsCommand.php # google-ads:sync, a cada 15 min
   Support/Carrinho.php                   # sacola em sessão, sobre o catálogo em cache
   Support/Envio.php                      # regras e gravação dos campos de arrastar-e-soltar
+  Support/GuiaConfiguracao.php           # a gaveta de ajuda de um item: texto, passos e endereços
   Support/PortalDoCliente.php            # auto-cadastro: acha a ficha pelo documento/e-mail
   Support/helpers.php                    # brl(), loja_ativa(), slugify_pt()
 config/golden.php                        # conteúdo do site + contatos reais
 config/google_ads.php                    # credenciais, escopos, travas do RSA, janelas de métrica
 config/guia_painel.php                   # o texto do Guia de uso: seções, blocos, rota de cada uma
+config/guia_configuracao.php             # o passo a passo de cada item configurável, por nome de campo
 config/cron.php                          # presets de frequência, comandos sugeridos e recusados
 config/notificacoes.php                  # o catálogo dos avisos: tipo, ícone, tom, audiência, rota
 config/envios.php                        # formatos, limite, pasta e dimensão de cada campo de envio

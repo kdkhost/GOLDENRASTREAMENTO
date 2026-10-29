@@ -312,10 +312,14 @@ class RevinculoWhmcsTest extends TestCase
 
         Http::assertNothingSent();
 
-        $this->actingAs($this->admin, 'web')
+        $html = $this->actingAs($this->admin, 'web')
             ->get(route('admin.clientes.show', $cliente))
             ->assertOk()
-            ->assertDontSee('Revincular ao financeiro');
+            ->getContent();
+
+        // O guia, na gaveta, cita o botão pelo nome — e citação guardada em `<template>` não é a
+        // tela oferecendo nada. Sem credencial, quem abre a ficha não vê o botão de revínculo.
+        $this->assertStringNotContainsString('Revincular ao financeiro', $this->visivel($html));
     }
 
     public function test_a_ficha_oferece_o_botao_com_a_conta_ligada(): void
@@ -323,11 +327,15 @@ class RevinculoWhmcsTest extends TestCase
         $this->ligar();
         $cliente = $this->conta(['whmcs_id' => 11]);
 
-        $this->actingAs($this->admin, 'web')
+        $visivel = $this->visivel($this->actingAs($this->admin, 'web')
             ->get(route('admin.clientes.show', $cliente))
             ->assertOk()
-            ->assertSee('Revincular ao financeiro')
-            ->assertSee('maria@exemplo.com.br');
+            ->getContent());
+
+        // Conferido no HTML de verdade: o guia, guardado na gaveta, cita o botão pelo nome, e citação
+        // escondida não pode fazer este teste passar quando o botão não está na tela.
+        $this->assertStringContainsString('Revincular ao financeiro', $visivel);
+        $this->assertStringContainsString('maria@exemplo.com.br', $visivel);
     }
 
     public function test_a_pendencia_aparece_na_ficha_como_botao_de_desfazer(): void

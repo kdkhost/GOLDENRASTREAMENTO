@@ -4,7 +4,9 @@
     um para o outro seria ter duas versões do mesmo passo a passo, e uma delas ia envelhecer.
 
     Os tipos são os declarados no topo de config/guia_painel.php: texto, passos, lista, código,
-    tabela e aviso. Passo não tem número — ícone, título e texto, e a ordem já está na lista.
+    tabela, links e aviso. Passo não tem número — ícone, título e texto, e a ordem já está na
+    lista. Os mesmos tipos servem à gaveta de ajuda de Configurações
+    (`App\Support\GuiaConfiguracao`), que é como um item conta o seu passo a passo.
 
     Todo texto passa por GuiaPainel::inline(), que escapa primeiro e desenha depois; por isso o
     {!! !!} aqui não é porta de entrada para marca vinda do config.
@@ -70,6 +72,22 @@
         @case('aviso')
             <div class="guia-aviso guia-aviso--{{ $bloco['tom'] ?? 'amber' }}">
                 {!! \App\Support\GuiaPainel::inline($bloco['conteudo']) !!}
+            </div>
+            @break
+
+        @case('links')
+            {{-- Os endereços onde a credencial nasce. Só chegam aqui os que a instalação consegue
+                 preencher hoje: `GuiaConfiguracao` descarta o que depende de algo ainda vazio, e a
+                 lista nunca mostra link quebrado. Abrem em outra aba de propósito — quem vai buscar
+                 o token não perde o formulário que estava preenchendo. --}}
+            <div class="guia-subtitulo">{{ $bloco['titulo'] ?? 'Onde buscar' }}</div>
+            <div class="guia-links">
+                @foreach ($bloco['itens'] as $link)
+                    <a class="guia-link" href="{{ $link['url'] }}" target="_blank" rel="noopener">
+                        <i class="fas fa-up-right-from-square" aria-hidden="true"></i>
+                        <span>{{ $link['rotulo'] }}</span>
+                    </a>
+                @endforeach
             </div>
             @break
 

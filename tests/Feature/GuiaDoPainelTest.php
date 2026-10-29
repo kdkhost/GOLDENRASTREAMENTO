@@ -20,7 +20,7 @@ class GuiaDoPainelTest extends TestCase
     use RefreshDatabase;
 
     /** Os tipos de bloco que `admin/guia/partials/blocos.blade.php` desenha. */
-    private const TIPOS_DE_BLOCO = ['texto', 'passos', 'lista', 'codigo', 'tabela', 'aviso'];
+    private const TIPOS_DE_BLOCO = ['texto', 'passos', 'lista', 'codigo', 'tabela', 'aviso', 'links'];
 
     protected function setUp(): void
     {
@@ -83,6 +83,7 @@ class GuiaDoPainelTest extends TestCase
                         "A tabela da seção '{$id}' tem linha com número de células diferente do cabeçalho."
                     ),
                     'passos' => $this->assertNotEmpty($bloco['itens'] ?? [], "Passo a passo vazio na seção '{$id}'."),
+                    'links' => $this->assertNotEmpty($bloco['itens'] ?? [], "Bloco de endereços vazio na seção '{$id}'."),
                     default => null,
                 };
 
@@ -181,29 +182,33 @@ class GuiaDoPainelTest extends TestCase
         }
     }
 
-    public function test_a_linha_discreta_do_cabecalho_leva_a_secao_certa(): void
+    public function test_o_icone_do_cabecalho_abre_a_secao_certa_da_tela(): void
     {
         $destaTela = $this->actingAs(User::where('email', 'vendedor@golden.com.br')->firstOrFail())
             ->get(route('admin.leads.index'))
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('guia-chamada', $destaTela, 'A tela de Leads não oferece o guia.');
-        $this->assertStringContainsString('#leads', $destaTela, 'O link de Leads não leva à seção de Leads.');
+        // O texto saiu do cabeçalho e foi para dentro da gaveta: o que fica na tela é o ícone, e a
+        // frase "Como usar esta tela" continua existindo como nome acessível do botão.
+        $this->assertStringContainsString('data-ajuda="ajuda-tela"', $destaTela, 'A tela de Leads não oferece a ajuda da tela.');
+        $this->assertStringContainsString('aria-label="Como usar esta tela:', $destaTela);
+        $this->assertStringContainsString('data-ajuda-corpo="ajuda-tela"', $destaTela, 'A gaveta não trouxe o corpo com o texto da seção.');
 
-        // O Google Ads, que tem seção própria e uma dentro da outra, precisa cair cada um na sua.
-        $criativo = $this->get(route('admin.google-ads.criativo'))->assertOk()->getContent();
-        $this->assertStringContainsString('#criativo', $criativo);
-        $this->assertStringNotContainsString('#google-ads"', $criativo);
+        // Cada tela cai na própria seção: o corpo oferecido é um só, o desta tela.
+        $this->assertSame(1, substr_count($destaTela, 'data-ajuda-corpo="ajuda-tela"'),
+            'Duas seções diferentes foram oferecidas como a ajuda desta tela.');
 
         // E a própria tela do guia não se oferece.
         $guia = $this->get(route('admin.guia.index'))->assertOk()->getContent();
-        $this->assertStringNotContainsString('guia-chamada mt-1', $guia);
+        $this->assertStringNotContainsString('data-ajuda="ajuda-tela"', $guia,
+            'A tela do guia ofereceu um ícone de ajuda que levaria ao guia.');
     }
 
     /**
-     * Consultar não pode custar a tela que estava aberta: o guia é a única página do painel que
-     * abre em outra aba, tanto pelo item da barra lateral quanto pela linha do cabeçalho.
+     * Consultar não pode custar a tela que estava aberta: a gaveta abre sobre o formulário, e o
+     * único endereço que sai para o Guia de uso inteiro —— o rodapé da gaveta e o item da barra
+     * lateral —— abre em outra aba.
      */
     public function test_o_guia_abre_em_outra_aba(): void
     {
@@ -218,9 +223,9 @@ class GuiaDoPainelTest extends TestCase
 
         $leads = $this->get(route('admin.leads.index'))->assertOk()->getContent();
         $this->assertMatchesRegularExpression(
-            '/class="guia-chamada mt-1"[^>]*target="_blank" rel="noopener"/',
+            '/<a href="'.preg_quote(route('admin.guia.index'), '/').'"[^>]*target="_blank" rel="noopener"/',
             $leads,
-            'O "Como usar esta tela" voltou a levar a pessoa para fora da tela que ela estava preenchendo.'
+            'O rodapé da gaveta voltou a levar a pessoa para fora da tela que ela estava preenchendo.'
         );
     }
 
@@ -286,13 +291,20 @@ class GuiaDoPainelTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        // A tela de métrica não vira manual: o texto do guia mora na tela do guia, e o cabeçalho
-        // leva até a seção certa. O cartão de abertura diz o que falta, sem despejar o passo a passo.
-        $this->assertStringContainsString('Ligar o Google Ads', $html);
-        $this->assertStringContainsString('Como usar esta tela', $html);
-        $this->assertStringContainsString(route('admin.guia.index').'#google-ads', $html);
-        $this->assertStringNotContainsString('Quatro passos que só existem no Google', $html);
-        $this->assertStringNotContainsString('data-bs-toggle="collapse"', $html);
+        // A tela de métrica não vira manual: o texto do guia mora na gaveta e na tela do guia, e o
+        // cabeçalho oferece o ícone que abre um ou outro. O cartão de abertura diz o que falta, sem
+        // despejar o passo a passo na frente de quem só quer ver o número.
+        $visivel = $this->visivel($html);
+
+        $this->assertStringContainsString('Ligar o Google Ads', $visivel);
+        $this->assertStringContainsString('aria-label="Como usar esta tela:', $visivel);
+        $this->assertStringContainsString(route('admin.guia.index'), $visivel);
+        $this->assertStringContainsString('data-ajuda-corpo="ajuda-tela"', $html);
+
+        // O corpo da gaveta vive dentro de `<template>`, que o navegador não desenha: o texto do
+        // guia pode estar na página, o que não pode é aparecer na tela de quem só quer o número.
+        $this->assertStringNotContainsString('Quatro passos que só existem no Google', $visivel);
+        $this->assertStringNotContainsString('data-bs-toggle="collapse"', $visivel);
     }
 
     public function test_a_tela_carrega_a_folha_e_o_script_do_guia(): void

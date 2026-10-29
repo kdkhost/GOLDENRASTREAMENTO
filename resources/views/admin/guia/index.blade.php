@@ -3,10 +3,6 @@
 @section('page_title', 'Guia de uso')
 @section('page_description', 'Como cada tela funciona e o que configurar antes de usar — o guia fica aberto ao lado do sistema, sem ocupar a tela em que você está.')
 
-@section('styles')
-<link rel="stylesheet" href="{{ asset('css/golden-guia.css') }}?v={{ filemtime(public_path('css/golden-guia.css')) }}">
-@endsection
-
 @section('content')
 {{--
     A tela é o painel, então ela obedece ao painel: o índice fica na coluna da esquerda, como a

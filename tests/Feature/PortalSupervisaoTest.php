@@ -190,17 +190,20 @@ class PortalSupervisaoTest extends TestCase
     {
         $cliente = $this->conta();
 
-        $this->actingAs($this->admin, 'web')->get(route('admin.clientes.show', $cliente))
-            ->assertOk()
-            ->assertSee('Ver a conta do cliente');
+        // A gaveta da ajuda carrega o texto do guia daquela tela dentro de `<template>` — o
+        // navegador não desenha nada ali, e cita o botão pelo nome. O que muda com a veiculação é o
+        // botão de verdade, na parte desenhada da página.
+        $liga = $this->visivel($this->actingAs($this->admin, 'web')
+            ->get(route('admin.clientes.show', $cliente))->assertOk()->getContent());
+        $this->assertStringContainsString('Ver a conta do cliente', $liga);
 
         $this->supervisionar($cliente);
 
         config(['whmcs.veiculacao.supervisao' => false]);
 
-        $this->actingAs($this->admin, 'web')->get(route('admin.clientes.show', $cliente))
-            ->assertOk()
-            ->assertDontSee('Ver a conta do cliente');
+        $desliga = $this->visivel($this->actingAs($this->admin, 'web')
+            ->get(route('admin.clientes.show', $cliente))->assertOk()->getContent());
+        $this->assertStringNotContainsString('Ver a conta do cliente', $desliga);
 
         // Desligar no meio vale na hora: quem estava dentro cai fora na próxima requisição.
         $this->get(route('portal.inicio'))->assertRedirect(route('portal.login'));

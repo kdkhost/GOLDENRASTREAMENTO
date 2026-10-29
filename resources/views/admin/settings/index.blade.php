@@ -1,7 +1,6 @@
 @extends('admin.layouts.app')
 @section('title', 'Configurações')
 @section('page_title', 'Configurações do sistema')
-@section('page_description', 'Cada tipo de configuração na sua aba: contato, acessos do site, loja, WhatsApp, medição, financeiro (WHMCS) e chaves de integração.')
 
 @php
     $lojaAtiva = ($settings['loja_ativa'] ?? '1') === '1';
@@ -131,12 +130,12 @@
                 <input type="hidden" name="_aba" value="acessos">
                 <div class="row g-3">
                     <div class="col-xl-5">
-                        <x-admin.card title="Acessos externos do site" icon="fa-arrow-up-right-from-square"
+                        <x-admin.card title="Acessos externos do site" icon="fa-arrow-up-right-from-square" ajuda="acessos_externos"
                             descricao="Para onde levam o submenu da conta e o botão do topo do site, com o nome e o ícone de cada servidor. O portal do cliente é rota interna e não aparece aqui.">
                             <div class="row g-3">
                                 <x-admin.field name="acesso_financeiro_url" type="url" label="Financeiro antigo" :value="$settings['acesso_financeiro_url'] ?? config('golden.acessos.financeiro')" maxlength="255" :opcional="true" placeholder="https://financeiro.exemplo.com.br/login" hint="Abre em outra aba, pelo submenu do ícone de login." />
-                                <x-admin.field name="acesso_servidor_1_url" type="url" label="Endereço do servidor 1" :value="$settings['acesso_servidor_1_url'] ?? config('golden.acessos.servidor_1')" col="col-12 col-md-6" maxlength="255" :opcional="true" placeholder="https://app1.exemplo.com.br" />
-                                <x-admin.field name="acesso_servidor_2_url" type="url" label="Endereço do servidor 2" :value="$settings['acesso_servidor_2_url'] ?? config('golden.acessos.servidor_2')" col="col-12 col-md-6" maxlength="255" :opcional="true" placeholder="http://203.0.113.10:8082/" />
+                                <x-admin.field name="acesso_servidor_1_url" type="url" label="Endereço do servidor 1" :value="$settings['acesso_servidor_1_url'] ?? config('golden.acessos.servidor_1')" col="col-12 col-md-6" maxlength="255" :opcional="true" placeholder="https://app1.exemplo.com.br" ajuda="acesso_servidor_url" />
+                                <x-admin.field name="acesso_servidor_2_url" type="url" label="Endereço do servidor 2" :value="$settings['acesso_servidor_2_url'] ?? config('golden.acessos.servidor_2')" col="col-12 col-md-6" maxlength="255" :opcional="true" placeholder="http://203.0.113.10:8082/" ajuda="acesso_servidor_url" />
                                 <x-admin.field name="acesso_servidor_1_titulo" label="Nome do servidor 1" :value="$settings['acesso_servidor_1_titulo'] ?? $textosAcesso['servidor_1_titulo']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Servidor 1" hint="É o que o cliente lê no modal — o endereço fica só no link." />
                                 <x-admin.field name="acesso_servidor_2_titulo" label="Nome do servidor 2" :value="$settings['acesso_servidor_2_titulo'] ?? $textosAcesso['servidor_2_titulo']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Servidor 2" />
                                 <x-admin.field name="acesso_servidor_1_icone" type="select" label="Ícone do servidor 1" :value="$settings['acesso_servidor_1_icone'] ?? $textosAcesso['servidor_1_icone']" :options="$iconesAcesso" col="col-12 col-md-6" empty="Ícone padrão" :opcional="true" />
@@ -145,7 +144,7 @@
                         </x-admin.card>
                     </div>
                     <div class="col-xl-7">
-                        <x-admin.card title="Textos dos acessos" icon="fa-pen-nib"
+                        <x-admin.card title="Textos dos acessos" icon="fa-pen-nib" ajuda="acessos_textos"
                             descricao="Cada rótulo do caminho até a plataforma, do botão dourado ao modal. Em branco vale o texto padrão da casa.">
                             <div class="row g-3">
                                 <x-admin.field name="acesso_botao_rotulo" label="Rótulo do botão dourado" :value="$settings['acesso_botao_rotulo'] ?? $textosAcesso['botao']" col="col-12 col-md-6" maxlength="40" :opcional="true" placeholder="Rastreamento" hint="Aparece no topo e na gaveta do site, e abre a escolha de servidor." />
@@ -173,7 +172,7 @@
         <div class="tab-pane fade" id="aba-loja" data-aba-painel="loja" role="tabpanel" aria-labelledby="aba-loja-botao" tabindex="0">
             <div class="row g-3">
                 <div class="col-xl-5">
-                    <x-admin.card title="Loja virtual" icon="fa-store" :descricao="$lojaAtiva ? 'Ativa — as páginas /loja estão no ar e no menu do site.' : 'Desativada — /loja sai do ar e some do menu.'">
+                    <x-admin.card title="Loja virtual" icon="fa-store" ajuda="loja_ligar" :descricao="$lojaAtiva ? 'Ativa — as páginas /loja estão no ar e no menu do site.' : 'Desativada — /loja sai do ar e some do menu.'">
                         <x-slot:actions>
                             <x-admin.status :rotulo="$lojaAtiva ? 'ativa' : 'desativada'" :tom="tom_por_flag($lojaAtiva)" />
                         </x-slot:actions>
@@ -188,7 +187,7 @@
                     </x-admin.card>
                 </div>
                 <div class="col-xl-7">
-                    <x-admin.card title="Regras da loja" icon="fa-truck-fast" descricao="Frete, retirada, Pix e o e-mail que recebe cada venda.">
+                    <x-admin.card title="Regras da loja" icon="fa-truck-fast" ajuda="regras_da_loja" descricao="Frete, retirada, Pix e o e-mail que recebe cada venda.">
                         <form method="POST" action="{{ route('admin.settings.loja-regras') }}" class="row g-3">
                             @csrf
                             <x-admin.switch name="loja_livre" label="Frete combinado (não cobra valor fixo)" :checked="$livre" />
@@ -208,7 +207,7 @@
 
         {{-- 4. A caixa multicanal: textos da caixa e um item por atendente humano. --}}
         <div class="tab-pane fade" id="aba-whatsapp" data-aba-painel="whatsapp" role="tabpanel" aria-labelledby="aba-whatsapp-botao" tabindex="0">
-            <x-admin.card title="Botão do WhatsApp no site" icon="fa-brands fa-whatsapp"
+            <x-admin.card title="Botão do WhatsApp no site" icon="fa-brands fa-whatsapp" ajuda="whatsapp_box"
                 :descricao="$boxAtivo ? 'Abre a central de canais com a mensagem pronta por segmento.' : 'Link direto para o número principal.'">
                 <x-slot:actions>
                     <x-admin.status :rotulo="$boxAtivo ? 'caixa multicanal' : 'link direto'" :tom="tom_por_flag($boxAtivo)" />
@@ -288,7 +287,7 @@
         <div class="tab-pane fade" id="aba-financeiro" data-aba-painel="financeiro" role="tabpanel" aria-labelledby="aba-financeiro-botao" tabindex="0">
             <div class="row g-3">
                 <div class="col-xl-5">
-                    <x-admin.card title="Estado da conexão" icon="fa-plug-circle-bolt"
+                    <x-admin.card title="Estado da conexão" icon="fa-plug-circle-bolt" ajuda="whmcs"
                         :descricao="'O que o portal do cliente vai consultar no financeiro, no endereço abaixo.'">
                         <div class="d-flex align-items-center gap-2 mb-3">
                             <x-admin.status :rotulo="$financeiro['configurado'] ? 'Credenciais completas' : 'Falta configurar'" :tom="tom_por_flag($financeiro['configurado'])" />
@@ -347,7 +346,8 @@
                 </div>
 
                 <div class="col-12">
-                    <x-admin.card :title="$veiculacao['rotulo']" :icon="$veiculacao['icone']" :descricao="$veiculacao['descricao']">
+                    <x-admin.card :title="$veiculacao['rotulo']" :icon="$veiculacao['icone']" :descricao="$veiculacao['descricao']"
+                        :ajuda="\App\Support\ChavesDeIntegracao::GRUPO_VEICULACAO">
                         <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3">
                             @csrf
                             <input type="hidden" name="grupo" value="{{ \App\Support\ChavesDeIntegracao::GRUPO_VEICULACAO }}">
@@ -385,7 +385,7 @@
                 <div class="tab-content">
                     @foreach ($gruposDeChaves as $id => $grupo)
                         <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="aba-chaves-{{ $id }}" data-aba-painel="{{ $id }}" role="tabpanel" aria-labelledby="aba-chaves-{{ $id }}-botao" tabindex="0">
-                            <x-admin.card :title="$grupo['rotulo']" :icon="$grupo['icone']" :descricao="$grupo['descricao']">
+                            <x-admin.card :title="$grupo['rotulo']" :icon="$grupo['icone']" :descricao="$grupo['descricao']" :ajuda="$id">
                                 <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3">
                                     @csrf
                                     <input type="hidden" name="grupo" value="{{ $id }}">

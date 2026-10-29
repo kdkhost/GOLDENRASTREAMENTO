@@ -1891,19 +1891,20 @@ aparece para rota registrada: guia apontando para rota renomeada é guia desment
 coluna da esquerda é o índice, presa à tela como uma barra lateral; a da direita mostra **uma seção
 por vez**, a que foi clicada. O clique troca o cartão da leitura e **não rola a página**: o corpo do
 cartão tem rolagem própria, e o endereço ganha `#secao` por `history.replaceState` — trocar o
-endereço sem pedir ao navegador que role até a âncora. O `#secao` no endereço continua valendo, e
-é ele que o link **Como usar esta tela**, no alto de cada tela, usa para abrir já na seção certa.
+endereço sem pedir ao navegador que role até a âncora. O `#secao` no endereço continua valendo para
+quem copia um link da leitura; quem está em outra tela do painel não precisa dele, porque a seção
+inteira cabe na gaveta de ajuda daquela tela.
 
 A busca ignora acento ("contrato" acha "Contratos"), esconde o que não casa, some com o título do
 grupo que ficou vazio e abre a primeira seção que casa; sem resultado, o índice avisa e a leitura
 continua onde estava. No celular, onde não existe "à direita", o índice ganha altura própria e rola
 por dentro, e a seção aberta é trazida para a tela depois do clique.
 
-### Seis tipos de bloco
+### Sete tipos de bloco
 
-`config/guia_painel.php` é a fonte única, lida por `App\Support\GuiaPainel`. A tela do guia, o cartão
-dobrável do Google Ads e a linha do cabeçalho consomem os mesmos blocos, pelo mesmo partial — o que
-está escrito no guia é literalmente o que a tela diz, e corrigir um lugar corrige todos.
+`config/guia_painel.php` é a fonte única, lida por `App\Support\GuiaPainel`. A tela do guia e a
+gaveta de ajuda consomem os mesmos blocos, pelo mesmo partial — o que está escrito no guia é
+literalmente o que a tela diz, e corrigir um lugar corrige todos.
 
 | Bloco | Para quê |
 |---|---|
@@ -1912,6 +1913,7 @@ está escrito no guia é literalmente o que a tela diz, e corrigir um lugar corr
 | `lista` | itens soltos |
 | `codigo` | comando, linha de `.env`, cron: monoespaçado, rolagem própria, copiável sem quebra |
 | `tabela` | cabeçalho e linhas |
+| `links` | botões de endereço: `rota` deste sistema ou `url` externa, cada um com seu rótulo — abre em outra aba |
 | `aviso` | a frase marcada à esquerda, com `tom` (`gold`, `teal`, `blue`, `violet`, `green`, `amber`, `red`, `neutral`) |
 
 Nada aqui recebe numeração. Um passo é ícone + título + texto; a ordem já está na lista, e um "1."
@@ -1919,23 +1921,52 @@ desenhado sobre ela é enfeite, não orientação — a regra que vale para as p
 documentação, e um teste não deixa voltar. Os tons de aviso vêm dos tokens do tema, cada claro com
 seu par no escuro.
 
-### A linha discreta em cada tela
+### O ícone discreto em cada tela
 
-No cabeçalho de toda tela que tem seção aparece uma linha discreta — **Como usar esta tela** — que
-leva à âncora certa (`admin.leads.*` → `#leads`, `admin.google-ads.*` → `#google-ads`). As ~20 telas
-do painel estão cobertas por um único `@include('admin.partials.ajuda-rota')` no layout, sem editar
-uma linha de cada view. Quem decide a seção é o mapa `rotas` do mesmo arquivo de configuração, e o
-prefixo mais longo vence quando mais de um cabe: `admin.google-ads.criativo` tem seção própria,
-`admin.google-ads.index` cai na do Google Ads. Rota sem seção não oferece link — a linha não promete
-documento que não foi escrito.
+No cabeçalho de toda tela que tem seção aparece um círculo de interrogação miúdo, ao lado do título —
+no lugar da linha de texto que empurrava o cabeçalho para baixo. O clique abre a **gaveta de ajuda**
+à direita, sobre a tela, sem tirar o formulário de onde ele está; o `X` ou um clique fora fecham. As
+~20 telas do painel estão cobertas por um único `@include('admin.partials.ajuda-rota')` no layout,
+sem editar uma linha de cada view. Quem decide a seção é o mapa `rotas` do mesmo arquivo de
+configuração, e o prefixo mais longo vence quando mais de um cabe: `admin.google-ads.criativo` tem
+seção própria, `admin.google-ads.index` cai na do Google Ads. Rota sem seção não oferece ícone — a
+ajuda não promete documento que não foi escrito.
+
+### A ajuda de cada item configurável
+
+O mesmo ícone, do mesmo tamanho discreto, aparece ao lado do rótulo de **cada campo, cartão e
+*switch* das sete abas de Configurações** e dos oito grupos de chaves de integração — inclusive os
+que só existem no banco, como cada um dos interruptores de veiculação do WHMCS e cada capacidade da
+Ana. A gaveta daquele item tem a frase dizendo o que ele é, o passo a passo de onde o valor nasce e
+os botões de endereço: Google Ads API Center, cPanel de e-mail, AI Studio, OpenAI, a tela de API do
+seu próprio WHMCS, a conversa de teste no WhatsApp.
+
+A fonte é `config/guia_configuracao.php`, lida por `App\Support\GuiaConfiguracao`, e a procura é
+feita **pelo próprio nome do campo** — a view de tela nenhuma precisa lembrar de chamar ajuda. Um
+cartão ou um grupo sem nome de campo se anuncia por `ajuda="chave"`. Item sem entrada escrita no
+config não mostra ícone nenhum; é assim que o mecanismo vale para todas as telas sem obrigar nenhuma
+delas a falar de ajuda.
+
+Os endereços se escrevem sozinhos com o que o painel já sabe: `rota` vira o endereço real daquela
+rota, e `{host}`, `{whmcs}` e `{whatsapp}` saem do domínio desta instalação, do financeiro informado
+e do número principal. **Faltando a informação, o botão some da gaveta** junto com o marcador — é
+melhor a pessoa não ver o botão do que ver um botão que não leva a lugar nenhum.
+
+Nada disso pesa em quem não pede: cada corpo de ajuda já vem na página dentro de um `<template>`,
+que o navegador não desenha, e a gaveta existe sempre vazia. `golden-ajuda.js` copia o `<template>`
+escolhido pelo `data-ajuda` do botão, escreve no corpo e abre — sem rede, sem meia tela carregando.
+Todo ícone é `type="button"`, porque dentro de `<form>` um botão sem tipo enviaria o formulário no
+lugar de abrir a ajuda.
 
 ### Escrever no guia
 
 Mexer na documentação é mexer num array PHP, sem tocar em view:
 
 ```bash
-$EDITOR config/guia_painel.php          # a fonte única do texto
-php artisan test --filter=GuiaDoPainelTest   # a régua inteira do guia
+$EDITOR config/guia_painel.php          # o texto das seções, por tela
+$EDITOR config/guia_configuracao.php    # o passo a passo de cada item configurável
+php artisan test --filter=GuiaDoPainelTest
+php artisan test --filter=AjudaDeConfiguracaoTest   # a régua da ajuda por item
 ```
 
 Uma seção nova precisa de `id` (a âncora usada nos links), `grupo`, `titulo`, `icone` (FontAwesome,
@@ -2403,8 +2434,11 @@ continua visível para você pelo painel ou SSH.
 - [ ] Google Ads sem credencial: a mesma tela deve listar **qual** variável falta em vez de
       quebrar, e nenhum token de desenvolvedor aparece no HTML nem no log
 - [ ] Guia de uso: **Guia de uso** na barra lateral abre em outra aba, o índice à esquerda abre
-      uma seção por vez à direita sem rolar a página, a busca acha "contrato" sem acento, e cada
-      tela com seção mostra a linha **Como usar esta tela** caindo na seção certa (seção 14)
+      uma seção por vez à direita sem rolar a página, e a busca acha "contrato" sem acento
+- [ ] Ajuda no item: o círculo de interrogação ao lado do título de cada tela com seção, e ao lado
+      do rótulo de cada campo de **Configurações**, abre a gaveta à direita com o passo a passo e os
+      endereços de onde a credencial nasce — sem trocar de aba e sem tirar o formulário do lugar
+      (seção 14)
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`
       no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
       cadastro na tela da campanha (seção 13)

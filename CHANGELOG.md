@@ -3,6 +3,60 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.49.0] - 2026-10-28
+
+### Adicionado
+- **A ajuda de cada item, dentro de um ícone.** Cada campo, cartão e *switch* das sete abas de
+  *Configurações* e dos oito grupos de chaves de integração ganhou o círculo de interrogação miúdo ao
+  lado do rótulo — 102 itens documentados, dos três credenciais do WHMCS a cada um dos interruptores
+  de veiculação e a cada capacidade da Ana. A gaveta do item diz o que aquilo é, a ordem em que se
+  faz, e **onde a credencial nasce**: 82 botões de endereço levando à API do Google Ads, ao AI Studio
+  e à OpenAI, ao cPanel de e-mail, ao Google Business Profile, à tela de API do próprio WHMCS e à
+  conversa de teste no número. Passo a passo nenhum aparece na tela antes de ser pedido.
+- **Onde o item não tem nome de campo, ele se anuncia.** `x-admin.field`, `x-admin.switch` e
+  `x-admin.campo-chave` procuram a ajuda pelo próprio nome, então a view de tela nenhuma precisa
+  lembrar de chamá-la; `x-admin.card` recebe `ajuda="chave"` para cartão e grupo. Item sem entrada
+  escrita em `config/guia_configuracao.php` não mostra ícone — é assim que o mecanismo vale para todas
+  as telas sem obrigar nenhuma delas a falar de ajuda.
+- **Endereço que não dá para montar some da gaveta.** `rota` vira o endereço real daquela rota e
+  `{host}`, `{whmcs}`, `{whatsapp}` saem do que o painel já gravou; faltando a informação, o botão sai
+  junto com o marcador. É melhor a pessoa não ver o botão do que ver um botão que não leva a lugar
+  nenhum — e nada de endereço pela metade chega à tela.
+- **A ajuda não pesa em quem não pede.** Cada corpo já vem na página dentro de um `<template>` que o
+  navegador não desenha; `public/js/golden-ajuda.js` copia o escolhido para o corpo da gaveta e abre a
+  *offcanvas* à direita, sobre a tela, sem rede e sem meia tela carregando. O formulário fica onde
+  estava, e todo ícone é `type="button"` — dentro de `<form>`, um botão sem tipo enviaria tudo no
+  lugar de abrir a ajuda.
+
+### Alterado
+- **O cabeçalho do painel para de falar.** A linha de texto "Como usar esta tela" virou o mesmo ícone
+  discreto ao lado do título, abrindo a seção inteira do guia na gaveta; o `aria-label` continua
+  dizendo *Como usar esta tela: \<nome da seção\>*, para quem lê com leitor de tela.
+- **A descrição que estourava o título da tela de Configurações saiu por inteiro.** O parágrafo
+  explicando as sete abas foi apagado da view: a mesma informação agora mora no ícone da tela e no
+  ícone de cada aba, e o cabeçalho volta a ser título e botões.
+- **Um bloco novo no guia: `links`.** `App\Support\GuiaConfiguracao` monta `texto → passos → links →
+  aviso` a partir do config, e o partial compartilhado `admin/guia/partials/blocos` desenha os botões
+  dourados — guia e gaveta com os mesmos sete tipos de bloco, a mesma folha e o mesmo texto.
+- **A leitura da tela, nos testes, é a parte desenhada.** `Tests\TestCase::visivel()` tira os
+  `<template>` antes de conferir o que uma tela oferece. Sem isso, o guia — que cita o botão
+  **Ver a conta do cliente** e o **Revincular ao financeiro** pelo nome — faria um teste de
+  veiculação passar com o botão escondido. `PortalSupervisaoTest` e `RevinculoWhmcsTest` passaram a
+  medir o HTML visível nos dois lados, e `GuiaDoPainelTest` cobra o cartão de abertura na parte
+  desenhada e o corpo da ajuda guardado.
+
+### Testes
+- `tests/Feature/AjudaDeConfiguracaoTest.php` (9 novos) — cada grupo e cada campo de integração com
+  gaveta escrita; cada segredo com o endereço de onde nasce; cada rota citada ainda existindo e cada
+  `url` em https ou marcador da casa; passo sem número; botão que não envia formulário; texto em
+  português sem marca crua; o link dependente de informação ausente; e a tela de Configurações
+  oferecendo a ajuda sem despejá-la na frente de ninguém. Suite: 643 testes, 10 841 afirmações.
+
+### Documentação
+- README (*Guia de uso*) e `docs/INSTALACAO.md` (seção 14) reescritos para a ajuda por item: o ícone
+  do cabeçalho, a gaveta, `config/guia_configuracao.php` com `App\Support\GuiaConfiguracao`, o bloco
+  `links` e os marcadores que se enchem sozinhos. O PDF da instalação é gerado da mesma fonte.
+
 ## [2.48.1] - 2026-10-28
 
 ### Corrigido
