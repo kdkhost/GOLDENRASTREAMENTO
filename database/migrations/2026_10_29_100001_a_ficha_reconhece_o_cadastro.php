@@ -19,11 +19,15 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * A impressão digital do texto de regras de antes desta versão. Comparar o texto inteiro seria
-     * repetir aqui a frase que já vive na config; a impressão diz o mesmo e não convida ninguém a
-     * "consertar" a cópia.
+     * As impressões digitais dos textos de regras padrão de antes desta versão — a de 2.44 a 2.52 e
+     * a de 2.38 a 2.43, porque a instalação que ficou parada numa versão antiga ainda carrega o
+     * texto dela. Comparar o texto inteiro seria repetir aqui a frase que já vive na config; a
+     * impressão diz o mesmo e não convida ninguém a "consertar" a cópia.
      */
-    private const REGRAS_ANTIGAS = 'bf47d8c0d5a0f61a178841975a9018b9f8324c99d7a1a0682a0bc13f34152901';
+    private const REGRAS_ANTIGAS = [
+        'bf47d8c0d5a0f61a178841975a9018b9f8324c99d7a1a0682a0bc13f34152901',
+        '03e7e1cc80008fcd8eccab6b740426b9b10d71a0069db2c93e820f89c65c793b',
+    ];
 
     /** Os padrões de antes desta versão; só o que ainda estiver assim é atualizado. */
     private const ANTIGOS = [
@@ -59,7 +63,7 @@ return new class extends Migration
 
         $novos['regras'] = (string) config('assistente.persona.regras');
 
-        if (hash('sha256', trim((string) $ficha->regras)) !== self::REGRAS_ANTIGAS) {
+        if (! in_array(hash('sha256', trim((string) $ficha->regras)), self::REGRAS_ANTIGAS, true)) {
             unset($novos['regras']);
         }
 

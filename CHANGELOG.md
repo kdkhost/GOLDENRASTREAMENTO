@@ -31,7 +31,9 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   nota, agradecimento, despedida) e as regras ganharam pé: respostas de duas a quatro frases, sem
   repetir a saudação a cada volta, sem repetir a pergunta já respondida, uma pergunta por vez e nada de
   preço, prazo ou condição sem lastro. A migration `2026_10_29_100001_a_ficha_reconhece_o_cadastro` troca
-  só os textos que ninguém editou — quem escreveu a própria frase no painel continua com ela.
+  só os textos que ninguém editou — quem escreveu a própria frase no painel continua com ela. Ela reconhece
+  as duas impressões digitais dos padrões antigos (o de 2.44 a 2.52 e o de 2.38 a 2.43), porque uma
+  instalação que ficou parada numa versão antiga ainda carrega o texto dela.
 - **A conversa deixou de esquecer o assunto na segunda pergunta.** O fio entregue ao modelo passou a 16
   falas e a ordem da conversa diz explicitamente que o atendimento está em andamento; pergunta curta
   ("e a instalação?") herda o assunto da anterior em vez de virar uma pergunta solta sem contexto.
