@@ -261,6 +261,7 @@ return [
         'minimo_de_fonte' => (float) env('ASSISTENTE_MINIMO_FONT', 0.34),
         'itens_de_fonte' => (int) env('ASSISTENTE_ITENS_FONTE', 5),
         'caracteres_max' => (int) env('ASSISTENTE_RESPOSTA_MAX', 900),
+        'documento_caracteres_max' => (int) env('ASSISTENTE_DOCUMENTO_CARACTERES', 30000),
         'historico_mensagens' => (int) env('ASSISTENTE_HISTORICO', 16),
         'escala_para' => 'equipe',
         'avisar_por_email' => (bool) env('ASSISTENTE_AVISO_EMAIL', true),

@@ -115,6 +115,88 @@ final class Midia
             };
     }
 
+    /**
+     * O texto de um documento que já é texto — e nulo para o que só uma IA consegue ler.
+     *
+     * O Gemini recebe arquivo em `inlineData`, mas não lê `text/plain` nem `text/csv`: a chamada
+     * chega com o anexo e o modelo responde como se nada tivesse sido enviado, completando o que
+     * falta com conhecimento geral — num contrato, isso vira cláusula inventada na frente de quem
+     * mandou o arquivo. `.txt` e `.csv` não precisam de modelo para virar texto, e o `.docx`
+     * guarda o seu num XML dentro do pacote; os dois são lidos aqui. PDF continua indo em
+     * `inlineData`, que é o formato que o Gemini lê de verdade.
+     */
+    public static function textoDe(array $peca): ?string
+    {
+        $extensao = strtolower(pathinfo((string) ($peca['nome'] ?? $peca['caminho']), PATHINFO_EXTENSION));
+
+        $texto = match ($extensao) {
+            'txt', 'csv' => self::textoPuro($peca['caminho']),
+            'docx' => self::textoDeDocx($peca['caminho']),
+            default => null,
+        };
+
+        $texto = trim((string) $texto);
+
+        if ($texto === '') {
+            return null;
+        }
+
+        $limite = (int) config('assistente.resposta.documento_caracteres_max', 30000);
+
+        if ($limite > 0 && mb_strlen($texto) > $limite) {
+            $texto = mb_substr($texto, 0, $limite)."\n\n[documento maior que o limite de leitura da casa: o restante foi omitido]";
+        }
+
+        return $texto;
+    }
+
+    /** O arquivo como texto, sem inventar codificação: o que não é UTF-8 é lido como Windows-1252. */
+    private static function textoPuro(string $caminho): ?string
+    {
+        $conteudo = (string) Storage::disk('public')->get($caminho);
+
+        if ($conteudo === '') {
+            return null;
+        }
+
+        $conteudo = (string) preg_replace('/^\xEF\xBB\xBF/', '', $conteudo);
+
+        return mb_check_encoding($conteudo, 'UTF-8')
+            ? $conteudo
+            : (string) mb_convert_encoding($conteudo, 'UTF-8', 'Windows-1252');
+    }
+
+    /**
+     * O texto do `.docx`: o pacote é um zip e o conteúdo está em `word/document.xml`. Cada parágrafo
+     * vira uma linha e cada célula um separador, porque sem isso a tabela do contrato chega ao
+     * modelo como uma frase só.
+     */
+    private static function textoDeDocx(string $caminho): ?string
+    {
+        if (! class_exists(\ZipArchive::class)) {
+            return null;
+        }
+
+        $zip = new \ZipArchive();
+        $abriu = $zip->open(Storage::disk('public')->path($caminho));
+
+        if ($abriu !== true) {
+            return null;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        if ($xml === false || trim($xml) === '') {
+            return null;
+        }
+
+        $xml = str_replace(['</w:p>', '</w:tr>', '</w:tc>'], ["\n", "\n", "\t"], $xml);
+        $texto = html_entity_decode(strip_tags($xml), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim((string) preg_replace("/[ \t]+\n/u", "\n", $texto));
+    }
+
     public static function rotuloDoTipo(string $tipo): string
     {
         return (string) (config('assistente.tipos_mensagem')[$tipo] ?? $tipo);

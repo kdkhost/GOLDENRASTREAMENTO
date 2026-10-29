@@ -8,6 +8,7 @@ use App\Models\Conversa;
 use App\Models\ConversaMensagem;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Assistente\Midia;
 use App\Services\Assistente\Motor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -595,6 +596,61 @@ class BolhaDoAssistenteTest extends TestCase
             (string) data_get($pedido->data(), 'systemInstruction.parts.0.text', ''),
             'tem que sair do que o documento enviado diz'
         ));
+    }
+
+    /**
+     * Texto puro não vai como anexo: o Gemini ignora `text/plain` em `inlineData` e responde como
+     * se nenhum arquivo tivesse chegado — o que fazia o modelo completar um contrato com cláusulas
+     * que ninguém escreveu. O conteúdo lido do disco entra na chamada como texto.
+     */
+    public function test_o_documento_de_texto_vai_ao_provedor_como_texto_e_nao_como_anexo(): void
+    {
+        Storage::fake('public');
+        config([
+            'assistente.permissoes.documento' => true,
+            'assistente.chaves.gemini' => 'chave-de-teste',
+            'assistente.chaves.openai' => null,
+        ]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [['content' => ['parts' => [['text' => 'O contrato vence em 10/10/2027 e a multa é de 30%.']]]]],
+        ], 200)]);
+
+        $this->post('/assistente/arquivo', [
+            'arquivo' => UploadedFile::fake()->createWithContent(
+                'contrato.txt',
+                "CONTRATO DE PRESTAÇÃO DE SERVIÇOS\nVigência: 10/10/2027\nMulta por rescisão: 30% do valor restante."
+            ),
+            'texto' => 'quando vence e qual é a multa?',
+        ])->assertOk()->assertJson(['ativo' => true, 'status' => 'aberta']);
+
+        Http::assertSent(function ($pedido): bool {
+            $partes = $this->partesDoPedido($pedido);
+
+            return str_contains($this->textoDoPedido($partes), 'Multa por rescisão: 30% do valor restante.')
+                && str_contains($this->textoDoPedido($partes), 'contrato.txt')
+                && array_filter($partes, fn (array $parte): bool => $parte['mime'] === 'text/plain') === [];
+        });
+    }
+
+    /** O `.docx` guarda o texto num XML dentro do pacote — e é de lá que ele é lido. */
+    public function test_o_docx_e_lido_pelo_texto_de_dentro_do_pacote(): void
+    {
+        Storage::fake('public');
+
+        $caminho = 'assistente/2026/10/contrato.docx';
+        Storage::disk('public')->makeDirectory('assistente/2026/10');
+
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open(Storage::disk('public')->path($caminho), \ZipArchive::CREATE));
+        $zip->addFromString('word/document.xml',
+            '<w:document xmlns:w="urn:w"><w:body><w:p><w:r><w:t>Cláusula 1</w:t></w:r><w:r><w:t> Objeto do contrato.</w:t></w:r></w:p></w:body></w:document>');
+        $zip->close();
+
+        $this->assertSame('Cláusula 1 Objeto do contrato.', Midia::textoDe([
+            'caminho' => $caminho,
+            'mime' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'nome' => 'contrato.docx',
+        ]));
     }
 
     /** A imagem segue a mesma porta, com a capacidade de visão e o arquivo em `inlineData`. */

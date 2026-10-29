@@ -64,6 +64,13 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   imagem passou a dizer que a resposta sai do que o arquivo mostra e que cláusula, valor, prazo ou
   condição que não estejam nele não podem ser inventados; o que faltar, a Ana oferece à equipe em vez
   de completar com conhecimento geral.
+- **Documento de texto passou a ser lido de verdade.** O Gemini não lê `text/plain` nem `text/csv` em
+  `inlineData`: recebia o anexo e respondia como se nada tivesse sido enviado — e completava o contrato
+  com cláusulas que ninguém escreveu. `.txt`, `.csv` e `.docx` (cujo texto mora num XML dentro do
+  pacote) agora são lidos pelo sistema e entregues ao modelo como texto, com o nome do arquivo na
+  frente; PDF continua indo como anexo, que é o formato que ele lê. Quanto do arquivo se aproveita é um
+  teto novo no painel (`assistente_documento_caracteres`), com 30 mil caracteres na casa — o excedente é
+  omitido com um aviso para a resposta não inventar o que ficou de fora.
 - **Resposta de erro não fecha mais a bolha.** O JavaScript tratava qualquer retorno sem `ativo` como
   "máquina desligada" e desaparecia com o widget; uma recusa de arquivo (422) ou um CSRF vencido (419) agora
   mostram a frase da regra e a conversa continua na tela.
@@ -72,12 +79,13 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ### Testado
 - `BolhaDoAssistenteTest` cobre o documento lido com a legenda como pergunta e com o arquivo como fonte
-  única, a imagem indo ao provedor de visão, o áudio transcrito seguindo a conversa e a pergunta curta
+  única, o `.txt` indo ao modelo como texto (sem `text/plain` em anexo) e o `.docx` lido de dentro do
+  pacote, a imagem indo ao provedor de visão, o áudio transcrito seguindo a conversa e a pergunta curta
   herdando o assunto e o histórico; `IdentificacaoEAvaliacaoPeloAssistenteTest` prova o vínculo pelo
   e-mail, a apresentação com e-mail confirmada sem chamar o provedor, a confirmação de cadastro, a nota
   das estrelas e o encerramento com a pesquisa já respondida; `SegundaViaPeloAssistenteTest` acompanha o
   fio pelo e-mail até a segunda via; `RespostaDoGeminiTest` garante o pedido de pensamento curto, o
-  descarte do rascunho e a falha da resposta cortada. Suite completa: 729 testes, 11.930 asserções.
+  descarte do rascunho e a falha da resposta cortada. Suite completa: 731 testes, 11.966 asserções.
 
 ## [2.52.0] - 2026-10-29
 

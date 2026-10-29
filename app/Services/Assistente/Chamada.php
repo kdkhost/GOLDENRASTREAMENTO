@@ -18,8 +18,8 @@ final class Chamada
     /**
      * @param  array<int, string>  $instrucoes  a ordem de conduta, linha a linha
      * @param  array<int, array{autor: string, texto: string}>  $historico  as falas anteriores
-     * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string}>  $imagens
-     * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string}>  $documentos
+     * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string, texto?: string}>  $imagens
+     * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string, texto?: string}>  $documentos
      * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string}>  $audios
      * @param  bool  $cortesia  a fala é só saudação — não pergunta fato, e pode ser respondida sem fonte
      */

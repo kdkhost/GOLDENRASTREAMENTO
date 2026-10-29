@@ -745,6 +745,17 @@ class ChavesDeIntegracao
                         'dica' => 'No chat, resposta comprida é resposta que ninguém lê. Este teto vai escrito na ordem do assistente.',
                     ],
                     [
+                        'chave' => 'assistente_documento_caracteres',
+                        'config' => 'assistente.resposta.documento_caracteres_max',
+                        'ambiente' => 'ASSISTENTE_DOCUMENTO_CARACTERES',
+                        'label' => 'Documento de texto — quanto do arquivo é lido (caracteres)',
+                        'opcional' => true,
+                        'cast' => 'int',
+                        'regras' => ['integer', 'min:1000', 'max:200000'],
+                        'placeholder' => '30000',
+                        'dica' => 'Arquivo .txt, .csv e .docx é lido pelo sistema e entregue ao modelo como texto; este é o trecho máximo aproveitado. O que passar disso é omitido com um aviso ao final.',
+                    ],
+                    [
                         'chave' => 'assistente_historico',
                         'config' => 'assistente.resposta.historico_mensagens',
                         'ambiente' => 'ASSISTENTE_HISTORICO',

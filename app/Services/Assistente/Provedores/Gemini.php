@@ -44,7 +44,7 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
         }
 
         foreach ($chamada->documentos as $peca) {
-            $partes[] = $this->arquivoNaFala($peca);
+            $partes[] = $this->documentoNaFala($peca);
         }
 
         foreach ($chamada->audios as $peca) {
@@ -169,6 +169,26 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
     private function arquivoNaFala(array $peca): array
     {
         return ['inlineData' => ['mimeType' => $peca['mime'], 'data' => base64_encode($this->ler($peca['caminho']))]];
+    }
+
+    /**
+     * Documento que o sistema já leu vira texto na fala, e não anexo.
+     *
+     * O Gemini não lê `text/plain` nem `text/csv` em `inlineData`: recebe o arquivo e responde como
+     * se nada tivesse sido enviado. O texto lido do disco entra aqui com o nome do arquivo na
+     * frente, para a resposta saber de qual documento está falando e não completar o resto.
+     */
+    private function documentoNaFala(array $peca): array
+    {
+        $texto = trim((string) ($peca['texto'] ?? ''));
+
+        if ($texto === '') {
+            return $this->arquivoNaFala($peca);
+        }
+
+        $nome = (string) ($peca['nome'] ?? basename($peca['caminho']));
+
+        return ['text' => 'Conteúdo do documento "'.$nome.'":'."\n\n".$texto];
     }
 
     /**

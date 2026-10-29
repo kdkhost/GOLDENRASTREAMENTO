@@ -345,12 +345,23 @@ final class Atendedor
                 .'e não invente cláusula, valor, prazo ou condição que não esteja no arquivo; se o documento '
                 .'não responder à pergunta, diga o que encontrou e ofereça a equipe.';
 
+        // Documento que já é texto (txt, csv, docx) vai ao modelo como texto: o Gemini ignora
+        // `text/plain` em `inlineData` e responde como se nenhum arquivo tivesse chegado. PDF
+        // continua indo pelo anexo, que é o formato que ele lê de verdade.
+        $documentos = [];
+
+        if ($tipo === 'arquivo') {
+            $textoDoDocumento = Midia::textoDe($peca);
+
+            $documentos[] = $textoDoDocumento === null ? $peca : ['texto' => $textoDoDocumento] + $peca;
+        }
+
         $resposta = Motor::responder(new Chamada(
             pergunta: $pergunta,
             instrucoes: $ordem,
             historico: self::historico($conversa, $fala),
             imagens: $tipo === 'imagem' ? [$peca] : [],
-            documentos: $tipo === 'arquivo' ? [$peca] : [],
+            documentos: $documentos,
             conversaId: $conversa->id,
             capacidade: $tipo === 'imagem' ? 'visao' : 'documento',
         ));

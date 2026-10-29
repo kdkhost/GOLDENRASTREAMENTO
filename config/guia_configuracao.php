@@ -1176,6 +1176,15 @@ return [
             ],
         ],
 
+        'assistente_documento_caracteres' => [
+            'onde' => 'Quanto de um documento de texto (.txt, .csv e .docx) é lido e levado ao modelo em cada resposta.',
+            'passos' => [
+                ['icone' => 'fa-file-lines', 'titulo' => 'Texto é lido pelo sistema, não pela IA', 'texto' => 'O conteúdo do arquivo é extraído aqui e entra na chamada como texto — por isso a resposta cita o que está escrito em vez de inventar. PDF continua indo como anexo.'],
+                ['icone' => 'fa-scissors', 'titulo' => 'O que passa do teto é omitido', 'texto' => 'A leitura para no limite e o modelo recebe um aviso de que o restante ficou de fora; ele deve dizer isso em vez de completar.'],
+                ['icone' => 'fa-coins', 'titulo' => 'Documento longo custa por chamada', 'texto' => 'Todo texto levado é cobrado como entrada. Um contrato de poucas páginas cabe folgado no padrão da casa.'],
+            ],
+        ],
+
         'assistente_resposta_audio_mb' => [
             'onde' => 'O teto, em megabytes, do áudio que a máquina devolve como resposta.',
             'passos' => [
