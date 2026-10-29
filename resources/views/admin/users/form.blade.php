@@ -68,12 +68,22 @@
                                 <x-admin.field name="telefone" label="Telefone" :value="$usuario->telefone" col="col-12 col-md-6" maxlength="32" :opcional="true" />
                                 <x-admin.field name="role" type="select" label="Perfil" :value="$usuario->role ?: 'vendedor'" :options="$perfis" :col="$editando ? 'col-12 col-md-4' : 'col-12 col-md-6'" :required="true" :travado="$euMesmo" />
                                 @if($editando)
-                                    <x-admin.field name="status" type="select" label="Situação" :value="$usuario->status" :options="$situacoes" col="col-12 col-md-4" :required="true" :travado="$euMesmo" hint="Você não pode desativar a si mesmo." />
-                                    <x-admin.field name="password" type="password" label="Nova senha" col="col-12 col-md-4" :opcional="true" minlength="8" autocomplete="new-password" hint="Deixe em branco para manter a senha atual." />
+                                    <x-admin.field name="status" type="select" label="Situação" :value="$usuario->status" :options="$situacoes" col="col-12 col-md-4" :required="true" :travado="$euMesmo" />
+                                    <x-admin.field name="password" type="password" label="Nova senha" col="col-12 col-md-4" :opcional="true" minlength="8" autocomplete="new-password" />
                                 @else
-                                    <x-admin.field name="password" type="password" label="Senha inicial" col="col-12 col-md-6" :required="true" minlength="8" autocomplete="new-password" hint="Mínimo de 8 caracteres. A pessoa pode trocar depois em Segurança do acesso." />
+                                    <x-admin.field name="password" type="password" label="Senha inicial" col="col-12 col-md-6" :required="true" minlength="8" autocomplete="new-password" />
                                 @endif
                             </div>
+                            {{-- A explicação fica fora dos campos: dica acima do controle empurra o
+                                 select e o campo de senha para baixo e a linha perde o alinhamento. --}}
+                            <p class="form-hint mb-0">
+                                @if($editando)
+                                    Deixe a nova senha em branco para manter a atual.
+                                    @if($euMesmo) Perfil e situação ficam travados para você não tirar o próprio acesso. @endif
+                                @else
+                                    A senha precisa de pelo menos 8 caracteres; a pessoa pode trocá-la depois em Segurança do acesso.
+                                @endif
+                            </p>
                         </x-admin.card>
                     </div>
 
