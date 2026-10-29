@@ -64,7 +64,7 @@ class SegurancaController extends Controller
             'travada_por' => $vigia->bloqueadoPor($usuario->email, (string) $request->ip()),
             'tentativas_na_janela' => $vigia->tentativasNaJanela($usuario->email),
             'equipe' => $usuario->isAdmin()
-                ? User::orderBy('name')->get(['id', 'name', 'email', 'role', 'status', 'two_factor_confirmed_at'])
+                ? User::orderBy('name')->get(['id', 'name', 'email', 'role', 'status', 'two_factor_secret', 'two_factor_confirmed_at'])
                     ->map(fn (User $p): array => [
                         'pessoa' => $p,
                         'janelas' => SessaoDoPainel::where('user_id', $p->id)->count(),

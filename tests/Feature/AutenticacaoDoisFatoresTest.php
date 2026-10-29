@@ -390,6 +390,25 @@ class AutenticacaoDoisFatoresTest extends TestCase
         $this->assertDatabaseHas('activities', ['action' => 'dois_fatores_desligado']);
     }
 
+    public function test_a_lista_da_equipe_distingue_quem_tem_a_chave_acesa(): void
+    {
+        $this->acenderChave($this->vendedor);
+
+        // A linha da equipe julga `doisFatoresAtivo()`, que lê o segredo: a consulta que não traz a
+        // coluna devolve "desligada" para todo mundo, e o botão de apagar a chave de um colega
+        // simplesmente nunca aparece — a tela mente justo para quem pode consertar.
+        $tela = $this->actingAs($this->admin)
+            ->get(route('admin.seguranca.index'))
+            ->assertOk()
+            ->assertSee('acesa')
+            ->assertSee('desligada');
+
+        $this->assertStringContainsString(
+            route('admin.seguranca.dois-fatores.desligar', $this->vendedor->id),
+            $tela->getContent(),
+        );
+    }
+
     public function test_o_admin_apaga_a_chave_de_quem_perdeu_o_celular_e_o_colega_nao(): void
     {
         $this->acenderChave($this->vendedor);

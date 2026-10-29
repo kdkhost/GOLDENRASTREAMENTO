@@ -3,6 +3,21 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.51.1] - 2026-10-29
+
+### Corrigido
+- **A lista "Equipe e segunda chave" dizia "desligada" para quem tinha a chave acesa.** A consulta da tela
+  de Segurança pedia `two_factor_confirmed_at` mas não pedia `two_factor_secret`, e `User::doisFatoresAtivo()`
+  exige as duas colunas: sem a primeira carregada, o model respondia `false` para todo mundo. O card do topo
+  (que lê a conta da própria sessão) dizia *Acesa* enquanto a linha do colega dizia *desligada* — e o botão de
+  apagar a chave de quem perdeu o celular, que só aparece numa linha acesa, nunca era desenhado. A tela
+  mentia justamente para a única pessoa com poder de consertar.
+
+### Testado
+- `AutenticacaoDoisFatoresTest::test_a_lista_da_equipe_distingue_quem_tem_a_chave_acesa` acende a chave de um
+  colega pela camada de dentro e confere, na tela pedida como administrador, as duas etiquetas e o enlace do
+  botão de apagar na conta certa. Suite completa: 707 testes.
+
 ## [2.51.0] - 2026-10-29
 
 ### Adicionado
