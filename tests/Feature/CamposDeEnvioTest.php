@@ -306,6 +306,6 @@ class CamposDeEnvioTest extends TestCase
             }
         }
 
-        $this->assertSame(10, $encontrados, 'Os campos de arrastar-e-soltar do painel mudaram de quantidade.');
+        $this->assertSame(11, $encontrados, 'Os campos de arrastar-e-soltar do painel mudaram de quantidade.');
     }
 }

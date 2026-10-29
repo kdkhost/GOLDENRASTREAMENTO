@@ -110,4 +110,20 @@ return [
         'dimensao' => '96 × 96 px',
         'proporcao' => '1:1',
     ],
+
+    /*
+    | A foto de quem trabalha no painel (Admin → Usuários). Redonda na tela — a barra do topo, a
+    | lista e a própria ficha —, por isso a recomendação quadrada: um retrato 3:4 perderia o
+    | queixo no recorte. Sem foto, a tela desenha as iniciais do nome.
+    */
+    'usuario_avatar' => [
+        'tipo' => 'imagem',
+        'pasta' => 'usuarios',
+        'titulo' => 'Foto do usuário',
+        'chamada' => 'Arraste a foto aqui ou clique para escolher',
+        'formatos' => ['jpg', 'jpeg', 'png', 'webp'],
+        'max_mb' => 2,
+        'dimensao' => '256 × 256 px',
+        'proporcao' => '1:1',
+    ],
 ];

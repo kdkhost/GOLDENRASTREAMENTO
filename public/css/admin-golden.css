@@ -243,3 +243,25 @@ button.slot-quadro:hover,button.slot-quadro:focus-visible{border-color:var(--bra
 .btn.salvando::after{content:"";position:absolute;top:50%;left:50%;width:1.05em;height:1.05em;margin:-.525em 0 0 -.525em;border:.16em solid var(--bs-border-color);border-top-color:var(--gold);border-radius:50%;animation:girar .6s linear infinite}
 @keyframes girar{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.btn.salvando::after{animation:none}}
+
+/* Ficha do usuário: o rosto maior na coluna da direita e os fatos de leitura das abas
+   Segurança e Atividade. Caixas com o raio do resto do painel e só tokens — claro e escuro
+   vêm juntos, e nada aqui depende de uma cor escrita à mão. */
+.avatar-letter-lg{width:48px;height:48px;font-size:1rem}
+.perfil-previa{display:flex;align-items:center;gap:.7rem;margin-top:.9rem;padding-top:.9rem;border-top:1px dashed var(--bs-border-color)}
+.perfil-previa .thumb-avatar{width:48px;height:48px}
+.perfil-previa .min-w-0{min-width:0}
+.perfil-fatos{display:flex;flex-wrap:wrap;gap:1.2rem}
+.perfil-fato{display:flex;flex-direction:column;gap:.3rem;height:100%;padding:.6rem .75rem;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-md);background:var(--bs-tertiary-bg)}
+.perfil-fato-rotulo{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--bs-secondary-color)}
+.perfil-fato-valor{font-size:.9rem;overflow-wrap:anywhere}
+.perfil-fato .badge-status{align-self:flex-start}
+.perfil-janelas{list-style:none;margin:1rem 0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.perfil-janelas li{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;padding:.5rem .65rem;border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-md)}
+.perfil-janelas i{width:1.1rem;text-align:center}
+.perfil-linha-tempo{list-style:none;margin:0 0 1rem;padding:0;display:flex;flex-direction:column}
+.perfil-linha-tempo li{position:relative;display:flex;gap:.7rem;padding:.45rem 0 .45rem 1.1rem}
+.perfil-linha-tempo li::before{content:"";position:absolute;left:.28rem;top:0;bottom:0;width:1px;background:var(--bs-border-color)}
+.perfil-linha-tempo li:first-child::before{top:.75rem}
+.perfil-linha-tempo li:last-child::before{bottom:calc(100% - .75rem)}
+.perfil-ponto{position:absolute;left:0;top:.78rem;width:.6rem;height:.6rem;border-radius:50%;background:var(--gold)}

@@ -19,8 +19,18 @@
         <tr>
             <td>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="avatar-letter">{{ substr($usr->name, 0, 1) }}</span>
-                    <div><span class="fw-semibold">{{ $usr->name }}</span><div class="small text-secondary">{{ $usr->email }}</div></div>
+                    @if($usr->avatarUrl())
+                        <img src="{{ $usr->avatarUrl() }}" alt="" width="34" height="34" class="thumb-avatar" loading="lazy" decoding="async">
+                    @else
+                        <span class="avatar-letter">{{ $usr->iniciais() }}</span>
+                    @endif
+                    <div>
+                        <span class="fw-semibold">{{ $usr->name }}</span>
+                        <div class="small text-secondary">{{ $usr->email }}</div>
+                        @if($usr->cargo || $usr->setor)
+                            <div class="small text-secondary">{{ collect([$usr->cargo, $usr->setor])->filter()->implode(' · ') }}</div>
+                        @endif
+                    </div>
                 </div>
             </td>
             <td><span class="badge tone-neutral">{{ $perfis[$usr->role] ?? ucfirst($usr->role) }}</span></td>

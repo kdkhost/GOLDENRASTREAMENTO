@@ -166,6 +166,7 @@ class AuthController extends Controller
             ['ip' => $request->ip()],
         );
 
+        $usuario->marcarAcesso($request->ip());
         $vigia->abriuSessao($usuario, $request);
 
         return redirect()->intended(route('admin.dashboard'));
@@ -225,6 +226,7 @@ class AuthController extends Controller
     {
         Activity::log('login', 'Login realizado no painel.', $usuario, ['ip' => $request->ip()]);
 
+        $usuario->marcarAcesso($request->ip());
         $vigia->abriuSessao($usuario, $request);
     }
 

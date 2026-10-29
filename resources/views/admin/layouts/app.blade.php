@@ -39,7 +39,11 @@
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
-                        <span class="avatar-letter">{{ substr(auth()->user()->name, 0, 1) }}</span>
+                        @if(auth()->user()->avatarUrl())
+                            <img src="{{ auth()->user()->avatarUrl() }}" alt="" width="34" height="34" class="thumb-avatar" decoding="async">
+                        @else
+                            <span class="avatar-letter">{{ auth()->user()->iniciais() }}</span>
+                        @endif
                         <span class="d-none d-md-inline fw-semibold">{{ auth()->user()->name }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow">

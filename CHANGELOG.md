@@ -3,6 +3,33 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.54.0] - 2026-10-29
+
+### Adicionado
+- **A ficha do usuário virou um perfil completo.** `cargo`, `setor`, `bio` e `admissao` entraram na
+  tabela `users` e no formulário; o painel de Configurações abre as suas abas de perfil, mas a ficha da
+  pessoa não existia como retrato — agora existe. A busca da lista de usuários também acha por cargo e
+  setor, e a lista mostra `cargo · setor` embaixo do e-mail. A migration
+  `2026_10_29_200001_da_um_perfil_completo_ao_usuario` cria as colunas.
+- **Foto do usuário.** O campo `usuario_avatar` (jpg/png/webp, 2 MB, 1:1) usa o dropzone de sempre; sem
+  foto, o painel desenha as iniciais do nome. A foto aparece na prévia da ficha, na lista da equipe e no
+  topo do painel, e trocar ou excluir o usuário apaga a imagem antiga do disco. O valor que chega do
+  formulário é conferido por `Envio::caminhoConfere()`, então um caminho forjado não vira avatar.
+- **Último acesso de verdade.** Toda abertura de sessão grava `ultimo_acesso_em` e `ultimo_acesso_ip`
+  (por `marcarAcesso()`), e quem entrou antes da coluna existir continua vendo a data pela auditoria —
+  `edit()` cai no último `login` registrado em `activities`.
+- **Cadastro em abas.** A ficha passou a ter as abas Acesso, Perfil, Segurança e Atividade (estas duas
+  só em ficha existente). Segurança mostra segundo fator, e-mail verificado, último acesso com IP e as
+  janelas abertas em nome da pessoa; Atividade mostra tempo de casa, leads sob cuidado, última
+  atualização e os 12 movimentos mais recentes, com atalho para a auditoria filtrada. A barra de salvar
+  fica no pé, diz o que é gravação e o que é leitura, e o envio continua em segundo plano
+  (`golden-salvar.js`), com a aba de erro aberta automaticamente.
+
+### Testes
+- `FichaDoUsuarioTest` cobre as abas, os campos novos, o avatar (envio, troca com limpeza, recusa de
+  caminho de outra pasta, exclusão junto do usuário), as iniciais sem foto, o registro do último acesso
+  no login e o conteúdo das abas de Segurança e Atividade.
+
 ## [2.53.0] - 2026-10-29
 
 ### Adicionado
