@@ -60,6 +60,10 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   `thinkingConfig.thinkingLevel = minimal`, as partes marcadas como pensamento são descartadas na
   leitura e uma resposta cortada (`finishReason` diferente de `STOP`) vira falha — a conversa escala com
   a frase da casa em vez de mostrar frase pela metade.
+- **O arquivo enviado virou a única fonte da resposta sobre ele.** A ordem da chamada de documento e de
+  imagem passou a dizer que a resposta sai do que o arquivo mostra e que cláusula, valor, prazo ou
+  condição que não estejam nele não podem ser inventados; o que faltar, a Ana oferece à equipe em vez
+  de completar com conhecimento geral.
 - **Resposta de erro não fecha mais a bolha.** O JavaScript tratava qualquer retorno sem `ativo` como
   "máquina desligada" e desaparecia com o widget; uma recusa de arquivo (422) ou um CSRF vencido (419) agora
   mostram a frase da regra e a conversa continua na tela.
@@ -67,13 +71,13 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   responder; quando o pedido falhava, a pessoa ficava com a bolha vazia e a conversa antiga perdida.
 
 ### Testado
-- `BolhaDoAssistenteTest` cobre o documento lido com a legenda como pergunta, a imagem indo ao provedor de
-  visão, o áudio transcrito seguindo a conversa e a pergunta curta herdando o assunto e o histórico;
-  `IdentificacaoEAvaliacaoPeloAssistenteTest` prova o vínculo pelo e-mail, a apresentação com e-mail
-  confirmada sem chamar o provedor, a confirmação de cadastro, a nota das estrelas e o encerramento com a
-  pesquisa já respondida; `SegundaViaPeloAssistenteTest` acompanha o fio pelo e-mail até a segunda via;
-  `RespostaDoGeminiTest` garante o pedido de pensamento curto, o descarte do rascunho e a falha da
-  resposta cortada. Suite completa: 729 testes, 11.929 asserções.
+- `BolhaDoAssistenteTest` cobre o documento lido com a legenda como pergunta e com o arquivo como fonte
+  única, a imagem indo ao provedor de visão, o áudio transcrito seguindo a conversa e a pergunta curta
+  herdando o assunto e o histórico; `IdentificacaoEAvaliacaoPeloAssistenteTest` prova o vínculo pelo
+  e-mail, a apresentação com e-mail confirmada sem chamar o provedor, a confirmação de cadastro, a nota
+  das estrelas e o encerramento com a pesquisa já respondida; `SegundaViaPeloAssistenteTest` acompanha o
+  fio pelo e-mail até a segunda via; `RespostaDoGeminiTest` garante o pedido de pensamento curto, o
+  descarte do rascunho e a falha da resposta cortada. Suite completa: 729 testes, 11.930 asserções.
 
 ## [2.52.0] - 2026-10-29
 

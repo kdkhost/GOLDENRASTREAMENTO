@@ -334,9 +334,20 @@ final class Atendedor
             default => 'O que este documento diz?',
         };
 
+        // O arquivo é a única fonte desta resposta. Sem esta linha o modelo completa o que falta
+        // com conhecimento geral — e um contrato de teste virava um contrato com cláusulas que
+        // ninguém escreveu, na frente de quem enviou o arquivo.
+        $ordem = self::ordemDaConversa($conversa, $ficha, false);
+        $ordem[] = $tipo === 'imagem'
+            ? 'A resposta tem que sair do que a imagem mostra. Não invente detalhe que não esteja nela; '
+                .'se a imagem não responder à pergunta, diga o que deu para ver e ofereça a equipe.'
+            : 'A resposta tem que sair do que o documento enviado diz. Não complete com conhecimento geral '
+                .'e não invente cláusula, valor, prazo ou condição que não esteja no arquivo; se o documento '
+                .'não responder à pergunta, diga o que encontrou e ofereça a equipe.';
+
         $resposta = Motor::responder(new Chamada(
             pergunta: $pergunta,
-            instrucoes: self::ordemDaConversa($conversa, $ficha, false),
+            instrucoes: $ordem,
             historico: self::historico($conversa, $fala),
             imagens: $tipo === 'imagem' ? [$peca] : [],
             documentos: $tipo === 'arquivo' ? [$peca] : [],

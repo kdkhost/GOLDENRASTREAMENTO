@@ -588,6 +588,13 @@ class BolhaDoAssistenteTest extends TestCase
             return in_array('application/pdf', array_column($partes, 'mime'), true)
                 && str_contains($this->textoDoPedido($partes), 'essa nota está paga?');
         });
+
+        // O arquivo é a fonte da resposta: o modelo não pode completar o que falta inventando
+        // cláusula, valor ou prazo que ninguém escreveu no documento.
+        Http::assertSent(fn ($pedido): bool => str_contains(
+            (string) data_get($pedido->data(), 'systemInstruction.parts.0.text', ''),
+            'tem que sair do que o documento enviado diz'
+        ));
     }
 
     /** A imagem segue a mesma porta, com a capacidade de visão e o arquivo em `inlineData`. */
