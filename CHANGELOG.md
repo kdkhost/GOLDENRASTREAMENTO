@@ -54,6 +54,12 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - **O nome não engole mais a frase seguinte.** O ponto final passou a encerrar a captura dos padrões de
   nome: em "sou a Maria. Meu e-mail é ..." o nome é "Maria", e não "Maria. Meu e-mail é teste" — que
   estourava o teto de palavras e deixava a pessoa anônima na ficha.
+- **A leitura de documento não devolve mais o rascunho do modelo.** O Gemini 3 pensa antes de responder e
+  o pensamento é cobrado no mesmo teto de tokens da fala; num documento grande o orçamento acabava no
+  meio do raciocínio, e o cliente recebia um começo de frase em inglês. O pedido passou a usar
+  `thinkingConfig.thinkingLevel = minimal`, as partes marcadas como pensamento são descartadas na
+  leitura e uma resposta cortada (`finishReason` diferente de `STOP`) vira falha — a conversa escala com
+  a frase da casa em vez de mostrar frase pela metade.
 - **Resposta de erro não fecha mais a bolha.** O JavaScript tratava qualquer retorno sem `ativo` como
   "máquina desligada" e desaparecia com o widget; uma recusa de arquivo (422) ou um CSRF vencido (419) agora
   mostram a frase da regra e a conversa continua na tela.
@@ -65,8 +71,9 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   visão, o áudio transcrito seguindo a conversa e a pergunta curta herdando o assunto e o histórico;
   `IdentificacaoEAvaliacaoPeloAssistenteTest` prova o vínculo pelo e-mail, a apresentação com e-mail
   confirmada sem chamar o provedor, a confirmação de cadastro, a nota das estrelas e o encerramento com a
-  pesquisa já respondida; `SegundaViaPeloAssistenteTest` acompanha o fio pelo e-mail até a segunda via.
-  Suite completa: 725 testes, 11.923 asserções.
+  pesquisa já respondida; `SegundaViaPeloAssistenteTest` acompanha o fio pelo e-mail até a segunda via;
+  `RespostaDoGeminiTest` garante o pedido de pensamento curto, o descarte do rascunho e a falha da
+  resposta cortada. Suite completa: 729 testes, 11.929 asserções.
 
 ## [2.52.0] - 2026-10-29
 

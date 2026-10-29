@@ -56,10 +56,10 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
         $corpo = [
             'systemInstruction' => ['parts' => [['text' => $chamada->ordem()]]],
             'contents' => array_merge($this->historico($chamada), [['role' => 'user', 'parts' => $partes]]),
-            'generationConfig' => [
+            'generationConfig' => array_merge([
                 'temperature' => 0.4,
                 'maxOutputTokens' => (int) config('assistente.resposta.caracteres_max') * 2,
-            ],
+            ], $this->pensamentoCurto()),
         ];
 
         $inicio = microtime(true);
@@ -105,7 +105,7 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
                         .'Não resuma, não corrija e não responda ao que foi dito — devolva só o texto falado.'],
                 ],
             ]],
-            'generationConfig' => ['temperature' => 0],
+            'generationConfig' => array_merge(['temperature' => 0], $this->pensamentoCurto()),
         ];
 
         $inicio = microtime(true);
@@ -196,9 +196,21 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
 
     private function textoDe(array $resposta): string
     {
+        $motivo = (string) data_get($resposta, 'candidates.0.finishReason', '');
+
+        // Resposta cortada é pior que resposta nenhuma: o que sobra de um raciocínio interrompido
+        // chega ao cliente como frase pela metade, muitas vezes em inglês. Vira falha, e a conversa
+        // escala com a frase da casa em vez de mostrar o rascunho do modelo.
+        if ($motivo !== '' && $motivo !== 'STOP') {
+            throw new ChamadaFalhou('O Gemini encerrou a resposta sem terminar (motivo: '.$motivo.').', $resposta);
+        }
+
         $partes = (array) data_get($resposta, 'candidates.0.content.parts', []);
+
+        // Os modelos com pensamento devolvem o rascunho em partes marcadas: isso não é a fala da
+        // Ana e nunca pode chegar ao cliente.
         $texto = trim(implode(' ', array_filter(array_map(
-            static fn (array $parte): ?string => $parte['text'] ?? null,
+            static fn (array $parte): ?string => ($parte['thought'] ?? false) === true ? null : ($parte['text'] ?? null),
             $partes
         ))));
 
@@ -210,6 +222,20 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
             ?: data_get($resposta, 'candidates.0.finishReason');
 
         throw new ChamadaFalhou('O Gemini devolveu resposta vazia'.($bloqueio ? " (motivo: {$bloqueio})" : '').'.', $resposta);
+    }
+
+    /**
+     * O Gemini 3 pensa antes de falar, e o rascunho consome o mesmo teto de tokens da resposta.
+     *
+     * Num atendimento isso é o pior dos dois mundos: o orçamento acaba no meio do raciocínio e o
+     * cliente recebe um começo de frase. O nível mínimo deixa o orçamento para a resposta; modelos
+     * que não conhecem o campo não o recebem, para não trocar um chat ruim por um erro de API.
+     */
+    private function pensamentoCurto(): array
+    {
+        return str_starts_with($this->modelo, 'gemini-3')
+            ? ['thinkingConfig' => ['thinkingLevel' => 'minimal']]
+            : [];
     }
 
     /**
