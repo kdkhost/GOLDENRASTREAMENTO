@@ -8,7 +8,7 @@
 @section('page_description', 'Painel, Google e portal se misturam no mesmo carrossel da home — o que decide o ar é a aprovação.')
 
 @section('page_actions')
-<form method="POST" action="{{ route('admin.conteudo.depoimentos.importar') }}" class="d-inline">
+<form method="POST" action="{{ route('admin.conteudo.depoimentos.importar') }}" class="d-inline" data-atualiza=".app-content">
     @csrf
     <button type="submit" class="btn btn-sm btn-outline-secondary"
         title="{{ $google_configurado ? 'Ler as avaliações do perfil no Google e atualizar as que já estão aqui' : 'Falta configurar: '.implode('; ', $google_faltantes) }}">

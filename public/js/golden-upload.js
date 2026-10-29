@@ -4,11 +4,14 @@
    Um único arquivo para imagem, vídeo e documento — o comportamento vem dos data-*
    do container, que o partial partials/upload preenche a partir de config/envios.php. */
 (function () {
-  var raizes = document.querySelectorAll('[data-upload]');
-  if (!raizes.length) return;
+  montarTodos();
 
-  for (var i = 0; i < raizes.length; i++) {
-    iniciar(raizes[i]);
+  // O painel troca de tela sem recarregar (golden-salvar.js): um campo de envio que chegou na
+  // troca não tinha DOM no carregamento, e sem esta escuta ele ficaria mudo.
+  document.addEventListener('golden:trocou', montarTodos);
+
+  function montarTodos() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-upload]'), iniciar);
   }
 
   function textoTamanho(bytes) {
@@ -26,6 +29,10 @@
   }
 
   function iniciar(raiz) {
+    if (raiz.dataset.uploadMontado === '1') { return; }
+
+    raiz.dataset.uploadMontado = '1';
+
     var cfg = {
       campo: raiz.getAttribute('data-campo'),
       tipo: raiz.getAttribute('data-tipo'),

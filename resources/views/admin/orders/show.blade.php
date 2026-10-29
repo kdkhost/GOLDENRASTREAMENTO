@@ -56,7 +56,7 @@
 
         <x-admin.card title="Documentos do pedido" icon="fa-paperclip" class="mt-3"
             descricao="Ficam no painel; o cliente acompanha o pedido pela linha do tempo.">
-            <form method="POST" action="{{ route('admin.pedidos.documentos', $pedido) }}">
+            <form method="POST" action="{{ route('admin.pedidos.documentos', $pedido) }}" data-atualiza=".app-content">
                 @csrf
                 @include('partials.upload', [
                     'campo' => 'pedido_documento',
@@ -108,7 +108,7 @@
         </x-admin.card>
 
         <x-admin.card title="Gerenciar pedido" icon="fa-sliders" class="mt-3">
-            <form method="POST" action="{{ route('admin.pedidos.status', $pedido) }}" class="row g-3">
+            <form method="POST" action="{{ route('admin.pedidos.status', $pedido) }}" class="row g-3" data-atualiza=".app-content-header,.app-content">
                 @csrf
                 <x-admin.field name="status" type="select" label="Status" col="col-6" :value="$pedido->status" :options="$statuses" />
                 <x-admin.field name="pagamento" type="select" label="Pagamento" col="col-6" :value="$pedido->pagamento" :options="\App\Models\Order::PAGAMENTOS" />

@@ -72,7 +72,7 @@
                 <div class="table-actions">
                     <a href="{{ route('admin.funil.show', $pagina) }}" class="btn btn-sm btn-outline-secondary" title="Contador da campanha"><i class="fas fa-chart-column"></i></a>
                     <a href="{{ route('admin.funil.edit', $pagina) }}" class="btn btn-sm btn-outline-secondary" title="Editar página e blocos"><i class="fas fa-pen"></i></a>
-                    <form method="POST" action="{{ route('admin.funil.toggle', $pagina) }}" class="d-inline"
+                    <form method="POST" action="{{ route('admin.funil.toggle', $pagina) }}" class="d-inline" data-atualiza=".app-content"
                         data-confirmar="{{ $pagina->status === 'publicada' ? 'Tirar esta campanha do ar? Quem tem o link vê 404 até ela voltar.' : 'Colocar esta campanha no ar agora?' }}">
                         @csrf
                         <button class="btn btn-sm btn-outline-secondary"

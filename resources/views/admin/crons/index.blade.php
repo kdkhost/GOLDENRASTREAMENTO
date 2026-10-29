@@ -83,13 +83,13 @@
                     <a href="{{ route('admin.crons.show', $t) }}" class="btn btn-sm btn-outline-secondary" title="Abrir a ficha"><i class="fas fa-eye" aria-hidden="true"></i></a>
 
                     @if($t->podeRodarAgora())
-                        <form method="POST" action="{{ route('admin.crons.executar', $t) }}" class="d-inline">
+                        <form method="POST" action="{{ route('admin.crons.executar', $t) }}" class="d-inline" data-atualiza=".app-content">
                             @csrf
                             <button class="btn btn-sm btn-outline-secondary" title="Rodar agora"><i class="fas fa-play" aria-hidden="true"></i></button>
                         </form>
                     @endif
 
-                    <form method="POST" action="{{ route('admin.crons.toggle', $t) }}" class="d-inline">
+                    <form method="POST" action="{{ route('admin.crons.toggle', $t) }}" class="d-inline" data-atualiza=".app-content">
                         @csrf
                         <button class="btn btn-sm btn-outline-secondary" title="{{ $t->ativa ? 'Pausar' : 'Reativar' }}">
                             <i class="fas {{ $t->ativa ? 'fa-pause' : 'fa-play' }}" aria-hidden="true"></i>

@@ -12,7 +12,8 @@
          interruptor da tela de Configurações está desligado, para o painel não oferecer um botão
          que a rota negaria. --}}
     @if(Veiculacao::supervisao() && $cliente->temConta() && $cliente->status === 'ativo')
-        <form method="POST" action="{{ route('admin.clientes.portal.entrar', $cliente) }}" class="mb-0">
+        {{-- Esta entrega troca de sessão e de área do site: o navegador vai junto, de verdade. --}}
+        <form method="POST" action="{{ route('admin.clientes.portal.entrar', $cliente) }}" class="mb-0" data-sem-ajax>
             @csrf
             <button class="btn btn-sm btn-outline-secondary text-nowrap" title="Abre o portal desta pessoa, igual ao que ela vê, sem gravar nada">
                 <i class="fas fa-user-shield me-1" aria-hidden="true"></i> Ver a conta do cliente
@@ -77,7 +78,7 @@
                              número gravado que manda: nenhuma visita volta a conferir o e-mail. Este
                              botão é o caminho de volta quando o número envelheceu — conta recriada no
                              financeiro, ou e-mail corrigido numa das pontas. --}}
-                        <form method="POST" class="mt-2 mb-0" action="{{ route('admin.clientes.revincular', $cliente) }}"
+                        <form method="POST" class="mt-2 mb-0" action="{{ route('admin.clientes.revincular', $cliente) }}" data-atualiza=".app-content"
                               data-confirmar="O painel vai perguntar ao financeiro qual conta pertence a {{ $emailDeAcesso }}.{{ $cliente->whmcs_id ? ' Se ele não confirmar nenhuma, a tela mostra a pendência e o vínculo atual (#'.$cliente->whmcs_id.') só se desfaz depois que você confirmar.' : '' }}">
                             @csrf
                             <button class="btn btn-sm btn-outline-secondary text-nowrap" title="Refaz a busca da conta pelo e-mail de acesso desta ficha">
@@ -89,7 +90,7 @@
                             {{-- O segundo clique é a confirmação. Enquanto ele não vem, o número
                                  continua gravado e as telas de financeiro seguem lendo a conta que
                                  estão lendo hoje — conferir nunca é motivo para apagar. --}}
-                            <form method="POST" class="mt-2 mb-0" action="{{ route('admin.clientes.revincular', $cliente) }}"
+                            <form method="POST" class="mt-2 mb-0" action="{{ route('admin.clientes.revincular', $cliente) }}" data-atualiza=".app-content"
                                   data-confirmar="O financeiro não encontra conta para {{ $pendente['email'] }}. Desfazer deixa esta ficha sem acesso às telas de financeiro até o e-mail bater de novo.">
                                 @csrf
                                 <input type="hidden" name="desfazer" value="1">
@@ -132,7 +133,7 @@
 
     <div class="col-lg-7">
         <x-admin.card title="Registrar interação" icon="fa-comments" descricao="Fica na histórico do cliente e conta como atendimento do responsável.">
-            <form method="POST" action="{{ route('admin.clientes.interacao', $cliente) }}" class="row g-3">
+            <form method="POST" action="{{ route('admin.clientes.interacao', $cliente) }}" class="row g-3" data-atualiza=".app-content">
                 @csrf
                 <x-admin.field name="tipo" type="select" label="Tipo" col="col-6 col-md-4" :options="$tipos" :required="true" />
                 <x-admin.field name="assunto" label="Assunto" col="col-6 col-md-8" maxlength="190" placeholder="Ex.: Envio de proposta de 12 veículos" :opcional="true" />

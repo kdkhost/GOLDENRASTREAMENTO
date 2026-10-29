@@ -37,3 +37,7 @@ $(function(){
     });
 });
 </script>
+{{-- A gravação em segundo plano do painel e do portal. Uma folha só, chamada aqui, porque é aqui
+     que os dois layouts se encontram: todo formulário de escrita das duas áreas passa por ela sem
+     que a view precise chamar nada — e nenhuma tela volta a piscar depois de salvar. --}}
+<script src="{{ asset('js/golden-salvar.js') }}?v={{ filemtime(public_path('js/golden-salvar.js')) }}"></script>

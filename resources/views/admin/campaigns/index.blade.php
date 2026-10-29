@@ -45,7 +45,7 @@
             <td>
                 <div class="table-actions">
                     <a href="{{ route('admin.campanhas.edit', $c) }}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fas fa-pen"></i></a>
-                    <form method="POST" action="{{ route('admin.campanhas.toggle', $c) }}" class="d-inline">
+                    <form method="POST" action="{{ route('admin.campanhas.toggle', $c) }}" class="d-inline" data-atualiza=".app-content">
                         @csrf
                         <button class="btn btn-sm btn-outline-secondary" title="{{ $c->ativa ? 'Pausar' : 'Ativar' }}"><i class="fas fa-{{ $c->ativa ? 'pause' : 'play' }}"></i></button>
                     </form>

@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Para onde a janela vai quando a sessão dela vence no meio do trabalho: o salvamento em
+         segundo plano precisa deste endereço, mas não tem com adivinhar o nome da rota. --}}
+    <meta name="golden-entrada" content="{{ route('login') }}">
     <title>@yield('title', 'Painel') | Golden Rastreamento</title>
     @include('partials.favicon')
     @include('admin.partials.theme-init')

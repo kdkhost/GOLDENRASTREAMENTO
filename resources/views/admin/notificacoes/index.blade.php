@@ -4,7 +4,7 @@
 @section('page_description', 'Tudo o que aconteceu e pede a sua atenção. Abrir uma notificação a tira do sino; a lista guarda o histórico.')
 
 @section('page_actions')
-<form method="POST" action="{{ route('admin.notificacoes.lidas') }}" class="d-inline">
+<form method="POST" action="{{ route('admin.notificacoes.lidas') }}" class="d-inline" data-atualiza=".app-content">
     @csrf
     <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-check-double me-1"></i> Marcar todas como lidas</button>
 </form>

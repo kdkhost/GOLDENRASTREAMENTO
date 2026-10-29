@@ -44,7 +44,7 @@
             </div>
 
             @if(! in_array($chamado->status, ['fechado'], true))
-            <form method="POST" action="{{ route('portal.chamados.responder', $chamado) }}" class="row g-3 mt-2" novalidate>
+            <form method="POST" action="{{ route('portal.chamados.responder', $chamado) }}" class="row g-3 mt-2" data-atualiza=".app-content" novalidate>
                 @csrf
                 <x-admin.field name="corpo" type="textarea" label="Sua resposta" rows="5" :required="true" maxlength="4000"
                     placeholder="Escreva aqui o que a equipe precisa saber." />

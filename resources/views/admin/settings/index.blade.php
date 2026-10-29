@@ -89,7 +89,7 @@
     <div class="tab-content">
         {{-- 1. Identidade: quem a Golden é e onde fica. --}}
         <div class="tab-pane fade show active" id="aba-contato" data-aba-painel="contato" role="tabpanel" aria-labelledby="aba-contato-botao" tabindex="0">
-            <form method="POST" action="{{ route('admin.settings.update') }}">
+            <form method="POST" action="{{ route('admin.settings.update') }}" data-atualiza=".app-content">
                 @csrf
                 <input type="hidden" name="_aba" value="contato">
                 <div class="row g-3">
@@ -125,7 +125,7 @@
 
         {{-- 2. Para onde o site leva: endereços dos servidores e cada rótulo do caminho. --}}
         <div class="tab-pane fade" id="aba-acessos" data-aba-painel="acessos" role="tabpanel" aria-labelledby="aba-acessos-botao" tabindex="0">
-            <form method="POST" action="{{ route('admin.settings.update') }}">
+            <form method="POST" action="{{ route('admin.settings.update') }}" data-atualiza=".app-content">
                 @csrf
                 <input type="hidden" name="_aba" value="acessos">
                 <div class="row g-3">
@@ -176,7 +176,7 @@
                         <x-slot:actions>
                             <x-admin.status :rotulo="$lojaAtiva ? 'ativa' : 'desativada'" :tom="tom_por_flag($lojaAtiva)" />
                         </x-slot:actions>
-                        <form method="POST" action="{{ route('admin.settings.loja') }}">
+                        <form method="POST" action="{{ route('admin.settings.loja') }}" data-atualiza=".app-content">
                             @csrf
                             <input type="hidden" name="ativa" value="{{ $lojaAtiva ? '0' : '1' }}">
                             <button class="btn w-100 {{ $lojaAtiva ? 'btn-outline-danger' : 'btn-success' }}">
@@ -188,7 +188,7 @@
                 </div>
                 <div class="col-xl-7">
                     <x-admin.card title="Regras da loja" icon="fa-truck-fast" ajuda="regras_da_loja" descricao="Frete, retirada, Pix e o e-mail que recebe cada venda.">
-                        <form method="POST" action="{{ route('admin.settings.loja-regras') }}" class="row g-3">
+                        <form method="POST" action="{{ route('admin.settings.loja-regras') }}" class="row g-3" data-atualiza=".app-content">
                             @csrf
                             <x-admin.switch name="loja_livre" label="Frete combinado (não cobra valor fixo)" :checked="$livre" />
                             <x-admin.switch name="loja_retirada" label="Permitir retirada na loja" :checked="$retirada" />
@@ -212,7 +212,7 @@
                 <x-slot:actions>
                     <x-admin.status :rotulo="$boxAtivo ? 'caixa multicanal' : 'link direto'" :tom="tom_por_flag($boxAtivo)" />
                 </x-slot:actions>
-                <form method="POST" action="{{ route('admin.settings.whatsapp') }}" class="row g-3">
+                <form method="POST" action="{{ route('admin.settings.whatsapp') }}" class="row g-3" data-atualiza=".app-content">
                     @csrf
                     <x-admin.switch name="whatsapp_box_ativo" label="Mostrar a caixa multicanal" :checked="$boxAtivo" />
 
@@ -259,7 +259,7 @@
 
         {{-- 5. Medição: a coleta de eventos e os três identificadores. --}}
         <div class="tab-pane fade" id="aba-medicao" data-aba-painel="medicao" role="tabpanel" aria-labelledby="aba-medicao-botao" tabindex="0">
-            <form method="POST" action="{{ route('admin.settings.update') }}">
+            <form method="POST" action="{{ route('admin.settings.update') }}" data-atualiza=".app-content">
                 @csrf
                 <input type="hidden" name="_aba" value="medicao">
                 <div class="row g-3">
@@ -317,7 +317,7 @@
                 <div class="col-xl-7">
                     <x-admin.card title="Testar a conexão agora" icon="fa-satellite-dish"
                         descricao="Uma chamada de verdade ao financeiro, na frente de quem aperta o botão.">
-                        <form method="POST" action="{{ route('admin.settings.whmcs.sondar') }}" class="row g-3">
+                        <form method="POST" action="{{ route('admin.settings.whmcs.sondar') }}" class="row g-3" data-atualiza=".app-content">
                             @csrf
                             <x-admin.field name="sonda_email" type="email" label="E-mail de uma conta do WHMCS"
                                 :value="$settings['contato_email'] ?? ''" :col="''" maxlength="190" :required="true"
@@ -348,7 +348,7 @@
                 <div class="col-12">
                     <x-admin.card :title="$veiculacao['rotulo']" :icon="$veiculacao['icone']" :descricao="$veiculacao['descricao']"
                         :ajuda="\App\Support\ChavesDeIntegracao::GRUPO_VEICULACAO">
-                        <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3">
+                        <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3" data-atualiza=".app-content">
                             @csrf
                             <input type="hidden" name="grupo" value="{{ \App\Support\ChavesDeIntegracao::GRUPO_VEICULACAO }}">
                             @foreach ($veiculacao['campos'] as $campo)
@@ -386,7 +386,7 @@
                     @foreach ($gruposDeChaves as $id => $grupo)
                         <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="aba-chaves-{{ $id }}" data-aba-painel="{{ $id }}" role="tabpanel" aria-labelledby="aba-chaves-{{ $id }}-botao" tabindex="0">
                             <x-admin.card :title="$grupo['rotulo']" :icon="$grupo['icone']" :descricao="$grupo['descricao']" :ajuda="$id">
-                                <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3">
+                                <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3" data-atualiza=".app-content">
                                     @csrf
                                     <input type="hidden" name="grupo" value="{{ $id }}">
                                     @foreach ($grupo['campos'] as $campo)
@@ -417,7 +417,7 @@
                                         </p>
                                     @endif
 
-                                    <form method="POST" action="{{ route('admin.settings.email.sondar') }}" class="row g-3">
+                                    <form method="POST" action="{{ route('admin.settings.email.sondar') }}" class="row g-3" data-atualiza=".app-content">
                                         @csrf
                                         <x-admin.field name="sonda_email_destino" type="email" label="Receber a mensagem de prova em"
                                             :value="$settings['contato_email'] ?? ''" :col="''" maxlength="190" :required="true"

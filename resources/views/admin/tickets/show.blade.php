@@ -30,7 +30,7 @@
                 @endforeach
             </div>
 
-            <form method="POST" action="{{ route('admin.chamados.responder', $chamado) }}" class="row g-3 mt-2">
+            <form method="POST" action="{{ route('admin.chamados.responder', $chamado) }}" class="row g-3 mt-2" data-atualiza=".app-content">
                 @csrf
                 <x-admin.field name="corpo" type="textarea" label="Responder ao cliente" rows="4" :required="true"
                     placeholder="O que a equipe vai dizer. O cliente recebe por e-mail e vê aqui no portal." />
@@ -44,7 +44,7 @@
 
     <div class="col-lg-4">
         <x-admin.card title="Atendimento" icon="fa-sliders">
-            <form method="POST" action="{{ route('admin.chamados.status', $chamado) }}" class="row g-3">
+            <form method="POST" action="{{ route('admin.chamados.status', $chamado) }}" class="row g-3" data-atualiza=".app-content-header,.app-content">
                 @csrf
                 <x-admin.field name="status" type="select" label="Situação" col="col-6" :value="$chamado->status" :options="$statuses" />
                 <x-admin.field name="prioridade" type="select" label="Prioridade" col="col-6" :value="$chamado->prioridade" :options="$prioridades" />

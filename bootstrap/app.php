@@ -6,6 +6,7 @@ use App\Http\Middleware\ControleAcesso;
 use App\Http\Middleware\IdentificadorVisita;
 use App\Http\Middleware\LojaAtiva;
 use App\Http\Middleware\RegistrarRastreio;
+use App\Http\Middleware\ResponderEscritaAjax;
 use App\Support\Agendador;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -34,6 +35,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             IdentificadorVisita::class,
             RegistrarRastreio::class,
+            // Por último, para ver a resposta já pronta de qualquer controller: é aqui que o
+            // redirect de uma gravação vira JSON para quem pediu em segundo plano.
+            ResponderEscritaAjax::class,
         ]);
 
         $middleware->alias([

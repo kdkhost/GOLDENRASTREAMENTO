@@ -404,6 +404,17 @@ a dimensão ideal.
   cartão ou *switch* — nada de parágrafo despejado na formulação. O clique abre uma gaveta à direita,
   sobre a própria tela, com o passo a passo daquele item e o endereço de onde o token ou a credencial
   nascem. O texto mora em `config/guia_configuracao.php`; item sem entrada escrita não mostra ícone.
+- **Gravar sem recarregar**: todo `<form>` de escrita do painel e do portal sai por
+  `public/js/golden-salvar.js` e volta em JSON, traduzido por `App\Http\Middleware\ResponderEscritaAjax`
+  (última folha do grupo `web`). A tela não pisca: o *scroll* fica onde estava, a aba continua aberta,
+  o *toastr* sai na hora e o campo com erro vermelha sem apagar o que foi digitado. O que precisa de
+  valor novo do servidor troca a região declarada em `data-atualiza` (`.app-content` /
+  `.app-content-header`) com um GET discreto; o que muda de tela vai buscá-la e troca o conteúdo sem
+  navegação — a tela em que a pessoa está vai no cabeçalho `X-Golden-Tela`, porque gravar em
+  `/campanhas` a campanha criada em `/campanhas/nova` é troca de tela, não permanência. Download,
+  OAuth, entrar e sair ficam de fora com `data-sem-ajax`, e uma tela de destino que exige script que a
+  página atual não tem é pedida ao navegador de verdade. **Nenhum controller mudou**: eles continuam
+  devolvendo o redirect de sempre.
 - **Auditoria**: trilha de ações administrativas (login, mudança de funil, exportação,
   configuração, cadastros de produto/página/pedido…), apenas para admin.
 - **Usuários & permissões**: perfis `admin`, `vendedor`, `visualizador` com middleware
@@ -704,6 +715,7 @@ app/
   Http/Middleware/LojaAtiva.php          # alias `loja` -> 404 quando a loja está off
   Http/Middleware/IdentificadorVisita.php
   Http/Middleware/RegistrarRastreio.php  # toda tela do site vira visita/evento
+  Http/Middleware/ResponderEscritaAjax.php # o redirect de toda escrita vira JSON no segundo plano
   Models/  Lead, Campaign, LeadStatusHistory, Activity, Setting, User,
            Customer, Interaction, Product, Category, Supplier,
            StockMovement, Order, OrderItem, OrderHistory, Page, Testimonial, Faq,
@@ -751,11 +763,12 @@ tests/Feature/FluxoDaLojaTest.php        # vitrine -> sacola -> checkout -> pedi
 tests/Feature/PortalDoClienteTest.php    # auto-cadastro, duas sessões, chamado, contrato, recuperação
 tests/Feature/CamposDeEnvioTest.php      # regras de upload, preview gravado, caminhos forjados
 tests/Feature/LevezaDasPaginasTest.php   # zero consultas com cache quente
+tests/Feature/SalvarEmSegundoPlanoTest.php # o JSON da escrita, as regiões e o destino de cada gravação
 tests/Unit/DiretivasBladeTest.php        # diretivas Blade compiladas em todas as telas
 tests/Unit/ExtensaoDoArquivoEnviadoTest.php  # a extensão vem do conteúdo, não do nome
 ```
 
-`php artisan test` roda tudo contra SQLite em memória (511 testes, 5.990 asserções). Os
+`php artisan test` roda tudo contra SQLite em memória (655 testes, 11.028 asserções). Os
 comprimentos de coluna, porém, só o MySQL fiscaliza — por isso toda migration nova é
 conferida no servidor antes de virar entrega.
 

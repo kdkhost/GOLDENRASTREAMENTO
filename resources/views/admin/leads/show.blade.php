@@ -24,7 +24,7 @@
         <x-admin.card title="Mover no funil" icon="fa-filter">
             <div class="d-flex flex-wrap gap-2 mb-3">
                 @foreach(\App\Models\Lead::STATUSES as $s)
-                    <form method="POST" action="{{ route('admin.leads.status', $lead) }}" class="d-inline">
+                    <form method="POST" action="{{ route('admin.leads.status', $lead) }}" class="d-inline" data-atualiza=".app-content">
                         @csrf
                         <input type="hidden" name="status" value="{{ $s }}">
                         <button class="btn btn-sm {{ $lead->status === $s ? 'btn-golden' : 'btn-outline-secondary' }}" {{ $lead->status === $s ? 'disabled' : '' }}>
@@ -33,7 +33,7 @@
                     </form>
                 @endforeach
             </div>
-            <form method="POST" action="{{ route('admin.leads.nota', $lead) }}" class="row g-2 align-items-end">
+            <form method="POST" action="{{ route('admin.leads.nota', $lead) }}" class="row g-2 align-items-end" data-atualiza=".app-content">
                 @csrf
                 <x-admin.field name="note" label="Nota de atendimento" col="col" placeholder="O que foi combinado com o cliente..." :required="true" maxlength="1000" />
                 <div class="col-auto">

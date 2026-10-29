@@ -20,7 +20,7 @@
             @unless($produto->controle_estoque)
                 <div class="alert alert-warning small py-2">Este produto está cadastrado <strong>sem controle de estoque</strong>. A movimentação ainda é registrada, mas o saldo não trava a venda na loja.</div>
             @endunless
-            <form method="POST" action="{{ route('admin.catalogo.produtos.estoque', $produto) }}" class="row g-3">
+            <form method="POST" action="{{ route('admin.catalogo.produtos.estoque', $produto) }}" class="row g-3" data-atualiza=".app-content">
                 @csrf
                 <x-admin.field name="tipo" type="select" label="Tipo" col="col-6" :options="['entrada' => 'Entrada', 'saida' => 'Saída']" :required="true" />
                 <x-admin.field name="quantidade" type="number" label="Quantidade" col="col-6" :value="1" :required="true" min="1" />

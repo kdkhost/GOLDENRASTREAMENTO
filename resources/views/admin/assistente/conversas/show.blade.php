@@ -72,7 +72,7 @@
                 @endforelse
             </div>
 
-            <form method="POST" action="{{ route('admin.assistente.conversas.responder', $conversa) }}" class="row g-3 mt-2">
+            <form method="POST" action="{{ route('admin.assistente.conversas.responder', $conversa) }}" class="row g-3 mt-2" data-atualiza=".app-content">
                 @csrf
                 <x-admin.field name="corpo" type="textarea" label="Responder como equipe" rows="4" :required="true"
                     placeholder="Quem escreve aqui assume a conversa: a máquina para de responder o resto do fio."
@@ -86,7 +86,7 @@
 
     <div class="col-lg-4">
         <x-admin.card title="Atendimento" icon="fa-sliders">
-            <form method="POST" action="{{ route('admin.assistente.conversas.status', $conversa) }}" class="row g-3">
+            <form method="POST" action="{{ route('admin.assistente.conversas.status', $conversa) }}" class="row g-3" data-atualiza=".app-content">
                 @csrf
                 <x-admin.field name="status" type="select" label="Situação" :value="$conversa->status" :options="$statuses" :required="true" />
                 <div class="col-12">

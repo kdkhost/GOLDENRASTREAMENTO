@@ -10,7 +10,9 @@
 @section('page_description', 'Visitas, cliques e cadastros de '.$pagina->url().' — o que o link produziu.')
 
 @section('page_actions')
-    <form method="POST" action="{{ route('admin.funil.toggle', $pagina) }}" class="d-inline"
+    {{-- Só o cabeçalho troca aqui: abaixo dele a tela é desenhada pelo Chart.js, e um conteúdo
+     novo sem o gráfico refeito valeria mais que a recarga que se evitou. --}}
+    <form method="POST" action="{{ route('admin.funil.toggle', $pagina) }}" class="d-inline" data-atualiza=".app-content-header"
         data-confirmar="{{ $pagina->status === 'publicada' ? 'Tirar esta campanha do ar? Quem tem o link vê 404 até ela voltar.' : 'Colocar esta campanha no ar agora?' }}">
         @csrf
         <button class="btn btn-sm {{ $pagina->status === 'publicada' ? 'btn-outline-secondary' : 'btn-golden' }}">

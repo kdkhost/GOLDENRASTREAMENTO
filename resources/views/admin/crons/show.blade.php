@@ -4,13 +4,15 @@
 @section('page_description', $tarefa->descricao ?: 'Tarefa da agenda do painel, executada pelo cron da hospedagem.')
 
 @section('page_actions')
+{{-- O cabeçalho guarda os dois botões que estes formulários mudam (o de rodar, que apaga quando
+     a tarefa acabou de rodar, e o de pausar, que vira o contrário): ele entra na região trocada. --}}
 @if($tarefa->podeRodarAgora())
-    <form method="POST" action="{{ route('admin.crons.executar', $tarefa) }}" class="d-inline">
+    <form method="POST" action="{{ route('admin.crons.executar', $tarefa) }}" class="d-inline" data-atualiza=".app-content-header,.app-content">
         @csrf
         <button class="btn btn-sm btn-golden"><i class="fas fa-play me-1"></i> Rodar agora</button>
     </form>
 @endif
-<form method="POST" action="{{ route('admin.crons.toggle', $tarefa) }}" class="d-inline">
+<form method="POST" action="{{ route('admin.crons.toggle', $tarefa) }}" class="d-inline" data-atualiza=".app-content-header,.app-content">
     @csrf
     <button class="btn btn-sm btn-outline-secondary"><i class="fas {{ $tarefa->ativa ? 'fa-pause' : 'fa-play' }} me-1"></i> {{ $tarefa->ativa ? 'Pausar' : 'Reativar' }}</button>
 </form>

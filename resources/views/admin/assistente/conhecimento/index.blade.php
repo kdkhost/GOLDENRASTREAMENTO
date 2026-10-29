@@ -4,7 +4,7 @@
 @section('page_description', 'A base que a máquina lê antes de responder. Sem fonte aqui, ela chama a equipe em vez de inventar.')
 
 @section('page_actions')
-<form method="POST" action="{{ route('admin.assistente.conhecimento.semear') }}" class="d-inline">
+<form method="POST" action="{{ route('admin.assistente.conhecimento.semear') }}" class="d-inline" data-atualiza=".app-content">
     @csrf
     <button type="submit" class="btn btn-sm btn-outline-secondary" title="Acrescenta o que falta e atualiza o catálogo, sem mexer no que você editou">
         <i class="fas fa-graduation-cap me-1"></i> Ensinar o básico da Golden

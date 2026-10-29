@@ -6,7 +6,7 @@ atribuição de tráfego, loja virtual opcional e portal do cliente. Tudo em
 Laravel, com um único instalador.
 
 - **Sistema:** Golden Rastreamento (Laravel + PHP 8.3)
-- **Versão:** 2.47.0
+- **Versão:** 2.50.0
 - **Banco:** MySQL 5.7 ou superior (Padrão do projeto) ou SQLite para testes
 - **Instalador:** `deploy/instalador-golden.sh`
 - **Atualização:** `deploy/atualiza-golden.sh`
@@ -2245,6 +2245,62 @@ Instalou e ainda apareceu `validation.required`? É cache de view antigo:
 
 ---
 
+## 17.1 Gravar sem recarregar: o salvar em segundo plano
+
+Nenhuma gravação do painel ou do portal leva a tela embora. A pessoa clica, o botão
+mostra o trabalho, o *toastr* sai na hora e a página continua exatamente onde estava —
+o *scroll*, a aba aberta, o que ela digitou. Isso são dois arquivos, e nenhum controller
+precisou mudar:
+
+- **`App\Http\Middleware\ResponderEscritaAjax`** (última folha do grupo `web`) traduz o
+  redirect de sempre para o pedido assíncrono: o recado sai do bolso da sessão e vai no
+  corpo da resposta, o motivo da validação sai separado por campo, e o destino vai junto
+  com a marca de ser a mesma tela ou não. Um pedido de navegador comum continua recebendo
+  o redirect intacto — é por isso que os controllers de escrita continuam escrevendo
+  `->with('success', …)` e `->withErrors(…)` como sempre escreveram.
+- **`public/js/golden-salvar.js`** (carregado pelo *layout* do painel e pelo do portal)
+  intercepta todo `<form>` de escrita e decide o que fazer da resposta:
+  - a tela em que a pessoa está é o que decide se o destino é "fica" ou "vai" — o navegador
+    manda o endereço dela no cabeçalho `X-Golden-Tela`, porque gravar em `/campanhas` a
+    campanha criada em `/campanhas/nova` é troca de tela, não permanência;
+  - o que precisa de valor novo do servidor troca a região que o formulário declara em
+    `data-atualiza` (`.app-content` ou `.app-content-header`) com um GET discreto;
+  - o que muda de tela busca a nova e troca o conteúdo, sem navegação — e só pede o
+    navegador de verdade quando a tela de destino exige script que esta página não tem
+    (o painel do Google Ads, por exemplo), porque tela quebrada pisca muito mais que tela
+    carregada;
+  - erro de validação vermelha o campo no lugar, abre a aba onde ele está e devolve o
+    foco, sem apagar nada do que foi escrito.
+
+O contrato nas views é de três atributos, e só:
+
+| Atributo | Onde vai | O que significa |
+| --- | --- | --- |
+| `data-atualiza=".app-content"` | `<form>` que grava | esta região precisa voltar do servidor com o valor novo (o selo de status, a linha do tempo, o resultado da sonda) |
+| `data-confirmar="…"` | `<form>` destrutivo | pergunta antes, e o envio só acontece depois do "sim" (seção 17) |
+| `data-sem-ajax` | `<form>` que precisa do navegador | download, OAuth, entrar e sair — nada de segundo plano aqui |
+
+Um `<form>` que não declara nada também funciona: é o caso dos formulários cujo valor
+gravado é o mesmo que a pessoa acabou de digitar — não há o que buscar de volta, e um GET
+por nada seria exatamente o congestionamento que se quis evitar.
+
+**Depois de instalar**, a prova é em três cliques:
+- *Sistema → Configurações → Medição*: escrever um ID, salvar e conferir que o *toastr*
+  veio, a aba continua em *Medição* e o endereço ganhou `#medicao` — nada recarregou;
+- *Comercial → Campanhas*: pausar uma linha (o botão vira play no lugar) e excluir outra
+  (a linha sai, a contagem do cabeçalho volta do servidor); criar uma campanha nova leva
+  à listagem sem que a tela pisque;
+- *Portal do cliente → Meus chamados*: responder num chamado e ver a mensagem entrar na
+  linha do tempo com o campo já vazio, sem perder a conversa.
+
+**Travado por teste**: `tests/Feature/SalvarEmSegundoPlanoTest.php` confere o JSON que o
+navegador recebe (mensagem, campo, destino e a marca de mesma tela), que o mesmo POST sem
+o pedido assíncrono continua um redirect intacto, que o recado não aparece duas vezes, que
+toda região declarada em `data-atualiza` é uma das duas que o painel sabe trocar, e que
+cada formulário marcado no contrato tem a marca no lugar certo.
+
+---
+
 ## 18. Paginação: um view por superfície
 
 Toda lista paginada do sistema — as 12 do painel, as interações da ficha do CRM e
@@ -2439,6 +2495,9 @@ continua visível para você pelo painel ou SSH.
       do rótulo de cada campo de **Configurações**, abre a gaveta à direita com o passo a passo e os
       endereços de onde a credencial nasce — sem trocar de aba e sem tirar o formulário do lugar
       (seção 14)
+- [ ] Gravar sem recarregar: salvar em *Configurações → Medição* e pausar uma campanha em
+      *Comercial → Campanhas* não podem piscar a tela — o *toastr* aparece na hora, a aba e o
+      *scroll* ficam onde estavam, e o valor volta do servidor no lugar (seção 17.1)
 - [ ] Campanha: `/admin/funil` mostra a campanha semeada; abrir `/c/frota-j16?ttclid=TESTE123`
       no navegador, cadastrar-se pelo formulário da página e conferir o clique, a origem e o
       cadastro na tela da campanha (seção 13)

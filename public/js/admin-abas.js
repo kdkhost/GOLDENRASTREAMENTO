@@ -157,9 +157,13 @@
     }
 
     function montar(grupo) {
-        if (!window.bootstrap || !window.bootstrap.Tab) {
+        if (!window.bootstrap || !window.bootstrap.Tab || grupo.dataset.abaMontada === '1') {
             return;
         }
+
+        // A marca é o que impede a escuta de se dobrar quando o conteúdo chega de segundo plano
+        // (golden-salvar.js) e um grupo já montado continua na tela.
+        grupo.dataset.abaMontada = '1';
 
         var chave = 'golden_aba_' + grupo.dataset.abas;
 
@@ -212,6 +216,12 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-abas]'), montar);
+    });
+
+    // Tela trocada em segundo plano: os grupos que chegaram agora não tinham DOM para montar no
+    // carregamento, e a pessoa cairia numa barra de abas muda.
+    document.addEventListener('golden:trocou', function () {
         Array.prototype.forEach.call(document.querySelectorAll('[data-abas]'), montar);
     });
 })();

@@ -255,7 +255,10 @@
                     <div class="table-actions">
                         @if (in_array($c['status'], \App\Services\GoogleAds\GoogleAdsService::STATUS_ESCREVEVEIS, true))
                             @php $pausar = $c['status'] === 'ENABLED'; @endphp
-                            <form method="POST"
+                            {{-- Esta tela é do Livewire, e o DOM dela pertence ao componente: trocar
+                                 um pedaço por fora deixaria o snapshot falando de uma campanha que já
+                                 mudou. Aqui o navegador vai e volta de verdade, como sempre foi. --}}
+                            <form method="POST" data-sem-ajax
                                 action="{{ route('admin.google-ads.campanhas.status', array_merge(['campanha' => $c['id']], array_filter(['dias' => $dias, 'busca' => $busca ?: null, 'situacao' => $situacao ?: null, 'conta' => $contaId]))) }}"
                                 data-confirmar="{{ $pausar ? 'Pausar '.$c['nome'].' no Google Ads? Os anúncios param de ser exibidos até você reativar.' : 'Reativar '.$c['nome'].' no Google Ads? A campanha volta a gastar assim que o Google aceitar.' }}">
                                 @csrf

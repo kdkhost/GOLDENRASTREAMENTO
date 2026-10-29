@@ -3,6 +3,64 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.50.0] - 2026-10-29
+
+### Adicionado
+- **Gravar não leva a tela embora.** Todo `<form>` de escrita do painel e do portal saiu do
+  navegador e passou por `public/js/golden-salvar.js`: o mesmo POST, respondido em JSON por
+  `App\Http\Middleware\ResponderEscritaAjax` (folha nova, última do grupo `web`). A pessoa clica, o
+  botão mostra o trabalho, o *toastr* sai na hora e a tela continua onde estava — o *scroll*, a aba
+  aberta, o hash do endereço e o que foi digitado. São **71 formulários cobertos por uma camada só**:
+  nenhum controller foi tocado, porque eles continuam devolvendo o redirect de sempre e é esta folha
+  que o traduz para o pedido assíncrono.
+- **O que precisa de valor novo volta do servidor no lugar.** O formulário declara a região em
+  `data-atualiza` (`.app-content` ou `.app-content-header`) e ela é trocada por um GET discreto — o
+  selo de status, a linha do tempo do chamado, o contagem e a paginação da listagem, o resultado da
+  sonda. Um GET por gravação, um aborte se a pessoa gravar de novo antes da volta: nada de
+  empilhar recarga nem de congestionar a hospedagem compartilhada.
+- **Quem cria é levado para a listagem, sem piscar.** `POST /campanhas` grava e devolve
+  `/campanhas`, que é o endereço do próprio POST: comparar o destino com a requisição diria "fica onde
+  está" e a pessoa continuaria diante do formulário vazio. O navegador manda a tela em que está no
+  cabeçalho `X-Golden-Tela`, e é contra ela que o destino é medido — a ficha nova aparece na listagem,
+  o título e o menu acompanham, e nenhuma navegação acontece.
+- **Erro de validação vermelha no lugar, sem apagar nada.** O motivo sai separado por campo
+  (`->withErrors()` do controller e o 422 do `validate()`), a aba onde o campo está é aberta, o foco
+  volta para ele e a rolagem o centraliza. Os textos de 400 caracteres de *Textos do site* ficaram
+  exatamente como foram digitados.
+- **Ato destrutivo continua perguntando, e o "sim" grava em segundo plano.** O SweetAlert2 do
+  `data-confirmar` pede licença, o POST sai depois da resposta, e a linha excluída some da listagem
+  com a contagem do cabeçalho corrigida — tudo sem recarga.
+- **O portal obedece à mesma folha.** Abrir chamado, responder na ficha e gravar os dados do cliente
+  passam pelo mesmo caminho: a conversa nova entra na linha do tempo, o campo volta vazio do servidor,
+  e o cliente não vê a tela saltar.
+
+### Alterado
+- **`components/admin/delete` já nasce com a região declarada** (`:atualiza="'.app-content'"`), então
+  toda exclusão do sistema — campanha, usuário, bloco, contrato — devolve a listagem refeita.
+- **Um formulário que não declara região não pede nada.** É o caso dos campos cujo valor gravado é o
+  que a pessoa acabou de escrever: a tela já diz a verdade, e um GET a mais por nada seria
+  exatamente o congestionamento que se quis evitar.
+- **O que precisa do navegador de verdade ficou de fora, por decisão escrita.** Download de CSV e de
+  contrato, o OAuth do Google Ads, entrar e sair, e as telas do Livewire saem com `data-sem-ajax` (ou
+  não são de escrita). E se a tela de destino exige um script que esta página não tem — o painel de
+  métricas do Google Ads é o caso — o navegador vai buscá-la de fato: trocar por cima deixaria a
+  página muda, e tela quebrada pisca muito mais que tela carregada.
+- **A recarga de região remonta o que vive na tela.** Depois da troca sai `golden:trocou`, e as abas
+  do `admin-abas.js` renascem no grupo recém-chegado — a aba continua a mesma, sem a escuta dobrada.
+
+### Testado
+- `tests/Feature/SalvarEmSegundoPlanoTest.php` (12 testes, 182 asserções): o JSON que o navegador
+  recebe, o redirect que continua chegando para o navegador comum, o recado que não aparece duas
+  vezes, o motivo por campo, o destino de quem muda de tela, quem cria e não continua no formulário,
+  a chave de sessão que a tela lê depois (`sonda`), as duas regiões que o painel sabe trocar e cada
+  contrato de `data-atualiza` / `data-sem-ajax` nas views. **655 testes, 11 028 asserções, todos
+  verdes.**
+- Bancada real (Chrome de cabeça para baixo, `storage/app/bancada-salvar.mjs`, fora do
+  repositório): oito gravações de verdade — medição, pausar, excluir, criar, erro de validação,
+  ficha do lead com a tela rolada, abrir chamado e responder no chamado — e em **nenhuma** houve
+  navegação de documento; o *scroll* de 300 px continuou em 300 px e o valor gravado voltou lido do
+  banco.
+
 ## [2.49.0] - 2026-10-28
 
 ### Adicionado
