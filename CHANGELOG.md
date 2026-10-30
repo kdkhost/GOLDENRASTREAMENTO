@@ -3,6 +3,22 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.54.1] - 2026-10-29
+
+### Operação
+- **Chave do Google Gemini trocada no painel.** A chave anterior foi excluída por engano no AI Studio;
+  a nova ("Golden Atendimento Ana") foi gravada cifrada em Configurações → Chaves
+  (`assistente_gemini_key`, origem banco) e provada com uma geração real antes de valer.
+- **Conversa, visão, documento e transcrição passaram para `gemini/gemini-3.1-flash-lite`.** O
+  `gemini-3-flash-preview` na cota gratuita permite 20 pedidos por dia e estourou durante os testes
+  (HTTP 429), o que fazia a Ana escalar por `provedor_com_erro`. A escolha fica no banco
+  (`assistente_rodada_*`) e pode ser trocada na mesma tela quando o faturamento do projeto Google for
+  ativado.
+- **Assistente religado no site e no funil.** A ficha estava com `ativo` desligado desde as 19:09;
+  voltou ligada e o atendimento foi provado de ponta a ponta em produção.
+- **OpenAI sem créditos.** A chave `assistente_openai_key` responde 429 "no credits remaining"; o
+  atendimento segue só no Gemini até haver saldo ou outro provedor.
+
 ## [2.54.0] - 2026-10-29
 
 ### Adicionado
