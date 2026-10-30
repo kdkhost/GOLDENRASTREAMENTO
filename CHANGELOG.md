@@ -37,6 +37,9 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
   uma pessoa →"**.
 
 ### Operação
+- **Ficha e foto publicadas em produção.** A persona, o avatar e os 30 itens de conhecimento estão no
+  ar em goldenrastreamento.com.br; a Ana atende no site, no funil e nos chamados. A conversa de prova
+  (nº 34) mostra Gemini respondendo com cinco fontes por resposta, sem escalar para a equipe.
 - **Gemini atendendo; GPT sem créditos.** A chave da OpenAI é válida, mas a conta responde 429
   `insufficient_quota` ("no credits remaining"); a conversa, a visão, o documento e a transcrição seguem
   em `gemini/gemini-3.1-flash-lite`, escolhido no painel. Quando houver saldo, trocar a rodada em
