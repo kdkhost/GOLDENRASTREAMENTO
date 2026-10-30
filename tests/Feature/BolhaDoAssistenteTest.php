@@ -77,10 +77,10 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertStringContainsString('aria-label="Falar com Ana"', $html);
         $this->assertStringContainsString('<b>Ana</b>', $html);
         $this->assertStringContainsString(config('assistente.persona.cargo'), $html);
-        $this->assertStringContainsString('Respondendo agora', $html);
-        $this->assertStringContainsString('placeholder="Escreva sua dúvida…"', $html);
-        $this->assertStringContainsString('Prefero falar com uma pessoa', $html);
-        $this->assertStringContainsString('fa-comments', $html);
+        $this->assertStringContainsString('Online agora', $html);
+        $this->assertStringContainsString('placeholder="Escreva sua mensagem…"', $html);
+        $this->assertStringContainsString('Prefiro falar com uma pessoa', $html);
+        $this->assertStringContainsString('fa-headset', $html);
     }
 
     /** O painel escreve na ficha e o atendente da caixa obedece — inclusive o ícone sem rosto. */

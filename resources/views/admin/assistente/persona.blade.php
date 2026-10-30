@@ -66,11 +66,11 @@
                     <x-admin.field name="icone" type="select" label="Ícone sem foto" :value="$assistente->icone" :options="$icones" col="col-12 col-md-6" empty="Balões de conversa" :opcional="true"
                         hint="Só aparece quando não há rosto enviado." />
                     <x-admin.field name="status" label="Selo de status" :value="$assistente->status" col="col-12 col-md-6" maxlength="60" :opcional="true"
-                        placeholder="Respondendo agora" />
+                        placeholder="Online agora" />
                     <x-admin.field name="placeholder" label="Texto do campo de mensagem" :value="$assistente->placeholder" col="col-12 col-md-6" maxlength="120" :opcional="true"
-                        placeholder="Escreva sua dúvida…" />
+                        placeholder="Escreva sua mensagem…" />
                     <x-admin.field name="humano" label="Link para falar com uma pessoa" :value="$assistente->humano" col="col-12" maxlength="120" :opcional="true"
-                        placeholder="Prefero falar com uma pessoa →" hint="Abre o formulário da própria página ou a página de contato, com o resumo da conversa." />
+                        placeholder="Prefiro falar com uma pessoa →" hint="Abre o formulário da própria página ou a página de contato, com o resumo da conversa." />
                 </div>
             </x-admin.card>
         </div>

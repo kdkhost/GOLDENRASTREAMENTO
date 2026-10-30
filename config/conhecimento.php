@@ -135,6 +135,97 @@ return [
             'corpo' => 'As condições de garantia do equipamento, o prazo e as regras de cancelamento estão no contrato de adesão e na proposta assinada com o cliente. O contrato fica disponível no portal do cliente, na área de contratos, e a equipe confirma cada condição pelo WhatsApp :whatsapp. A Ana não promete prazo de garantia nem autoriza troca, cancelamento ou desconto por conta própria: ela explica o caminho e chama a equipe.',
         ],
 
+        [
+            'referencia' => 'golden:planos-e-valores',
+            'titulo' => 'Quanto custa: equipamentos, chip e mensalidade',
+            'tags' => 'preço preços valor valores quanto custa custa mensalidade plano planos frota rastreador carro moto chip m2m kit chicote relé botão pânico orçamento',
+            'corpo' => 'Valores publicados hoje na loja da Golden: rastreador veicular J16 4G/2G R$ 299,00; rastreador para moto J16 R$ 279,00; kit chicote de instalação R$ 35,00; relé de bloqueio R$ 59,00; botão de pânico R$ 49,00; chip M2M (Vivo, Claro, TIM ou Algar) R$ 39,00, com mensalidade de R$ 29,90; Plano Frota R$ 59,90 por veículo ao mês, com plataforma web, aplicativo, cercas virtuais e relatórios. A instalação é contratada e paga à parte, direto ao profissional de confiança do cliente. A proposta e a fatura confirmam o valor vigente; a Ana não fecha desconto nem altera preço.',
+        ],
+
+        [
+            'referencia' => 'golden:conjunto-para-funcionar',
+            'titulo' => 'O que é preciso para o rastreamento funcionar',
+            'tags' => 'conjunto preciso preciso comprar equipamento rastreador chip m2m plano instalação chicote relé como funciona o serviço',
+            'corpo' => 'Para o rastreamento funcionar, o conjunto é: rastreador, chip M2M, plano de monitoramento e instalação. O rastreador é o aparelho que fica no veículo; o chip M2M é a conexão dele com a operadora; o plano mantém a plataforma e o acompanhamento; o kit chicote liga o equipamento ao veículo, e o relé é o que habilita o bloqueio remoto. Na loja os itens aparecem separados, e a proposta indica o conjunto certo para o seu caso.',
+        ],
+
+        [
+            'referencia' => 'golden:app-e-plataforma-recursos',
+            'titulo' => 'O que a plataforma e o aplicativo mostram',
+            'tags' => 'aplicativo app plataforma recursos funções funciona localização tempo real histórico trajetos paradas quilometragem velocidade relatórios cerca virtual alertas manutenção',
+            'corpo' => 'Pela plataforma web e pelo aplicativo o cliente vê a localização do veículo em tempo real, o histórico de trajetos, as paradas, a quilometragem e a velocidade. Também configura cercas virtuais, recebe alertas e consulta relatórios. O bloqueio remoto aparece quando a instalação tem o chicote e o relé adequados. Há ainda a gestão de manutenções por data ou quilometragem. O login é entregue na ativação, e o cliente entra no Servidor 1 ou no Servidor 2 conforme onde o veículo foi cadastrado.',
+        ],
+
+        [
+            'referencia' => 'golden:cercas-virtuais-e-alertas',
+            'titulo' => 'Cercas virtuais e alertas',
+            'tags' => 'cerca virtual cercas virtuais alerta alertas entrada saída área mapa velocidade parada aviso',
+            'corpo' => 'Cerca virtual é uma área desenhada no mapa — casa, empresa, escola, obra ou uma região inteira. Quando o veículo entra ou sai dela, a plataforma e o aplicativo avisam. Também é possível acompanhar excesso de velocidade e paradas. Quem configura é o próprio cliente, dentro da plataforma, com o login do serviço.',
+        ],
+
+        [
+            'referencia' => 'golden:frota-locadora-e-rural',
+            'titulo' => 'Frota, locadora e operação rural',
+            'tags' => 'frota frotas empresa locadora locadoras rural fazenda agrícola muitos veículos gestão quantidade',
+            'corpo' => 'A Golden atende veículos particulares, motoristas de aplicativo, frotas de empresa, locadoras e operações rurais. Para frota, o Plano Frota é cobrado por veículo e por mês (R$ 59,90 na loja), e a plataforma permite separar os veículos, ver relatórios e acompanhar o uso de cada um. Para quantidade maior, o time comercial monta a proposta. A compatibilidade de cada veículo com o J16 é confirmada no atendimento.',
+        ],
+
+        [
+            'referencia' => 'golden:formas-de-pagamento',
+            'titulo' => 'Formas de pagamento da loja',
+            'tags' => 'pagamento pagar pago pix cartão cartao boleto bancário boleto comprar loja checkout cobrança mensalidade',
+            'corpo' => 'Na loja, o checkout oferece Pix — a chave e o QR Code são enviados pelo WhatsApp depois de confirmar o pedido —, cartão e boleto bancário. Nada é cobrado no momento do pedido: a Golden confirma o pagamento e a entrega antes de emitir a cobrança. A mensalidade é recorrente e aparece no portal do cliente. A Ana não recebe pagamento nem pede número de cartão, senha ou código pelo chat.',
+        ],
+
+        [
+            'referencia' => 'golden:endereco-e-canais',
+            'titulo' => 'Endereço, telefones e canais de atendimento',
+            'tags' => 'endereço endereco onde fica loja telefone telefones whatsapp email contato central 24h canais atendimento',
+            'corpo' => 'A Golden fica na R. Pref. Olinto Réis Campos, 104, Centro, Três Pontas - MG, CEP 37185-016. Telefones: :telefones. WhatsApp: :whatsapp. E-mail: :email. A caixa de atendimento do site separa os assuntos: Emergência & Central 24h (roubo, furto, sinistro e bloqueio), Comercial & Novos Planos, Suporte Técnico & Aplicativo e Faturamento & Mensalidade.',
+        ],
+
+        [
+            'referencia' => 'golden:depois-da-compra',
+            'titulo' => 'O que acontece depois da compra',
+            'tags' => 'depois da compra entrega instalador ativação ativacao login primeiro acesso testar veículo no mapa próximos passos',
+            'corpo' => 'Depois da compra, o kit é entregue e a instalação é feita pelo profissional de confiança do cliente. A Golden ativa o chip M2M e o acesso, e o login do rastreamento chega ao cliente. O primeiro teste é abrir a plataforma ou o aplicativo e conferir o veículo no mapa; depois é só cadastrar cercas e alertas. Se o veículo não aparecer, o suporte técnico confere a conexão do equipamento.',
+        ],
+
+        [
+            'referencia' => 'golden:privacidade-e-dados',
+            'titulo' => 'Privacidade e proteção de dados',
+            'tags' => 'privacidade lgpd dados pessoais segurança senha cpf cartão localização política',
+            'corpo' => 'A Golden trata os dados pessoais conforme a LGPD e a Política de Privacidade publicada no site. A localização do veículo é usada para prestar o serviço de rastreamento. A Ana não pede CPF, senha, código de acesso nem dados de cartão pelo chat; a conferência de cadastro é feita em etapa própria do sistema. Quem quiser falar sobre os próprios dados pode procurar a equipe pelo WhatsApp :whatsapp.',
+        ],
+
+        [
+            'referencia' => 'golden:segunda-via-e-pagamento',
+            'titulo' => 'Segunda via e pagamento que não baixou',
+            'tags' => 'segunda via fatura boleto pagamento não baixou comprovante atraso vencimento financeiro',
+            'corpo' => 'A segunda via da fatura fica no portal do cliente (:portal), na área de faturas, com vencimento, valor e situação. Se o pagamento não baixar ou a fatura não aparecer, fale com o Faturamento & Mensalidade pelo WhatsApp :whatsapp e envie o comprovante. A Ana não altera status de pagamento nem emite segunda via pelo chat.',
+        ],
+
+        [
+            'referencia' => 'golden:compatibilidade-de-veiculos',
+            'titulo' => 'Em quais veículos o rastreador funciona',
+            'tags' => 'compatibilidade compatível veículo carro moto caminhão linha pesada máquina rural funciona qualquer veículo',
+            'corpo' => 'O J16 4G/2G é o equipamento principal e atende a maioria dos veículos leves e da linha pesada; para moto existe a versão específica. A Golden também atende operações rurais. Como cada veículo tem particularidades de instalação, a compatibilidade é confirmada no atendimento antes da compra.',
+        ],
+
+        [
+            'referencia' => 'golden:manutencao-do-rastreador',
+            'titulo' => 'Cuidados e manutenção do rastreador',
+            'tags' => 'manutenção manutencao cuidado limpeza defeito quebrou parou alimentação fusível revisão preventiva',
+            'corpo' => 'O rastreador não exige manutenção do cliente no dia a dia: basta manter o chip ativo e a mensalidade em dia. A plataforma permite cadastrar a manutenção preventiva do veículo por data ou quilometragem. Se o aparelho parar de atualizar, confira a alimentação e o sinal e fale com o suporte técnico. Não é preciso mexer no equipamento por conta própria.',
+        ],
+
+        [
+            'referencia' => 'golden:perguntas-frequentes',
+            'titulo' => 'Perguntas frequentes sobre o serviço',
+            'tags' => 'perguntas frequentes dúvidas rápidas qualquer veículo instalação mensalidade bloqueio cobertura celular aplicativo resumo',
+            'corpo' => 'Perguntas frequentes: o rastreador funciona em qualquer veículo? O J16 4G/2G atende a maioria dos veículos leves, motos e linha pesada, e a compatibilidade é confirmada no atendimento. A instalação é feita pela Golden? Não: é contratada e paga pelo cliente diretamente ao profissional de confiança dele. Preciso pagar mensalidade? Sim: a conectividade M2M e o acesso à plataforma são recorrentes. Como funciona o bloqueio remoto? Só quando a instalação tem o chicote e o relé adequados. Qual a cobertura do chip? A das operadoras nacionais em 4G/2G, conforme a região. Consigo acessar pelo celular? Sim, pela plataforma web e pelo aplicativo.',
+        ],
+
     ],
 
 ];

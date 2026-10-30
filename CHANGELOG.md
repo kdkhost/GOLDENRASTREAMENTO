@@ -3,6 +3,49 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.55.0] - 2026-10-29
+
+### Adicionado
+- **A Ana ganhou rosto.** A foto da assistente entrou na ficha (`avatar` + `avatar_alt`) pelo envio de
+  sempre (`Envio::guardar`, jpg/png/webp, 2 MB, 1:1) e aparece no balão do site, no funil e nos
+  chamados. A imagem é retrato de estúdio com fone de ouvido, fundo escuro e luz dourada, entregue em
+  512×512 JPEG.
+- **Ficha pronta para trabalhar.** Nome **Ana**, cargo **Consultora de rastreamento veicular**, tom
+  descolado, todos os textos de conversa preenchidos (saudação, nome, e-mail, confirmação de cadastro,
+  avaliação, despedida), dica **"Falar com a Ana"**, status **"Online agora"**, placeholder
+  **"Escreva sua mensagem…"**, saída humana **"Prefiro falar com uma pessoa →"** e ícone
+  `fa-headset`. Tudo com o mesmo valor padrão em `config/assistente.php` e editável em
+  `/admin/assistente`.
+- **Treinamento ampliado: 13 assuntos novos, 30 no total.** Entraram planos e valores (J16 4G/2G,
+  moto, kit chicote, relé, pânico, chip M2M, mensalidade e Plano Frota), o que é preciso para
+  funcionar, app e plataforma, cercas virtuais e alertas, frota/locadora/rural, formas de pagamento,
+  endereço e canais, pós-compra, privacidade e dados, segunda via, compatibilidade de veículos,
+  manutenção do rastreador e perguntas frequentes. Os itens usam os placeholders do painel
+  (`:whatsapp`, `:email`, `:telefones`, `:portal`, `:cidade`, `:servidor_1/2`, `:financeiro`), então
+  telefone, e-mail e endereço saem sempre do cadastro da empresa, nunca escritos à mão.
+- **Regras da persona mais firmes.** A Ana não promete instalação, bloqueio ou garantia em nome da
+  empresa (a instalação é contratada e paga direto ao profissional do cliente), orienta boletim de
+  ocorrência e canal de emergência em roubo/furto, não pede CPF no chat e não inventa endereço,
+  telefone ou condição.
+
+### Corrigido
+- **Cumprimento junto com o nome escalava para a equipe.** "Boa noite, meu nome é Marcelo" era
+  reconhecido como nome, mas `Nome::soONome()` recusava a saudação e a conversa caía em `sem_fonte`.
+  As saudações entraram em `APRESENTACOES`: agora a pessoa recebe a confirmação da ficha e a conversa
+  segue normalmente.
+- **"Prefero" no balão.** O padrão e o placeholder do painel passaram a escrever **"Prefiro falar com
+  uma pessoa →"**.
+
+### Operação
+- **Gemini atendendo; GPT sem créditos.** A chave da OpenAI é válida, mas a conta responde 429
+  `insufficient_quota` ("no credits remaining"); a conversa, a visão, o documento e a transcrição seguem
+  em `gemini/gemini-3.1-flash-lite`, escolhido no painel. Quando houver saldo, trocar a rodada em
+  Configurações → Assistente não exige deploy.
+
+### Testes
+- `NomeNaConversaTest` ganhou o caso do cumprimento com o nome (confirmação da ficha, sem escalação);
+  `BolhaDoAssistenteTest` acompanhou o texto novo do balão.
+
 ## [2.54.1] - 2026-10-29
 
 ### Operação

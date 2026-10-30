@@ -126,10 +126,29 @@ class NomeNaConversaTest extends TestCase
         $this->assertNotSame('aguardando_equipe', $conversa->refresh()->status, 'Quem só disse o nome foi escalado à equipe.');
     }
 
-    /** O reconhecimento é texto da ficha, e o que a pessoa escreveu junto com o nome é assunto. */
-    public function test_a_fala_com_assunto_pela_frente_nao_e_trocada_por_reconhecimento(): void
+    /**
+     * Quem se apresenta cumprimentando — "Boa noite, meu nome é Marcelo" — também recebe o
+     * reconhecimento da casa. Sem isso, a saudação grudada no nome virava assunto sem fonte e
+     * levava à equipe uma conversa que só tinha começado.
+     */
+    public function test_o_nome_dito_junto_com_o_cumprimento_tambem_e_reconhecido(): void
     {
         $conversa = $this->abreBolha();
+
+        $resposta = $this->diga('Boa noite, meu nome é Marcelo');
+
+        $this->assertSame('Marcelo', $conversa->refresh()->nome);
+        $this->assertSame(
+            Assistente::paraABolha()->textoConfirmacaoNome('Marcelo'),
+            $resposta,
+            'O cumprimento junto com o nome não recebeu o reconhecimento da ficha.'
+        );
+        $this->assertNotSame('aguardando_equipe', $conversa->refresh()->status, 'Quem se apresentou foi escalado à equipe.');
+    }
+
+    /** O reconhecimento é texto da ficha, e o que a pessoa escreveu junto com o nome é assunto. */
+    public function test_a_fala_com_assunto_pela_frente_nao_e_trocada_por_reconhecimento(): void
+    {        $conversa = $this->abreBolha();
 
         $resposta = $this->diga('Maria Aparecida, quero a segunda via da minha fatura');
 

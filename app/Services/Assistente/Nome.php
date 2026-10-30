@@ -109,6 +109,7 @@ final class Nome
         'meu', 'minha', 'nome', 'e', 'eh', 'chamo', 'me', 'pod', 'em', 'de', 'sou', 'a', 'o',
         'um', 'uma', 'quem', 'falo', 'falando', 'fala', 'estou', 'esta', 'aqui', 'do', 'outro',
         'lado', 'se', 'pra', 'muito', 'prazer', 'obg',
+        'oi', 'ola', 'opa', 'eae', 'bom', 'boa', 'dia', 'tarde', 'noite', 'tudo', 'bem', 'beleza',
     ];
 
     /** Pedir o nome é regra da casa, e a casa liga ou desliga na tela de chaves. */
