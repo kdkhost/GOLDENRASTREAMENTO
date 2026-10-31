@@ -1002,7 +1002,7 @@ janela de supervisão**, e a **sonda**.
 
 | Interruptor | Padrão | O que muda no portal |
 | --- | --- | --- |
-| `whmcs_veicula_servicos` | ligado | A tela *Meus serviços* existe para o cliente. |
+| `whmcs_veicula_servicos` | ligado | A tela *Meus serviços*, com o **Detalhes** de cada serviço, existe para o cliente. |
 | `whmcs_veicula_faturas` | ligado | A tela *Minhas faturas* existe para o cliente. |
 | `whmcs_veicula_servicos_encerrados` | **desligado** | Serviços `Terminated`, `Cancelled` e `Fraud` entram ou somem da lista. |
 | `whmcs_veicula_faturas_pagas` | ligado | Faturas `Paid` e `Refunded` ficam no histórico ou sai só o que está em aberto. |
@@ -1042,7 +1042,7 @@ sobreposição roda no `boot()` de cada requisição.
 ### Ver a conta do cliente (supervisão)
 
 A pergunta "onde estão os dados sincronizados do WHMCS?" tem uma resposta honesta:
-**em lugar nenhum**. *Meus serviços* e *Minhas faturas* leem a API na hora, a cada
+**em lugar nenhum**. *Meus serviços*, o **Detalhes** de cada serviço e *Minhas faturas* leem a API na hora, a cada
 visita, e o único registro que fica no banco é o `customers.whmcs_id` descoberto pelo
 e-mail na primeira visita — a ficha mostra isso no par *No financeiro (WHMCS)*, para
 não deixar dúvida. Não há tabela espelho, nem cache, nem sincronização periódica.

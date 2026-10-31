@@ -185,6 +185,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
         // uma tela que gasta chamada de API do financeiro.
         Route::get('servicos', [PortalFinanceiroController::class, 'servicos'])
             ->middleware('throttle:30,1')->name('servicos');
+        Route::get('servicos/{servico}', [PortalFinanceiroController::class, 'detalhe'])
+            ->whereNumber('servico')->middleware('throttle:30,1')->name('servicos.show');
         Route::get('faturas', [PortalFinanceiroController::class, 'faturas'])
             ->middleware('throttle:30,1')->name('faturas');
 

@@ -510,7 +510,7 @@ return [
                     ['icone' => 'fa-box', 'titulo' => 'Pedidos', 'texto' => 'Ele acompanha o estado de cada compra com o mesmo selo colorido que a equipe vê.'],
                     ['icone' => 'fa-life-ring', 'titulo' => 'Chamados', 'texto' => 'Abre, acompanha e responde; o que ele escreve chega na tela da equipe, e a resposta volta por e-mail.'],
                     ['icone' => 'fa-file-signature', 'titulo' => 'Contratos', 'texto' => 'Lê os contratos publicados no nome dele.'],
-                    ['icone' => 'fa-file-invoice-dollar', 'titulo' => 'Faturas e serviços', 'texto' => 'Vê os serviços contratados e as faturas direto do financeiro (WHMCS), com o botão para pagar ou pegar a segunda via.'],
+                    ['icone' => 'fa-file-invoice-dollar', 'titulo' => 'Faturas e serviços', 'texto' => 'Vê os serviços contratados e as faturas direto do financeiro (WHMCS), com o botão para pagar ou pegar a segunda via. O botão **Detalhes** de cada serviço abre o que está incluso nele — veículo, placa, chip, IMEI e as opções do plano — e os adicionais vinculados.'],
                     ['icone' => 'fa-pen', 'titulo' => 'Meus dados', 'texto' => 'Corrige o cadastro sozinho — telefone, endereço e o que for pedido na entrega — e a mesma senha passa a valer no financeiro.'],
                 ]],
                 ['tipo' => 'aviso', 'tom' => 'gold', 'conteudo' => 'O financeiro só aparece com as três credenciais em **Sistema → Configurações → Chaves de integração → WHMCS**: endereço, identificador e segredo da API. Sem elas as telas explicam que a área está em preparação e não quebram. O e-mail de acesso não é espelhado: ele é o login do financeiro, e trocá-lo por aqui poderia trancar o cliente do outro lado.'],

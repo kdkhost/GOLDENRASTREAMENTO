@@ -281,6 +281,23 @@ class Cliente
     }
 
     /**
+     * Os adicionais contratados da conta, para a tela de detalhes dizer o que está pendurado em
+     * cada serviço. `null` é falha de conversa; lista vazia é "não há nenhum".
+     *
+     * A consulta é sempre pela conta, nunca pelo número do serviço: é assim que um id trocado na
+     * barra de endereços não abre o adicional de outra pessoa. Quem exibe é que decide o vínculo,
+     * com `servico_id` — e o que não tiver vínculo reconhecido fica de fora da tela.
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    public function adicionais(int $clientId): ?array
+    {
+        $resposta = $this->chamar('GetClientsAddons', ['clientid' => $clientId]);
+
+        return $resposta === null ? null : $this->lerAddons($resposta, $clientId);
+    }
+
+    /**
      * As faturas do cliente, da mais nova para a mais antiga (a API devolve nessa ordem).
      * O link leva à própria fatura no financeiro, onde o cliente paga e tira a segunda via.
      *
@@ -637,6 +654,7 @@ class Cliente
                 'id' => (int) ($addon['id'] ?? 0),
                 'nome' => (string) ($addon['name'] ?? 'Adicional'),
                 'servico' => trim((string) ($addon['productname'] ?? '')),
+                'servico_id' => (int) ($addon['serviceid'] ?? $addon['service_id'] ?? 0),
                 'status' => (string) ($addon['status'] ?? ''),
                 'valor_cents' => $this->centavos($addon['recurringamount'] ?? $addon['recurring'] ?? $addon['price'] ?? 0),
                 'ciclo' => (string) ($addon['billingcycle'] ?? ''),

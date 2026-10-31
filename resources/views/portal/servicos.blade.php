@@ -9,8 +9,8 @@
     // Sem o salto para o financeiro, a coluna "Abrir" ficaria uma fileira de vazios — ela sai,
     // e a tabela conta só o que o cliente pode ver.
     $colunas = $abreNoFinanceiro
-        ? ['Serviço', 'end:Valor', 'center:Vencimento', 'center:Situação', 'end:Abrir']
-        : ['Serviço', 'end:Valor', 'center:Vencimento', 'center:Situação'];
+        ? ['Serviço', 'end:Valor', 'center:Vencimento', 'center:Situação', 'end:Detalhes', 'end:Abrir']
+        : ['Serviço', 'end:Valor', 'center:Vencimento', 'center:Situação', 'end:Detalhes'];
     $descricaoPagina = match (true) {
         $situacao !== 'ok' => 'Os produtos e planos que você contratou com a Golden.',
         $quantos === 0 => 'Nenhum serviço contratado no financeiro desta conta ainda.',
@@ -46,6 +46,10 @@
             </td>
             <td class="text-center small text-nowrap">{{ $servico['proximo_vencimento'] ? $servico['proximo_vencimento']->format('d/m/Y') : '—' }}</td>
             <td class="text-center"><x-admin.status :rotulo="Financeiro::rotuloDoServico($servico['status'])" :tom="Financeiro::tomDoServico($servico['status'])" /></td>
+            <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary text-nowrap" href="{{ route('portal.servicos.show', $servico['id']) }}"
+                   aria-label="Ver os detalhes de {{ $servico['nome'] }}"><i class="fas fa-circle-info me-1" aria-hidden="true"></i>Detalhes</a>
+            </td>
             @if($abreNoFinanceiro)
             <td class="text-end">
                 <a class="btn btn-sm btn-outline-secondary" href="{{ $servico['url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Abrir {{ $servico['nome'] }} no financeiro"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>

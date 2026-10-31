@@ -622,9 +622,10 @@ a dimensão ideal.
   Cada endereço externo se troca em *Sistema → Configurações → Acessos externos do site*
   (banco vence `config/golden.acessos`), junto do nome e do ícone de cada servidor; os
   rótulos do botão, do submenu e do modal ficam no cartão *Textos dos acessos*.
-- **Oito telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
+- **Nove telas**: *Início* (resumo com pedidos, investido, chamados abertos e contratos),
   *Pedidos* (linha do tempo da jornada e os documentos do pedido), *Chamados*, *Contratos*
-  com o PDF, *Meus serviços* e *Minhas faturas* (direto do financeiro, quando o WHMCS está
+  com o PDF, *Meus serviços*, o *Detalhe de um serviço* (o que está incluso nele e os adicionais
+  vinculados) e *Minhas faturas* (direto do financeiro, quando o WHMCS está
   ligado), *Meus dados* e *Deixar um depoimento*.
 - **Auto-cadastro que não duplica ficha**: `App\Support\PortalDoCliente` procura em
   `customers` primeiro pelo documento (normalizado, com ou sem máscara) e depois pelo
@@ -644,11 +645,14 @@ a dimensão ideal.
   cliente**, inclusive no download, que passa por `/portal/contratos/{id}/arquivo` em vez de
   URL pública de `/storage`.
 - **Financeiro e serviços pelo WHMCS** (`config/whmcs.php`, `App\Services\Whmcs\Cliente`):
-  *Meus serviços* (`/portal/servicos`) e *Minhas faturas* (`/portal/faturas`) leem a API do
+  *Meus serviços* (`/portal/servicos`), o detalhe de cada serviço (`/portal/servicos/{id}`) e
+  *Minhas faturas* (`/portal/faturas`) leem a API do
   financeiro com o id do cliente guardado em `customers.whmcs_id` — descoberto pelo e-mail na
   primeira visita e nunca aceito pela URL. A tela distingue **sem credencial**, **conta não
   encontrada**, **financeiro fora do ar** e **lista vazia**, para falha de API nunca virar
-  "você não tem faturas". Senha e dados corrigidos no portal são espelhados (`UpdateClient`,
+  "você não tem faturas". Na tela de detalhes, o número da URL só escolhe qual linha da lista da
+  própria conta abrir — número que não está nela é 404, e nota interna, acesso do serviço e motivo
+  da suspensão não saem para o cliente. Senha e dados corrigidos no portal são espelhados (`UpdateClient`,
   sem o e-mail, que é o login do financeiro); se o espelho falhar, um *toast* avisa e a
   gravação local continua valendo. As três credenciais ficam em *Sistema → Configurações →
   Chaves de integração → WHMCS* (segredo cifrado no banco, `.env` só como plano de fundo).

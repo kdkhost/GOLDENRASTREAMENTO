@@ -3,7 +3,42 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
-## [2.61.1] - 2026-10-31
+## [2.62.0] - 2026-10-31
+
+### Adicionado
+- **Cada serviço do portal ganhou a própria tela de detalhes.** Em *Meus serviços*, o botão
+  **Detalhes** abre `/portal/servicos/{número}` com o que a pessoa contratou por inteiro: plano e
+  grupo, valor que se repete com o ciclo traduzido, primeiro pagamento, forma de pagamento, datas de
+  contratação, vencimento e última atualização, o endereço vinculado e o número do pedido de origem.
+- **Itens inclusos no serviço.** Os campos que a equipe preenche no cadastro (descrição do veículo,
+  placa, chip, IMEI) e as opções do plano saem em uma tabela própria — os mesmos dados que a ficha do
+  painel já mostrava, agora na tela de quem contratou.
+- **Itens vinculados.** Os adicionais pendurados naquele serviço, com situação, ciclo, valor e data.
+  A consulta é sempre pela conta (`GetClientsAddons` com o `clientid` da ficha); o número do serviço
+  só recorta a lista, e o adicional que vier sem número de serviço é reconhecido pelo nome do plano a
+  que pertence.
+- `Cliente::adicionais()` e o campo `servico_id` no leitor de adicionais, para a tela saber o que é
+  daquele serviço.
+
+### Segurança
+- **O número da URL nunca vai ao financeiro.** A tela lê a lista da conta autenticada e o id só
+  escolhe qual linha abrir: número de outro cliente, serviço encerrado que a casa não veicula ou
+  item que a resposta declara ser de outra conta são **404**, sem pista e sem segunda consulta.
+- **O que é interno continua interno.** Nota do financeiro no serviço, usuário e senha de acesso do
+  serviço e o motivo da suspensão não são desenhados para o cliente — o que ele vê, quando o serviço
+  está suspenso, é o caminho para a equipe.
+
+### Testes
+- `DetalheDoServicoNoPortalTest` (12 testes): a lista leva ao detalhe, os itens inclusos e os
+  adicionais certos aparecem, o adicional de outro serviço não aparece, 404 nos três casos de id que
+  não é da conta, nada interno sai do HTML, financeiro fora do ar não vira "serviço inexistente",
+  adicional não lido diz "não respondeu" em vez de "não tem", e a veiculação desligada fecha a tela
+  sem gastar uma chamada.
+
+### Documentado
+- Guia do painel (Portal do cliente → *Faturas e serviços*), README (*nove telas*) e a tabela de
+  interruptores do `docs/INSTALACAO.md`, que passam a citar o botão **Detalhes**.
+
 
 ### Corrigido
 - **O país do cadastro no financeiro não aparece mais em inglês.** O WHMCS guarda o nome do país na
