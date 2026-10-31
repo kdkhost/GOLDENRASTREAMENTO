@@ -110,6 +110,157 @@ return [
         'Fraud' => ['rotulo' => 'Em análise', 'tom' => 'red'],
     ],
 
+    // Domínios: o WHMCS usa os mesmos estados de serviço e mais os do registro em si.
+    'dominios_status' => [
+        'Active' => ['rotulo' => 'Ativo', 'tom' => 'green'],
+        'Pending' => ['rotulo' => 'Pendente', 'tom' => 'amber'],
+        'Suspended' => ['rotulo' => 'Suspenso', 'tom' => 'red'],
+        'Cancelled' => ['rotulo' => 'Cancelado', 'tom' => 'neutral'],
+        'Terminated' => ['rotulo' => 'Encerrado', 'tom' => 'neutral'],
+        'Fraud' => ['rotulo' => 'Em análise', 'tom' => 'red'],
+        'Grace' => ['rotulo' => 'Em período de graça', 'tom' => 'amber'],
+        'Redemption' => ['rotulo' => 'Em redenção', 'tom' => 'red'],
+        'Expired' => ['rotulo' => 'Expirado', 'tom' => 'red'],
+        'Transferred Away' => ['rotulo' => 'Transferido', 'tom' => 'neutral'],
+        'Pending Delete' => ['rotulo' => 'Aguardando exclusão', 'tom' => 'red'],
+    ],
+
+    // Como o domínio chegou à conta: registrado lá ou transferido de outro lugar.
+    'dominios_tipos' => [
+        'Register' => 'Registrado aqui',
+        'Transfer' => 'Transferido',
+        'Add FLD' => 'Domínio raiz novo',
+    ],
+
+    // O que cada linha de um pedido é. "Hosting" é o nome do WHMCS para o produto, qualquer que
+    // seja ele — a Golden vende rastreador, não hospedagem de site.
+    'itens_pedido' => [
+        'Hosting' => 'Serviço',
+        'Product' => 'Serviço',
+        'Domain' => 'Domínio',
+        'Addon' => 'Adicional',
+        'Upgrade' => 'Melhoria',
+    ],
+
+    // As caixas de e-mail que um contato da conta pode receber. O WHMCS guarda o nome da permissão
+    // numa lista separada por vírgulas; o que não estiver aqui aparece como veio.
+    'permissoes_contato' => [
+        'profile' => 'Dados da conta',
+        'contacts' => 'Contatos',
+        'products' => 'Produtos',
+        'services' => 'Serviços',
+        'domains' => 'Domínios',
+        'invoices' => 'Faturas',
+        'quotes' => 'Orçamentos',
+        'tickets' => 'Chamados',
+        'addfunds' => 'Adicionar fundos',
+        'affiliates' => 'Afiliado',
+        'massordering' => 'Pedidos em massa',
+        'cancel' => 'Cancelar serviços',
+        'login' => 'Acesso (subconta)',
+        'order' => 'Fazer pedidos',
+        'loginAsClient' => 'Entrar como o cliente',
+    ],
+
+    // Pedidos do financeiro. "Active" é o pedido concluído — o serviço nasceu dele.
+    'pedidos_status' => [
+        'Pending' => ['rotulo' => 'Pendente', 'tom' => 'amber'],
+        'Active' => ['rotulo' => 'Concluído', 'tom' => 'green'],
+        'Fraud' => ['rotulo' => 'Em análise', 'tom' => 'red'],
+        'Cancelled' => ['rotulo' => 'Cancelado', 'tom' => 'neutral'],
+        'Deleted' => ['rotulo' => 'Excluído', 'tom' => 'neutral'],
+    ],
+
+    // Os chamados do financeiro são um histórico separado do chamado do portal: estado e
+    // prioridade vêm em inglês, e as instalações podem ter estados personalizados em português.
+    'chamados_status' => [
+        'Open' => ['rotulo' => 'Aberto', 'tom' => 'gold'],
+        'Answered' => ['rotulo' => 'Respondido', 'tom' => 'blue'],
+        'Customer-Reply' => ['rotulo' => 'Resposta do cliente', 'tom' => 'amber'],
+        'In Progress' => ['rotulo' => 'Em atendimento', 'tom' => 'gold'],
+        'On Hold' => ['rotulo' => 'Em espera', 'tom' => 'amber'],
+        'Closed' => ['rotulo' => 'Fechado', 'tom' => 'neutral'],
+        'Solved' => ['rotulo' => 'Resolvido', 'tom' => 'green'],
+        'Fechado' => ['rotulo' => 'Fechado', 'tom' => 'neutral'],
+        'Fechada' => ['rotulo' => 'Fechada', 'tom' => 'neutral'],
+        'Fechadas' => ['rotulo' => 'Fechado', 'tom' => 'neutral'],
+    ],
+
+    'chamados_prioridade' => [
+        'Low' => ['rotulo' => 'Baixa', 'tom' => 'neutral'],
+        'Medium' => ['rotulo' => 'Média', 'tom' => 'blue'],
+        'High' => ['rotulo' => 'Alta', 'tom' => 'amber'],
+        'Urgent' => ['rotulo' => 'Urgente', 'tom' => 'red'],
+        'Baixa' => ['rotulo' => 'Baixa', 'tom' => 'neutral'],
+        'Média' => ['rotulo' => 'Média', 'tom' => 'blue'],
+        'Alta' => ['rotulo' => 'Alta', 'tom' => 'amber'],
+        'Urgente' => ['rotulo' => 'Urgente', 'tom' => 'red'],
+    ],
+
+    /*
+    | Os meios de pagamento que o financeiro devolve como identificador técnico. O pedido já traz
+    | o nome de exibição (`paymentmethodname`), mas a transação e o cadastro trazem só o código — e
+    | código não é texto para a tela. O que não estiver aqui aparece como veio, entre parênteses,
+    | porque inventar um nome para um meio desconhecido seria pior do que mostrar o código.
+    */
+    'formas_pagamento' => [
+        'golden_inter_boleto' => 'Boleto (Banco Inter)',
+        'bancointer_pix' => 'Pix (Banco Inter)',
+        'banktransfer' => 'Pix (Bradesco)',
+        'paghiper' => 'Boleto (PagHiper)',
+        'iugucartao' => 'Cartão de crédito',
+        'paypal' => 'PayPal',
+        'stripe' => 'Cartão (Stripe)',
+        'mercadopago' => 'Mercado Pago',
+        'pagseguro' => 'PagSeguro',
+        'boleto' => 'Boleto',
+        'pix' => 'Pix',
+        'creditcard' => 'Cartão de crédito',
+    ],
+
+    // Os orçamentos do financeiro. Esta instalação devolve a situação no campo `stage`, e ela
+    // chega vazia quando o registro é antigo — a tela lê `status` ou `stage`, nesta ordem.
+    'orcamentos_status' => [
+        'Open' => ['rotulo' => 'Em aberto', 'tom' => 'gold'],
+        'Pending' => ['rotulo' => 'Pendente', 'tom' => 'amber'],
+        'Delivered' => ['rotulo' => 'Enviado', 'tom' => 'blue'],
+        'Accepted' => ['rotulo' => 'Aceito', 'tom' => 'green'],
+        'Declined' => ['rotulo' => 'Recusado', 'tom' => 'neutral'],
+        'Deleted' => ['rotulo' => 'Excluído', 'tom' => 'neutral'],
+        'On' => ['rotulo' => 'Em aberto', 'tom' => 'gold'],
+    ],
+
+    // Os departamentos de chamado têm o nome que a instalação der, e o WHMCS nasce com alguns em
+    // inglês. O que não estiver aqui aparece como foi escrito lá.
+    'departamentos' => [
+        'General Enquiries' => 'Assuntos gerais',
+        'General' => 'Geral',
+        'Technical Support' => 'Suporte técnico',
+        'Billing Questions' => 'Cobrança',
+        'Pre-Sales Questions' => 'Dúvidas antes da compra',
+        'Site Problems' => 'Problemas no site',
+        'Financeiro' => 'Financeiro',
+    ],
+
+    // As caixas de e-mail da conta. O cadastro devolve as chaves técnicas; a tela mostra o nome
+    // daqui. Uma preferência que a instalação criou e não está aqui aparece como veio.
+    'preferencias_email' => [
+        'general' => 'Geral',
+        'product' => 'Serviços',
+        'service' => 'Serviços',
+        'domain' => 'Domínios',
+        'invoice' => 'Faturas',
+        'quote' => 'Orçamentos',
+        'ticket' => 'Chamados',
+        'affiliation' => 'Afiliado',
+        'affiliate' => 'Afiliado',
+        'cancel' => 'Cancelamentos',
+        'fraud' => 'Análise de fraude',
+        'renewals' => 'Renovações',
+        'clienteditor' => 'Edição de cadastro',
+        'promotions' => 'Promoções',
+    ],
+
     // A situação da conta no financeiro — não é a do CRM nem a do serviço: é o cliente inteiro
     // habilitado, inativo ou encerrado lá.
     'cliente_status' => [

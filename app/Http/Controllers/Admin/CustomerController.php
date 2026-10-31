@@ -96,36 +96,43 @@ class CustomerController extends Controller
      * o contrato encerrado e a fatura paga são justamente o histórico que se consulta ao atender,
      * e a vitrine do cliente não manda aqui.
      *
-     * As três leituras são sequenciais e dependem da primeira: sem o cadastro não há motivo para
-     * perguntar por serviços e faturas. Com o financeiro mudo, a página espera um timeout — não
-     * três.
+     * O cadastro vem primeiro e sozinho: é dele que saem o número de usuário que os pedidos e os
+     * contatos exigem, e a moeda que traduz as transações. Com o cadastro lido, o resto da conta
+     * (serviços, adicionais, domínios, faturas, transações, créditos, pedidos, contatos, chamados
+     * e orçamentos) é perguntado em um lote — a página espera o tempo da mais lenta, não a soma de
+     * dez. Com o financeiro mudo, a ficha espera um tempo limite e não pergunta mais nada.
      *
-     * @return array{situacao: string, cadastro: array<string, mixed>|null, servicos: array|null, faturas: array|null}
+     * @return array{situacao: string, cadastro: array<string, mixed>|null, servicos: array|null, faturas: array|null, historico: array<string, array|null>}
      */
     private function financeiroDoCliente(Customer $cliente): array
     {
         $financeiro = app(Financeiro::class);
 
+        $semLeitura = ['cadastro' => null, 'servicos' => null, 'faturas' => null, 'historico' => []];
+
         if (! $financeiro->configurado()) {
-            return ['situacao' => 'sem_configuracao', 'cadastro' => null, 'servicos' => null, 'faturas' => null];
+            return $semLeitura + ['situacao' => 'sem_configuracao'];
         }
 
         if (blank($cliente->whmcs_id)) {
-            return ['situacao' => 'sem_conta', 'cadastro' => null, 'servicos' => null, 'faturas' => null];
+            return $semLeitura + ['situacao' => 'sem_conta'];
         }
 
         $id = (int) $cliente->whmcs_id;
         $cadastro = $financeiro->cadastro($id);
 
         if ($cadastro === null) {
-            return ['situacao' => 'fora_do_ar', 'cadastro' => null, 'servicos' => null, 'faturas' => null];
+            return $semLeitura + ['situacao' => 'fora_do_ar'];
         }
+
+        $historico = $financeiro->historico($id, (int) ($cadastro['userid'] ?? 0));
 
         return [
             'situacao' => 'ok',
             'cadastro' => $cadastro,
-            'servicos' => $financeiro->servicos($id, null, false),
-            'faturas' => $financeiro->faturas($id, null, false),
+            'servicos' => $historico['servicos'] ?? null,
+            'faturas' => $historico['faturas'] ?? null,
+            'historico' => $historico,
         ];
     }
 

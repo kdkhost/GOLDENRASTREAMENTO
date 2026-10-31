@@ -3,6 +3,61 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.61.0] - 2026-10-31
+
+### Adicionado
+- **A ficha do cliente agora é a conta inteira do financeiro.** Além do cadastro, dos serviços e das
+  faturas, ela desenha mais sete listas lidas na hora: **adicionais contratados** (com o serviço a que
+  pertencem e o ciclo traduzido), **domínios** (se foi registrado aqui ou transferido, o registrador,
+  se renova sozinho e quando cobra), **pagamentos e movimentos** (entrada, saída, taxa, o meio de
+  pagamento traduzido do campo `gateway`, o número da referência e a fatura a que se liga), **movimentos
+  de crédito**, **pedidos no financeiro** (número, situação, forma e os itens, com "Serviço" no lugar do
+  "Hosting" que o WHMCS escreve), **contatos da conta** (subconta, o que pode ver, se recebe as caixas
+  de e-mail), **chamados no financeiro** (departamento e prioridade traduzidos, última resposta) e
+  **orçamentos** (situação, validade, total e as notas do cliente). Cada linha com o botão de abrir o
+  item no financeiro, quando o salto externo está ligado.
+- **As dez consultas do histórico saem em uma rodada só**, depois do cadastro: a página espera o tempo
+  da mais lenta, não a soma de dez.
+- **Onze mapas novos no `config/whmcs.php`** (`dominios_status`, `dominios_tipos`, `itens_pedido`,
+  `permissoes_contato`, `pedidos_status`, `chamados_status`, `chamados_prioridade`, `formas_pagamento`,
+  `orcamentos_status`, `departamentos`, `preferencias_email`) e os leitores em `Cliente::rotuloDo…` /
+  `tomDo…` — nenhuma view escreve "Active", "Delivered" nem "Technical Support" na tela. O que não
+  estiver no mapa aparece como veio, nunca como vazio.
+- **O guia do painel, na tela de Clientes, passa a explicar a leitura do financeiro**: o que aparece,
+  que nada é copiado para o CRM, e a diferença entre "tem", "não tem" e "não consegui ler".
+
+### Corrigido
+- **Nenhuma seção parecia lida.** O lote devolvia as respostas numeradas por posição, e quem consome
+  procura pelo nome da consulta: com o financeiro respondendo direitinho, adicionais, domínios,
+  pagamentos, créditos, pedidos, contatos, chamados e orçamentos saíam todos como "não pôde ser lido".
+- **Sem credencial, a seção ainda aparecia.** `$semLeitura` carregava `'situacao' => ''`, e o operador
+  `+` do PHP não sobrescreve chave que já existe — o estado real nunca chegava à tela, que desenhava o
+  financeiro como se estivesse no ar.
+- **A forma de pagamento da transação saía em branco.** O WHMCS chama o meio de pagamento de `gateway`
+  na transação e de `paymentmethod` no serviço, na fatura e no adicional; só a segunda grafia era lida.
+- **A ficha da guia de Clientes** não dizia nada sobre a leitura do financeiro; agora diz.
+
+### Segurança
+- **Nada de outra conta entra na ficha, em lista nenhuma.** Item que declara outro dono fica de fora;
+  resposta que nomeia outra conta sai inteira — e a tela diz que não leu, não que "não tem". As três
+  consultas que na produção respondem sem dono ou ignoram o filtro (`GetOrders`, `GetContacts`,
+  `GetQuotes`) só aceitam item que declare o dono consultado; as que filtram pelo número da conta
+  admitem item sem dono, porque a própria consulta já recortou a conta.
+- **Credencial não atravessa a ficha.** Senha e token de usuário, chave de redefinição, senha e chave
+  do contato, usuário e senha de servidor, e-mail de cópia e anexos de chamado não são lidos nem
+  desenhados; o cartão de reserva aparece por bandeira e últimos quatro dígitos, nunca pelo número
+  completo nem pelo CVV. O número da conta vem só da ficha autenticada.
+- **Pedido e contato sem número de usuário no cadastro não são nem perguntados** — consultar por
+  e-mail traria pedido de outra pessoa — e a seção explica o motivo em vez de sumir em silêncio.
+
+### Testes
+- Nove testes novos em `SecoesDoFinanceiroNaFichaTest`: cada seção aparecendo traduzida; item de outra
+  conta fora e o da ficha no lugar; resposta que nomeia outra conta saindo inteira; pedido, contato e
+  orçamento entrando só quando declaram a conta da ficha; a ausência do número de usuário não
+  perguntando as duas consultas; senha, chave de redefinição, token e número completo do cartão
+  ausentes do HTML; lista de contrato lida-e-vazia dizendo "nenhum" e a de histórico saindo da página;
+  seção que não respondeu nunca dizendo "não tem"; e a leitura do histórico em um lote só.
+
 ## [2.60.0] - 2026-10-31
 
 ### Adicionado
