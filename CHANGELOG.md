@@ -3,6 +3,41 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.59.0] - 2026-10-31
+
+### Adicionado
+- **A ficha do cliente passou a mostrar o financeiro inteiro**, lido na hora em que a tela abre:
+  cadastro completo, serviços contratados e faturas. Nada é copiado para a base local — o WHMCS
+  continua sendo a fonte, e a ficha desenha o que ele responde agora. A seção inteira some quando a
+  integração ainda não tem as três credenciais.
+- **Cadastro completo no cartão "Cadastro no financeiro":** nome, empresa, e-mail, telefone,
+  documento, nascimento, endereço, complemento, cidade/UF, CEP, país, grupo de cliente, situação da
+  conta no financeiro, cliente desde, último acesso (data e hora do texto que o WHMCS devolve), crédito
+  em conta, idioma, moeda, plataforma, usuário da plataforma, nota fiscal e as observações do
+  financeiro. Os campos personalizados que o mapa não conhece aparecem em "Outros campos", pelo número
+  — é a única identidade que a API dá a eles. Linha vazia não é desenhada.
+- **Serviços e faturas na ficha da equipe, sem o filtro de vitrine:** contrato encerrado, serviço de
+  grupo escondido, fatura paga e fatura cancelada aparecem aqui — é justamente esse histórico que a
+  equipe consulta ao atender. Cada linha traz o link para abrir o item no financeiro, quando o salto
+  externo está ligado; o título das faturas soma o que está em aberto.
+- **Situações da conta e idiomas traduzidos** num mapa no `config/whmcs.php`
+  (`cliente_status`, `idiomas`), lidos por `Cliente::rotuloDoCliente()`, `tomDoCliente()` e
+  `rotuloDoIdioma()` — nenhuma view escreve "Active" nem "portuguese-br" na tela.
+- **"Não consegui perguntar" nunca vira "não tem":** com o financeiro mudo, a ficha diz que o cadastro
+  não pôde ser lido e que serviços e faturas nem foram consultados — as três leituras dependem da
+  primeira, então a página espera um tempo limite, não três. Ficha sem vínculo explica o caminho do
+  "Revincular ao financeiro"; sem credencial, a seção não existe.
+
+### Segurança
+- A lista de produtos pode trazer `username` e `password` do servidor; nenhum dos dois é mapeado,
+  desenhado ou gravado. Credencial de rastreamento não mora no CRM.
+
+### Testes
+- Seis testes novos cobrem o cadastro, os serviços e as faturas aparecendo; o histórico aparecendo com
+  a vitrine do portal fechada; o financeiro mudo sem virar lista vazia (e com uma única tentativa); a
+  ficha sem vínculo sem nenhuma requisição; a seção ausente sem credencial; e a senha do servidor
+  ausente do HTML.
+
 ## [2.58.0] - 2026-10-31
 
 ### Adicionado

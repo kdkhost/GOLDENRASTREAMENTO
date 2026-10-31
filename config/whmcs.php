@@ -110,6 +110,23 @@ return [
         'Fraud' => ['rotulo' => 'Em análise', 'tom' => 'red'],
     ],
 
+    // A situação da conta no financeiro — não é a do CRM nem a do serviço: é o cliente inteiro
+    // habilitado, inativo ou encerrado lá.
+    'cliente_status' => [
+        'Active' => ['rotulo' => 'Ativo', 'tom' => 'green'],
+        'Inactive' => ['rotulo' => 'Inativo', 'tom' => 'neutral'],
+        'Closed' => ['rotulo' => 'Encerrado', 'tom' => 'neutral'],
+        'Fraud' => ['rotulo' => 'Em análise', 'tom' => 'red'],
+    ],
+
+    // O idioma da conta no WHMCS, que também chega em inglês.
+    'idiomas' => [
+        'portuguese-br' => 'Português (Brasil)',
+        'portuguese-pt' => 'Português (Portugal)',
+        'english' => 'Inglês',
+        'spanish' => 'Espanhol',
+    ],
+
     // A periodicidade de cobrança que o WHMCS devolve em inglês, na língua da tela.
     'ciclos' => [
         'Monthly' => 'por mês',

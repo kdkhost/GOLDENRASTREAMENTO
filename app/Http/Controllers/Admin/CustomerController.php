@@ -78,6 +78,7 @@ class CustomerController extends Controller
 
         return view('admin.customers.show', [
             'cliente' => $cliente,
+            'financeiro' => $this->financeiroDoCliente($cliente),
             // As listas da ficha paginam por nomes próprios: um link não mexe na outra.
             'interacoes' => $cliente->interactions()->with('user')->paginate(itens_por_pagina(), ['*'], 'historico')->withQueryString(),
             'pedidos' => $cliente->orders()->paginate(itens_por_pagina(), ['*'], 'pedidos')->withQueryString(),
@@ -85,6 +86,47 @@ class CustomerController extends Controller
             'contratos' => $cliente->contracts()->paginate(itens_por_pagina(), ['*'], 'contratos')->withQueryString(),
             'tipos' => Interaction::TIPOS,
         ]);
+    }
+
+    /**
+     * O retrato que o financeiro tem desta ficha, lido na hora em que a tela abre.
+     *
+     * Nada disto é copiado para a base local: o financeiro é a fonte, e a equipe precisa do dado
+     * dele agora — não de uma cópia que envelhece. Também não passa pelos filtros de veiculação:
+     * o contrato encerrado e a fatura paga são justamente o histórico que se consulta ao atender,
+     * e a vitrine do cliente não manda aqui.
+     *
+     * As três leituras são sequenciais e dependem da primeira: sem o cadastro não há motivo para
+     * perguntar por serviços e faturas. Com o financeiro mudo, a página espera um timeout — não
+     * três.
+     *
+     * @return array{situacao: string, cadastro: array<string, mixed>|null, servicos: array|null, faturas: array|null}
+     */
+    private function financeiroDoCliente(Customer $cliente): array
+    {
+        $financeiro = app(Financeiro::class);
+
+        if (! $financeiro->configurado()) {
+            return ['situacao' => 'sem_configuracao', 'cadastro' => null, 'servicos' => null, 'faturas' => null];
+        }
+
+        if (blank($cliente->whmcs_id)) {
+            return ['situacao' => 'sem_conta', 'cadastro' => null, 'servicos' => null, 'faturas' => null];
+        }
+
+        $id = (int) $cliente->whmcs_id;
+        $cadastro = $financeiro->cadastro($id);
+
+        if ($cadastro === null) {
+            return ['situacao' => 'fora_do_ar', 'cadastro' => null, 'servicos' => null, 'faturas' => null];
+        }
+
+        return [
+            'situacao' => 'ok',
+            'cadastro' => $cadastro,
+            'servicos' => $financeiro->servicos($id, null, false),
+            'faturas' => $financeiro->faturas($id, null, false),
+        ];
     }
 
     private function responsaveis(): array

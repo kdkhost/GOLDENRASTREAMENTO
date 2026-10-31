@@ -325,6 +325,7 @@ class RevinculoWhmcsTest extends TestCase
     public function test_a_ficha_oferece_o_botao_com_a_conta_ligada(): void
     {
         $this->ligar();
+        $this->fingirWhmcs();
         $cliente = $this->conta(['whmcs_id' => 11]);
 
         $visivel = $this->visivel($this->actingAs($this->admin, 'web')
@@ -341,6 +342,7 @@ class RevinculoWhmcsTest extends TestCase
     public function test_a_pendencia_aparece_na_ficha_como_botao_de_desfazer(): void
     {
         $this->ligar();
+        $this->fingirWhmcs();
         $cliente = $this->conta(['whmcs_id' => 11]);
 
         $this->actingAs($this->admin, 'web')

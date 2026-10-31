@@ -31,6 +31,9 @@ use Throwable;
  */
 class Cliente
 {
+    /** A lista de grupos do financeiro, lida uma vez por instância e reaproveitada. */
+    private ?array $grupos = null;
+
     /** A integração só existe com as três peças: endereço, identificador e segredo. */
     public function configurado(): bool
     {
@@ -129,6 +132,81 @@ class Cliente
     }
 
     /**
+     * O cadastro inteiro que o financeiro mantém, do jeito que a equipe quer ler na ficha.
+     *
+     * `ficha()` existe para preencher o CRM — ela devolve só o que a ficha tem onde guardar.
+     * Este método é o outro lado: mostra tudo o que o financeiro sabe, inclusive o que o CRM não
+     * guarda (grupo do cliente, situação, endereço partido, crédito, último acesso, os campos
+     * personalizados que ninguém mapeou). Nada disto é copiado para a base local: a ficha lê na
+     * hora e desenha, porque a fonte continua sendo o financeiro.
+     *
+     * `null` é falha de conversa, nunca "cadastro vazio".
+     *
+     * @return array<string, mixed>|null
+     */
+    public function cadastro(int $clientId): ?array
+    {
+        $resposta = $this->chamar('GetClientsDetails', ['clientid' => $clientId, 'stats' => false]);
+
+        if ($resposta === null) {
+            return null;
+        }
+
+        $cliente = is_array($resposta['client'] ?? null) ? $resposta['client'] : $resposta;
+        $campos = $this->camposPersonalizados($cliente);
+        $mapeados = array_filter([
+            $this->campoPersonalizado('documento'),
+            $this->campoPersonalizado('nascimento'),
+            $this->campoPersonalizado('plataforma'),
+            $this->campoPersonalizado('usuario'),
+        ]);
+
+        $documento = trim((string) ($campos[$this->campoPersonalizado('documento')] ?? ''));
+        $documento = $documento !== '' ? $documento : trim((string) ($cliente['tax_id'] ?? ''));
+
+        // Campo que o mapa não conhece continua sendo dado do cliente: some do cadastro só
+        // quando está vazio. O número vai junto porque é a única identidade que o WHMCS dá.
+        $extras = [];
+        foreach ($campos as $id => $valor) {
+            if ($valor === '' || in_array($id, $mapeados, true) || in_array($id, [8, 249], true)) {
+                continue;
+            }
+
+            $extras[] = ['id' => $id, 'valor' => $valor];
+        }
+
+        return [
+            'id' => $clientId,
+            'nome' => trim((string) ($cliente['fullname']
+                ?? trim(($cliente['firstname'] ?? '').' '.($cliente['lastname'] ?? '')))),
+            'empresa' => trim((string) ($cliente['companyname'] ?? '')),
+            'email' => mb_strtolower(trim((string) ($cliente['email'] ?? ''))),
+            'telefone' => $this->telefone($cliente['phonenumber'] ?? $cliente['telephoneNumber'] ?? ''),
+            'documento' => $documento,
+            'nascimento' => $this->dataDeNascimento($campos[$this->campoPersonalizado('nascimento')] ?? null),
+            'endereco' => trim((string) ($cliente['address1'] ?? '')),
+            'complemento' => trim((string) ($cliente['address2'] ?? '')),
+            'cidade' => trim((string) ($cliente['city'] ?? '')),
+            'uf' => mb_strtoupper(trim((string) ($cliente['state'] ?? ''))),
+            'cep' => trim((string) ($cliente['postcode'] ?? '')),
+            'pais' => trim((string) ($cliente['countryname'] ?? $cliente['country'] ?? '')),
+            'grupo' => $this->grupoDoCliente((int) ($cliente['groupid'] ?? 0)),
+            'situacao' => trim((string) ($cliente['status'] ?? '')),
+            'idioma' => trim((string) ($cliente['language'] ?? '')),
+            'moeda' => trim((string) ($cliente['currency_code'] ?? '')),
+            'credito_cents' => $this->centavos($cliente['credit'] ?? 0),
+            'desde' => $this->data($cliente['datecreated'] ?? null),
+            'ultimo_acesso' => $this->ultimoAcesso($cliente['lastlogin'] ?? null),
+            'plataforma' => trim((string) ($campos[$this->campoPersonalizado('plataforma')] ?? '')),
+            'usuario_plataforma' => trim((string) ($campos[$this->campoPersonalizado('usuario')] ?? '')),
+            'nfe' => mb_strtoupper(trim((string) ($campos[8] ?? ''))) === 'NFE',
+            'nota_fiscal' => trim((string) ($campos[249] ?? '')),
+            'observacoes' => trim((string) ($cliente['notes'] ?? '')),
+            'campos_extras' => $extras,
+        ];
+    }
+
+    /**
      * Os serviços/produtos contratados no financeiro, já traduzidos para a tela.
      * `null` é falha de conversa; lista vazia é "não tem nenhum".
      *
@@ -136,9 +214,12 @@ class Cliente
      * existindo lá, o que a decisão da casa diz é se ele ainda merece um lugar na vitrine do
      * cliente. Filtrar antes de chamar seria inventar um parâmetro que a API não tem.
      *
+     * O painel chama com `$filtrarVeiculacao = false`: a equipe precisa ver o contrato encerrado
+     * e o grupo escondido do cliente — é justamente deles que ela fala ao atender.
+     *
      * @return array<int, array<string, mixed>>|null
      */
-    public function servicos(int $clientId, ?int $limite = null): ?array
+    public function servicos(int $clientId, ?int $limite = null, bool $filtrarVeiculacao = true): ?array
     {
         $resposta = $this->chamar('GetClientsProducts', [
             'clientid' => $clientId,
@@ -155,6 +236,7 @@ class Cliente
                 'nome' => (string) ($servico['name'] ?? $servico['productname'] ?? 'Serviço'),
                 'grupo' => (string) ($servico['groupname'] ?? ''),
                 'dominio' => (string) ($servico['domain'] ?? ''),
+                'servidor' => (string) ($servico['servername'] ?? ''),
                 'status' => (string) ($servico['status'] ?? ''),
                 'proximo_vencimento' => $this->data($servico['nextduedate'] ?? null),
                 'valor_cents' => $this->centavos($servico['recurringamount'] ?? $servico['totalrecurringamount'] ?? 0),
@@ -162,8 +244,8 @@ class Cliente
                 'contratado_em' => $this->data($servico['regdate'] ?? null),
                 'url' => $this->linkDaArea('productdetails', (int) ($servico['id'] ?? 0)),
             ])
-            ->filter(fn (array $servico): bool => Veiculacao::mostraServico($servico['status'])
-                && Veiculacao::mostraGrupo($servico['grupo']))
+            ->filter(fn (array $servico): bool => ! $filtrarVeiculacao
+                || (Veiculacao::mostraServico($servico['status']) && Veiculacao::mostraGrupo($servico['grupo'])))
             ->values()
             ->all();
     }
@@ -172,9 +254,12 @@ class Cliente
      * As faturas do cliente, da mais nova para a mais antiga (a API devolve nessa ordem).
      * O link leva à própria fatura no financeiro, onde o cliente paga e tira a segunda via.
      *
+     * Como em `servicos()`, o painel chama sem o filtro: fatura paga e cancelada também é
+     * histórico que a equipe consulta.
+     *
      * @return array<int, array<string, mixed>>|null
      */
-    public function faturas(int $clientId, ?int $limite = null): ?array
+    public function faturas(int $clientId, ?int $limite = null, bool $filtrarVeiculacao = true): ?array
     {
         $resposta = $this->chamar('GetInvoices', [
             'userid' => $clientId,
@@ -198,7 +283,7 @@ class Cliente
                 'metodo' => (string) ($fatura['paymentmethod'] ?? ''),
                 'url' => $this->linkDaArea('viewinvoice', (int) ($fatura['id'] ?? 0), 'id'),
             ])
-            ->filter(fn (array $fatura): bool => Veiculacao::mostraFatura($fatura['status']))
+            ->filter(fn (array $fatura): bool => ! $filtrarVeiculacao || Veiculacao::mostraFatura($fatura['status']))
             ->values()
             ->all();
     }
@@ -273,6 +358,23 @@ class Cliente
     public static function rotuloDoCiclo(string $ciclo): string
     {
         return (string) (config('whmcs.ciclos')[$ciclo] ?? $ciclo);
+    }
+
+    /** A situação da conta no financeiro — distinta da do CRM e da do serviço. */
+    public static function rotuloDoCliente(string $status): string
+    {
+        return (string) (config('whmcs.cliente_status')[$status]['rotulo'] ?? ($status !== '' ? $status : 'Sem situação'));
+    }
+
+    public static function tomDoCliente(string $status): string
+    {
+        return (string) (config('whmcs.cliente_status')[$status]['tom'] ?? 'neutral');
+    }
+
+    /** O idioma da conta no financeiro, na língua da tela. */
+    public static function rotuloDoIdioma(string $idioma): string
+    {
+        return (string) (config('whmcs.idiomas')[$idioma] ?? $idioma);
     }
 
     /**
@@ -538,6 +640,50 @@ class Cliente
         }
 
         return null;
+    }
+
+    /**
+     * O nome do grupo de clientes que a ficha do financeiro aponta. O cadastro devolve só o
+     * número; a lista vem de `GetClientGroups`, uma vez por instância — a ficha inteira precisa
+     * de no máximo um nome, e a mesma página não vai perguntar duas vezes.
+     */
+    private function grupoDoCliente(int $groupId): string
+    {
+        if ($groupId <= 0) {
+            return '';
+        }
+
+        if ($this->grupos === null) {
+            $resposta = $this->chamar('GetClientGroups', ['limitnum' => 250]);
+
+            $this->grupos = [];
+
+            foreach ($this->lista(is_array($resposta) ? ($resposta['groups']['group'] ?? []) : []) as $grupo) {
+                if (is_array($grupo) && isset($grupo['id'])) {
+                    $this->grupos[(int) $grupo['id']] = trim((string) ($grupo['groupname'] ?? ''));
+                }
+            }
+        }
+
+        return $this->grupos[$groupId] ?? '';
+    }
+
+    /**
+     * O último acesso não vem como data: o financeiro devolve o texto da própria tela, do tipo
+     * `Date: 29/10/2026 12:34<br>IP Address: ...`. A leitura é explícita e tolerante — o que não
+     * bater no formato volta nulo, nunca uma data inventada.
+     */
+    private function ultimoAcesso(mixed $valor): ?Carbon
+    {
+        $texto = trim((string) $valor);
+
+        if ($texto === '' || preg_match('/(\d{2}\/\d{2}\/\d{4})(?:\s+(\d{2}:\d{2}))?/', $texto, $achado) !== 1) {
+            return null;
+        }
+
+        $data = Carbon::createFromFormat('!d/m/Y H:i', $achado[1].' '.($achado[2] ?? '00:00'));
+
+        return $data !== false && ! $data->greaterThan(now()) ? $data : null;
     }
 
     private function limite(): int

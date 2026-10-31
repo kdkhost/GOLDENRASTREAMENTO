@@ -229,4 +229,6 @@
         </x-admin.table>
     </div>
 </div>
+
+@include('admin.customers.partials.financeiro')
 @endsection

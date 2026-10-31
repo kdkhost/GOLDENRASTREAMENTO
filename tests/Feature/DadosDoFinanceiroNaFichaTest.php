@@ -220,6 +220,7 @@ class DadosDoFinanceiroNaFichaTest extends TestCase
     public function test_a_ficha_mostra_o_acesso_a_plataforma_e_a_edicao_grava_os_dois_campos(): void
     {
         $this->ligar();
+        $this->fingirWhmcs();
         $cliente = $this->conta([
             'whmcs_id' => 10045,
             'plataforma' => 'servidor 2',
