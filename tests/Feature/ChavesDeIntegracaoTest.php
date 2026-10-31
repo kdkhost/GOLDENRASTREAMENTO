@@ -258,21 +258,23 @@ class ChavesDeIntegracaoTest extends TestCase
     public function test_as_chaves_do_painel_desam_o_aviso_de_credencial_faltante(): void
     {
         config([
-            'google_ads.developer_token' => null,
             'services.google_ads.client_id' => null,
             'services.google_ads.client_secret' => null,
         ]);
 
+        // O token de desenvolvedor não entra nesta conta: o Google o aposentou em 09/09/2026,
+        // e quem autoriza a chamada passou a ser o projeto do Cloud que criou o par OAuth.
         $this->assertSame(
-            ['GOOGLE_ADS_DEVELOPER_TOKEN', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'],
+            ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'],
             GoogleAdsService::credenciaisFaltantes()->all(),
         );
 
-        ChavesDeIntegracao::guardar('google_ads_developer_token', 'token-do-painel');
+        ChavesDeIntegracao::guardar('google_client_id', 'id-do-painel');
+        ChavesDeIntegracao::guardar('google_client_secret', 'segredo-do-painel');
         ChavesDeIntegracao::aplicar();
 
-        $this->assertSame(['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'], GoogleAdsService::credenciaisFaltantes()->all());
-        $this->assertCount(2, ChavesDeIntegracao::faltantesDoGoogleAds());
+        $this->assertCount(0, GoogleAdsService::credenciaisFaltantes());
+        $this->assertCount(0, ChavesDeIntegracao::faltantesDoGoogleAds());
     }
 
     public function test_grupo_desconhecido_nao_escreve_nada(): void

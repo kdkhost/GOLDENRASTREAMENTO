@@ -3,6 +3,28 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.57.0] - 2026-10-30
+
+### Corrigido
+- **O token de desenvolvedor deixou de ser obrigatório.** O Google o aposentou em 09/09/2026 e o
+  acesso à API passou a pertencer ao **projeto do Google Cloud** que criou o par OAuth — a própria
+  Central de API do Ads anuncia a mudança. `GoogleAdsService::credenciaisFaltantes()` agora exige só
+  o ID e o segredo do cliente OAuth, e o cliente da API só anexa o token quando ele existe: valor
+  já gravado continua indo no cabeçalho e é ignorado pelo servidor. Sem token, nenhuma chamada era
+  possível antes — e o painel recusava a conexão com uma credencial que o Google já não usa.
+- **A tela de chaves trata o campo como legado.** "Token de desenvolvedor (legado)" ficou opcional,
+  com a dica explicando a aposentadoria; o guia do painel, a ajuda por campo, o `.env.example` e o
+  `docs/INSTALACAO.md` trocaram o passo "peça o token" pelo nível de acesso do projeto no Cloud
+  (Explorer para começar, Basic para volume).
+
+### Testes
+- Integração e guia passaram a simular a falta do **par OAuth** (não mais do token de dev): 759
+  testes verdes, incluindo o cron sem credencial, a conexão recusada e a aplicação de plano.
+
+### Operação
+- Produção: MCC `9201387315` e token de desenvolvedor gravados no banco pelo painel (cifrados);
+  faltam o ID e o segredo do cliente OAuth do projeto que carrega o nível de acesso.
+
 ## [2.56.0] - 2026-10-30
 
 ### Adicionado

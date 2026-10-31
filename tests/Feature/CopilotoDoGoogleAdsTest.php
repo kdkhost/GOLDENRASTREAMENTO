@@ -414,7 +414,6 @@ class CopilotoDoGoogleAdsTest extends TestCase
     public function test_aplicar_sem_credencial_do_google_falha_em_portugues_sem_tocar_a_api(): void
     {
         config([
-            'google_ads.developer_token' => null,
             'services.google_ads.client_id' => null,
             'services.google_ads.client_secret' => null,
         ]);
@@ -430,7 +429,7 @@ class CopilotoDoGoogleAdsTest extends TestCase
 
         $plano->refresh();
         $this->assertSame(GoogleAdsPlano::FALHOU, $plano->status);
-        $this->assertStringContainsString('GOOGLE_ADS_DEVELOPER_TOKEN', (string) $plano->erro);
+        $this->assertStringContainsString('GOOGLE_CLIENT_ID', (string) $plano->erro);
         Http::assertNothingSent();
     }
 

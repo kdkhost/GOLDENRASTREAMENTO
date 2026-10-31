@@ -36,10 +36,12 @@ return [
     ],
 
     /*
-    | Google Ads: o app OAuth do painel. As três credenciais nascem no Google Cloud console
-    | (tela de consentimento OAuth) e o endereço de volta é sempre o do próprio app — a
-    | variável existe para quem roda atrás de um proxy com domínio diferente de APP_URL.
-    | O escopo pedido (`adwords`) não fica aqui: é da API, mora em config('google_ads.escopos').
+    | Google Ads: o app OAuth do painel. O par nasce no Google Cloud console (tela de
+    | consentimento OAuth) e é o projeto dele que carrega o nível de acesso à API desde
+    | 09/09/2026, quando o token de desenvolvedor foi aposentado. O endereço de volta é sempre
+    | o do próprio app — a variável existe para quem roda atrás de um proxy com domínio
+    | diferente de APP_URL. O escopo pedido (`adwords`) não fica aqui: é da API, mora em
+    | config('google_ads.escopos').
     */
     'google_ads' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),

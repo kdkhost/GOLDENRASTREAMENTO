@@ -471,33 +471,31 @@ return [
         /* ---------------------------------------------------------------- Chaves: Google Ads */
 
         'google-ads' => [
-            'onde' => 'Quatro credenciais, três lugares diferentes: o token nasce na conta gerente do Google Ads, o par OAuth e a API ativa nascem no Google Cloud, e a conexão em si acontece no painel.',
+            'onde' => 'O par OAuth e o nível de acesso nascem no Google Cloud, a conta gerente nasce no Google Ads e a conexão em si acontece no painel. O antigo token de desenvolvedor foi aposentado pelo Google em 09/09/2026.',
             'passos' => [
                 ['icone' => 'fa-sitemap', 'titulo' => 'Tenha a conta gerente (MCC)', 'texto' => 'Em Google Ads → Ferramentas e configurações → Estrutura de contas, crie a gerente e anexe as contas de anunciante. O número dela entra sem hífen.'],
-                ['icone' => 'fa-key', 'titulo' => 'Peça o token de desenvolvedor', 'texto' => 'No Centro da API da gerente: registre a aplicação, descreva o que ela faz e envie o pedido. O token vem para a aplicação, não para quem anuncia.'],
                 ['icone' => 'fa-shield-halved', 'titulo' => 'Crie o par OAuth no Google Cloud', 'texto' => 'Tela de consentimento (tipo Externo) e uma credencial "Aplicação da Web". O ID e o segredo que nascem ali vão para os dois campos abaixo.'],
-                ['icone' => 'fa-plug', 'titulo' => 'Ative a API do Google Ads no projeto', 'texto' => 'Sem ativar, o consentimento aparece e a chamada falha. É a etapa mais esquecida das quatro.'],
+                ['icone' => 'fa-plug', 'titulo' => 'Ative a API do Google Ads no projeto', 'texto' => 'Sem ativar, o consentimento aparece e a chamada falha. É a etapa mais esquecida.'],
+                ['icone' => 'fa-gauge-high', 'titulo' => 'Peça o nível de acesso do projeto', 'texto' => 'Na página Google Ads API do projeto: Explorer para começar, Basic quando o volume pedir. É o projeto da chave OAuth que carrega o nível — não existe mais token para pedir.'],
                 ['icone' => 'fa-arrow-right-to-bracket', 'titulo' => 'Conecte a conta no painel', 'texto' => 'Com os campos salvos, Comercial → Google Ads → "Conectar conta Google Ads" faz o Google perguntar em que conta entrar.'],
             ],
             'links' => [
-                ['rotulo' => 'Centro da API do Google Ads', 'url' => 'https://ads.google.com/aw/apicenter'],
                 ['rotulo' => 'Google Cloud Console — credenciais', 'url' => 'https://console.cloud.google.com/apis/credentials'],
                 ['rotulo' => 'Ativar a API do Google Ads', 'url' => 'https://console.cloud.google.com/apis/library/googleads.googleapis.com'],
-                ['rotulo' => 'Documentação: começar a usar a API', 'url' => 'https://developers.google.com/google-ads/api/docs/start'],
+                ['rotulo' => 'Níveis de acesso da API', 'url' => 'https://developers.google.com/google-ads/api/docs/api-policy/access-levels'],
             ],
         ],
 
         'google_ads_developer_token' => [
-            'onde' => 'A licença da aplicação para falar com a API do Google Ads. Não é senha de anunciante e não dá acesso a nenhuma conta sozinho.',
+            'onde' => 'Campo legado. O Google aposentou os tokens de desenvolvedor em 09/09/2026: um valor já gravado continua sendo enviado e o servidor o ignora. Quem autoriza a chamada hoje é o projeto do Google Cloud que criou a chave OAuth.',
             'passos' => [
-                ['icone' => 'fa-sitemap', 'titulo' => 'Entre pelo login da conta gerente', 'texto' => 'O token nasce na MCC. Conta de anunciante avulsa também pode pedir o próprio, mas o caminho padrão é a gerente.'],
-                ['icone' => 'fa-gear', 'titulo' => 'Abra o Centro da API', 'texto' => 'Ferramentas e configurações → API do Google Ads (Centro da API) → Aplicação de teste.'],
-                ['icone' => 'fa-file-signature', 'titulo' => 'Descreva a aplicação e envie', 'texto' => 'Diga o que ela faz em poucas linhas, honestamente: é o que um humano do Google lê. O token costuma sair básico e liberado em minutos quando o uso é interno.'],
-                ['icone' => 'fa-paste', 'titulo' => 'Cole aqui', 'texto' => 'Salve nesta tela. Um token de Basic Access já basta para o painel ler o que a conta mostra.'],
+                ['icone' => 'fa-circle-info', 'titulo' => 'Instalação nova? Deixe vazio', 'texto' => 'Sem token de desenvolvedor a integração funciona. O que libera o acesso é o nível do projeto no Google Cloud, ao lado da chave OAuth.'],
+                ['icone' => 'fa-clock-rotate-left', 'titulo' => 'Já tinha um token?', 'texto' => 'Pode continuar gravado sem prejuízo: ele segue no cabeçalho e é ignorado. Quando o Google passar a recusá-lo, esvaziar o campo resolve.'],
+                ['icone' => 'fa-cloud', 'titulo' => 'Onde está o acesso agora', 'texto' => 'No Google Cloud Console, na página Google Ads API do projeto: peça o nível Explorer para começar e Basic quando o volume pedir.'],
             ],
             'links' => [
-                ['rotulo' => 'Centro da API do Google Ads', 'url' => 'https://ads.google.com/aw/apicenter'],
-                ['rotulo' => 'Pedir o token de desenvolvedor', 'url' => 'https://developers.google.com/google-ads/api/docs/get-started/dev-token'],
+                ['rotulo' => 'Google Cloud Console — Google Ads API', 'url' => 'https://console.cloud.google.com/apis/api/googleads.googleapis.com'],
+                ['rotulo' => 'Documentação: níveis de acesso', 'url' => 'https://developers.google.com/google-ads/api/docs/api-policy/access-levels'],
             ],
         ],
 

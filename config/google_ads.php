@@ -17,9 +17,10 @@
 return [
 
     /*
-    | O token de desenvolvedor é a credencial da *aplicação*, não do anunciante: ele nasce
-    | junto com a conta MCC (Ferramentas e configurações → API do Google Ads) e é segredo.
-    | Por isso o provider o lê sempre do ambiente e ele jamais aparece em view, JSON ou log.
+    | Token de desenvolvedor: legado. O Google o aposentou em 09/09/2026 e hoje o acesso é do
+    | projeto do Google Cloud que criou o par OAuth. O valor continua sendo lido e enviado
+    | quando existe — o servidor o ignora — e por isso permanece como segredo do ambiente,
+    | longe de view, JSON e log. Instalação nova pode deixá-lo vazio.
     */
     'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
 

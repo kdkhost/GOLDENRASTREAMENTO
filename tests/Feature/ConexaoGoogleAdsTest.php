@@ -50,8 +50,9 @@ class ConexaoGoogleAdsTest extends TestCase
     }
 
     /**
-     * As três credenciais que a integração exige, num valor de teste. Sem elas o painel
-     * recusa qualquer chamada — e diz qual falta.
+     * As credenciais que a integração exige hoje, num valor de teste. Sem o par OAuth o painel
+     * recusa qualquer chamada — e diz qual falta. O token de desenvolvedor segue configurado de
+     * propósito: é o estado de quem já o tinha gravado antes de o Google aposentá-lo.
      */
     private function credenciaisPresentes(): void
     {
@@ -117,12 +118,12 @@ class ConexaoGoogleAdsTest extends TestCase
 
     public function test_sem_credencial_o_painel_recusa_e_diz_qual_falta_e_onde_se_preenche(): void
     {
-        config(['google_ads.developer_token' => null]);
+        config(['services.google_ads.client_id' => null]);
 
         $this->actingAs($this->admin)
             ->get(route('google-ads.redirect'))
             ->assertRedirect(route('admin.google-ads.index'))
-            ->assertSessionHas('error', 'Faltam credenciais do Google Ads: GOOGLE_ADS_DEVELOPER_TOKEN. Preencha em Sistema → Configurações → Chaves de integração.');
+            ->assertSessionHas('error', 'Faltam credenciais do Google Ads: GOOGLE_CLIENT_ID. Preencha em Sistema → Configurações → Chaves de integração.');
 
         $this->assertDatabaseCount('google_ads_accounts', 0);
     }
@@ -130,12 +131,11 @@ class ConexaoGoogleAdsTest extends TestCase
     public function test_o_cron_sem_credencial_avisa_em_vez_de_gritar_no_log(): void
     {
         config([
-            'google_ads.developer_token' => null,
             'services.google_ads.client_id' => null,
             'services.google_ads.client_secret' => null,
         ]);
 
-        $falta = 'Faltam as credenciais do Google Ads: GOOGLE_ADS_DEVELOPER_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET.';
+        $falta = 'Faltam as credenciais do Google Ads: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET.';
 
         // Chamado à mão: a pessoa quer a lista do que falta e um código de falha.
         $this->artisan('google-ads:sync')

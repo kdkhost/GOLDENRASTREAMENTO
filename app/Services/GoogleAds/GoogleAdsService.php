@@ -4,7 +4,6 @@ namespace App\Services\GoogleAds;
 
 use App\Models\GoogleAdsAccount;
 use App\Models\GoogleAdsApiLog;
-use App\Support\ChavesDeIntegracao;
 use Google\Ads\GoogleAds\Lib\OAuth2TokenBuilder;
 use Google\Ads\GoogleAds\Lib\V26\GoogleAdsClient;
 use Google\Ads\GoogleAds\Lib\V26\GoogleAdsClientBuilder;
@@ -52,9 +51,13 @@ class GoogleAdsService
      * requisição. Ler `config()` já é, portanto, perguntar «o que o painel definiu e, se ele
      * não definiu nada, o que o servidor diz» — e é por isto que nenhuma checagem aqui precisa
      * saber de onde veio o valor.
+     *
+     * O token de desenvolvedor não está aqui porque o Google o aposentou em 09/09/2026: quem
+     * autoriza a chamada passou a ser o projeto do Google Cloud que emitiu o par OAuth. Um
+     * token já gravado continua sendo enviado — os servidores o ignoram — mas a ausência dele
+     * deixou de impedir qualquer coisa.
      */
     public const CREDENCIAIS = [
-        'GOOGLE_ADS_DEVELOPER_TOKEN' => 'google_ads.developer_token',
         'GOOGLE_CLIENT_ID' => 'services.google_ads.client_id',
         'GOOGLE_CLIENT_SECRET' => 'services.google_ads.client_secret',
     ];
@@ -77,8 +80,9 @@ class GoogleAdsService
      * Cliente autenticado para uma conta conectada.
      *
      * O token de atualização é o segredo do usuário, lido decifrado do banco pelo cast
-     * `encrypted`; o token de desenvolvedor é o segredo da aplicação, e chega até aqui pelo
-     * painel (banco) ou pelo plano de fundo do ambiente.
+     * `encrypted`, e o par OAuth é a credencial da aplicação — quem manda é ele, desde que o
+     * Google aposentou o token de desenvolvedor em 09/09/2026. Esse token, quando existe,
+     * ainda é anexado ao cliente e ignorado pelo servidor.
      * `login_customer_id` é o MCC, quando existe: ele autoriza a entrada, enquanto o
      * `customer_id` da conta conectada diz de qual conta a consulta responde.
      */
@@ -181,16 +185,6 @@ class GoogleAdsService
      */
     private function montarCliente(string $refreshToken, ?string $customerId = null): GoogleAdsClient
     {
-        $desenvolvedor = (string) config('google_ads.developer_token');
-
-        if ($desenvolvedor === '') {
-            throw new InvalidArgumentException(
-                'Falta o token de desenvolvedor (GOOGLE_ADS_DEVELOPER_TOKEN), nem no banco nem no ambiente: '.
-                'sem ele o Google não aceita nenhuma chamada. Preencha em '.ChavesDeIntegracao::CAMINHO_NO_PAINEL.
-                '. É o token da aplicação, emitido junto com a conta MCC.'
-            );
-        }
-
         $oauth = (new OAuth2TokenBuilder())
             ->withClientId((string) config('services.google_ads.client_id'))
             ->withClientSecret((string) config('services.google_ads.client_secret'))
@@ -202,12 +196,21 @@ class GoogleAdsService
         // enquanto o `customer_id` da consulta diz de qual conta a resposta fala.
         $mcc = (string) config('google_ads.login_customer_id');
 
-        return (new GoogleAdsClientBuilder())
-            ->withDeveloperToken($desenvolvedor)
+        $construtor = (new GoogleAdsClientBuilder())
             ->withLoginCustomerId($mcc !== '' ? (int) $mcc : null)
             ->withTransport((string) config('google_ads.transporte', 'rest'))
-            ->withOAuth2Credential($oauth)
-            ->build();
+            ->withOAuth2Credential($oauth);
+
+        // Token de desenvolvedor: aposentado em 09/09/2026. Só entra no cabeçalho quando está
+        // gravado, porque `withDeveloperToken()` exige string e a ausência dele já não impede
+        // nada — o valor é ignorado pelo Google. O acesso quem define é o projeto do Cloud.
+        $desenvolvedor = (string) config('google_ads.developer_token');
+
+        if ($desenvolvedor !== '') {
+            $construtor->withDeveloperToken($desenvolvedor);
+        }
+
+        return $construtor->build();
     }
 
     /**

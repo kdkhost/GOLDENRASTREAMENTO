@@ -558,8 +558,8 @@ no servidor (banco, chave da aplicação, fila, fuso).
 | `GOLDEN_FINANCEIRO_URL`, `GOLDEN_SERVIDOR_1_URL`, `GOLDEN_SERVIDOR_2_URL` | do seu ambiente | portas de entrada do cabeçalho do site (financeiro antigo e os dois servidores); **preencha em Sistema → Configurações → Acessos externos do site**, o `.env` é só plano de fundo |
 | `GOOGLE_BUSINESS_ACCOUNT`, `GOOGLE_BUSINESS_LOCATION`, `GOOGLE_BUSINESS_TOKEN` | do seu perfil | depoimentos do Google com avatar; **preencha na tela** (seção 11), o `.env` é só plano de fundo |
 | `GOOGLE_BUSINESS_LIMITE`, `GOOGLE_BUSINESS_NOTA_MINIMA` | `50`, `4` | quantas avaliações ler por rodada e a nota mínima aceita; também ajustáveis na tela |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | da sua MCC | token de desenvolvedor da API; **segredo da aplicação**, nunca sai para a tela (seção 9.1) |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | do Google Cloud | app OAuth da tela de consentimento; o painel conecta conta por conta com eles |
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | opcional (legado) | o Google aposentou os tokens de desenvolvedor em **09/09/2026**: quem autoriza a chamada é o projeto do Cloud que criou o par OAuth. Um token já gravado continua indo no cabeçalho e é ignorado (seção 9.1) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | do Google Cloud | app OAuth da tela de consentimento; é o projeto dele que carrega o nível de acesso à API, e o painel conecta conta por conta com ele |
 | `GOOGLE_REDIRECT_URI` | `${APP_URL}/auth/google-ads/callback` | tem de ser o URI cadastrado no Google, endereço exato |
 | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | MCC sem hífen | vazio é legítimo: cada conta conectada é consultada por si só |
 | `GOOGLE_ADS_TRANSPORT` | `rest` | `grpc` só onde a extensão do PHP existe (servidor próprio) |
@@ -771,11 +771,12 @@ Nenhum deles é trabalho de código, e sem eles a tela mostra exatamente o que f
    contas*, crie a conta gerente e anexe as contas de anunciante a ela. O número da MCC, **sem
    hífens**, é o `GOOGLE_ADS_LOGIN_CUSTOMER_ID`. Sem MCC o campo fica vazio e cada conta
    conectada é consultada por si só.
-2. **Token de desenvolvedor.** Na MCC: *Ferramentas e configurações → API do Google Ads →
-   Aplicação de teste*. Preencha o nome da aplicação, aceite os termos e peça o acesso
-   (padrão **Basic Access**; para escrever, o Google pode pedir revisão). O token gerado é o
-   `GOOGLE_ADS_DEVELOPER_TOKEN`. **É segredo da aplicação, não do anunciante**: nunca aparece no
-   navegador, em view, JSON ou log.
+2. **Nível de acesso no Google Cloud.** O antigo *token de desenvolvedor* foi aposentado em
+   **09/09/2026** — não há mais o que pedir no Centro da API. O acesso agora pertence ao
+   **projeto do Google Cloud** que criou a credencial OAuth: na página *Google Ads API* do
+   projeto, peça o nível (**Explorer** para começar, **Basic** quando o volume pedir). Nível e
+   credencial têm de morar no mesmo projeto. Se você já tinha um token gravado, ele continua
+   sendo enviado e o Google o ignora; a versão da API que o recusar ainda não existe.
 3. **Tela de consentimento OAuth + credenciais.** No [Google Cloud console](https://console.cloud.google.com/apis/credentials),
    crie um projeto, configure a *tela de consentimento OAuth* (tipo **Externo**, com o domínio
    nos *domínios autorizados* e `contato@kdkhost.com.br` como contato de desenvolvimento) e crie
@@ -789,17 +790,18 @@ Nenhum deles é trabalho de código, e sem eles a tela mostra exatamente o que f
 
 ### As cinco credenciais: a tela, não o arquivo
 
-Token de desenvolvedor, ID e segredo do cliente OAuth, endereço de volta e MCC se preenchem em
-**Sistema → Configurações → Chaves de integração → Google Ads** (`/admin/configuracoes#chaves`).
-O que for gravado ali entra no banco — os três segredos cifrados, e nenhum deles volta a aparecer
-na tela depois de salvo — e vale na hora: não há `config:clear`, nem `artisan` nem reinício de
-servidor no meio. Os nomes de `.env` continuam existindo como **plano de fundo**, para o campo
-que ninguém preencheu; deixá-los todos em branco no arquivo é o estado normal de uma instalação
-que configura pela tela.
+ID e segredo do cliente OAuth, endereço de volta e MCC se preenchem em **Sistema →
+Configurações → Chaves de integração → Google Ads** (`/admin/configuracoes#chaves`). O token
+de desenvolvedor continua na mesma tela, agora como campo **opcional e legado**: não é
+necessário para conectar nada. O que for gravado ali entra no banco — os segredos cifrados, e
+nenhum deles volta a aparecer na tela depois de salvo — e vale na hora: não há `config:clear`,
+nem `artisan` nem reinício de servidor no meio. Os nomes de `.env` continuam existindo como
+**plano de fundo**, para o campo que ninguém preencheu; deixá-los todos em branco no arquivo é
+o estado normal de uma instalação que configura pela tela.
 
 | Na tela | A variável de plano de fundo |
 | --- | --- |
-| Token de desenvolvedor | `GOOGLE_ADS_DEVELOPER_TOKEN` |
+| Token de desenvolvedor (legado) | `GOOGLE_ADS_DEVELOPER_TOKEN` — aposentado em 09/09/2026; pode ficar vazio |
 | ID do cliente OAuth | `GOOGLE_CLIENT_ID` |
 | Segredo do cliente OAuth | `GOOGLE_CLIENT_SECRET` |
 | Endereço de volta do OAuth | `GOOGLE_REDIRECT_URI` (`${APP_URL}/auth/google-ads/callback`) |

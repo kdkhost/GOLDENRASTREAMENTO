@@ -73,9 +73,8 @@ class GoogleAdsAuthController extends Controller
                 ->with('warning', 'A conexão foi cancelada no Google. Nenhum acesso foi guardado.');
         }
 
-        // O token de desenvolvedor entra na conta desta checagem: um consentimento que termina
-        // em erro de API é pior que nenhum consentimento — a pessoa deu acesso ao painel sem
-        // nada em troca.
+        // O par OAuth entra na conta desta checagem: um consentimento que termina em erro de API
+        // é pior que nenhum consentimento — a pessoa deu acesso ao painel sem nada em troca.
         $faltantes = GoogleAdsService::credenciaisFaltantes();
 
         if ($faltantes->isNotEmpty()) {

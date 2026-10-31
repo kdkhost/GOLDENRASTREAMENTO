@@ -75,9 +75,10 @@ class ChavesDeIntegracao
                         'chave' => 'google_ads_developer_token',
                         'config' => 'google_ads.developer_token',
                         'ambiente' => 'GOOGLE_ADS_DEVELOPER_TOKEN',
-                        'label' => 'Token de desenvolvedor',
+                        'label' => 'Token de desenvolvedor (legado)',
                         'segredo' => true,
-                        'dica' => 'Nasce na conta MCC: Google Ads → Ferramentas e configurações → API do Google Ads → Aplicação de teste.',
+                        'opcional' => true,
+                        'dica' => 'O Google aposentou este token em 09/09/2026: hoje quem autoriza é o projeto do Google Cloud que criou a chave OAuth. Se já existe, continua sendo enviado e ignorado.',
                     ],
                     [
                         'chave' => 'google_client_id',
