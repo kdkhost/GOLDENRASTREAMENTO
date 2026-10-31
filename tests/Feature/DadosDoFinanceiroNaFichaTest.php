@@ -171,6 +171,69 @@ class DadosDoFinanceiroNaFichaTest extends TestCase
         $this->assertSame('fisica', $cliente->fresh()->tipo);
     }
 
+    public function test_quando_a_ficha_ja_esta_preenchida_o_aviso_diz_o_que_o_financeiro_nao_tem(): void
+    {
+        $this->ligar();
+        // A conta 10045 de verdade: o financeiro não tem o campo de nascimento preenchido.
+        $this->fingirWhmcs([
+            'result' => 'SUCCESS',
+            'clientid' => 10045,
+            'email' => 'maria@exemplo.com.br',
+            'address1' => 'Rua Atalaia, 77',
+            'address2' => 'Aliança',
+            'city' => 'Ribeirão Pires',
+            'state' => 'SP',
+            'postcode' => '09403150',
+            'phonenumber' => '11942228599',
+            'customfields' => [
+                ['id' => 2, 'value' => '230.349.768-01'],
+                ['id' => 17, 'value' => 'servidor 3'],
+                ['id' => 18, 'value' => 'maria@exemplo.com.br'],
+            ],
+        ]);
+        $cliente = $this->conta([
+            'whmcs_id' => 10045,
+            'documento' => '230.349.768-01',
+            'telefone' => '11942228599',
+            'endereco' => 'Rua Atalaia, 77 - Aliança',
+            'cidade' => 'Ribeirão Pires',
+            'uf' => 'SP',
+            'cep' => '09403150',
+            'plataforma' => 'servidor 3',
+            'usuario_plataforma' => 'maria@exemplo.com.br',
+        ]);
+
+        $this->actingAs($this->admin, 'web')
+            ->post(route('admin.clientes.puxar', $cliente))
+            ->assertRedirect()
+            ->assertSessionHas('info', fn (string $valor): bool => str_contains($valor, 'Consultei a conta #10045 do financeiro agora')
+                && str_contains($valor, 'Mantidos por já estarem escritos')
+                && str_contains($valor, 'Nascimento')
+                && str_contains($valor, 'puxar de novo não muda isso'));
+
+        $this->assertNull($cliente->fresh()->nascimento);
+    }
+
+    public function test_a_ficha_avisa_que_o_financeiro_nao_tem_o_campo_que_segue_em_branco(): void
+    {
+        $this->ligar();
+        $this->fingirWhmcs($this->fichaDoFinanceiro(['customfields' => [
+            ['id' => 2, 'value' => '230.349.768-01'],
+            ['id' => 17, 'value' => 'servidor 3'],
+            ['id' => 18, 'value' => 'robertojuniorjr39@gmail.com'],
+        ]]));
+        $cliente = $this->conta(['whmcs_id' => 10045]);
+
+        $html = $this->visivel($this->actingAs($this->admin, 'web')
+            ->get(route('admin.clientes.show', $cliente))
+            ->assertOk()
+            ->getContent());
+
+        $this->assertStringContainsString('O financeiro não tem', $html);
+        $this->assertStringContainsString('<strong>Nascimento</strong>', $html);
+        $this->assertStringContainsString('Puxar de novo não preenche', $html);
+    }
+
     public function test_ficha_sem_vinculo_explica_que_falta_revincular_e_nao_chama_o_financeiro(): void
     {
         $this->ligar();

@@ -117,6 +117,15 @@
                                 <i class="fas fa-cloud-arrow-down me-1" aria-hidden="true"></i> Puxar dados do financeiro
                             </button>
                         </form>
+                        {{-- Campo em branco aqui e campo sem valor no financeiro têm a mesma
+                             aparência; dizer qual é qual manda a próxima ação para o lugar certo. --}}
+                        @php $lacunasDaFicha = $financeiro['cadastro'] !== null ? \App\Models\Customer::lacunasDoFinanceiro($financeiro['cadastro']) : []; @endphp
+                        @if($lacunasDaFicha !== [])
+                            <div class="form-hint fw-normal">
+                                O financeiro não tem <strong>{{ implode(', ', $lacunasDaFicha) }}</strong> nesta conta. Puxar de novo não preenche
+                                {{ count($lacunasDaFicha) === 1 ? 'esse campo' : 'esses campos' }} — o dado não está do outro lado; ele só entra se alguém escrever no financeiro ou aqui.
+                            </div>
+                        @endif
                     @endif
                 </dd>
                 <dt>Verificação no chat</dt>

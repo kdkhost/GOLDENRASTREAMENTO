@@ -3,6 +3,23 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.59.1] - 2026-10-31
+
+### Corrigido
+- **"Puxar dados do financeiro" deixou de parecer que não fez nada.** Quando não havia campo em
+  branco para preencher, o aviso dizia apenas "nada a preencher"; agora ele diz que a conta foi
+  consultada **naquele momento**, repete o que já estava escrito e foi mantido e, principalmente,
+  nomeia **o que o financeiro não tem** para esta conta ("O financeiro não tem Nascimento nesta
+  conta — esse campo segue em branco, e puxar de novo não muda isso"). A rotina em massa continua
+  usando o mesmo caminho.
+- **A ficha explica o campo em branco logo abaixo do botão:** quando algum dos campos mapeados
+  (documento, nascimento, plataforma, usuário da plataforma) está sem valor no financeiro, a ficha
+  avisa quais são e esclarece que puxar de novo não os preenche — o dado não está do outro lado.
+
+### Testes
+- Dois testes novos: o aviso de "nada mudou" precisa nomear a conta consultada e o campo que o
+  financeiro não tem; e a ficha precisa mostrar o aviso do campo sem valor no financeiro.
+
 ## [2.59.0] - 2026-10-31
 
 ### Adicionado

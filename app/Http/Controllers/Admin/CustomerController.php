@@ -272,12 +272,14 @@ class CustomerController extends Controller
         }
 
         $resultado = $cliente->absorverDoFinanceiro($dados);
+        $conta = 'conta #'.$cliente->whmcs_id;
         $mantidos = $resultado['mantidos'] !== []
             ? ' Mantidos por já estarem escritos: '.implode(', ', $resultado['mantidos']).'.'
             : '';
+        $ausentes = $this->lacunasDoFinanceiro($resultado['ausentes']);
 
         if ($resultado['preenchidos'] === []) {
-            return back()->with('info', 'Nada a preencher: o que o financeiro tem para esta conta já está na ficha.'.$mantidos);
+            return back()->with('info', 'Consultei a '.$conta.' do financeiro agora: não há dado novo para trazer.'.$mantidos.$ausentes);
         }
 
         Activity::log(
@@ -286,7 +288,32 @@ class CustomerController extends Controller
             $cliente
         );
 
-        return back()->with('success', 'Preenchido pelo financeiro: '.implode(', ', $resultado['preenchidos']).'.'.$mantidos);
+        return back()->with('success', 'Preenchido pelo financeiro ('.$conta.'): '.implode(', ', $resultado['preenchidos']).'.'.$mantidos.$ausentes);
+    }
+
+    /**
+     * A frase que explica por que um campo da ficha continua em branco depois do clique.
+     *
+     * Sem ela, "não puxou nada" é a leitura natural de quem vê o campo vazio — e puxar de novo
+     * não muda o resultado, porque o dado nunca esteve no financeiro. Dizer isso aqui é o que
+     * manda a próxima ação para o lugar certo: escrever na ficha ou corrigir a outra ponta.
+     *
+     * @param  array<int, string>  $ausentes
+     */
+    private function lacunasDoFinanceiro(array $ausentes): string
+    {
+        if ($ausentes === []) {
+            return '';
+        }
+
+        if (count($ausentes) === count(Customer::CAMPOS_DO_FINANCEIRO)) {
+            return ' O financeiro não tem nenhum dado de cadastro para esta conta — os campos seguem em branco e puxar de novo não muda isso.';
+        }
+
+        $campos = implode(', ', $ausentes);
+        $seguem = count($ausentes) === 1 ? 'esse campo segue em branco' : 'esses campos seguem em branco';
+
+        return " O financeiro não tem {$campos} nesta conta — {$seguem}, e puxar de novo não muda isso.";
     }
 
     /**

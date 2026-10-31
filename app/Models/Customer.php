@@ -128,21 +128,46 @@ class Customer extends Model implements AuthenticatableContract
     ];
 
     /**
+     * Os campos mapeados para os quais o financeiro não tem valor nesta conta.
+     *
+     * Existe porque "a ficha está em branco" e "o financeiro não tem esse dado" têm a mesma
+     * aparência na tela e são coisas diferentes para quem atende: uma é falta daqui, a outra é
+     * falta de lá — e esta última não se resolve puxando de novo, só escrevendo na outra ponta.
+     *
+     * @param  array<string, mixed>  $dados
+     * @return array<int, string>
+     */
+    public static function lacunasDoFinanceiro(array $dados): array
+    {
+        $lacunas = [];
+
+        foreach (self::CAMPOS_DO_FINANCEIRO as $campo => $rotulo) {
+            if (blank($dados[$campo] ?? null)) {
+                $lacunas[] = $rotulo;
+            }
+        }
+
+        return $lacunas;
+    }
+
+    /**
      * Traz para a ficha o que o financeiro sabe e ela ainda não tem.
      *
      * A regra é de mão única e de um sentido só: **o que está escrito na ficha manda**. Quem
      * digitou um endereço no CRM não o vê trocado por um cadastro antigo do financeiro; o que a
-     * equipe nunca preencheu é o que vem de lá. O retorno diz o que entrou e o que foi mantido,
-     * porque quem aperta o botão precisa conferir sem abrir a ficha inteira — e a rotina em
-     * massa usa o mesmo caminho com `$gravar = false` para mostrar o que faria antes de gravar.
+     * equipe nunca preencheu é o que vem de lá. O retorno diz o que entrou, o que foi mantido e
+     * no que o financeiro não tinha nada a oferecer, porque quem aperta o botão precisa conferir
+     * sem abrir a ficha inteira — e a rotina em massa usa o mesmo caminho com `$gravar = false`
+     * para mostrar o que faria antes de gravar.
      *
      * @param  array<string, mixed>  $dados
-     * @return array{preenchidos: array<int, string>, mantidos: array<int, string>}
+     * @return array{preenchidos: array<int, string>, mantidos: array<int, string>, ausentes: array<int, string>}
      */
     public function absorverDoFinanceiro(array $dados, bool $gravar = true): array
     {
         $preenchidos = [];
         $mantidos = [];
+        $ausentes = [];
         $documentoEstavaVazio = blank($this->documento);
 
         foreach (self::CAMPOS_DO_FINANCEIRO as $campo => $rotulo) {
@@ -153,6 +178,8 @@ class Customer extends Model implements AuthenticatableContract
             }
 
             if (blank($novo)) {
+                $ausentes[] = $rotulo;
+
                 continue;
             }
 
@@ -176,7 +203,7 @@ class Customer extends Model implements AuthenticatableContract
             $this->save();
         }
 
-        return ['preenchidos' => $preenchidos, 'mantidos' => $mantidos];
+        return ['preenchidos' => $preenchidos, 'mantidos' => $mantidos, 'ausentes' => $ausentes];
     }
 
     /**
