@@ -3,6 +3,29 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.62.1] - 2026-10-31
+
+### Corrigido
+- **A tela de detalhes parava de falar português nos campos do serviço.** O WHMCS devolve o campo
+  personalizado já com nome, mas é o *nome de sistema* que a equipe digitou lá: a prova no
+  navegador mostrou `DescricaoDoveiculo`, `FornecedorChip`, `SIMCARD` e `ModeloRastreador` saindo
+  para o cliente do jeito que nasceram. Agora `Cliente::paresDeEtiqueta()` passa o rótulo por
+  `rotuloDoCampo()`, e a mesma regra serve à ficha do painel e ao portal — uma fonte, duas telas.
+
+### Adicionado
+- **`config/whmcs.php` → `rotulos_campos`**, editável em Configurações → Chaves de integração →
+  WHMCS ("Como o cliente lê cada campo do serviço"): uma linha por campo, no formato
+  `nomeDoSistema=Como aparece`, com os quatro nomes da Golden já escritos como plano de fundo.
+  Campo sem mapa aparece com as palavras separadas (`DataInstalacao` → `Data Instalacao`), nunca
+  grudado; rótulo que já chega como frase passa intocado.
+- `x-admin.campo-chave` aceita `maxlength` do próprio mapa de chaves, para a caixa de rótulos
+  caber mais que uma linha curta.
+
+### Testes
+- `DetalheDoServicoNoPortalTest`: a fixture passou a imitar a resposta real do financeiro (nome de
+  sistema, não rótulo bonito) e duas provas novas — nenhum nome de sistema chega à tela do cliente,
+  e o que o painel grava na caixa manda no rótulo exibido.
+
 ## [2.62.0] - 2026-10-31
 
 ### Adicionado

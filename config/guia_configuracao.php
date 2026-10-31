@@ -321,6 +321,19 @@ return [
             ],
         ],
 
+        'whmcs_rotulos_campos' => [
+            'onde' => 'Como cada campo do serviço aparece na tela de quem contratou, em vez do nome de sistema que o financeiro usa por dentro.',
+            'passos' => [
+                ['icone' => 'fa-signature', 'titulo' => 'O nome do campo nasce no financeiro', 'texto' => 'Quem cadastra o produto no WHMCS escreve o nome de uma palavra, sem acento e muitas vezes em inglês: DescricaoDoveiculo, FornecedorChip, SIMCARD. É esse nome que a consulta devolve, e ele chegava ao cliente do jeito que nasceu.'],
+                ['icone' => 'fa-equals', 'titulo' => 'Uma linha por campo', 'texto' => 'Escreva nomeDoSistema=Como aparece. O que estiver aqui troca o rótulo na hora, na tela do portal e na ficha do painel — é uma regra só, desenhada nos dois lugares.'],
+                ['icone' => 'fa-spell-check', 'titulo' => 'O que não está na lista não fica feio', 'texto' => 'Campo sem mapa aparece com as palavras separadas, e rótulo que já chega escrito como frase passa do jeito que está. Nenhum nome some da tela por falta de mapa.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Escrever os rótulos nesta tela', 'rota' => 'admin.settings.index'],
+                ['rotulo' => 'Ver a tela do cliente', 'rota' => 'portal.servicos'],
+            ],
+        ],
+
         'whmcs_campo_documento' => [
             'onde' => 'O número do campo personalizado em que o financeiro guarda o CPF ou o CNPJ do cliente.',
             'passos' => [

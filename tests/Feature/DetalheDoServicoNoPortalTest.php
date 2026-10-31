@@ -95,9 +95,10 @@ class DetalheDoServicoNoPortalTest extends TestCase
             'password' => 'senha-do-servidor',
             'suspensionreason' => '',
             'customfields' => ['customfield' => [
-                ['label' => 'Descrição do veículo', 'value' => 'PEUGEOT 207'],
-                ['label' => 'Placa', 'value' => 'ERC2899'],
-                ['label' => 'IMEI', 'value' => '5516910600826'],
+                ['name' => 'DescricaoDoveiculo', 'value' => 'PEUGEOT 207'],
+                ['name' => 'Placa', 'value' => 'ERC2899'],
+                ['name' => 'IMEI', 'value' => '5516910600826'],
+                ['name' => 'SIMCARD', 'value' => '89551234567890123456'],
             ]],
             'configoptions' => ['configoption' => [
                 ['label' => 'Cobertura', 'value' => 'Nacional'],
@@ -166,6 +167,61 @@ class DetalheDoServicoNoPortalTest extends TestCase
             ->assertSee('Nacional')
             ->assertSee('Pedido de origem')
             ->assertSee('4572640950');
+    }
+
+    /*
+     * O financeiro devolve o campo do serviço com o nome de sistema que a equipe digitou lá
+     * dentro — `DescricaoDoveiculo`, `SIMCARD`. Na tela do cliente isso é inglês e é depuração, e a
+     * casa não entrega nenhuma das duas coisas. O mapa da configuração troca o que está mapeado;
+     * o que não está aparece com as palavras separadas, nunca grudado.
+     */
+    public function test_o_nome_de_sistema_do_campo_nao_chega_na_tela_do_cliente(): void
+    {
+        $this->ligar();
+        $cliente = $this->conta();
+
+        $this->fingirWhmcs([
+            'GetClientsProducts' => $this->produtos([$this->servico([
+                'customfields' => ['customfield' => [
+                    ['name' => 'DescricaoDoveiculo', 'value' => 'PEUGEOT 207'],
+                    ['name' => 'FornecedorChip', 'value' => 'ALGAR-MT'],
+                    ['name' => 'SIMCARD', 'value' => '89551234567890123456'],
+                    ['name' => 'DataInstalacao', 'value' => '10/11/2025'],
+                ]],
+            ])]),
+            'GetClientsAddons' => $this->addons([]),
+        ]);
+
+        $this->actingAs($cliente, 'cliente')->get(route('portal.servicos.show', 12))
+            ->assertOk()
+            ->assertSee('Descrição do veículo')
+            ->assertSee('Fornecedor do chip')
+            ->assertSee('Chip (SIM)')
+            ->assertSee('Data Instalacao')
+            ->assertDontSee('DescricaoDoveiculo', false)
+            ->assertDontSee('FornecedorChip', false)
+            ->assertDontSee('SIMCARD', false)
+            ->assertDontSee('DataInstalacao', false);
+    }
+
+    public function test_o_painel_manda_no_rotulo_do_campo(): void
+    {
+        $this->ligar();
+        $cliente = $this->conta();
+
+        ChavesDeIntegracao::guardar('whmcs_rotulos_campos', 'SIMCARD=Cartão do chip');
+        ChavesDeIntegracao::aplicar();
+
+        $this->fingirWhmcs([
+            'GetClientsProducts' => $this->produtos([$this->servico()]),
+            'GetClientsAddons' => $this->addons([]),
+        ]);
+
+        $this->actingAs($cliente, 'cliente')->get(route('portal.servicos.show', 12))
+            ->assertOk()
+            ->assertSee('Cartão do chip')
+            ->assertDontSee('Chip (SIM)', false)
+            ->assertDontSee('SIMCARD', false);
     }
 
     public function test_o_detalhe_so_mostra_o_adicional_pendurado_neste_servico(): void

@@ -936,6 +936,15 @@ Tempo máximo de espera (padrão 12 s) e quantidade de serviços/faturas por con
 (padrão 50) também ficam na mesma tela. O que está no banco manda; o `.env` só
 conduz enquanto ninguém preencheu o painel.
 
+**Como o cliente lê cada campo do serviço.** O WHMCS devolve o campo personalizado do
+serviço com o nome que a equipe digitou lá dentro — `DescricaoDoveiculo`,
+`FornecedorChip`, `SIMCARD`. Na tela do cliente isso sai como nome de sistema, e em
+parte inglês. A caixa **Como o cliente lê cada campo do serviço** (aba WHMCS) troca um
+por um, uma linha por campo no formato `nomeDoSistema=Como aparece`; os quatro nomes da
+Golden já vêm escritos como plano de fundo. Campo que não está na lista aparece com as
+palavras separadas (`DataInstalacao` → `Data Instalacao`). A mesma regra vale para a
+ficha do painel: é uma fonte só, não duas telas com duas verdades.
+
 **Como o cliente é encontrado.** Na primeira visita, o portal pergunta ao WHMCS
 qual é o id da conta com o e-mail de acesso (`email_portal ?: email`) e grava o
 resultado em `customers.whmcs_id`; as visitas seguintes vão direto ao id. Nenhum

@@ -1076,6 +1076,10 @@ class Cliente
      * `name`), o valor quase nunca. Item sem rótulo ou sem valor fica de fora: a tela não mostra
      * campo que o financeiro não preencheu.
      *
+     * O rótulo ainda passa por `rotuloDoCampo()`: o nome de sistema que a equipe digitou no WHMCS
+     * é bom para lá dentro, mas na tela do cliente `SIMCARD` e `DescricaoDoveiculo` são outra
+     * língua. A regra é uma só e vale para a ficha do painel e para o portal.
+     *
      * @return array<int, array{rotulo: string, valor: string}>
      */
     private function paresDeEtiqueta(mixed $bruto): array
@@ -1089,16 +1093,47 @@ class Cliente
         return collect($itens)
             ->filter(fn (mixed $par): bool => is_array($par))
             ->map(fn (array $par): array => [
-                'rotulo' => trim((string) ($par['label']
+                'rotulo' => $this->rotuloDoCampo(trim((string) ($par['label']
                     ?? $par['friendlyName']
                     ?? $par['name']
                     ?? $par['varname']
-                    ?? '')),
+                    ?? ''))),
                 'valor' => trim((string) ($par['value'] ?? $par['optionValue'] ?? '')),
             ])
             ->filter(fn (array $par): bool => $par['rotulo'] !== '' && $par['valor'] !== '')
             ->values()
             ->all();
+    }
+
+    /**
+     * O nome do campo como o cliente o lê: o mapa da configuração primeiro, e, sem mapa, o nome de
+     * sistema aberto em palavras (`DescricaoDoveiculo` → `Descricao Doveiculo`). Rótulo que já
+     * chega escrito como frase passa intocado — o mapa existe para o que é código, não para
+     * reescrever o que a equipe já redigiu direito.
+     */
+    private function rotuloDoCampo(string $nome): string
+    {
+        if ($nome === '') {
+            return '';
+        }
+
+        foreach (preg_split('/\R/', (string) config('whmcs.rotulos_campos')) ?: [] as $linha) {
+            if (! str_contains($linha, '=')) {
+                continue;
+            }
+
+            [$de, $para] = array_map('trim', explode('=', $linha, 2));
+
+            if ($de !== '' && $para !== '' && strcasecmp($de, $nome) === 0) {
+                return $para;
+            }
+        }
+
+        if (str_contains($nome, ' ')) {
+            return $nome;
+        }
+
+        return trim(preg_replace('/(?<=[a-z0-9])(?=[A-Z])/', ' ', $nome));
     }
 
     /**

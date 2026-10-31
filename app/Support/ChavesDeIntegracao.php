@@ -407,6 +407,18 @@ class ChavesDeIntegracao
                         'placeholder' => '50',
                     ],
                     [
+                        'chave' => 'whmcs_rotulos_campos',
+                        'config' => 'whmcs.rotulos_campos',
+                        'ambiente' => 'WHMCS_ROTULOS_CAMPOS',
+                        'label' => 'Como o cliente lê cada campo do serviço',
+                        'opcional' => true,
+                        'type' => 'textarea',
+                        'maxlength' => 1500,
+                        'regras' => ['string', 'max:1500'],
+                        'placeholder' => "DescricaoDoveiculo=Descrição do veículo\nSIMCARD=Chip (SIM)",
+                        'dica' => 'Uma linha por campo, no formato nomeDoSistema=Como aparece. O WHMCS devolve o serviço com o nome que a equipe digitou lá dentro — DescricaoDoveiculo, FornecedorChip, SIMCARD — e na tela do cliente isso lê como saída de sistema. Campo que não está aqui aparece com as palavras separadas.',
+                    ],
+                    [
                         'chave' => 'whmcs_campo_documento',
                         'config' => 'whmcs.campos.documento',
                         'ambiente' => 'WHMCS_CAMPO_DOCUMENTO',

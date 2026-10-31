@@ -39,6 +39,23 @@ return [
     'limite' => (int) env('WHMCS_LIMITE', 50),
 
     /*
+    | Como o cliente lê cada campo do serviço.
+    |
+    | Diferente da ficha do cliente — que chega sem nome nenhum — o serviço devolve o campo
+    | personalizado já com nome, mas é o *nome de sistema* que a equipe digitou no WHMCS:
+    | `DescricaoDoveiculo`, `FornecedorChip`, `SIMCARD`. Na tela do cliente isso lê como saída de
+    | depuração, e a casa não coloca inglês na tela. O mapa troca um por um; campo que não está
+    | aqui aparece com as palavras separadas, nunca com o nome de sistema grudado.
+    |
+    | Uma linha por campo, no formato `nomeDoSistema=Como aparece`. Corrigível na tela de
+    | Configurações → WHMCS, sem tocar no financeiro.
+    */
+    'rotulos_campos' => env(
+        'WHMCS_ROTULOS_CAMPOS',
+        "DescricaoDoveiculo=Descrição do veículo\nFornecedorChip=Fornecedor do chip\nModeloRastreador=Modelo do rastreador\nSIMCARD=Chip (SIM)"
+    ),
+
+    /*
     | Os campos personalizados da ficha do financeiro, pelo número que a API devolve.
     |
     | O WHMCS não tem ação de API que liste o *nome* de um campo personalizado: `GetClientsDetails`

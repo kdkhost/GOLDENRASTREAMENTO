@@ -36,7 +36,7 @@
             :hint="$campo['dica'] ?? null"
             :opcional="(bool) ($campo['opcional'] ?? false)"
             :col="''"
-            maxlength="255"
+            maxlength="{{ $campo['maxlength'] ?? 255 }}"
             autocomplete="off"
         />
     @endif
