@@ -142,4 +142,86 @@ return [
         'profile',
         'https://www.googleapis.com/auth/adwords',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Copiloto de tráfego — a segunda assistente da casa
+    |--------------------------------------------------------------------------
+    |
+    | O copiloto recebe um briefing em português e devolve um plano inteiro de campanha de
+    | pesquisa: orçamento, regiões, grupos, palavras-chave, negativas e anúncio responsivo.
+    | O que está aqui são os limites da casa, não do Google — eles existem para que um erro
+    | do modelo não vire gasto sem freio:
+    |
+    | · `orcamento_minimo_centavos` e `orcamento_maximo_centavos` prendem o diário do plano;
+    | · `grupos_max` e `palavras_por_grupo_max` limitam o tamanho de uma proposta;
+    | · `forca` é a régua da estimativa local do anúncio (não é o Índice de Qualidade do
+    |   Google, e a tela diz isso);
+    | · as listas de objetivo, lance, correspondência e impacto são as únicas etiquetas que a
+    |   tela escreve — nenhuma view inventa nome de métrica ou de estratégia.
+    */
+    'copiloto' => [
+        'nome' => 'Max',
+        'cargo' => 'Copiloto de tráfego',
+        'tom' => 'direto, técnico e sem promessa exagerada',
+        'instrucoes' => 'Você monta campanhas de pesquisa para a Golden Rastreamento. '
+            .'Trabalhe com o que o briefing informa e nunca invente preço, prazo, endereço ou condição. '
+            .'Toda promessa precisa ser verdadeira e verificável; resultado de campanha não se garante.',
+
+        // O diário que o painel aceita num plano. Fora disso, o plano é ajustado e a tela
+        // avisa — um modelo que devolve R$ 5.000/dia num briefing de R$ 40 não pode passar.
+        'orcamento_minimo_centavos' => 1000,
+        'orcamento_maximo_centavos' => 50000,
+
+        'grupos_max' => 8,
+        'palavras_por_grupo_max' => 25,
+        'negativas_max' => 60,
+
+        // Onde a campanha é montada. Hoje o copiloto escreve campanha de pesquisa; os outros
+        // tipos ficam de fora de propósito, porque cada um pede criativo e estrutura próprios.
+        'tipo_campanha' => 'PESQUISA',
+
+        'objetivos' => [
+            'leads' => 'Mais contatos e orçamentos',
+            'vendas' => 'Mais vendas na loja',
+            'whatsapp' => 'Mais conversas no WhatsApp',
+            'ligacoes' => 'Mais ligações',
+        ],
+
+        'estrategias' => [
+            'MAXIMIZE_CLICKS' => 'Maximizar cliques',
+            'MANUAL_CPC' => 'CPC manual',
+        ],
+
+        'correspondencias' => [
+            'ampla' => 'Ampla',
+            'frase' => 'Frase',
+            'exata' => 'Exata',
+        ],
+
+        'impactos' => [
+            'alto' => 'Alto',
+            'medio' => 'Médio',
+            'baixo' => 'Baixo',
+        ],
+
+        // A estimativa local do anúncio. Os cortes são da casa e servem para orientar quem lê
+        // o plano — o Google tem o próprio Índice de qualidade, que só ele calcula.
+        'forca' => [
+            'forte' => 85,
+            'boa' => 65,
+            'regular' => 45,
+        ],
+
+        // Idioma e país usados quando o briefing não pede outro. Os códigos são os constantes
+        // da API: 1014 é português; o país entra na sugestão de região.
+        'idioma' => 'languageConstants/1014',
+        'idioma_rotulo' => 'Português',
+        'pais' => 'BR',
+
+        // Quantos dias de métrica a análise do relatório recebe. É o teto de linhas que o
+        // copiloto lê: mandar a conta inteira custaria tokens sem melhorar o diagnóstico.
+        'campanhas_na_analise' => 12,
+        'recomendacoes_max' => 8,
+    ],
 ];

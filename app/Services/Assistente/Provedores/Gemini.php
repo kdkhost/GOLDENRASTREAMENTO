@@ -58,7 +58,7 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
             'contents' => array_merge($this->historico($chamada), [['role' => 'user', 'parts' => $partes]]),
             'generationConfig' => array_merge([
                 'temperature' => 0.4,
-                'maxOutputTokens' => (int) config('assistente.resposta.caracteres_max') * 2,
+                'maxOutputTokens' => $chamada->maxTokens ?? (int) config('assistente.resposta.caracteres_max') * 2,
             ], $this->pensamentoCurto()),
         ];
 

@@ -22,6 +22,7 @@ final class Chamada
      * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string, texto?: string}>  $documentos
      * @param  array<int, array{caminho: string, mime: string, nome?: string, descricao?: string}>  $audios
      * @param  bool  $cortesia  a fala é só saudação — não pergunta fato, e pode ser respondida sem fonte
+     * @param  int|null  $maxTokens  teto de saída próprio desta chamada (o copiloto pede mais que o chat)
      */
     public function __construct(
         public string $pergunta,
@@ -36,6 +37,7 @@ final class Chamada
         public ?string $capacidade = null,
         public ?string $voz = null,
         public bool $cortesia = false,
+        public ?int $maxTokens = null,
     ) {}
 
     /** A chamada tem mídia? É o que liga a capacidade de visão/documento no lugar da conversa pura. */

@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\FunnelController as AdminFunnelController;
 use App\Http\Controllers\Admin\GoogleAdsAuthController;
 use App\Http\Controllers\Admin\GoogleAdsCampanhaController;
 use App\Http\Controllers\Admin\GoogleAdsController;
+use App\Http\Controllers\Admin\GoogleAdsCopilotoController;
+use App\Http\Controllers\Admin\GoogleAdsRelatorioController;
 use App\Http\Controllers\Admin\GuiaController;
 use App\Http\Controllers\Admin\LeadController as AdminLeadController;
 use App\Http\Controllers\Admin\NotificacaoController;
@@ -329,6 +331,29 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::get('/criativo', [GoogleAdsController::class, 'criativo'])->name('criativo');
         Route::post('/campanhas/{campanha}/status', [GoogleAdsCampanhaController::class, 'mudarStatus'])
             ->whereNumber('campanha')->name('campanhas.status');
+
+        // O copiloto: ficha da assistente, briefing em português e os planos que ela montou.
+        // Quem pede o plano é quem atende; aprovar e publicar no Google é do administrador —
+        // é a única porta por onde um plano vira campanha que pode gastar.
+        Route::get('/copiloto', [GoogleAdsCopilotoController::class, 'index'])->name('copiloto.index');
+        Route::post('/copiloto/ficha', [GoogleAdsCopilotoController::class, 'salvarFicha'])
+            ->name('copiloto.ficha')->middleware('role:admin');
+        Route::post('/copiloto', [GoogleAdsCopilotoController::class, 'gerar'])->name('copiloto.gerar');
+        Route::get('/copiloto/{plano}', [GoogleAdsCopilotoController::class, 'show'])
+            ->whereNumber('plano')->name('copiloto.show');
+        Route::post('/copiloto/{plano}/aprovar', [GoogleAdsCopilotoController::class, 'aprovar'])
+            ->whereNumber('plano')->name('copiloto.aprovar')->middleware('role:admin');
+        Route::post('/copiloto/{plano}/aplicar', [GoogleAdsCopilotoController::class, 'aplicar'])
+            ->whereNumber('plano')->name('copiloto.aplicar')->middleware('role:admin');
+        Route::post('/copiloto/{plano}/descartar', [GoogleAdsCopilotoController::class, 'descartar'])
+            ->whereNumber('plano')->name('copiloto.descartar');
+        Route::delete('/copiloto/{plano}', [GoogleAdsCopilotoController::class, 'destroy'])
+            ->whereNumber('plano')->name('copiloto.destroy')->middleware('role:admin');
+
+        // O relatório: a métrica da cache com a leitura do copiloto por cima.
+        Route::get('/relatorio', [GoogleAdsRelatorioController::class, 'index'])->name('relatorio.index');
+        Route::get('/relatorio/exportar', [GoogleAdsRelatorioController::class, 'exportar'])
+            ->name('relatorio.exportar');
     });
 
     // Páginas de funil: a campanha de divulgação que só quem tem o link vê. Montagem por

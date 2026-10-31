@@ -340,6 +340,16 @@ return [
         'pagina_funil' => ['rascunho' => 'neutral', 'publicada' => 'green', 'pausada' => 'amber'],
         // Conexão de Google Ads (GoogleAdsAccount::STATUS): o selo da tela e o aviso do e-mail.
         'conexao_ads' => ['ativo' => 'green', 'desconectado' => 'red'],
+        // Plano escrito pelo copiloto (GoogleAdsPlano::STATUS): rascunho e descartado são
+        // neutros; aprovado pede um ato humano; aplicado é verde; falhou, vermelho.
+        'plano_ads' => [
+            'rascunho' => 'neutral', 'aprovado' => 'blue', 'aplicado' => 'green',
+            'falhou' => 'red', 'descartado' => 'neutral',
+        ],
+        // Estimativa local de força do anúncio (config 'google_ads.copiloto.forca').
+        'forca_anuncio' => ['forte' => 'green', 'boa' => 'blue', 'regular' => 'amber', 'fraca' => 'red'],
+        // Impacto esperado de uma recomendação do relatório.
+        'impacto_ads' => ['alto' => 'green', 'medio' => 'gold', 'baixo' => 'neutral'],
         // Resposta da sonda do WHMCS (App\Services\Whmcs\Cliente::sonda): verde só quando o
         // financeiro confirmou a conta. Dourado é "a porta abre, a ficha não" — meio-termo que
         // merece cor própria, porque a credencial está certa.
@@ -854,6 +864,8 @@ return [
             ['titulo' => 'Clientes', 'rota' => 'admin.clientes.index', 'prefixo' => 'admin.clientes.', 'icone' => 'fa-users'],
             ['titulo' => 'Campanhas', 'rota' => 'admin.campanhas.index', 'prefixo' => 'admin.campanhas.', 'icone' => 'fa-bullhorn'],
             ['titulo' => 'Google Ads', 'rota' => 'admin.google-ads.index', 'prefixo' => 'admin.google-ads.index', 'icone' => 'fa-google'],
+            ['titulo' => 'Copiloto do Ads', 'rota' => 'admin.google-ads.copiloto.index', 'prefixo' => 'admin.google-ads.copiloto.', 'icone' => 'fa-robot'],
+            ['titulo' => 'Relatório do Ads', 'rota' => 'admin.google-ads.relatorio.index', 'prefixo' => 'admin.google-ads.relatorio.', 'icone' => 'fa-file-lines'],
             ['titulo' => 'Criativo do anúncio', 'rota' => 'admin.google-ads.criativo', 'prefixo' => 'admin.google-ads.criativo', 'icone' => 'fa-wand-magic-sparkles'],
             ['titulo' => 'Marketing (funil)', 'rota' => 'admin.funil.index', 'prefixo' => 'admin.funil.', 'icone' => 'fa-bullseye', 'admin' => true],
             ['titulo' => 'Atribuição de tráfego', 'rota' => 'admin.atribuicao.index', 'prefixo' => 'admin.atribuicao.', 'icone' => 'fa-diagram-project'],

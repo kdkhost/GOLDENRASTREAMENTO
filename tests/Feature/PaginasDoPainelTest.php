@@ -12,6 +12,7 @@ use App\Models\CronTarefa;
 use App\Models\Customer;
 use App\Models\Faq;
 use App\Models\FunnelPage;
+use App\Models\GoogleAdsPlano;
 use App\Models\Lead;
 use App\Models\Notificacao;
 use App\Models\Order;
@@ -107,6 +108,44 @@ class PaginasDoPainelTest extends TestCase
             'chave' => 'teste:paginas:notificacao',
         ]);
 
+        // A ficha do plano do copiloto só abre com um plano: é a rota de detalhe que a tela
+        // do Google Ads gera depois de escrever o briefing.
+        $planoDoCopiloto = GoogleAdsPlano::create([
+            'user_id' => $this->admin->id,
+            'nome' => 'Rastreamento para frotas',
+            'status' => GoogleAdsPlano::RASCUNHO,
+            'objetivo' => 'leads',
+            'orcamento_diario_centavos' => 5000,
+            'briefing_json' => ['nome' => 'Rastreamento para frotas', 'objetivo' => 'leads'],
+            'plano_json' => [
+                'nome' => 'Rastreamento para frotas',
+                'objetivo' => 'leads',
+                'estrategia_lance' => 'MAXIMIZE_CLICKS',
+                'cpc_maximo_centavos' => 250,
+                'url' => 'https://goldenrastreamento.com.br/frota',
+                'regioes' => ['São Paulo'],
+                'idiomas' => ['Português'],
+                'grupos' => [[
+                    'nome' => 'Rastreamento de frota',
+                    'tema' => 'gestão de veículos',
+                    'palavras_chave' => [['texto' => 'rastreamento de frota', 'correspondencia' => 'frase']],
+                    'negativas' => ['grátis'],
+                ]],
+                'anuncios' => [
+                    'titulos' => ['Rastreie sua frota', 'Gestão de frota 24h', 'Rastreamento veicular'],
+                    'descricoes' => [
+                        'Plataforma de rastreamento veicular com suporte 24 horas.',
+                        'Acompanhe cada veículo da frota em tempo real.',
+                    ],
+                    'caminhos' => ['frota'],
+                ],
+                'justificativa' => 'Foco no serviço de frota e na região de atuação.',
+                'orcamento_diario_centavos' => 5000,
+            ],
+            'validacao_json' => ['problemas' => [], 'avisos' => [], 'forca' => []],
+            'modelo' => 'gemini/gemini-3-flash-preview',
+        ]);
+
         $parametros = [
             'admin.assistente.conhecimento.edit' => ['item' => ConhecimentoItem::firstOrFail()],
             'admin.assistente.conversas.show' => ['conversa' => $conversa],
@@ -130,6 +169,7 @@ class PaginasDoPainelTest extends TestCase
             'admin.funil.blocos.edit' => ['pagina' => $funil, 'bloco' => $funil->blocks()->firstOrFail()],
             'admin.funil.edit' => ['pagina' => $funil],
             'admin.funil.show' => ['pagina' => $funil],
+            'admin.google-ads.copiloto.show' => ['plano' => $planoDoCopiloto],
             'admin.leads.show' => ['lead' => Lead::firstOrFail()],
             'admin.notificacoes.show' => ['notificacao' => $aviso],
             'admin.pedidos.show' => ['pedido' => Order::firstOrFail()],
@@ -143,6 +183,12 @@ class PaginasDoPainelTest extends TestCase
             $nome = $rota->getName();
 
             if (! $nome || ! str_starts_with($nome, 'admin.') || ! in_array('GET', $rota->methods(), true) || $nome === 'admin.') {
+                continue;
+            }
+
+            // A exportação é download, não página: exige uma conta do Google Ads conectada e o
+            // formato do CSV já é conferido no CopilotoDoGoogleAdsTest.
+            if ($nome === 'admin.google-ads.relatorio.exportar') {
                 continue;
             }
 

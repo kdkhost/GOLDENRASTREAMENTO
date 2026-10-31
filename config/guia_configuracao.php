@@ -480,10 +480,10 @@ return [
                 ['icone' => 'fa-arrow-right-to-bracket', 'titulo' => 'Conecte a conta no painel', 'texto' => 'Com os campos salvos, Comercial → Google Ads → "Conectar conta Google Ads" faz o Google perguntar em que conta entrar.'],
             ],
             'links' => [
-                ['rotulo' => 'Centro da API do Google Ads', 'url' => 'https://adsmanager.google.com/apicenter/setup'],
+                ['rotulo' => 'Centro da API do Google Ads', 'url' => 'https://ads.google.com/aw/apicenter'],
                 ['rotulo' => 'Google Cloud Console — credenciais', 'url' => 'https://console.cloud.google.com/apis/credentials'],
                 ['rotulo' => 'Ativar a API do Google Ads', 'url' => 'https://console.cloud.google.com/apis/library/googleads.googleapis.com'],
-                ['rotulo' => 'Documentação: começar a usar a API', 'url' => 'https://developers.google.com/google-ads/api/docs/get-started/setup'],
+                ['rotulo' => 'Documentação: começar a usar a API', 'url' => 'https://developers.google.com/google-ads/api/docs/start'],
             ],
         ],
 
@@ -496,8 +496,8 @@ return [
                 ['icone' => 'fa-paste', 'titulo' => 'Cole aqui', 'texto' => 'Salve nesta tela. Um token de Basic Access já basta para o painel ler o que a conta mostra.'],
             ],
             'links' => [
-                ['rotulo' => 'Centro da API do Google Ads', 'url' => 'https://adsmanager.google.com/apicenter/setup'],
-                ['rotulo' => 'Pedir o token de desenvolvedor', 'url' => 'https://developers.google.com/google-ads/api/docs/get-started/console-setup'],
+                ['rotulo' => 'Centro da API do Google Ads', 'url' => 'https://ads.google.com/aw/apicenter'],
+                ['rotulo' => 'Pedir o token de desenvolvedor', 'url' => 'https://developers.google.com/google-ads/api/docs/get-started/dev-token'],
             ],
         ],
 
@@ -548,7 +548,7 @@ return [
                 ['icone' => 'fa-eraser', 'titulo' => 'Conta única pode ficar em branco', 'texto' => 'Sem MCC, cada conta conectada é consultada por si só, e este campo não serve para nada.'],
             ],
             'links' => [
-                ['rotulo' => 'Estrutura de contas do Google Ads', 'url' => 'https://adsmanager.google.com/cmaccounts'],
+                ['rotulo' => 'Estrutura de contas do Google Ads', 'url' => 'https://support.google.com/google-ads/answer/6139186'],
             ],
         ],
 

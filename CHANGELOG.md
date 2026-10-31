@@ -3,6 +3,55 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.56.0] - 2026-10-30
+
+### Adicionado
+- **O copiloto do Google Ads ganhou tela própria.** Nova área em **Comercial → Copiloto do Ads**
+  (`/admin/google-ads/copiloto`): o formulário recebe o pedido em português (nome, objetivo,
+  orçamento diário, destino, regiões, público, oferta e observações) e a IA devolve o plano inteiro —
+  orçamento, estratégia de lance, regiões, grupos, palavras-chave, negativas e anúncio responsivo. A
+  ficha de quem escreve (nome, cargo, tom e instruções) é editada no painel e gravada em
+  `google_ads_copiloto`; o texto vira ordem para a IA na chamada seguinte, sem deploy.
+- **O plano passa pelas travas antes de existir.** `PlanoDeCampanha::conferir()` normaliza o que a IA
+  devolve: orçamento preso entre R$ 10 e R$ 500/dia, títulos acima de 30 caracteres descartados,
+  mínimo de 3 títulos e 2 descrições, grupos e palavras limitados por `config/google_ads.php`, e
+  correspondência/estratégia só dentro do que existe. O que ficou de fora vira aviso em português na
+  ficha do plano, com a régua local de força do anúncio.
+- **Aprovar e publicar são atos separados — e do administrador.** Quem atende pede o plano; aprovar e
+  aplicar exige `role:admin`. Aplicar cria a campanha no Google **pausada** com orçamento, campanha,
+  grupos, anúncio e palavras pela API de escrita (`GoogleAdsWriter`), e guarda ids e resposta no plano
+  (`aplicacao_json`). Sem credenciais, a falha é em português antes de qualquer chamada de rede.
+- **Relatório do Ads dentro do painel.** **Comercial → Relatório do Ads**
+  (`/admin/google-ads/relatorio`) lê a métrica da cache, mostra resumo e campanhas, entrega os números
+  ao copiloto no botão "Analisar com o copiloto" e guarda a foto do período com diagnóstico,
+  destaques e recomendações em `google_ads_relatorios`; ver uma análise antiga não gasta nova
+  chamada. O CSV sai no padrão da casa (BOM, ponto e vírgula, colunas em ordem alfabética).
+- **Migration** `2026_10_30_100001_da_um_copiloto_ao_google_ads` cria `google_ads_copiloto`,
+  `google_ads_planos` e `google_ads_relatorios`, com os índices de visibilidade por usuário e de
+  histórico por conta e período.
+- **As chamadas de IA aceitam teto de saída próprio** (`Chamada::$maxTokens`), usado pelo copiloto
+  para caber um plano inteiro na resposta; conversa, visão e transcrição seguem com o limite da ficha.
+
+### Corrigido
+- **Links do guia de chaves quebrados.** O "Centro da API do Google Ads" apontava para
+  `adsmanager.google.com` (domínio que não resolve) e a documentação de início respondia 404. Os
+  links passaram para `ads.google.com/aw/apicenter`, `developers.google.com/google-ads/api/docs/start`,
+  `.../get-started/dev-token` e a página de estrutura de contas do suporte do Google.
+
+### Testes
+- `CopilotoDoGoogleAdsTest` (12 casos): tela e menu, ficha no banco, travas do plano, recusa sem IA,
+  vendedor que não aprova nem vê o plano do outro, aprovação sem escrita, aplicação sem credencial
+  (zero requisição), aplicação simulada com campanha `PAUSED`, plano aplicado uma vez só, foto do
+  relatório e o CSV no padrão da casa.
+- `PaginasDoPainelTest` passou a abrir a ficha do plano do copiloto na varredura de páginas do painel;
+  a suíte inteira fecha em **759 testes**.
+
+### Operação
+- **Produção ainda sem credenciais do Google Ads.** O painel já gera planos e analisa relatórios, mas a
+  conta de produção não tem developer token, OAuth nem MCC: a publicação fica esperando as chaves em
+  Configurações → Chaves de integração. O que o copiloto entrega é plano e leitura do período medido —
+  não uma promessa de performance.
+
 ## [2.55.0] - 2026-10-29
 
 ### Adicionado

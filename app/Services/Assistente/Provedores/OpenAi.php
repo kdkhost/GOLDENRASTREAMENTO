@@ -59,7 +59,7 @@ class OpenAi extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
             'model' => $this->modelo,
             'messages' => $mensagens,
             'temperature' => 0.4,
-            'max_tokens' => (int) config('assistente.resposta.caracteres_max') * 2,
+            'max_tokens' => $chamada->maxTokens ?? (int) config('assistente.resposta.caracteres_max') * 2,
         ];
 
         $inicio = microtime(true);

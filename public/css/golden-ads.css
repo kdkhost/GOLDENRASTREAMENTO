@@ -65,3 +65,22 @@
 .ads-serp__corte{color:var(--anuncio-rotulo)}
 .ads-serp__mais{background:none;border:0;padding:0;color:var(--anuncio-titulo);font-size:.82rem;cursor:pointer}
 .ads-serp__mais:hover{text-decoration:underline}
+
+/* ------------------------------------------------------------------ copiloto */
+
+/* A lista de etiquetas do plano: palavras-chave, negativas, regiões e títulos usam a mesma
+   forma, e o tom de cada uma diz o que ela é. Nenhuma cor fixa — tudo vem dos tokens. */
+.ads-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:0;padding:0;list-style:none}
+.ads-chip{display:inline-flex;align-items:baseline;gap:.4rem;max-width:100%;font-size:.8rem;line-height:1.35;
+    padding:.2rem .6rem;border-radius:999px;background:var(--bs-tertiary-bg);
+    border:1px solid var(--bs-border-color);color:var(--bs-body-color);overflow-wrap:anywhere}
+.ads-chip small{font-size:.72rem;color:var(--bs-secondary-color);white-space:nowrap}
+.ads-chip--negativa{background:var(--t-red-bg);border-color:transparent;color:var(--t-red-fg);text-decoration:line-through}
+.ads-chip--titulo,.ads-chip--descricao{border-radius:var(--radius-md);align-items:flex-start}
+.ads-chip--titulo small,.ads-chip--descricao small{margin-left:auto;flex:none}
+
+/* Uma recomendação do relatório: cartão interno com a borda esquerda dizendo que é leitura,
+   não alerta. A aberta no histórico ganha o fio dourado da casa. */
+.ads-recomendacao{background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color);
+    border-left:3px solid var(--bs-border-color);border-radius:var(--radius-md);padding:.65rem .8rem}
+.ads-recomendacao.is-aberta{border-left-color:var(--gold)}
