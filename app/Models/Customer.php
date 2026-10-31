@@ -23,7 +23,7 @@ class Customer extends Model implements AuthenticatableContract
         'whmcs_id',
         'nome', 'documento', 'nascimento', 'placas', 'tipo', 'telefone', 'email', 'email_portal', 'password',
         'endereco', 'cidade', 'uf', 'cep',
-        'segmento', 'frota_tamanho', 'status', 'owner_id', 'lead_id', 'valor_anual_cents', 'observacoes',
+        'segmento', 'frota_tamanho', 'plataforma', 'usuario_plataforma', 'status', 'owner_id', 'lead_id', 'valor_anual_cents', 'observacoes',
     ];
 
     /** A senha nunca sai do banco para uma view, um export ou um dump de depuração. */
@@ -105,6 +105,78 @@ class Customer extends Model implements AuthenticatableContract
         return Order::whereNull('customer_id')
             ->whereRaw('LOWER(email) = ?', [$email])
             ->update(['customer_id' => $this->id]);
+    }
+
+    /**
+     * O que a ficha aceita receber do financeiro, com o nome que a tela usa.
+     *
+     * A lista é curta de propósito: nome e status são decisão comercial daqui, e senha de
+     * plataforma não existe nesta tabela. O que está aqui é o cadastro que o WHMCS já mantém e
+     * que a equipe não deveria digitar duas vezes.
+     */
+    public const CAMPOS_DO_FINANCEIRO = [
+        'documento' => 'Documento',
+        'nascimento' => 'Nascimento',
+        'telefone' => 'WhatsApp',
+        'email' => 'E-mail',
+        'endereco' => 'Endereço',
+        'cidade' => 'Cidade',
+        'uf' => 'UF',
+        'cep' => 'CEP',
+        'plataforma' => 'Plataforma',
+        'usuario_plataforma' => 'Usuário da plataforma',
+    ];
+
+    /**
+     * Traz para a ficha o que o financeiro sabe e ela ainda não tem.
+     *
+     * A regra é de mão única e de um sentido só: **o que está escrito na ficha manda**. Quem
+     * digitou um endereço no CRM não o vê trocado por um cadastro antigo do financeiro; o que a
+     * equipe nunca preencheu é o que vem de lá. O retorno diz o que entrou e o que foi mantido,
+     * porque quem aperta o botão precisa conferir sem abrir a ficha inteira — e a rotina em
+     * massa usa o mesmo caminho com `$gravar = false` para mostrar o que faria antes de gravar.
+     *
+     * @param  array<string, mixed>  $dados
+     * @return array{preenchidos: array<int, string>, mantidos: array<int, string>}
+     */
+    public function absorverDoFinanceiro(array $dados, bool $gravar = true): array
+    {
+        $preenchidos = [];
+        $mantidos = [];
+        $documentoEstavaVazio = blank($this->documento);
+
+        foreach (self::CAMPOS_DO_FINANCEIRO as $campo => $rotulo) {
+            $novo = $dados[$campo] ?? null;
+
+            if ($novo instanceof \DateTimeInterface) {
+                $novo = $novo->format('Y-m-d');
+            }
+
+            if (blank($novo)) {
+                continue;
+            }
+
+            if (filled($this->{$campo})) {
+                $mantidos[] = $rotulo;
+
+                continue;
+            }
+
+            $this->{$campo} = $novo;
+            $preenchidos[] = $rotulo;
+        }
+
+        // Documento que chega agora define o tipo de pessoa; documento que já existia continua
+        // mandando no tipo que a ficha tem, mesmo que o financeiro discorde.
+        if ($documentoEstavaVazio && filled($this->documento) && in_array('Documento', $preenchidos, true)) {
+            $this->tipo = self::tipoPorDocumento($this->documento);
+        }
+
+        if ($gravar) {
+            $this->save();
+        }
+
+        return ['preenchidos' => $preenchidos, 'mantidos' => $mantidos];
     }
 
     /**

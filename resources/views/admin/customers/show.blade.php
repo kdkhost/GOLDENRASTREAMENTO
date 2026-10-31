@@ -48,6 +48,13 @@
                 <dt>Endereço</dt><dd>{{ $linhasEndereco ? implode(' · ', $linhasEndereco) : '—' }}</dd>
                 <dt>Segmento</dt><dd>{{ config('golden.perfis')[$cliente->segmento] ?? '—' }}</dd>
                 <dt>Frota</dt><dd>{{ $cliente->frota_tamanho ? $cliente->frota_tamanho.' veículo(s)' : '—' }}</dd>
+                <dt>Acesso à plataforma</dt>
+                <dd>
+                    {{ $cliente->plataforma ?: '—' }}
+                    @if($cliente->usuario_plataforma)
+                        <div class="form-hint fw-normal">Login {{ $cliente->usuario_plataforma }}</div>
+                    @endif
+                </dd>
                 <dt>Valor anual</dt><dd class="fw-semibold">{{ $cliente->valor_anual_cents ? brl($cliente->valor_anual_cents) : '—' }}</dd>
                 <dt>Responsável</dt><dd>{{ $cliente->owner?->name ?? 'Sem responsável definido' }}</dd>
                 <dt>Portal do cliente</dt>
@@ -99,6 +106,17 @@
                                 </button>
                             </form>
                         @endif
+                    @endif
+                    @if(app(Financeiro::class)->configurado() && $cliente->whmcs_id)
+                        {{-- Completa a ficha com o cadastro que o financeiro já mantém. Só entra no que
+                             está em branco aqui: o que a equipe escreveu no CRM não é trocado pelo
+                             cadastro de lá, e o aviso diz o que veio e o que foi mantido. --}}
+                        <form method="POST" class="mt-2 mb-0" action="{{ route('admin.clientes.puxar', $cliente) }}" data-atualiza=".app-content">
+                            @csrf
+                            <button class="btn btn-sm btn-outline-secondary text-nowrap" title="Traz para a ficha os campos que ainda estão em branco: documento, nascimento, endereço e o acesso à plataforma">
+                                <i class="fas fa-cloud-arrow-down me-1" aria-hidden="true"></i> Puxar dados do financeiro
+                            </button>
+                        </form>
                     @endif
                 </dd>
                 <dt>Verificação no chat</dt>

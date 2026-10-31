@@ -321,6 +321,54 @@ return [
             ],
         ],
 
+        'whmcs_campo_documento' => [
+            'onde' => 'O número do campo personalizado em que o financeiro guarda o CPF ou o CNPJ do cliente.',
+            'passos' => [
+                ['icone' => 'fa-hashtag', 'titulo' => 'O número vem do financeiro', 'texto' => 'Cada instalação numera os campos do seu jeito. Este valor é o número que a consulta devolve, e não o rótulo que aparece na tela do financeiro.'],
+                ['icone' => 'fa-magnifying-glass', 'titulo' => 'Confira antes de puxar', 'texto' => 'É este número que o botão da ficha lê. Trocado, o documento chega em branco e a ficha continua como estava — sem erro na tela, só sem dado.'],
+                ['icone' => 'fa-copy', 'titulo' => 'O botão nunca apaga', 'texto' => 'O que a equipe já escreveu na ficha continua lá. O financeiro só completa o que está em branco, e a ficha avisa o que veio e o que ficou de fora.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Escrever o número nesta tela', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'whmcs_campo_nascimento' => [
+            'onde' => 'O número do campo personalizado em que o financeiro guarda a data de nascimento.',
+            'passos' => [
+                ['icone' => 'fa-calendar-days', 'titulo' => 'A data é lida como se escreve no Brasil', 'texto' => 'O sistema aceita dia/mês/ano, ano/mês/dia e o formato corrido, e confere se a data existe de verdade antes de gravar.'],
+                ['icone' => 'fa-hashtag', 'titulo' => 'Cada instalação numera à sua moda', 'texto' => 'O número de um financeiro não vale para outro. Ao trocar de instalação, confira o mapa antes de puxar de novo.'],
+                ['icone' => 'fa-circle-info', 'titulo' => 'Data que não é de gente não entra', 'texto' => 'Ano anterior a 1900 ou data no futuro é descartada em silêncio: a ficha fica sem a data em vez de mostrar um erro de digitação do financeiro.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Escrever o número nesta tela', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'whmcs_campo_plataforma' => [
+            'onde' => 'O número do campo personalizado que diz em qual servidor o cliente está hospedado — o que a ficha mostra como plataforma.',
+            'passos' => [
+                ['icone' => 'fa-server', 'titulo' => 'É o servidor do rastreador', 'texto' => 'Normalmente vem escrito como servidor 3, servidor 5. É o que a equipe precisa saber para abrir o painel certo do rastreador.'],
+                ['icone' => 'fa-hashtag', 'titulo' => 'O número é do financeiro', 'texto' => 'Vale o que a consulta devolve, e não o nome do campo na tela dele. Um número trocado traz o servidor de outro assunto, ou nada.'],
+                ['icone' => 'fa-pen-to-square', 'titulo' => 'A ficha mostra e a edição corrige', 'texto' => 'O valor puxado aparece no cartão da ficha e pode ser ajustado à mão na tela de edição, sem sobrescrever o que veio do financeiro.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Escrever o número nesta tela', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'whmcs_campo_usuario' => [
+            'onde' => 'O número do campo personalizado que guarda o login do cliente na plataforma de rastreamento.',
+            'passos' => [
+                ['icone' => 'fa-user-gear', 'titulo' => 'É login, não é senha', 'texto' => 'A ficha guarda o nome de acesso e nunca a senha: credencial de rastreamento não fica gravada no sistema.'],
+                ['icone' => 'fa-hashtag', 'titulo' => 'É o número que a consulta devolve', 'texto' => 'Não adianta copiar o nome do campo da tela do financeiro: o que vale aqui é o número que a consulta traz junto com a ficha.'],
+                ['icone' => 'fa-triangle-exclamation', 'titulo' => 'Em branco é resposta, não falha', 'texto' => 'Muita conta usa o e-mail do cadastro como usuário. Sem valor no financeiro, a ficha mantém o que a equipe escreveu e avisa o que ficou de fora.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Escrever o número nesta tela', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
         'sonda_email' => [
             'onde' => 'A prova de fogo da conexão: uma chamada de verdade ao financeiro, na frente de quem aperta o botão.',
             'passos' => [

@@ -3,6 +3,42 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.58.0] - 2026-10-31
+
+### Adicionado
+- **A ficha do cliente passou a ler o cadastro que já existe no financeiro.** O WHMCS guarda
+  documento, nascimento e o acesso à plataforma em campos personalizados que a consulta devolve
+  **só pelo número** — sem nome, e com numeração própria de cada instalação. O mapa confirmado na
+  conta de produção virou configuração no painel (Sistema → Configurações → Chaves de integração →
+  WHMCS): `whmcs_campo_documento` = 2, `whmcs_campo_nascimento` = 10, `whmcs_campo_plataforma` = 17 e
+  `whmcs_campo_usuario` = 18, cada um com o passo a passo no ícone de ajuda e o `.env` apenas como
+  plano de fundo quando o banco está vazio. Documento em branco cai no `tax_id`; telefone é
+  normalizado para `(XX) XXXXX-XXXX`; data é aceita em dia/mês/ano, ano/mês/dia e no formato corrido,
+  sempre conferida contra data real e ano a partir de 1900.
+- **`Cliente::ficha()` no serviço do financeiro** devolve os dez campos da conta já tratados (nome,
+  e-mail, telefone, documento, nascimento, endereço, cidade, UF, CEP, plataforma e usuário da
+  plataforma). Senhas de serviço **não** são lidas nem gravadas: credencial de rastreamento não mora
+  no CRM.
+- **Botão "Puxar dados do financeiro" na ficha do cliente.** Consulta a conta pelo `whmcs_id` da
+  ficha e completa **apenas o que está em branco** — o que a equipe já escreveu continua mandando. A
+  resposta em segundo plano diz o que foi preenchido e o que foi mantido, e ficha sem vínculo, sem
+  credencial ou com o financeiro mudo explica o conserto em português em vez de falhar calada.
+- **Plataforma e usuário da plataforma na ficha:** duas colunas novas em `customers`
+  (`plataforma` varchar 60 e `usuario_plataforma` varchar 190, ambas nulas), campos na tela de edição
+  e leitura no cartão da ficha. O documento novo ainda define o tipo de pessoa (CPF → física,
+  CNPJ → jurídica), mas documento que já existia continua mandando no tipo gravado.
+- **Rotina `clientes:puxar-do-financeiro`** percorre todas as fichas ligadas ao financeiro e completa
+  as que estão em branco, com simulação por padrão (`--aplicar` para gravar, `--ficha=` para uma só),
+  aviso por conta quando o financeiro não responde e um registro de atividade só quando algo é
+  gravado.
+
+### Testes
+- Nove testes novos cobrem o botão, a regra de só preencher o vazio, o tipo de pessoa pelos dois
+  caminhos, a ficha sem vínculo, o financeiro mudo, o botão ausente sem credencial, a leitura e a
+  edição do acesso à plataforma e a simulação da rotina em massa.
+- A ajuda de configuração ganhou as quatro entradas dos números de campo, e o teste que exige ajuda
+  para todo campo do painel volta a passar.
+
 ## [2.57.1] - 2026-10-31
 
 ### Corrigido

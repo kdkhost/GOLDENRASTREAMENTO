@@ -393,6 +393,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         // correção dependente de um administrador disponível.
         Route::post('/{cliente}/revincular', [CustomerController::class, 'revincular'])
             ->whereNumber('cliente')->name('revincular');
+        // Completa a ficha com o cadastro do financeiro: só os campos em branco, e só da conta já
+        // vinculada. POST porque grava; o mesmo grupo acima (admin e vendedor) atende a ficha.
+        Route::post('/{cliente}/puxar', [CustomerController::class, 'puxar'])
+            ->whereNumber('cliente')->name('puxar');
         Route::get('/{cliente}/editar', [CustomerController::class, 'edit'])->name('edit');
         Route::post('/{cliente}', [CustomerController::class, 'update'])->name('update');
         Route::post('/{cliente}/interacao', [CustomerController::class, 'interaction'])->name('interacao');

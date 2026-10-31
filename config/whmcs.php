@@ -39,6 +39,24 @@ return [
     'limite' => (int) env('WHMCS_LIMITE', 50),
 
     /*
+    | Os campos personalizados da ficha do financeiro, pelo número que a API devolve.
+    |
+    | O WHMCS não tem ação de API que liste o *nome* de um campo personalizado: `GetClientsDetails`
+    | entrega `{id, value}` e nada mais. Quem sabe que o campo 2 é o CPF é a instalação, não a
+    | documentação — por isso o mapa mora aqui, com os números da Golden, e pode ser corrigido na
+    | tela de Configurações quando outro financeiro usar números diferentes.
+    |
+    | `plataforma` é o servidor de rastreamento ("servidor 3") e `usuario` é o login que o cliente
+    | usa nele — os dois vêm do cadastro do WHMCS e são o que a ficha mostra como acesso.
+    */
+    'campos' => [
+        'documento' => (int) env('WHMCS_CAMPO_DOCUMENTO', 2),
+        'nascimento' => (int) env('WHMCS_CAMPO_NASCIMENTO', 10),
+        'plataforma' => (int) env('WHMCS_CAMPO_PLATAFORMA', 17),
+        'usuario' => (int) env('WHMCS_CAMPO_USUARIO', 18),
+    ],
+
+    /*
     | O que a conexão veicula no portal. `servicos` e `faturas` abrem ou fecham as duas telas do
     | cliente; `servicos_encerrados` e `faturas_pagas` decidem se o passado continua na vitrine;
     | `link_externo` controla se o cliente pode saltar para o financeiro a partir do portal;

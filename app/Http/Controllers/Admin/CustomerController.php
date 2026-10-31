@@ -203,6 +203,51 @@ class CustomerController extends Controller
     }
 
     /**
+     * Completa a ficha com o que o financeiro sabe e ela ainda não tem.
+     *
+     * O vínculo é a porta: sem `whmcs_id` não há de qual conta puxar, e procurar pelo e-mail aqui
+     * seria refazer a decisão do revínculo — dois caminhos para a mesma pergunta divergem no
+     * primeiro e-mail corrigido. Só o que está em branco é gravado; o que a equipe digitou fica,
+     * mesmo que o financeiro discorde, porque a ficha é da casa e o financeiro é a fonte do que
+     * ninguém preencheu.
+     */
+    public function puxar(Customer $cliente): RedirectResponse
+    {
+        $financeiro = app(Financeiro::class);
+
+        if (! $financeiro->configurado()) {
+            return back()->with('error', 'O financeiro ainda não tem as três credenciais em Sistema → Configurações → Chaves de integração → WHMCS. Sem elas não há de onde puxar os dados.');
+        }
+
+        if (blank($cliente->whmcs_id)) {
+            return back()->with('error', "A ficha de {$cliente->nome} ainda não está ligada ao financeiro. Use \"Revincular ao financeiro\" primeiro — é o vínculo que diz de qual conta os dados vêm.");
+        }
+
+        $dados = $financeiro->ficha((int) $cliente->whmcs_id);
+
+        if ($dados === null) {
+            return back()->with('error', 'O financeiro não respondeu à consulta da conta #'.$cliente->whmcs_id.'. Nada foi alterado nesta ficha.');
+        }
+
+        $resultado = $cliente->absorverDoFinanceiro($dados);
+        $mantidos = $resultado['mantidos'] !== []
+            ? ' Mantidos por já estarem escritos: '.implode(', ', $resultado['mantidos']).'.'
+            : '';
+
+        if ($resultado['preenchidos'] === []) {
+            return back()->with('info', 'Nada a preencher: o que o financeiro tem para esta conta já está na ficha.'.$mantidos);
+        }
+
+        Activity::log(
+            'cliente_dados_do_financeiro',
+            "Completou a ficha com a conta #{$cliente->whmcs_id} do financeiro: ".implode(', ', $resultado['preenchidos']).'.',
+            $cliente
+        );
+
+        return back()->with('success', 'Preenchido pelo financeiro: '.implode(', ', $resultado['preenchidos']).'.'.$mantidos);
+    }
+
+    /**
      * Desfaz o ponteiro que a verificação de cima deixou pendente. Os dois guardas existem porque
      * o botão que chega aqui é um segundo clique, e entre um e outro a ficha pode ter mudado de
      * mãos: a pendência precisa ser desta ficha e apontar para o número que ainda está gravado.
@@ -279,6 +324,8 @@ class CustomerController extends Controller
             'cep' => ['nullable', 'string', 'max:12'],
             'segmento' => ['nullable', 'string', 'max:40'],
             'frota_tamanho' => ['nullable', 'integer', 'min:0'],
+            'plataforma' => ['nullable', 'string', 'max:60'],
+            'usuario_plataforma' => ['nullable', 'string', 'max:190'],
             'status' => ['required', 'in:'.implode(',', array_keys(Customer::STATUS))],
             'owner_id' => ['nullable', 'integer'],
             'valor_anual' => ['nullable', 'numeric', 'min:0'],

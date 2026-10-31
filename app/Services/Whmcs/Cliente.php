@@ -77,6 +77,58 @@ class Cliente
     }
 
     /**
+     * A ficha do cliente como o financeiro a escreve: nome, contato, endereço, documento,
+     * nascimento e o acesso à plataforma de rastreamento.
+     *
+     * `null` é falha de conversa, nunca "ficha vazia". Quem chama decide o que fazer com o
+     * resultado — e a regra da casa é gravar só o que está em branco no CRM, porque o que a
+     * equipe digitou manda e o financeiro é a fonte do que ninguém preencheu.
+     *
+     * Os campos personalizados chegam da API sem nome, só com número: o mapa mora em
+     * `config('whmcs.campos')` (sobreposto pelo painel), porque quem sabe qual número é o CPF é a
+     * instalação do financeiro, não a documentação do WHMCS.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function ficha(int $clientId): ?array
+    {
+        $resposta = $this->chamar('GetClientsDetails', ['clientid' => $clientId, 'stats' => false]);
+
+        if ($resposta === null) {
+            return null;
+        }
+
+        // As instalações devolvem os dados planos e uma cópia dentro de `client`; ler a cópia
+        // quando ela existe evita depender de qual das duas formas a versão do WHMCS devolve.
+        $cliente = is_array($resposta['client'] ?? null) ? $resposta['client'] : $resposta;
+
+        $campos = $this->camposPersonalizados($cliente);
+
+        $documento = trim((string) ($campos[$this->campoPersonalizado('documento')] ?? ''));
+        $documento = $documento !== '' ? $documento : trim((string) ($cliente['tax_id'] ?? ''));
+
+        $endereco = array_filter([
+            trim((string) ($cliente['address1'] ?? '')),
+            trim((string) ($cliente['address2'] ?? '')),
+        ]);
+
+        return [
+            'nome' => trim((string) ($cliente['fullname']
+                ?? trim(($cliente['firstname'] ?? '').' '.($cliente['lastname'] ?? '')))),
+            'email' => mb_strtolower(trim((string) ($cliente['email'] ?? ''))),
+            'telefone' => $this->telefone($cliente['phonenumber'] ?? $cliente['telephoneNumber'] ?? ''),
+            'documento' => $documento,
+            'nascimento' => $this->dataDeNascimento($campos[$this->campoPersonalizado('nascimento')] ?? null),
+            'endereco' => implode(' - ', $endereco),
+            'cidade' => trim((string) ($cliente['city'] ?? '')),
+            'uf' => mb_strtoupper(trim((string) ($cliente['state'] ?? ''))),
+            'cep' => trim((string) ($cliente['postcode'] ?? '')),
+            'plataforma' => trim((string) ($campos[$this->campoPersonalizado('plataforma')] ?? '')),
+            'usuario_plataforma' => trim((string) ($campos[$this->campoPersonalizado('usuario')] ?? '')),
+        ];
+    }
+
+    /**
      * Os serviços/produtos contratados no financeiro, já traduzidos para a tela.
      * `null` é falha de conversa; lista vazia é "não tem nenhum".
      *
@@ -422,6 +474,70 @@ class Cliente
 
         return ($raiz ?: rtrim(trim((string) config('whmcs.url')), '/'))
             .'/clientarea.php?action='.$pagina.'&'.$parametro.'='.$id;
+    }
+
+    /** Os campos personalizados da ficha, por número — a única forma que a API devolve. */
+    private function camposPersonalizados(array $cliente): array
+    {
+        $mapa = [];
+
+        foreach ($this->lista($cliente['customfields'] ?? []) as $campo) {
+            if (is_array($campo) && isset($campo['id'])) {
+                $mapa[(int) $campo['id']] = trim((string) ($campo['value'] ?? ''));
+            }
+        }
+
+        return $mapa;
+    }
+
+    /** O número de um campo personalizado; zero quando o painel não mapeou aquele campo. */
+    private function campoPersonalizado(string $nome): int
+    {
+        return (int) config("whmcs.campos.{$nome}", 0);
+    }
+
+    /**
+     * O telefone do financeiro no formato que a ficha usa. Ele guarda DDD + número, às vezes com
+     * o 55 do país; a tela mostra "(11) 94222-8599". Número que não é brasileiro fica como veio,
+     * sem máscara inventada.
+     */
+    private function telefone(mixed $valor): string
+    {
+        $digitos = (string) preg_replace('/\D/', '', (string) $valor);
+
+        if (in_array(strlen($digitos), [12, 13], true) && str_starts_with($digitos, '55')) {
+            $digitos = substr($digitos, 2);
+        }
+
+        return match (strlen($digitos)) {
+            11 => '('.substr($digitos, 0, 2).') '.substr($digitos, 2, 5).'-'.substr($digitos, 7),
+            10 => '('.substr($digitos, 0, 2).') '.substr($digitos, 2, 4).'-'.substr($digitos, 6),
+            default => $digitos,
+        };
+    }
+
+    /**
+     * A data de nascimento nos formatos que o financeiro escreve — `08/01/1937`, `1937-01-08` ou
+     * `08011937`. Formato ambíguo lido "no chute" viraria aniversário trocado na ficha, então a
+     * leitura é explícita e só vale se a data voltar escrita exatamente como veio.
+     */
+    private function dataDeNascimento(mixed $valor): ?Carbon
+    {
+        $texto = trim((string) $valor);
+
+        if ($texto === '') {
+            return null;
+        }
+
+        foreach (['d/m/Y', 'd-m-Y', 'dmY', 'Y-m-d'] as $formato) {
+            $data = Carbon::createFromFormat('!'.$formato, $texto);
+
+            if ($data !== false && $data->format($formato) === $texto) {
+                return $data->year >= 1900 && ! $data->greaterThan(now()) ? $data : null;
+            }
+        }
+
+        return null;
     }
 
     private function limite(): int

@@ -39,6 +39,9 @@
                     <x-admin.field name="frota_tamanho" type="number" label="Tamanho da frota" :value="$cliente->frota_tamanho" col="col-3 col-md-4" min="0" :opcional="true" />
                     <x-admin.field name="status" type="select" label="Status no funil" :value="$cliente->status ?: 'prospecto'" :options="\App\Models\Customer::STATUS" col="col-3 col-md-4" :required="true" />
 
+                    <x-admin.field name="plataforma" label="Plataforma / servidor" :value="$cliente->plataforma" col="col-6 col-md-4" maxlength="60" :opcional="true" placeholder="servidor 3" hint="Servidor de rastreamento em que o cliente está." />
+                    <x-admin.field name="usuario_plataforma" label="Usuário da plataforma" :value="$cliente->usuario_plataforma" col="col-6 col-md-4" maxlength="190" :opcional="true" hint="Login que o cliente usa no rastreador. Não é a senha." />
+
                     <x-admin.field name="valor_anual" type="number" label="Valor anual (R$)" :value="$cliente->valor_anual_cents ? $cliente->valor_anual_cents / 100 : null" col="col-6 col-md-4" step="0.01" min="0" :opcional="true" />
                     <x-admin.field name="owner_id" type="select" label="Responsável" :value="$cliente->owner_id" :options="$responsaveis" empty="Sem responsável" col="col-6 col-md-4" :opcional="true" />
 
