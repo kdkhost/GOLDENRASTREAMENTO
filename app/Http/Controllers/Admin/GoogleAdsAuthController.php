@@ -98,12 +98,34 @@ class GoogleAdsAuthController extends Controller
             $conta = $this->conectar($usuario, $token);
         } catch (Throwable $e) {
             return redirect()->route('admin.google-ads.index')
-                ->with('error', 'Não foi possível ler as contas deste acesso: '.$e->getMessage());
+                ->with('error', $this->motivoDaFalha($e));
         }
 
         Activity::log('google_ads_conectada', "Conta de Google Ads {$conta->numeroConta()} conectada.", $conta);
 
         return redirect()->route('admin.google-ads.index')->with('success', "Conta {$conta->nomeTela()} conectada. A primeira sincronização já está a caminho.");
+    }
+
+    /**
+     * Traduz a falha da conexão para o que a pessoa precisa fazer.
+     *
+     * O caso que obrigou a tradução: quando o Chrome já está conectado a uma conta Google, ele
+     * completa o consentimento por conta própria e devolve um token só de perfil e e-mail — a
+     * permissão de anúncios nunca é pedida. O Google responde PERMISSION_DENIED em inglês, e a
+     * saída é repetir o pedido numa janela sem a sessão do navegador.
+     */
+    private function motivoDaFalha(Throwable $e): string
+    {
+        $texto = $e->getMessage();
+
+        if (str_contains($texto, 'ACCESS_TOKEN_SCOPE_INSUFFICIENT') || str_contains($texto, 'insufficient authentication scopes')) {
+            return 'O Google autorizou a conta sem a permissão de Google Ads — quem completou o '
+                .'pedido foi o próprio Chrome, com o perfil que já estava conectado. Abra o painel '
+                .'numa janela anônima (Ctrl+Shift+N), entre e clique em Conectar conta Google Ads '
+                .'de novo, aceitando a permissão "Google Ads" na tela do Google.';
+        }
+
+        return 'Não foi possível ler as contas deste acesso: '.$texto;
     }
 
     /**

@@ -19,6 +19,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Livewire\Livewire;
 use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -217,6 +218,28 @@ class ConexaoGoogleAdsTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('google-ads.callback'))
             ->assertSessionHas('error', fn (string $mensagem): bool => str_contains($mensagem, 'não alcança nenhuma conta'));
+
+        $this->assertDatabaseCount('google_ads_accounts', 0);
+    }
+
+    public function test_o_token_sem_escopo_de_anuncios_aponta_a_janela_anonima_em_vez_de_mostrar_o_erro_do_google(): void
+    {
+        $this->mockarSocialite($this->usuarioAutorizado('1//04sem-escopo'));
+
+        // Acontece quando o Chrome já está conectado à conta Google: ele completa o
+        // consentimento sozinho e devolve um token só de perfil e e-mail.
+        $servico = Mockery::mock(GoogleAdsService::class);
+        $servico->shouldReceive('contasAutorizadas')->andThrow(new RuntimeException(
+            '{"error":{"code":403,"message":"Request had insufficient authentication scopes.",'
+            .'"status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo",'
+            .'"reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT"}]}}'
+        ));
+        $this->app->instance(GoogleAdsService::class, $servico);
+
+        $this->actingAs($this->admin)
+            ->get(route('google-ads.callback'))
+            ->assertSessionHas('error', fn (string $mensagem): bool => str_contains($mensagem, 'janela anônima')
+                && ! str_contains($mensagem, 'PERMISSION_DENIED'));
 
         $this->assertDatabaseCount('google_ads_accounts', 0);
     }

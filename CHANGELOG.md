@@ -3,6 +3,21 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.57.1] - 2026-10-31
+
+### Corrigido
+- **O erro de permissão do Google passou a falar português e a dizer o que fazer.** Quando o Chrome já
+  está conectado a uma conta Google, ele completa o "Login com o Google" por conta própria e devolve um
+  token só de perfil e e-mail — a permissão de anúncios nunca é pedida, e a API responde
+  `ACCESS_TOKEN_SCOPE_INSUFFICIENT` em inglês. O callback agora reconhece esse caso
+  (`GoogleAdsAuthController::motivoDaFalha()`) e mostra no painel a saída certa: abrir o painel numa
+  janela anônima (Ctrl+Shift+N), entrar e conectar de novo, aceitando a permissão "Google Ads". Nenhuma
+  conta é gravada com o token incompleto.
+
+### Testes
+- Novo teste cobre o token sem o escopo de anúncios: a tela explica a janela anônima, não exibe o texto
+  do Google e não cria registro em `google_ads_accounts`.
+
 ## [2.57.0] - 2026-10-30
 
 ### Corrigido
