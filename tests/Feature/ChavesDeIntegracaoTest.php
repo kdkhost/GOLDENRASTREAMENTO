@@ -309,6 +309,40 @@ class ChavesDeIntegracaoTest extends TestCase
             ->assertSee('ASSISTENTE_MODELO_VISAO', false);
     }
 
+    /**
+     * O interruptor que completa a data de nascimento pelo chat. Ele é botão de verdade — e
+     * desligado precisa chegar ao banco como "não", não como "voltar ao .env", senão a escolha do
+     * painel seria desfeita pelo padrão do servidor na requisição seguinte.
+     */
+    public function test_o_interruptor_da_data_de_nascimento_aparece_e_desligado_fica_gravado(): void
+    {
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.settings.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Completar a data de nascimento pelo chat', $html);
+        $this->assertStringContainsString('ASSISTENTE_COMPLETAR_NASCIMENTO', $html);
+        $this->assertMatchesRegularExpression(
+            '/name="assistente_completar_nascimento"[^>]*role="switch"|role="switch"[^>]*name="assistente_completar_nascimento"/',
+            $html,
+            'O campo do painel deixou de ser um botão.'
+        );
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.settings.chaves'), [
+                'grupo' => 'assistente-chat',
+                'assistente_completar_nascimento' => '0',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        ChavesDeIntegracao::aplicar();
+
+        $this->assertFalse(config('assistente.verificacao.completar'));
+        $this->assertSame('banco', ChavesDeIntegracao::origem('assistente_completar_nascimento'));
+    }
+
     public function test_a_tela_so_oferece_o_modelo_que_a_fabrica_sabe_usar(): void
     {
         // A lista do seletor e a lista que a chamada de HTTP aceita têm de ser a mesma lista.

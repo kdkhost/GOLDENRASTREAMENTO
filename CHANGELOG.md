@@ -3,6 +3,38 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.60.0] - 2026-10-31
+
+### Adicionado
+- **A Ana completa a data de nascimento na ficha, com interruptor no painel.** Depois de a pessoa
+  provar que é dona da conta (na conferência da segunda via da fatura), quem **não tem** data de
+  nascimento na ficha é perguntado uma vez — no formato dia/mês/ano — e a resposta é gravada no
+  cadastro, com registro na auditoria (`cliente_nascimento_pelo_chat`). É a única escrita que a
+  conferência faz: antes da prova nada é perguntado, e campo já preenchido nunca é perguntado nem
+  substituído — o cadastro da casa não se reescreve com texto de chat.
+- **Interruptor "Completar a data de nascimento pelo chat"** em *Sistema → Configurações → Chaves
+  de integração → Assistente — o que o chat aceita*, gravado no banco (`assistente.verificacao.completar`,
+  ambiente `ASSISTENTE_COMPLETAR_NASCIMENTO`). É o primeiro campo da tela desenhado como botão
+  (switch) em vez de "Sim/Não": desligado chega ao banco como decisão, não como "voltar ao `.env`".
+  Desligado, o chat não pergunta e não escreve nada.
+
+### Corrigido
+- **A data de nascimento não é mais um beco sem saída no atendimento:** quem não tem o dado pode
+  informá-lo no próprio chat, uma vez, e ele passa a existir na ficha — sem depender de alguém
+  digitar no painel ou no financeiro.
+- **A pergunta da data nunca segura uma fatura já liberada:** "depois", "não quero" ou um texto que
+  não é data encerram a coleta e a segunda via sai do mesmo jeito; a conversa avisa que a data ficou
+  em branco.
+- **A ficha do cliente explica a regra embaixo de "Verificação no chat"**, de acordo com o
+  interruptor e com o fato de a data estar ou não preenchida.
+
+### Testes
+- Quatro testes novos na segunda via: a data em branco é pedida depois da prova e gravada; o
+  interruptor desligado não pergunta nem grava; data já escrita não é perguntada nem trocada; e
+  data incompreendida ou recusada não impede o envio.
+- Um teste novo nas chaves: o interruptor aparece como botão na tela e, desligado, é gravado como
+  decisão do painel.
+
 ## [2.59.1] - 2026-10-31
 
 ### Corrigido

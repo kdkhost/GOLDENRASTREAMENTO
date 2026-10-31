@@ -1144,6 +1144,18 @@ return [
             ],
         ],
 
+        'assistente_completar_nascimento' => [
+            'onde' => 'Se o chat pode completar a data de nascimento de quem não tem nenhuma na ficha.',
+            'passos' => [
+                ['icone' => 'fa-user-check', 'titulo' => 'Só depois da prova de identidade', 'texto' => 'A pergunta só aparece na segunda via da fatura, quando a pessoa já acertou os dados da ficha — nunca antes, porque provar identidade com o dado que se está coletando seria entregar a conta.'],
+                ['icone' => 'fa-pen-to-square', 'titulo' => 'Nunca por cima do que já existe', 'texto' => 'Ficha com data preenchida não é perguntada nem substituída: o cadastro da casa não se reescreve com texto de chat.'],
+                ['icone' => 'fa-receipt', 'titulo' => 'A pergunta não segura a fatura', 'texto' => 'Se a pessoa recusar ou escrever algo que não é data, a segunda via sai do mesmo jeito e a data continua em branco.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver as fichas dos clientes', 'rota' => 'admin.clientes.index'],
+            ],
+        ],
+
         'assistente_audio_entrada' => [
             'onde' => 'Se o cliente pode gravar um áudio no chat — ele é transcrito antes de virar pergunta.',
             'passos' => [

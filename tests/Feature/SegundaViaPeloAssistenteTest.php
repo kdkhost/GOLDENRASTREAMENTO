@@ -497,6 +497,119 @@ class SegundaViaPeloAssistenteTest extends TestCase
         $this->assertSame($this->fichaId(), (int) $conversa->customer_id);
     }
 
+    /**
+     * A única escrita que a conferência faz: quem não tem data de nascimento é perguntado depois de
+     * provar que é dono da conta, e a resposta é gravada. Antes da prova, nada é perguntado — provar
+     * identidade com o dado que se está coletando seria entregar a conta a quem sabe a data.
+     */
+    public function test_a_data_de_nascimento_em_branco_e_pedida_depois_da_prova_e_gravada(): void
+    {
+        config(['assistente.verificacao.campos' => ['documento'], 'assistente.verificacao.minimo' => 1]);
+        $this->ficha(['nascimento' => null]);
+        $this->ligaFinanceiro();
+        $this->fingirWhmcs($this->faturas());
+        Mail::fake();
+
+        $conversa = $this->conversa();
+        $this->identifica($conversa);
+        $this->diga($conversa, 'segunda via da fatura');
+
+        $pedido = $this->diga($conversa, '123.456.789-01');
+
+        $this->assertStringContainsString('identidade confirmada', $pedido);
+        $this->assertStringContainsString('dia/mês/ano', $pedido);
+        $this->assertSame('conferir', $conversa->refresh()->acao_passo, 'A ação parou antes de completar a ficha.');
+        Mail::assertNothingSent();
+
+        $texto = $this->diga($conversa, '27/10/1990');
+
+        $this->assertStringContainsString('anotei sua data de nascimento', $texto);
+        $this->assertStringContainsString('GR-501', $texto, 'A fatura não saiu depois de a data ser registrada.');
+        $this->assertSame('1990-10-27', $this->fichaDoBanco()->nascimento->format('Y-m-d'));
+        $this->assertDatabaseHas('activities', ['action' => 'cliente_nascimento_pelo_chat']);
+        Mail::assertSent(SegundaViaFatura::class, fn (SegundaViaFatura $m): bool => $m->hasTo('maria@exemplo.com.br'));
+    }
+
+    /** O interruptor manda: desligado, o chat não pergunta a data e não escreve nada na ficha. */
+    public function test_com_o_interruptor_desligado_a_data_nao_e_pedida_nem_gravada(): void
+    {
+        config([
+            'assistente.verificacao.campos' => ['documento'],
+            'assistente.verificacao.minimo' => 1,
+            'assistente.verificacao.completar' => false,
+        ]);
+        $this->ficha(['nascimento' => null]);
+        $this->ligaFinanceiro();
+        $this->fingirWhmcs($this->faturas());
+        Mail::fake();
+
+        $conversa = $this->conversa();
+        $this->identifica($conversa);
+        $this->diga($conversa, 'segunda via da fatura');
+
+        $texto = $this->diga($conversa, '123.456.789-01');
+
+        $this->assertStringContainsString('enviei a fatura', $texto);
+        $this->assertStringNotContainsString('data de nascimento', $texto);
+        $this->assertNull($this->fichaDoBanco()->nascimento);
+        $this->assertDatabaseMissing('activities', ['action' => 'cliente_nascimento_pelo_chat']);
+        Mail::assertSent(SegundaViaFatura::class);
+    }
+
+    /** Data já escrita não é perguntada nem trocada: o cadastro da casa não se reescreve pelo chat. */
+    public function test_data_ja_escrita_nao_e_perguntada_nem_sobrescrita(): void
+    {
+        config(['assistente.verificacao.campos' => ['documento'], 'assistente.verificacao.minimo' => 1]);
+        $this->ficha();
+        $this->ligaFinanceiro();
+        $this->fingirWhmcs($this->faturas());
+        Mail::fake();
+
+        $conversa = $this->conversa();
+        $this->identifica($conversa);
+        $this->diga($conversa, 'segunda via da fatura');
+
+        $texto = $this->diga($conversa, '123.456.789-01');
+
+        $this->assertStringContainsString('enviei a fatura', $texto);
+        $this->assertStringNotContainsString('data de nascimento', $texto);
+        $this->assertSame('1990-10-27', $this->fichaDoBanco()->nascimento->format('Y-m-d'));
+    }
+
+    /**
+     * A fatura já estava liberada antes da pergunta: recusa, "depois" ou texto que não é data
+     * encerram a coleta e o envio acontece do mesmo jeito. Coleta de dado não é refém de envio.
+     */
+    public function test_data_incompreendida_ou_recusada_nao_segura_a_segunda_via(): void
+    {
+        config(['assistente.verificacao.campos' => ['documento'], 'assistente.verificacao.minimo' => 1]);
+        $this->ficha(['nascimento' => null]);
+        $this->ligaFinanceiro();
+        $this->fingirWhmcs($this->faturas());
+        Mail::fake();
+
+        $conversa = $this->conversa();
+        $this->identifica($conversa);
+        $this->diga($conversa, 'segunda via da fatura');
+        $this->diga($conversa, '123.456.789-01');
+
+        $this->assertStringContainsString('não entendi como data', $this->diga($conversa, 'ontem à tarde'));
+
+        $texto = $this->diga($conversa, 'depois');
+
+        $this->assertStringContainsString('deixei a data de nascimento em branco', $texto);
+        $this->assertStringContainsString('GR-501', $texto);
+        $this->assertNull($this->fichaDoBanco()->nascimento);
+        $this->assertNull($conversa->refresh()->acao, 'A ação não foi encerrada depois do envio.');
+        Mail::assertSent(SegundaViaFatura::class);
+    }
+
+    /** A ficha que o chat acabou de completar, lida do banco. */
+    private function fichaDoBanco(): Customer
+    {
+        return Customer::where('email_portal', 'maria@exemplo.com.br')->firstOrFail();
+    }
+
     /** O Blade da fatura: renderizar de verdade, porque `Mail::fake()` intercepta antes do template. */
     public function test_o_html_da_segunda_via_mostra_a_fatura_e_o_caminho_do_pagamento(): void
     {

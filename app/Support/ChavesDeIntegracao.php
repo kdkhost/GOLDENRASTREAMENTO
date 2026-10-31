@@ -709,6 +709,17 @@ class ChavesDeIntegracao
                         'placeholder' => '20',
                         'dica' => 'Uma conferência parada há uma hora não é mais a pessoa na frente do computador: vencido o prazo, os acertos são esquecidos e recomeça.',
                     ],
+                    [
+                        'chave' => 'assistente_completar_nascimento',
+                        'config' => 'assistente.verificacao.completar',
+                        'ambiente' => 'ASSISTENTE_COMPLETAR_NASCIMENTO',
+                        'label' => 'Completar a data de nascimento pelo chat',
+                        'opcional' => true,
+                        'cast' => 'bool',
+                        'interruptor' => true,
+                        'opcoes' => self::SIM_OU_NAO,
+                        'dica' => 'Ligado, depois que a pessoa prova que é dona da conta (na segunda via da fatura), quem não tem data de nascimento é perguntado uma vez e a resposta é gravada na ficha, com registro na auditoria. Campo já preenchido nunca é perguntado nem substituído. Desligado, o chat não pergunta e não escreve nada.',
+                    ],
                     self::campoSimNao(
                         'assistente_audio_entrada',
                         'assistente.permissoes.audio_entrada',

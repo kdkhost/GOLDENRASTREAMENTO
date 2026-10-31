@@ -22,6 +22,12 @@ use Throwable;
  * **A resposta nunca é devolvida.** Quem errou a placa ouve "não bateu com o cadastro", nunca
  * "a placa certa é ABC1D23". Uma conferência que corrige é uma consulta que vaza.
  *
+ * **Uma única escrita, e só depois da prova.** A conferência em si é leitura até o último acerto.
+ * Passada a régua, e só se o painel permitir (`assistente.verificacao.completar`), quem não tem a
+ * data de nascimento na ficha é perguntado uma vez e a resposta é gravada — identidade provada é o
+ * único momento em que alguém pode completar o próprio cadastro por aqui. Sem essa chave, nada é
+ * escrito, e um campo já preenchido nunca é perguntado.
+ *
  * **Só entra na conta o que a ficha tem.** O painel escolhe os campos em
  * *Configurações → Chaves de integração → Assistente*; um campo escolhido que está vazio na ficha
  * não é perguntado — é motivo para a máquina não poder atender aquilo, não para adivinhar.
@@ -124,6 +130,29 @@ final class Verificacao
     public static function tentativas(): int
     {
         return max(1, (int) config('assistente.verificacao.tentativas', 3));
+    }
+
+    /**
+     * Depois da prova, a ficha pode ser completada com a data de nascimento que a pessoa informar?
+     *
+     * É interruptor de painel (*Sistema → Configurações → Chaves de integração → Assistente*), não
+     * escolha do modelo: desligado, a conferência volta a ser só leitura e a data continua faltando
+     * até alguém escrevê-la na ficha ou no financeiro.
+     */
+    public static function completaNascimento(): bool
+    {
+        return (bool) config('assistente.verificacao.completar', true);
+    }
+
+    /**
+     * A data que a pessoa escreveu, no `Y-m-d` da ficha — ou `null` quando não é uma data.
+     *
+     * Pública porque a coleta da data de nascimento acontece no mesmo parser da conferência: dois
+     * jeitos de ler data no sistema dariam duas datas diferentes para a mesma frase.
+     */
+    public static function dataDaResposta(string $resposta): ?string
+    {
+        return self::data($resposta);
     }
 
     /** Por quantos minutos a conferência fica de pé. Venceu, recomeça. */

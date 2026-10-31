@@ -136,7 +136,13 @@
                     @endphp
                     @if($conferiveis !== [])
                         <x-admin.status :rotulo="count($conferiveis).' dado(s) para conferir'" :tom="count($conferiveis) >= $piso ? 'green' : 'gold'" />
-                        <div class="form-hint fw-normal">{{ collect($conferiveis)->map(fn ($campo) => \App\Services\Assistente\Verificacao::rotulo($campo))->implode(' · ') }}. A casa exige {{ $piso }} acerto(s) antes de qualquer envio; o que a pessoa responde nunca volta para esta tela.</div>
+                        <div class="form-hint fw-normal">{{ collect($conferiveis)->map(fn ($campo) => \App\Services\Assistente\Verificacao::rotulo($campo))->implode(' · ') }}. A casa exige {{ $piso }} acerto(s) antes de qualquer envio; a resposta nunca é exibida de volta.
+                            @if(\App\Services\Assistente\Verificacao::completaNascimento() && blank($cliente->nascimento))
+                                Como esta ficha não tem a data de nascimento, o chat a pergunta uma vez depois da conferência e grava aqui — é a única escrita que ele faz.
+                            @elseif(\App\Services\Assistente\Verificacao::completaNascimento())
+                                A data de nascimento desta ficha já está preenchida, então o chat não a pergunta.
+                            @endif
+                        </div>
                     @else
                         <x-admin.status rotulo="nada para conferir" tom="neutral" />
                         <div class="form-hint fw-normal">Nenhum dos campos pedidos em Sistema → Configurações → Assistente está preenchido aqui. Sem conferência, o assistente não envia nada sozinho — quem pedir pelo chat fala com a equipe.</div>

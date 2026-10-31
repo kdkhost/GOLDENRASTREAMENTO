@@ -29,7 +29,10 @@ use Throwable;
  *
  * `conferir` — um dado por vez, na ordem que o painel escolheu, até `assistente.verificacao.minimo`
  * bater. Errado, a resposta é sempre a mesma ("não bateu com o cadastro") e nunca qual campo nem
- * qual era o certo: conferência que corrige é consulta que vaza.
+ * qual era o certo: conferência que corrige é consulta que vaza. Passada a régua, e só se o painel
+ * permitir (`assistente.verificacao.completar`), a mesma etapa coleta a data de nascimento de quem
+ * não tem nenhuma — a única escrita da conferência, e nunca sobre campo já preenchido. A pergunta
+ * não segura o envio: recusa ou formato incompreendido, a fatura sai e a data continua em branco.
  *
  * Três caminhos e nenhum envio indevido no fim: passou da conta, envia e amarra a conversa à ficha;
  * estourou as tentativas, ou a ficha não tem o que conferir, ou o financeiro está fora do ar, a
@@ -208,12 +211,19 @@ final class SegundaViaDaFatura implements Acao
     {
         $dados = (array) $conversa->acao_dados_json;
         $campo = (string) ($dados['conferindo'][0] ?? '');
-        $ficha = $campo === '' ? null : Customer::find((int) ($dados['ficha'] ?? 0));
+        $completando = (string) ($dados['completando'] ?? '');
+        $ficha = ($campo === '' && $completando === '') ? null : Customer::find((int) ($dados['ficha'] ?? 0));
 
         if ($ficha === null) {
             $conversa->abrirAcao(self::CODIGO, self::EMAIL);
 
             return $this->chame($conversa, 'Preciso recomeçar: me diga de novo o e-mail que você usa no seu cadastro.');
+        }
+
+        // A prova já passou: o que resta é completar a ficha. É outro caminho porque outro é o
+        // interesse — aqui uma resposta fora do formato não pode custar a fatura de quem pediu.
+        if ($completando !== '') {
+            return $this->pelaComplementacao($conversa, $ficha, $dados, $fala);
         }
 
         if (! Verificacao::confere($ficha, $campo, $fala)) {
@@ -237,7 +247,7 @@ final class SegundaViaDaFatura implements Acao
         $dados['acertos'] = (int) $dados['acertos'] + 1;
 
         if ($faltam === [] || $dados['acertos'] >= (int) $dados['necessarios']) {
-            return $this->envie($conversa, $ficha);
+            return $this->depoisDaProva($conversa, $ficha, $dados);
         }
 
         $conversa->passoDaAcao(self::CONFERIR, $dados);
@@ -246,11 +256,75 @@ final class SegundaViaDaFatura implements Acao
     }
 
     /**
+     * A régua passou e o envio já está liberado. Antes de mandar, a ficha de quem não tem data de
+     * nascimento pode ficar completa — e só de quem não tem: campo preenchido não é perguntado nem
+     * trocado, porque o cadastro da casa não se reescreve com texto de chat.
+     */
+    private function depoisDaProva(Conversa $conversa, Customer $ficha, array $dados): string
+    {
+        if (! Verificacao::completaNascimento() || filled($ficha->nascimento)) {
+            return $this->envie($conversa, $ficha);
+        }
+
+        $dados['conferindo'] = [];
+        $dados['completando'] = 'nascimento';
+        $dados['completando_tentativas'] = 0;
+        $conversa->passoDaAcao(self::CONFERIR, $dados);
+
+        return $this->chame($conversa, 'Identidade confirmada. Antes de eu mandar a fatura: a sua data de '
+            .'nascimento está em branco no cadastro, e eu aproveito para completar. Me diga no formato '
+            .'dia/mês/ano — se preferir não informar, responda "depois" que a via sai do mesmo jeito.');
+    }
+
+    /**
+     * A resposta da data, já com a identidade provada. Vale uma tentativa de formato e mais nada:
+     * a fatura estava liberada antes desta pergunta, e nenhuma coleta de dado pode segurá-la.
+     */
+    private function pelaComplementacao(Conversa $conversa, Customer $ficha, array $dados, string $fala): string
+    {
+        $data = Verificacao::dataDaResposta($fala);
+
+        if ($data !== null) {
+            $ficha->update(['nascimento' => $data]);
+
+            Activity::log('cliente_nascimento_pelo_chat',
+                'A data de nascimento foi informada pelo cliente no chat, depois de a identidade ser '
+                    .'conferida, e gravada na ficha.', $ficha, [], 'Assistente virtual');
+
+            return $this->envie($conversa, $ficha, 'Anotei sua data de nascimento no cadastro. ');
+        }
+
+        $tentativas = (int) ($dados['completando_tentativas'] ?? 0) + 1;
+
+        if ($tentativas >= 2 || self::recusouAData($fala)) {
+            return $this->envie($conversa, $ficha, 'Tudo bem, deixei a data de nascimento em branco. ');
+        }
+
+        $dados['completando_tentativas'] = $tentativas;
+        $conversa->passoDaAcao(self::CONFERIR, $dados);
+
+        return $this->chame($conversa, 'Não entendi como data. Me manda no formato dia/mês/ano (por exemplo, '
+            .'27/10/1990) ou responda "depois" que eu envio a fatura sem ela.');
+    }
+
+    /** "depois", "não quero", "prefiro não": recusar-se a completar a ficha é uma resposta válida. */
+    private static function recusouAData(string $fala): bool
+    {
+        return in_array(self::semAcento($fala), [
+            'depois', 'deixa', 'deixa pra depois', 'nao', 'nao sei', 'nao quero',
+            'prefiro nao', 'agora nao', 'pular', 'sem data',
+        ], true);
+    }
+
+    /**
      * O envio, e a única saída que amarra a conversa à ficha. Ele é sincrono de propósito: a máquina
      * só pode dizer "enviei" depois que o servidor respondeu, e uma fila que ninguém drenou faria o
      * cliente esperar por um e-mail que nunca saiu.
+     *
+     * `$abertura` é a frase que fecha o que veio antes do envio — hoje, o registro da data de
+     * nascimento — e acompanha todas as saídas para a conversa não mudar de assunto no meio.
      */
-    private function envie(Conversa $conversa, Customer $ficha): string
+    private function envie(Conversa $conversa, Customer $ficha, string $abertura = ''): string
     {
         $destino = (string) $ficha->emailDeAcesso();
         $financeiro = app(Financeiro::class);
@@ -258,7 +332,7 @@ final class SegundaViaDaFatura implements Acao
         if (! $financeiro->configurado()) {
             return $this->chameALequipe($conversa, 'envio_nao_concluido',
                 'O financeiro está desligado (faltam credenciais), e a segunda via da ficha '.$ficha->id.' não saiu.',
-                'Nosso sistema financeiro está desligado agora, então não consegui emitir a sua via. '
+                $abertura.'Nosso sistema financeiro está desligado agora, então não consegui emitir a sua via. '
                     .'Já chamei a equipe para resolver isso com você.');
         }
 
@@ -267,7 +341,7 @@ final class SegundaViaDaFatura implements Acao
         if ($id === null) {
             return $this->chameALequipe($conversa, 'envio_nao_concluido',
                 'A ficha '.$ficha->id.' não tem conta localizada no financeiro.',
-                'Não achei sua conta no nosso financeiro, então não tenho uma fatura para te mandar. '
+                $abertura.'Não achei sua conta no nosso financeiro, então não tenho uma fatura para te mandar. '
                     .'Chamei a equipe: ela verifica o vínculo e continua por aqui.');
         }
 
@@ -276,7 +350,7 @@ final class SegundaViaDaFatura implements Acao
         if ($faturas === null) {
             return $this->chameALequipe($conversa, 'envio_nao_concluido',
                 'O financeiro não respondeu à consulta de faturas da conta '.$id.'.',
-                'O financeiro não respondeu agora, então não consegui pegar a sua fatura. Já chamei a equipe — '
+                $abertura.'O financeiro não respondeu agora, então não consegui pegar a sua fatura. Já chamei a equipe — '
                     .'ela te manda a via assim que a conexão voltar.');
         }
 
@@ -288,7 +362,7 @@ final class SegundaViaDaFatura implements Acao
         if ($emAberto === []) {
             $conversa->encerrarAcao();
 
-            return $this->chame($conversa, 'Boa: não há fatura em aberto no seu cadastro. '
+            return $this->chame($conversa, $abertura.'Boa: não há fatura em aberto no seu cadastro. '
                 .'Quando vencer a próxima, ela chega normalmente — e se quiser, é só pedir aqui.');
         }
 
@@ -304,7 +378,7 @@ final class SegundaViaDaFatura implements Acao
 
             return $this->chameALequipe($conversa, 'envio_nao_concluido',
                 'O envio da fatura '.$fatura['numero'].' falhou: '.$falha->getMessage(),
-                'Seus dados bateram com o cadastro, mas o envio do e-mail não passou agora. Já chamei a equipe '
+                $abertura.'Seus dados bateram com o cadastro, mas o envio do e-mail não passou agora. Já chamei a equipe '
                     .'para te mandar a via pelo caminho que estiver funcionando.');
         }
 
@@ -315,7 +389,7 @@ final class SegundaViaDaFatura implements Acao
         $conversa->update(['customer_id' => $ficha->id]);
         $conversa->encerrarAcao();
 
-        return $this->chame($conversa, 'Enviei a fatura '.$fatura['numero'].' para o e-mail do seu cadastro'
+        return $this->chame($conversa, $abertura.'Enviei a fatura '.$fatura['numero'].' para o e-mail do seu cadastro'
             .($fatura['vencimento'] ? ', com vencimento em '.$fatura['vencimento']->format('d/m/Y') : '')
             .'. Confira a caixa de entrada — se não estiver lá, me avise que eu chame a equipe.');
     }

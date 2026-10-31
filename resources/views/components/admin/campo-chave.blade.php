@@ -14,22 +14,32 @@
     // na primeira pessoa que apertasse Salvar sem querer.
     $valor = $segredo ? null : \App\Support\ChavesDeIntegracao::doBanco($chave);
     $rotulo = \App\Support\ChavesDeIntegracao::ROTULOS_ORIGEM[$origem];
+    // Interruptor não tem estado "em branco": sem valor no banco ele mostra o que está valendo
+    // hoje (o `.env`), e o hidden antes do checkbox garante que "desligado" chegue como 0 em vez
+    // de sumir do formulário e voltar a obedecer ao ambiente sem ninguém pedir.
+    $interruptor = (bool) ($campo['interruptor'] ?? false);
+    $ligado = $valor !== null ? $valor === '1' : (bool) config($campo['config']);
 @endphp
 <div class="col-12">
-    <x-admin.field
-        :name="$chave"
-        :label="$campo['label']"
-        :type="$opcoes !== null ? 'select' : ($campo['type'] ?? ($segredo ? 'password' : 'text'))"
-        :options="$opcoes"
-        :empty="$opcoes !== null ? '— como está no .env —' : null"
-        :value="$valor"
-        :placeholder="$campo['placeholder'] ?? null"
-        :hint="$campo['dica'] ?? null"
-        :opcional="(bool) ($campo['opcional'] ?? false)"
-        :col="''"
-        maxlength="255"
-        autocomplete="off"
-    />
+    @if($interruptor)
+        <input type="hidden" name="{{ $chave }}" value="0">
+        <x-admin.switch :name="$chave" :label="$campo['label']" :checked="$ligado" :hint="$campo['dica'] ?? null" col="" />
+    @else
+        <x-admin.field
+            :name="$chave"
+            :label="$campo['label']"
+            :type="$opcoes !== null ? 'select' : ($campo['type'] ?? ($segredo ? 'password' : 'text'))"
+            :options="$opcoes"
+            :empty="$opcoes !== null ? '— como está no .env —' : null"
+            :value="$valor"
+            :placeholder="$campo['placeholder'] ?? null"
+            :hint="$campo['dica'] ?? null"
+            :opcional="(bool) ($campo['opcional'] ?? false)"
+            :col="''"
+            maxlength="255"
+            autocomplete="off"
+        />
+    @endif
 
     <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
         <x-admin.status :rotulo="$rotulo" :tom="tom_por_status('origem_chave', $origem)" />

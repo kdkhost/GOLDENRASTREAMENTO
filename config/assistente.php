@@ -374,12 +374,17 @@ return [
     | `minutos` é a janela de validade de uma conferência: a aba aberta no celular, a pessoa que
     | volta uma hora depois, o chat dividido em duas conversas — nenhuma dessas continua de onde
     | parou. Vencida a janela, a máquina recomeça do zero.
+    |
+    | `completar` é a única escrita que a conferência faz na ficha: depois de a identidade já ter
+    | sido provada, quem não tem a data de nascimento é perguntado uma vez e a resposta é gravada.
+    | Desligado, a pergunta não existe e nada é escrito — a conferência volta a ser só leitura.
     */
     'verificacao' => [
         'campos' => array_map('trim', explode(',', (string) env('ASSISTENTE_VERIFICACAO_CAMPOS', 'documento,nascimento,placas'))),
         'minimo' => (int) env('ASSISTENTE_VERIFICACAO_MINIMO', 2),
         'tentativas' => (int) env('ASSISTENTE_VERIFICACAO_TENTATIVAS', 3),
         'minutos' => (int) env('ASSISTENTE_VERIFICACAO_MINUTOS', 20),
+        'completar' => (bool) env('ASSISTENTE_COMPLETAR_NASCIMENTO', true),
     ],
 
     /*
