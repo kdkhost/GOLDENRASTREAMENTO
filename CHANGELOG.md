@@ -3,6 +3,19 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.61.1] - 2026-10-31
+
+### Corrigido
+- **O país do cadastro no financeiro não aparece mais em inglês.** O WHMCS guarda o nome do país na
+  língua dele ("Brazil", "United States"), e a ficha copiava o texto: agora ele passa por
+  `Cliente::rotuloDoPais()` e sai como a equipe fala — "Brasil", "Estados Unidos" — pelo mapa novo
+  `whmcs.paises`. País que não estiver no mapa continua como o financeiro escreveu, nunca linha em
+  branco.
+
+### Testes
+- A carga de cadastro voltou a dizer "Brazil", e a ficha passou a ser cobrada pelas duas pontas: o
+  HTML tem que trazer "Brasil" e não pode trazer a grafia de origem.
+
 ## [2.61.0] - 2026-10-31
 
 ### Adicionado

@@ -278,6 +278,36 @@ return [
         'spanish' => 'Espanhol',
     ],
 
+    // O nome do país que o WHMCS guarda em inglês. A lista cobre o que a instalação tem; país que
+    // não estiver aqui aparece como o financeiro escreveu — nunca vira linha em branco.
+    'paises' => [
+        'Brazil' => 'Brasil',
+        'Portugal' => 'Portugal',
+        'Argentina' => 'Argentina',
+        'Paraguay' => 'Paraguai',
+        'Uruguay' => 'Uruguai',
+        'Chile' => 'Chile',
+        'Bolivia' => 'Bolívia',
+        'Peru' => 'Peru',
+        'Ecuador' => 'Equador',
+        'Colombia' => 'Colômbia',
+        'Venezuela' => 'Venezuela',
+        'Mexico' => 'México',
+        'United States' => 'Estados Unidos',
+        'United Kingdom' => 'Reino Unido',
+        'Canada' => 'Canadá',
+        'Germany' => 'Alemanha',
+        'Spain' => 'Espanha',
+        'France' => 'França',
+        'Italy' => 'Itália',
+        'Ireland' => 'Irlanda',
+        'Netherlands' => 'Holanda',
+        'Sweden' => 'Suécia',
+        'Norway' => 'Noruega',
+        'China' => 'China',
+        'Japan' => 'Japão',
+    ],
+
     // A periodicidade de cobrança que o WHMCS devolve em inglês, na língua da tela.
     'ciclos' => [
         'Monthly' => 'por mês',

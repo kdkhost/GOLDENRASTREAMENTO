@@ -220,7 +220,7 @@ class Cliente
             'cidade' => trim((string) ($cliente['city'] ?? '')),
             'uf' => mb_strtoupper(trim((string) ($cliente['state'] ?? ''))),
             'cep' => trim((string) ($cliente['postcode'] ?? '')),
-            'pais' => trim((string) ($cliente['countryname'] ?? $cliente['country'] ?? '')),
+            'pais' => self::rotuloDoPais(trim((string) ($cliente['countryname'] ?? $cliente['country'] ?? ''))),
             'grupo' => $this->grupoDoCliente((int) ($cliente['groupid'] ?? 0)),
             'situacao' => trim((string) ($cliente['status'] ?? '')),
             'idioma' => trim((string) ($cliente['language'] ?? '')),
@@ -1399,6 +1399,12 @@ class Cliente
     public static function rotuloDoIdioma(string $idioma): string
     {
         return (string) (config('whmcs.idiomas')[$idioma] ?? $idioma);
+    }
+
+    /** O país do cadastro, escrito como a tela fala — o WHMCS guarda o nome em inglês. */
+    public static function rotuloDoPais(string $pais): string
+    {
+        return (string) (config('whmcs.paises')[$pais] ?? $pais);
     }
 
     /**

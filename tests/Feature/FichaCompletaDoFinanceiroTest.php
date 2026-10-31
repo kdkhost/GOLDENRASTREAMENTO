@@ -81,7 +81,7 @@ class FichaCompletaDoFinanceiroTest extends TestCase
             'city' => 'Ribeirão Pires',
             'state' => 'SP',
             'postcode' => '09403150',
-            'countryname' => 'Brasil',
+            'countryname' => 'Brazil',
             'phonenumber' => '11942228599',
             'groupid' => 3,
             'status' => 'Active',
@@ -203,6 +203,9 @@ class FichaCompletaDoFinanceiroTest extends TestCase
         $this->assertStringContainsString('Conta #10045', $html);
         $this->assertStringContainsString('Revendas', $html);
         $this->assertStringContainsString('Português (Brasil)', $html);
+        // O país vem escrito "Brazil" do financeiro; na tela é o nome como a equipe fala.
+        $this->assertStringContainsString('Brasil', $html);
+        $this->assertStringNotContainsString('Brazil', $html);
         $this->assertStringContainsString('R$ 12,50', $html);
         $this->assertStringContainsString('05/04/2023', $html);
         $this->assertStringContainsString('29/10/2026 12:34', $html);
