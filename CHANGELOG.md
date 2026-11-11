@@ -3,6 +3,22 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.62.4] - 2026-11-11
+
+### Corrigido
+- **A sugestão de região ia com o corpo no formato errado.** `GoogleAdsWriter::resolverRegioes()`
+  mandava `{"locationNames": ["São Paulo"]}`, mas no proto o campo `locationNames` não é a lista:
+  é a mensagem que a embrulha, e a lista mora em `names`. O Google recusava a chamada com
+  `Invalid JSON payload received. Unknown name "locationNames": Proto field is not repeating,
+  cannot start list` — era a etapa que parava a aplicação do plano na conta real, antes de qualquer
+  orçamento ou campanha ser criado. Conferido contra a API viva: com `{"locationNames": {"names":
+  [...]}}` a mesma chamada devolve as sugestões (e a primeira delas é o nível certo — estado quando
+  o nome é estado, cidade quando não é).
+
+### Testes
+- `CopilotoDoGoogleAdsTest`: nova prova do corpo enviado — cada região sai dentro de
+  `locationNames.names`, uma chamada por região.
+
 ## [2.62.3] - 2026-11-11
 
 ### Corrigido

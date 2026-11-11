@@ -157,10 +157,13 @@ final class GoogleAdsWriter
                 continue;
             }
 
+            // `locationNames` não é a lista: é a mensagem que embrulha a lista (`names`). Mandar
+            // a lista solta o Google recusa a chamada inteira com «Proto field is not repeating,
+            // cannot start list», e nada do plano chega a ser escrito.
             $resposta = $this->chamar($conta, 'geoTargetConstants:suggest', [
                 'locale' => 'pt-BR',
                 'countryCode' => (string) config('google_ads.copiloto.pais', 'BR'),
-                'locationNames' => [$nome],
+                'locationNames' => ['names' => [$nome]],
             ], 'regiao.sugerir');
 
             $recurso = (string) data_get($resposta, 'geoTargetConstantSuggestions.0.geoTargetConstant.resourceName', '');

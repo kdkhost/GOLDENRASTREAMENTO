@@ -579,6 +579,56 @@ class CopilotoDoGoogleAdsTest extends TestCase
     }
 
     /**
+     * Cada nome de região sai embrulhado na mensagem `locationNames`, dentro do campo `names`.
+     *
+     * O campo do proto não é uma lista solta: `locationNames` é uma mensagem que tem a lista.
+     * Mandar `{"locationNames": ["São Paulo"]}` faz o Google recusar a chamada inteira com
+     * «Proto field is not repeating, cannot start list» — e a aplicação do plano parava aí na
+     * conta real, antes de criar orçamento ou campanha, sem nenhuma pista na tela além de um
+     * "recusou a etapa".
+     */
+    public function test_a_sugestao_de_regiao_manda_o_nome_dentro_de_names(): void
+    {
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/geoTargetConstants:suggest' => Http::response([
+                'geoTargetConstantSuggestions' => [
+                    ['geoTargetConstant' => ['resourceName' => 'geoTargetConstants/1001']],
+                ],
+            ]),
+            'https://googleads.googleapis.com/v26/*' => Http::response([
+                'results' => [['resourceName' => 'customers/1234567890/objects/333']],
+            ]),
+        ]);
+
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.aplicar', $this->planoPersistido(GoogleAdsPlano::APROVADO)), ['conta' => $conta->id])
+            ->assertSessionHas('success');
+
+        $nomes = [];
+
+        Http::assertSent(function (Request $requisicao) use (&$nomes): bool {
+            if ($requisicao->url() !== 'https://googleads.googleapis.com/v26/geoTargetConstants:suggest') {
+                return true;
+            }
+
+            $nomes[] = data_get($requisicao->data(), 'locationNames.names');
+
+            return true;
+        });
+
+        $this->assertSame([['São Paulo'], ['Campinas']], $nomes);
+    }
+
+    /**
      * Um plano que falhou na escrita volta a ser aplicável — a aprovação não se perde.
      *
      * Era o beco sem saída que o painel mostrava como "Aprove primeiro": a aplicação que parava
