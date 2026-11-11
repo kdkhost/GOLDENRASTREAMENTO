@@ -153,14 +153,11 @@ class GoogleAdsService
     {
         $inicio = microtime(true);
         $gaql = 'SELECT customer.descriptive_name, customer.currency_code, customer.manager FROM customer LIMIT 1';
+        $transitoria = $conta ?? $this->transitoria($customerId, $refreshToken);
 
         try {
             $linha = $this->montarCliente($refreshToken, $customerId)->getGoogleAdsServiceClient()
-                ->search(new SearchGoogleAdsRequest([
-                    'customer_id' => $customerId,
-                    'query' => $gaql,
-                    'page_size' => 1,
-                ]))->iterateAllElements()->current();
+                ->search($this->pedido($transitoria, $gaql))->iterateAllElements()->current();
 
             $dono = $linha?->getCustomer();
             $detalhes = [
@@ -169,11 +166,11 @@ class GoogleAdsService
                 'gerente' => (bool) $dono?->getManager(),
             ];
 
-            $this->registrar($conta ?? $this->transitoria($customerId, $refreshToken), 'conta.detalhes', ['query' => $gaql], $detalhes, null, $inicio);
+            $this->registrar($transitoria, 'conta.detalhes', ['query' => $gaql], $detalhes, null, $inicio);
 
             return $detalhes;
         } catch (Throwable $e) {
-            $this->registrar($conta ?? $this->transitoria($customerId, $refreshToken), 'conta.detalhes', ['query' => $gaql], null, $e, $inicio);
+            $this->registrar($transitoria, 'conta.detalhes', ['query' => $gaql], null, $e, $inicio);
 
             throw $e;
         }
@@ -325,8 +322,7 @@ class GoogleAdsService
      *
      * @return array<int, array{id:string, titulo:string, situacao:string, impressoes:int, cliques:int, custo_centavos:int}>
      */
-    public function listarAnunciosDoGrupo(GoogleAdsAccount $conta, string $grupoId, int $limite = 50, int $dias = 30): array
-    {
+    public function listarAnunciosDoGrupo(GoogleAdsAccount $conta, string $grupoId, int $limite = 50, int $dias = 30): array    {
         $inicio = microtime(true);
 
         if (! preg_match('/^\d{6,15}$/', $grupoId)) {
@@ -342,7 +338,7 @@ class GoogleAdsService
             $anuncios = [];
 
             $pagina = $this->clientFor($conta)->getGoogleAdsServiceClient()
-                ->search($this->pedido($conta, $gaql, $limite));
+                ->search($this->pedido($conta, $gaql));
 
             foreach ($pagina->iterateAllElements() as $linha) {
                 $grupo = $linha->getAdGroup();
@@ -524,15 +520,19 @@ class GoogleAdsService
         }
     }
 
-    /** Pedido de consulta: a conta conectada responde, nunca o MCC. */
-    private function pedido(GoogleAdsAccount $conta, string $gaql, int $pagina = 300): SearchGoogleAdsRequest
+    /**
+     * Pedido de consulta: a conta conectada responde, nunca o MCC — e é o único lugar onde um
+     * pedido de leitura se monta.
+     *
+     * O tamanho da página não é escolha nossa: a API fixa a resposta em 10.000 linhas e recusa
+     * — com `PAGE_SIZE_NOT_SUPPORTED`, que derruba a leitura inteira, não só a página — qualquer
+     * pedido que tente mudá-la. O limite que o painel escolhe vai no `LIMIT` do GAQL.
+     */
+    private function pedido(GoogleAdsAccount $conta, string $gaql): SearchGoogleAdsRequest
     {
         return new SearchGoogleAdsRequest([
             'customer_id' => (string) $conta->customer_id,
             'query' => $gaql,
-            // Sem isso a API paginaria de 10 em 10: uma agência com muitas campanhas pagaria
-            // uma chamada por dez campanhas, e a cota é por chamada.
-            'page_size' => $pagina,
         ]);
     }
 

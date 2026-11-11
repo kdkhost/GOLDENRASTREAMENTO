@@ -3,6 +3,22 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.62.3] - 2026-11-11
+
+### Corrigido
+- **A leitura de métricas do Google Ads parava antes de chegar à tela.** Além do `WHERE` que
+  faltava no GAQL (2.62.2), o pedido de consulta ainda levava `page_size` — e a API V26 fixou a
+  resposta em 10.000 linhas e passou a recusar qualquer tentativa de mudá-la, devolvendo
+  `PAGE_SIZE_NOT_SUPPORTED` com "Request contains an invalid argument". Era o que o
+  `campanhas.metricas` gravava como falha a cada rodada do agendador, e o mesmo pedido montado à
+  mão em `conta.detalhes` derrubava o instante do consentimento. Nenhum pedido escolhe página
+  agora; o limite que o painel quer continua sendo o `LIMIT` do GAQL, e `SearchGoogleAdsRequest`
+  se monta num lugar só.
+
+### Testes
+- `CopilotoDoGoogleAdsTest`: a prova do GAQL passou a conferir também o pedido — as duas leituras
+  têm de sair com a consulta certa e `page_size` zero.
+
 ## [2.62.2] - 2026-11-11
 
 ### Corrigido

@@ -734,14 +734,16 @@ class CopilotoDoGoogleAdsTest extends TestCase
     }
 
     /**
-     * Toda consulta GAQL que sai do sistema é sintaticamente válida para o Google.
+     * Toda consulta GAQL que sai do sistema é sintaticamente válida para o Google, e nenhum
+     * pedido tenta escolher o tamanho da página.
      *
      * O `WHERE` precisa vir antes da primeira condição e o `AND` antes de `segments.date` quando
-     * já existe outro filtro. A cláusula de data é escrita por um único ajudante e as chamadas
-     * colocam o conector que falta; se o conector some, o Google recusa a leitura e o agendador
-     * enche o log de falhas a cada rodada.
+     * já existe outro filtro; a cláusula de data é escrita por um único ajudante e cada chamada
+     * põe o conector que falta. O `page_size` veio junto um dia e hoje é recusado com
+     * `PAGE_SIZE_NOT_SUPPORTED` — os dois erros derrubam a leitura inteira, e o agendador
+     * gravava a falha a cada rodada sem que nenhuma tela a mostrasse.
      */
-    public function test_toda_consulta_gaql_sai_com_where_e_and_nos_lugares_certos(): void
+    public function test_toda_consulta_gaql_sai_com_where_e_sem_tamanho_de_pagina(): void
     {
         $conta = GoogleAdsAccount::factory()->create([
             'user_id' => $this->admin->id,
@@ -749,10 +751,12 @@ class CopilotoDoGoogleAdsTest extends TestCase
         ]);
 
         $consultas = [];
+        $paginas = [];
 
         $busca = Mockery::mock(GoogleAdsServiceClient::class);
-        $busca->shouldReceive('search')->andReturnUsing(function (SearchGoogleAdsRequest $pedido) use (&$consultas): void {
+        $busca->shouldReceive('search')->andReturnUsing(function (SearchGoogleAdsRequest $pedido) use (&$consultas, &$paginas): void {
             $consultas[] = $pedido->getQuery();
+            $paginas[] = $pedido->getPageSize();
 
             throw new RuntimeException('a leitura é cortada de propósito, depois de registrar a consulta');
         });
@@ -780,5 +784,6 @@ class CopilotoDoGoogleAdsTest extends TestCase
         $this->assertCount(2, $consultas);
         $this->assertMatchesRegularExpression('/FROM campaign WHERE segments\.date/', $consultas[0]);
         $this->assertMatchesRegularExpression('/FROM ad_group_ad WHERE ad_group\.id = \d+ AND segments\.date/', $consultas[1]);
+        $this->assertSame([0, 0], $paginas, 'O Google fixa a página em 10.000 linhas e recusa qualquer page_size.');
     }
 }
