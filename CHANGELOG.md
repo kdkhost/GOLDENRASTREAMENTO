@@ -3,6 +3,26 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.62.6] - 2026-11-11
+
+### Corrigido
+- **Pausar uma campanha escrevia no Google e a tela morria antes de responder.** O painel chamou
+  `$resultado->getCampaignResourceName()` sobre o resultado do `mutateCampaigns`, e a V26 não tem
+  esse método — o `MutateCampaignResult` só expõe `getResourceName()` e `getCampaign()`. Como o
+  acessor roda depois da escrita, a sequência era: o Google grava a mudança de status, o PHP estoura
+  `Error: Call to undefined method ...::getCampaignResourceName()` e o administrador vê uma página
+  morta sobre uma ação que aconteceu. Prova na conta real: a linha `campanha.mudar_status` do log
+  guarda o erro do método inexistente, e a leitura seguinte da campanha já traz `PAUSED` — o Google
+  gravou, o painel não respondeu. Agora o endereço sai de `getResourceName()`, e o botão
+  responde com a campanha pausada.
+
+### Testes
+- **A assinatura do SDK ficou presa a um teste.** Novo teste em `ConexaoGoogleAdsTest` exerce o
+  caminho real de `mudarStatus()` com o cliente da biblioteca no lugar (`GoogleAdsClient` e
+  `CampaignServiceClient` mockados, resposta `MutateCampaignsResponse` de verdade): se um futuro
+  upgrade renomear o acessor outra vez, a suíte avisa antes do painel escrever no Google e perder a
+  resposta.
+
 ## [2.62.5] - 2026-11-11
 
 ### Corrigido

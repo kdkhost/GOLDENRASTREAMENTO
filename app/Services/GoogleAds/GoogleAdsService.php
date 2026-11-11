@@ -107,7 +107,7 @@ class GoogleAdsService
 
         try {
             $resposta = $this->montarCliente($refreshToken)->getCustomerServiceClient()
-                ->listAccessibleCustomers(new ListAccessibleCustomersRequest());
+                ->listAccessibleCustomers(new ListAccessibleCustomersRequest);
 
             $ids = [];
 
@@ -182,7 +182,7 @@ class GoogleAdsService
      */
     private function montarCliente(string $refreshToken, ?string $customerId = null): GoogleAdsClient
     {
-        $oauth = (new OAuth2TokenBuilder())
+        $oauth = (new OAuth2TokenBuilder)
             ->withClientId((string) config('services.google_ads.client_id'))
             ->withClientSecret((string) config('services.google_ads.client_secret'))
             ->withRefreshToken($refreshToken)
@@ -193,7 +193,7 @@ class GoogleAdsService
         // enquanto o `customer_id` da consulta diz de qual conta a resposta fala.
         $mcc = (string) config('google_ads.login_customer_id');
 
-        $construtor = (new GoogleAdsClientBuilder())
+        $construtor = (new GoogleAdsClientBuilder)
             ->withLoginCustomerId($mcc !== '' ? (int) $mcc : null)
             ->withTransport((string) config('google_ads.transporte', 'rest'))
             ->withOAuth2Credential($oauth);
@@ -322,7 +322,8 @@ class GoogleAdsService
      *
      * @return array<int, array{id:string, titulo:string, situacao:string, impressoes:int, cliques:int, custo_centavos:int}>
      */
-    public function listarAnunciosDoGrupo(GoogleAdsAccount $conta, string $grupoId, int $limite = 50, int $dias = 30): array    {
+    public function listarAnunciosDoGrupo(GoogleAdsAccount $conta, string $grupoId, int $limite = 50, int $dias = 30): array
+    {
         $inicio = microtime(true);
 
         if (! preg_match('/^\d{6,15}$/', $grupoId)) {
@@ -443,7 +444,10 @@ class GoogleAdsService
                 'campanha_id' => $campanhaId,
                 'status' => $status,
                 'status_rotulo' => $this->traduzStatus($status),
-                'resource_name' => $resultado ? $resultado->getCampaignResourceName() : null,
+                // O resultado do mutate de campanhas traz o endereço do objeto em
+                // `resource_name`; não existe `getCampaignResourceName()` na V26, e chamar o
+                // método inexistente estourava o PHP depois de o Google já ter escrito.
+                'resource_name' => $resultado ? $resultado->getResourceName() : null,
             ];
 
             $this->registrar($conta, $validarSo ? 'campanha.validar' : 'campanha.mudar_status', $resumo, $resposta, null, $inicio);

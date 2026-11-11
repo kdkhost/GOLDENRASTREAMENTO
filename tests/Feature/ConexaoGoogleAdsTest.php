@@ -4,10 +4,15 @@ namespace Tests\Feature;
 
 use App\Jobs\SyncGoogleAdsMetrics;
 use App\Livewire\RsaPreview;
+use App\Mail\ContaGoogleAdsDesconectada;
 use App\Models\GoogleAdsAccount;
 use App\Models\User;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Support\GoogleAdsCache;
+use Google\Ads\GoogleAds\Lib\V26\GoogleAdsClient;
+use Google\Ads\GoogleAds\V26\Services\Client\CampaignServiceClient;
+use Google\Ads\GoogleAds\V26\Services\MutateCampaignResult;
+use Google\Ads\GoogleAds\V26\Services\MutateCampaignsResponse;
 use Google\ApiCore\ApiException;
 use Google\Rpc\Code;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -322,6 +327,37 @@ class ConexaoGoogleAdsTest extends TestCase
         Queue::assertPushed(SyncGoogleAdsMetrics::class, 1);
     }
 
+    /**
+     * Pausar escreve e devolve o endereço da campanha.
+     *
+     * O endereço sai do resultado do mutate, e o nome do método mudou entre as versões da API:
+     * chamar um acessor que não existe estoura o PHP depois de o Google já ter gravado, e a tela
+     * fica sem resposta sobre uma mudança que aconteceu. Este teste exercita o caminho real, com
+     * o cliente da biblioteca no lugar, para que a assinatura fique presa ao SDK.
+     */
+    public function test_pausar_devolve_o_endereco_da_campanha_em_vez_de_estourar_depois_de_escrever(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create(['user_id' => $this->admin->id]);
+        $endereco = 'customers/'.$conta->customer_id.'/campaigns/12345678';
+
+        $servicoCampanhas = Mockery::mock(CampaignServiceClient::class);
+        $servicoCampanhas->shouldReceive('mutateCampaigns')
+            ->once()
+            ->andReturn(new MutateCampaignsResponse(['results' => [new MutateCampaignResult(['resource_name' => $endereco])]]));
+
+        $cliente = Mockery::mock(GoogleAdsClient::class);
+        $cliente->shouldReceive('getCampaignServiceClient')->once()->andReturn($servicoCampanhas);
+
+        $servico = Mockery::mock(GoogleAdsService::class)->makePartial();
+        $servico->shouldReceive('clientFor')->once()->with($conta)->andReturn($cliente);
+
+        $resposta = $servico->mudarStatus($conta, '12345678', 'PAUSED');
+
+        $this->assertTrue($resposta['escreveu']);
+        $this->assertSame($endereco, $resposta['resource_name']);
+        $this->assertSame('Pausada', $resposta['status_rotulo']);
+    }
+
     public function test_ninguem_escreve_na_conta_de_outro(): void
     {
         $deOutro = GoogleAdsAccount::factory()->create();
@@ -362,7 +398,7 @@ class ConexaoGoogleAdsTest extends TestCase
         $conta->refresh();
         $this->assertSame(GoogleAdsAccount::DESCONECTADO, $conta->status);
         $this->assertStringContainsString('recusou a credencial', (string) $conta->motivo_desconexao);
-        Mail::assertQueued(\App\Mail\ContaGoogleAdsDesconectada::class);
+        Mail::assertQueued(ContaGoogleAdsDesconectada::class);
 
         // A tela mostra o motivo em vez de girar atrás de um job que já morreu.
         $erro = GoogleAdsCache::erro($conta, 30);
