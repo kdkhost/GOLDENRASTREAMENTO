@@ -94,10 +94,17 @@ class GoogleAdsPlano extends Model
         return (array) ($this->validacao()['avisos'] ?? []);
     }
 
-    /** Só um plano aprovado pode ser escrito no Google — e nunca duas vezes. */
+    /**
+     * Só um plano aprovado pode ser escrito no Google — e nunca duas vezes.
+     *
+     * `falhou` também pode. A tentativa parou no meio e nada foi aplicado por completo, então a
+     * aprovação humana continua valendo para o mesmo plano. Sem essa saída o plano ficava preso:
+     * aplicar exigia "aprovado" e aprovar exigia "rascunho", e a tela mandava a pessoa aprovar um
+     * plano que ela já tinha aprovado.
+     */
     public function podeAplicar(): bool
     {
-        return $this->status === self::APROVADO;
+        return in_array($this->status, [self::APROVADO, self::FALHOU], true);
     }
 
     /** O identificador da campanha que a aplicação criou, quando ela criou alguma. */

@@ -3,6 +3,33 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.62.2] - 2026-11-11
+
+### Corrigido
+- **Apliquei e o painel mandou aprovar de novo.** O plano aprovado que tinha parado no meio da
+  escrita ficava marcado como `falhou`; aplicar exigia `aprovado` e aprovar exigia `rascunho` —
+  as duas portas fechadas para o mesmo plano, e a tela ainda dizia "Aprove primeiro, depois
+  aplique". `GoogleAdsPlano::podeAplicar()` passou a aceitar `falhou` (a aprovação humana continua
+  valendo, nada foi aplicado por inteiro), a ficha oferece **"Tentar de novo no Google Ads"** com o
+  motivo da parada anterior, e o recado de aprovar só aparece para quem realmente tem um rascunho.
+- **O endereço da API saía com dois "v".** A config escreve a versão como `V26` e o
+  `'v'.strtolower(...)` de `GoogleAdsWriter::api()` colava outro `v` na frente, virando
+  `https://googleads.googleapis.com/vv26`: o Google respondia 404 à primeira escrita — a
+  `regiao.sugerir` que travou o plano do Marcelo. A base agora normaliza `V26`, `v26` e `26` para
+  um `v` só, e o fake dos testes deixou de aceitar coringa no lugar da versão, que era o que
+  escondia o erro.
+- **A leitura das campanhas mandava GAQL sem `WHERE`.** `campanhas.metricas` juntava
+  `FROM campaign` direto com `segments.date DURING ...`, sintaxe que o Google recusa — o
+  agendador gravava falha em cada rodada. Cada chamada escreve o conector que a cláusula de data
+  exige: `WHERE` antes da primeira condição, `AND` quando já houve filtro por grupo de anúncios.
+
+### Testes
+- `CopilotoDoGoogleAdsTest`: seis provas novas — a base da API com as três grafias de versão, a
+  sugestão de região no endereço de raiz, o retry de um plano `falhou` que termina `aplicado` com o
+  erro limpo, a ficha que oferece "Tentar de novo" sem oferecer "Aprovar o plano", o recado honesto
+  de quem tenta aprovar o que já estava aprovado, e o GAQL das duas leituras conferido na consulta
+  que sai do serviço (814 testes, 12.866 asserções).
+
 ## [2.62.1] - 2026-10-31
 
 ### Corrigido

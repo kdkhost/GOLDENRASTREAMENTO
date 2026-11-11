@@ -7,13 +7,19 @@ use App\Models\GoogleAdsAccount;
 use App\Models\GoogleAdsPlano;
 use App\Models\GoogleAdsRelatorio;
 use App\Models\User;
+use App\Services\GoogleAds\GoogleAdsService;
 use App\Services\GoogleAds\PlanoDeCampanha;
 use App\Support\GoogleAdsCache;
+use Google\Ads\GoogleAds\Lib\V26\GoogleAdsClient;
+use Google\Ads\GoogleAds\V26\Services\Client\GoogleAdsServiceClient;
+use Google\Ads\GoogleAds\V26\Services\SearchGoogleAdsRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -208,31 +214,35 @@ class CopilotoDoGoogleAdsTest extends TestCase
     /**
      * A resposta simulada da API de escrita, na ordem em que cada etapa é chamada.
      *
-     * O padrão geral fica por último porque o fake escolhe o primeiro que casa: um endpoint
-     * esquecido cai no genérico e devolve `results`, que é o que quase todas as etapas leem.
+     * Os padrões carregam o endereço completo (`v26`, com um "v" só) de propósito: um fake
+     * com `*` solto no lugar da versão casa com qualquer grafia e esconde o `vv26` que o Google
+     * responderia 404. O padrão geral fica por último porque o fake escolhe o primeiro que casa:
+     * um endpoint esquecido cai nele e devolve `results`, que é o que quase todas as etapas leem.
      */
     private function fakeDaEscrita(string $customerId = '1234567890'): void
     {
+        $api = 'https://googleads.googleapis.com/v26';
+
         Http::fake([
             'https://oauth2.googleapis.com/token' => Http::response([
                 'access_token' => 'token-de-acesso',
                 'expires_in' => 3600,
             ]),
-            'https://googleads.googleapis.com/*/geoTargetConstants:suggest' => Http::response([
+            $api.'/geoTargetConstants:suggest' => Http::response([
                 'geoTargetConstantSuggestions' => [
                     ['geoTargetConstant' => ['resourceName' => 'geoTargetConstants/1001']],
                 ],
             ]),
-            'https://googleads.googleapis.com/*/campaignBudgets:mutate' => Http::response([
+            $api.'/*/campaignBudgets:mutate' => Http::response([
                 'results' => [['resourceName' => "customers/{$customerId}/campaignBudgets/111"]],
             ]),
-            'https://googleads.googleapis.com/*/campaigns:mutate' => Http::response([
+            $api.'/*/campaigns:mutate' => Http::response([
                 'results' => [['resourceName' => "customers/{$customerId}/campaigns/999"]],
             ]),
-            'https://googleads.googleapis.com/*/adGroups:mutate' => Http::response([
+            $api.'/*/adGroups:mutate' => Http::response([
                 'results' => [['resourceName' => "customers/{$customerId}/adGroups/222"]],
             ]),
-            'https://googleads.googleapis.com/*' => Http::response([
+            $api.'/*' => Http::response([
                 'results' => [['resourceName' => "customers/{$customerId}/objects/333"]],
             ]),
         ]);
@@ -463,7 +473,7 @@ class CopilotoDoGoogleAdsTest extends TestCase
 
         // O corpo da campanha é o que o Google exige: pesquisa, pausada e com teto de lance.
         Http::assertSent(function (Request $requisicao): bool {
-            if (! str_contains($requisicao->url(), 'campaigns:mutate')) {
+            if ($requisicao->url() !== 'https://googleads.googleapis.com/v26/customers/1234567890/campaigns:mutate') {
                 return false;
             }
 
@@ -474,9 +484,10 @@ class CopilotoDoGoogleAdsTest extends TestCase
                 && data_get($corpo, 'operations.0.create.maximizeClicks') !== null;
         });
 
-        // O token saiu do refresh token gravado, e a região foi resolvida pela sugestão.
+        // O token saiu do refresh token gravado, e a região foi resolvida pela sugestão — no
+        // endereço de raiz que o Google publica, não debaixo de `customers/{id}`.
         Http::assertSent(fn (Request $requisicao): bool => str_contains($requisicao->url(), 'oauth2.googleapis.com/token'));
-        Http::assertSent(fn (Request $requisicao): bool => str_contains($requisicao->url(), 'geoTargetConstants:suggest'));
+        Http::assertSent(fn (Request $requisicao): bool => $requisicao->url() === 'https://googleads.googleapis.com/v26/geoTargetConstants:suggest');
 
         $this->assertDatabaseHas('google_ads_api_logs', [
             'google_ads_account_id' => $conta->id,
@@ -499,6 +510,135 @@ class CopilotoDoGoogleAdsTest extends TestCase
             ->post(route('admin.google-ads.copiloto.aplicar', $plano), ['conta' => $conta->id])
             ->assertSessionHas('error', fn (string $mensagem): bool => str_contains($mensagem, 'já foi aplicado'));
 
+        Http::assertNothingSent();
+    }
+
+    /**
+     * A base da API tem um "v" só, qualquer que seja a grafia da versão na config.
+     *
+     * A config escreve `V26` e o endereço do Google quer `v26`. Juntar os dois com `'v'.$versao`
+     * fazia `vv26`, e a primeira escrita da aplicação morria em 404 — a tela chamava isso de
+     * "o Google recusou a etapa". Os três grafias vêm do mundo real: `V26` é o que está na
+     * config hoje, `v26` é como o endereço se escreve e `26` é o número solto.
+     */
+    public function test_a_base_da_api_escreve_a_versao_com_um_v_só(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        foreach (['V26', 'v26', '26'] as $grafia) {
+            config(['google_ads.versao_api' => $grafia]);
+            $this->fakeDaEscrita();
+
+            $this->actingAs($this->admin)
+                ->post(route('admin.google-ads.copiloto.aplicar', $this->planoPersistido(GoogleAdsPlano::APROVADO)), ['conta' => $conta->id])
+                ->assertSessionHas('success', fn (string $mensagem): bool => str_contains($mensagem, 'pausada'));
+
+            Http::assertNotSent(function (Request $requisicao): bool {
+                return str_contains($requisicao->url(), 'googleads.googleapis.com')
+                    && ! str_starts_with($requisicao->url(), 'https://googleads.googleapis.com/v26/');
+            });
+        }
+    }
+
+    /**
+     * A região é resolvida pelo endereço que o Google publica, não por um palpite.
+     *
+     * O `geoTargetConstants:suggest` é raiz — não mora sob `customers/{id}` — e um `customers/`
+     * a mais na frente dele devolve 404. O padrão do fake abaixo só casa com o endereço certo.
+     */
+    public function test_a_sugestao_de_regiao_sai_no_endereco_de_raiz_da_api(): void
+    {
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/geoTargetConstants:suggest' => Http::response([
+                'geoTargetConstantSuggestions' => [
+                    ['geoTargetConstant' => ['resourceName' => 'geoTargetConstants/1001']],
+                ],
+            ]),
+            'https://googleads.googleapis.com/v26/*' => Http::response([
+                'results' => [['resourceName' => 'customers/1234567890/objects/333']],
+            ]),
+        ]);
+
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.aplicar', $this->planoPersistido(GoogleAdsPlano::APROVADO)), ['conta' => $conta->id])
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn (Request $requisicao): bool => $requisicao->url() === 'https://googleads.googleapis.com/v26/geoTargetConstants:suggest');
+    }
+
+    /**
+     * Um plano que falhou na escrita volta a ser aplicável — a aprovação não se perde.
+     *
+     * Era o beco sem saída que o painel mostrava como "Aprove primeiro": a aplicação que parava
+     * no meio deixava o plano como `falhou`, aplicar exigia `aprovado` e aprovar exigia
+     * `rascunho`. Aqui a mesma tentativa que criou a campanha pausada encerra o plano.
+     */
+    public function test_o_plano_que_falhou_na_escrita_pode_ser_aplicado_de_novo(): void
+    {
+        $this->fakeDaEscrita();
+
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+        $plano = $this->planoPersistido(GoogleAdsPlano::FALHOU);
+        $plano->forceFill(['erro' => 'O Google recusou a etapa "regiao.sugerir".'])->save();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.aplicar', $plano), ['conta' => $conta->id])
+            ->assertSessionHas('success', fn (string $mensagem): bool => str_contains($mensagem, 'pausada'))
+            // Sem recado de erro: o "Aprove primeiro" que a tela dava era o beco sem saída.
+            ->assertSessionMissing('error');
+
+        $plano->refresh();
+
+        $this->assertSame(GoogleAdsPlano::APLICADO, $plano->status);
+        $this->assertNull($plano->erro);
+    }
+
+    /** Na ficha, o plano que falhou oferece o retry — e não manda aprovar de novo. */
+    public function test_a_ficha_de_plano_falhou_oferece_tentar_de_novo(): void
+    {
+        GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+        $plano = $this->planoPersistido(GoogleAdsPlano::FALHOU);
+        $plano->forceFill(['erro' => 'O Google recusou a etapa "regiao.sugerir".'])->save();
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.google-ads.copiloto.show', $plano))
+            ->assertOk()
+            ->assertSee('Tentar de novo no Google Ads')
+            ->assertSee('A tentativa anterior parou no meio')
+            ->assertDontSee('Aprovar o plano')
+            ->assertDontSee('Só um plano aprovado pode ser aplicado');
+    }
+
+    /** Aprovar um plano que já estava aprovado diz o que realmente falhou. */
+    public function test_aprovar_um_plano_que_falhou_aponta_o_tentar_de_novo(): void
+    {
+        $plano = $this->planoPersistido(GoogleAdsPlano::FALHOU);
+
+        Http::fake();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.aprovar', $plano))
+            ->assertSessionHas('error', fn (string $mensagem): bool => str_contains($mensagem, 'Tentar de novo'));
+
+        $this->assertSame(GoogleAdsPlano::FALHOU, $plano->refresh()->status);
         Http::assertNothingSent();
     }
 
@@ -591,5 +731,54 @@ class CopilotoDoGoogleAdsTest extends TestCase
             ->assertSee('Analisar com o copiloto')
             ->assertSee('Rastreamento de frota')
             ->assertSee('Baixar CSV');
+    }
+
+    /**
+     * Toda consulta GAQL que sai do sistema é sintaticamente válida para o Google.
+     *
+     * O `WHERE` precisa vir antes da primeira condição e o `AND` antes de `segments.date` quando
+     * já existe outro filtro. A cláusula de data é escrita por um único ajudante e as chamadas
+     * colocam o conector que falta; se o conector some, o Google recusa a leitura e o agendador
+     * enche o log de falhas a cada rodada.
+     */
+    public function test_toda_consulta_gaql_sai_com_where_e_and_nos_lugares_certos(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $consultas = [];
+
+        $busca = Mockery::mock(GoogleAdsServiceClient::class);
+        $busca->shouldReceive('search')->andReturnUsing(function (SearchGoogleAdsRequest $pedido) use (&$consultas): void {
+            $consultas[] = $pedido->getQuery();
+
+            throw new RuntimeException('a leitura é cortada de propósito, depois de registrar a consulta');
+        });
+
+        $cliente = Mockery::mock(GoogleAdsClient::class);
+        $cliente->shouldReceive('getGoogleAdsServiceClient')->andReturn($busca);
+
+        $servico = Mockery::mock(GoogleAdsService::class)->makePartial();
+        $servico->shouldReceive('clientFor')->with($conta)->andReturn($cliente);
+
+        $leituras = [
+            'campanhas com métricas' => fn () => $servico->buscarCampanhasComMetricas($conta, 30),
+            'anúncios do grupo' => fn () => $servico->listarAnunciosDoGrupo($conta, '123456789', 5, 30),
+        ];
+
+        foreach ($leituras as $nome => $ler) {
+            try {
+                $ler();
+                $this->fail("A leitura «{$nome}» deveria ter sido cortada depois de registrar a consulta.");
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('cortada de propósito', $e->getMessage(), "A leitura «{$nome}» falhou por outro motivo.");
+            }
+        }
+
+        $this->assertCount(2, $consultas);
+        $this->assertMatchesRegularExpression('/FROM campaign WHERE segments\.date/', $consultas[0]);
+        $this->assertMatchesRegularExpression('/FROM ad_group_ad WHERE ad_group\.id = \d+ AND segments\.date/', $consultas[1]);
     }
 }

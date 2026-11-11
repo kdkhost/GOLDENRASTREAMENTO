@@ -21,6 +21,7 @@
     $grupos = (array) ($conteudo['grupos'] ?? []);
     $briefing = (array) ($plano->briefing_json ?? []);
     $forcaChave = (string) ($forca['chave'] ?? '');
+    $tentarDeNovo = $plano->status === \App\Models\GoogleAdsPlano::FALHOU;
 @endphp
 
 <div class="row g-3">
@@ -259,7 +260,13 @@
                 @else
                     <p class="small text-secondary mb-0">O plano está pronto. Quem aprova é o administrador.</p>
                 @endif
-            @elseif ($plano->status === \App\Models\GoogleAdsPlano::APROVADO)
+            @elseif ($plano->podeAplicar())
+                @if ($tentarDeNovo)
+                    <p class="small text-secondary mb-3">
+                        A tentativa anterior parou no meio: {{ rtrim($plano->erro ?: 'o Google não concluiu a escrita', '. ') }}.
+                        Nenhuma campanha ficou de pé por inteiro. Confira a conta no Google Ads, apague o que sobrou, e tente de novo — a aprovação continua valendo.
+                    </p>
+                @endif
                 @if (! $ehAdmin)
                     <p class="small text-secondary mb-0">Plano aprovado. Quem aplica no Google é o administrador.</p>
                 @elseif ($contas->isEmpty())
@@ -280,7 +287,9 @@
                 @else
                     <form method="POST" action="{{ route('admin.google-ads.copiloto.aplicar', $plano) }}" class="row g-3"
                         data-atualiza=".app-content"
-                        data-confirmar="Criar esta campanha no Google Ads? Ela nasce pausada e não gasta nada até você ativar.">
+                        data-confirmar="{{ $tentarDeNovo
+                            ? 'Tentar de novo no Google Ads? Se a tentativa anterior deixou uma campanha pela metade, apague-a antes. A campanha nova nasce pausada e não gasta nada.'
+                            : 'Criar esta campanha no Google Ads? Ela nasce pausada e não gasta nada até você ativar.' }}">
                         @csrf
                         <div class="col-12">
                             <label class="form-label" for="aplicar-conta">Conta do Google Ads</label>
@@ -291,14 +300,15 @@
                             </select>
                         </div>
                         <div class="col-12">
-                            <button class="btn btn-golden w-100"><i class="fas fa-cloud-arrow-up me-1" aria-hidden="true"></i> Aplicar no Google Ads</button>
+                            <button class="btn btn-golden w-100">
+                                <i class="fas {{ $tentarDeNovo ? 'fa-rotate-right' : 'fa-cloud-arrow-up' }} me-1" aria-hidden="true"></i>
+                                {{ $tentarDeNovo ? 'Tentar de novo no Google Ads' : 'Aplicar no Google Ads' }}
+                            </button>
                         </div>
                     </form>
                 @endif
-            @elseif ($plano->status === \App\Models\GoogleAdsPlano::FALHOU)
-                <p class="small text-secondary mb-0">
-                    A aplicação parou antes de terminar. Confira a conta no Google Ads — uma campanha pode ter sido criada incompleta — e gere um plano novo se precisar.
-                </p>
+            @elseif ($plano->status === \App\Models\GoogleAdsPlano::DESCARTADO)
+                <p class="small text-secondary mb-0">Este plano foi descartado. Gere um plano novo a partir do briefing.</p>
             @else
                 <p class="small text-secondary mb-0">Este plano já foi aplicado. Para mudar algo, gere um plano novo a partir do briefing.</p>
             @endif

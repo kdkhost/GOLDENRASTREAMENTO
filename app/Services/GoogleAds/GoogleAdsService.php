@@ -335,7 +335,7 @@ class GoogleAdsService
 
         $gaql = 'SELECT ad_group.id, ad_group.name, ad_group_ad.status, '
             .'metrics.impressions, metrics.clicks, metrics.cost_micros '
-            ."FROM ad_group_ad WHERE ad_group.id = {$grupoId} {$this->clausulaData($dias)} "
+            ."FROM ad_group_ad WHERE ad_group.id = {$grupoId} AND {$this->clausulaData($dias)} "
             ."ORDER BY metrics.impressions DESC LIMIT {$limite}";
 
         try {
@@ -544,14 +544,16 @@ class GoogleAdsService
             .'metrics.ctr, metrics.average_cpc, metrics.conversions_value';
 
         return 'SELECT '.$campos.' FROM campaign '
-            .$this->clausulaData($dias)
+            .'WHERE '.$this->clausulaData($dias)
             .'ORDER BY metrics.cost_micros DESC';
     }
 
     /**
-     * Cláusula de data da consulta. As janelas do painel usam o `DURING` do Google; fora
-     * delas, o período vira intervalo fechado até ontem — o dia de hoje ainda está chegando, e
-     * compará-lo com um mês inteiro seria mostrar um número pela metade.
+     * A condição de data da consulta, sem o `WHERE` e sem o `AND` que a antecedem: cada chamada
+     * escreve o seu, porque há quem filtre por campanha antes de filtrar por data. As janelas do
+     * painel usam o `DURING` do Google; fora delas, o período vira intervalo fechado até ontem —
+     * o dia de hoje ainda está chegando, e compará-lo com um mês inteiro seria mostrar um número
+     * pela metade.
      */
     private function clausulaData(int $dias): string
     {

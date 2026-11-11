@@ -525,8 +525,17 @@ final class GoogleAdsWriter
         ]);
     }
 
+    /**
+     * A base da API, com um "v" só.
+     *
+     * A config escreve a versão como `V26` e o endereço quer `v26`: juntar os dois sem conferir
+     * fazia `vv26`, e o Google respondia 404 à primeira escrita — a tela chamava isso de
+     * "o Google recusou a etapa". Aceita `V26`, `v26` e `26`.
+     */
     private function api(): string
     {
-        return 'https://googleads.googleapis.com/v'.strtolower((string) config('google_ads.versao_api', 'V26'));
+        $versao = ltrim(strtolower((string) config('google_ads.versao_api', 'v26')), 'v');
+
+        return 'https://googleads.googleapis.com/v'.$versao;
     }
 }

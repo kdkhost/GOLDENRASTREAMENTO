@@ -169,7 +169,9 @@ class GoogleAdsCopilotoController extends Controller
         $this->autoriza($request, $plano);
 
         if ($plano->status !== GoogleAdsPlano::RASCUNHO) {
-            return back()->with('error', 'Só um plano em rascunho pode ser aprovado.');
+            return back()->with('error', $plano->status === GoogleAdsPlano::FALHOU
+                ? 'Este plano já está aprovado — o que falhou foi a escrita no Google. Use "Tentar de novo".'
+                : 'Só um plano em rascunho pode ser aprovado.');
         }
 
         if ($plano->problemas() !== []) {
@@ -198,8 +200,12 @@ class GoogleAdsCopilotoController extends Controller
             return back()->with('error', 'Este plano já foi aplicado no Google Ads.');
         }
 
+        if ($plano->status === GoogleAdsPlano::RASCUNHO) {
+            return back()->with('error', 'Este plano ainda é um rascunho. Aprove primeiro, depois aplique.');
+        }
+
         if (! $plano->podeAplicar()) {
-            return back()->with('error', 'Só um plano aprovado pode ser aplicado. Aprove primeiro, depois aplique.');
+            return back()->with('error', 'Este plano está como '.$plano->rotuloStatus().'. Gere um plano novo a partir do briefing.');
         }
 
         if ($plano->problemas() !== []) {
