@@ -142,7 +142,7 @@ final class Copiloto
             'Devolva **apenas** um objeto JSON válido: sem texto antes ou depois, sem comentários e sem cerca de código.',
             'Formato exato do plano:'
                 .' {"nome":"...","objetivo":"leads|vendas|whatsapp|ligacoes",'
-                .'"estrategia_lance":"MAXIMIZE_CLICKS|MANUAL_CPC",'
+                .'"estrategia_lance":"MANUAL_CPC",'
                 .'"cpc_maximo_centavos":200,"orcamento_diario":40.00,'
                 .'"url":"https://...","regioes":["..."],"idiomas":["Português"],'
                 .'"grupos":[{"nome":"...","tema":"...",'

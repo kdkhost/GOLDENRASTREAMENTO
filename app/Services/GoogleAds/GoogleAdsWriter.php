@@ -8,6 +8,7 @@ use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
 use App\Support\ChavesDeIntegracao;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 /**
  * A única mão que escreve no Google Ads: cria o orçamento, a campanha pausada, os grupos, o
@@ -166,7 +167,8 @@ final class GoogleAdsWriter
                 'locationNames' => ['names' => [$nome]],
             ], 'regiao.sugerir');
 
-            $recurso = (string) data_get($resposta, 'geoTargetConstantSuggestions.0.geoTargetConstant.resourceName', '');
+            $sugestoes = (array) data_get($resposta, 'geoTargetConstantSuggestions', []);
+            $recurso = $this->melhorRegiao($sugestoes, $nome);
 
             if ($recurso === '') {
                 throw new GoogleAdsFalhou(
@@ -186,6 +188,38 @@ final class GoogleAdsWriter
         }
 
         return $resolvidas;
+    }
+
+    /**
+     * A sugestão que tem o nome pedido, não apenas a primeira da lista.
+     *
+     * O Google ordena por proximidade e isso nem casa com o pedido: "Mato Grosso" devolve
+     * "Mato Grosso do Sul" na frente. Ficar com `[0]` segmentava o estado errado e, como as duas
+     * buscas acabavam no mesmo identificador, o Mato Grosso de verdade sumia da campanha.
+     *
+     * @param  array<int, array<string, mixed>>  $sugestoes
+     */
+    private function melhorRegiao(array $sugestoes, string $nome): string
+    {
+        $procurado = strtolower(Str::ascii($nome));
+        $primeira = '';
+
+        foreach ($sugestoes as $sugestao) {
+            $constante = (array) ($sugestao['geoTargetConstant'] ?? []);
+            $recurso = (string) ($constante['resourceName'] ?? '');
+
+            if ($recurso === '') {
+                continue;
+            }
+
+            $primeira = $primeira !== '' ? $primeira : $recurso;
+
+            if (strtolower(Str::ascii((string) ($constante['name'] ?? ''))) === $procurado) {
+                return $recurso;
+            }
+        }
+
+        return $primeira;
     }
 
     /** O orçamento diário da campanha; o recurso criado é o que a campanha referencia. */
@@ -237,13 +271,13 @@ final class GoogleAdsWriter
             'containsEuPoliticalAdvertising' => 'DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING',
         ];
 
-        if (($plano['estrategia_lance'] ?? 'MAXIMIZE_CLICKS') === 'MANUAL_CPC') {
-            $corpo['manualCpc'] = new \stdClass();
-        } else {
-            $corpo['maximizeClicks'] = [
-                'cpcBidCeilingMicros' => (string) ((int) ($plano['cpc_maximo_centavos'] ?? 200) * 10000),
-            ];
-        }
+        // A V26 não tem mais campo de "maximizar cliques" na campanha: o Google tirou o
+        // `maximizeClicks` (e o tipo MAXIMIZE_CLICKS do enum), o `targetCpc` que poderia
+        // substituí-lo foi recusado para esta conta (`OPERATION_NOT_PERMITTED_FOR_CONTEXT`) e
+        // nenhuma campanha é aceita sem estratégia de lance. Prova na API viva, em `validateOnly`.
+        // Resta o CPC manual, e é o que o plano já escreve: `cpc_maximo_centavos` vira o lance
+        // máximo de cada grupo em `criarGrupos()`.
+        $corpo['manualCpc'] = ['enhancedCpcEnabled' => false];
 
         $resposta = $this->chamar($conta, 'customers/'.$conta->customer_id.'/campaigns:mutate', [
             'operations' => [['create' => $corpo]],

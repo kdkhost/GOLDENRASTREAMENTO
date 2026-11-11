@@ -3,6 +3,39 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.62.5] - 2026-11-11
+
+### Corrigido
+- **A campanha parava em `campanha.criar` porque pedia uma estratégia que a API não tem mais.**
+  `GoogleAdsWriter::criarCampanha()` escrevia `maximizeClicks.cpcBidCeilingMicros`, e a V26 tirou
+  esse campo do `Campaign` (e o tipo `MAXIMIZE_CLICKS` do enum): o Google respondia
+  `Invalid JSON payload received. Unknown name "maximizeClicks" at 'operations[0].create': Cannot
+  find field` e nada do plano era escrito. Prova na API viva, em modo `validateOnly`: o
+  `targetCpc` que poderia substituí-lo é recusado para a conta
+  (`OPERATION_NOT_PERMITTED_FOR_CONTEXT`), campanha sem estratégia é rejeitada
+  (`campaign_bidding_strategy: REQUIRED`) e a cadeia inteira — orçamento, campanha, as regiões,
+  grupos, anúncio responsivo e palavras — passa com **CPC manual**. O escritor agora sempre escreve
+  `manualCpc`, e o `cpc_maximo_centavos` do plano continua virando o lance máximo de cada grupo,
+  como já fazia.
+- **A região era trocada por outra vizinha.** Na conta real, a sugestão para "Mato Grosso" vinha
+  com "Mato Grosso do Sul" na primeira posição; ficar com a primeira (como a 2.62.4 fazia)
+  segmentava o estado errado e as duas buscas caíam no mesmo identificador, então o Mato Grosso de
+  verdade era descartado como duplicata. A escolha agora procura a sugestão cujo nome bate com o
+  pedido, sem depender de acento nem maiúscula, e só cai na primeira quando nenhuma tem o nome — o
+  plano do Marcelo, que lista os dois, passa a segmentar os dois.
+
+### Mudado
+- **O copiloto só promete o que a API entrega.** A IA passa a pedir `MANUAL_CPC`, e o validador
+  normaliza qualquer estratégia aposentada para CPC manual com o aviso
+  "A estratégia de lance pedida não existe mais na API do Google Ads; o plano ficou em "CPC
+  manual", com o teto de lance por grupo." Os planos já gravados seguem aplicando: a ficha mostra a
+  etiqueta em português do que realmente é escrito.
+
+### Testes
+- `CopilotoDoGoogleAdsTest`: o corpo de `campaigns:mutate` é conferido — sai com `manualCpc` e sem
+  `maximizeClicks`; nova prova de que a região é escolhida pelo nome (os dois Mato Grossos chegam
+  como dois critérios) e de que a estratégia aposentada vira CPC manual com aviso.
+
 ## [2.62.4] - 2026-11-11
 
 ### Corrigido

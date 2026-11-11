@@ -24,8 +24,13 @@ final class PlanoDeCampanha
         'exata' => 'EXACT', 'exact' => 'EXACT',
     ];
 
-    /** As estratégias que o copiloto pode pedir; o resto cai no padrão da casa. */
-    private const ESTRATEGIAS = ['MAXIMIZE_CLICKS', 'MANUAL_CPC'];
+    /**
+     * As estratégias que o copiloto pode pedir; o resto cai no padrão da casa.
+     *
+     * Só CPC manual: a API V26 não cria mais campanha em "maximizar cliques", e o teto de lance
+     * do plano é escrito como lance máximo de cada grupo exatamente nessa estratégia.
+     */
+    private const ESTRATEGIAS = ['MANUAL_CPC'];
 
     /**
      * Confere e normaliza um plano bruto.
@@ -44,7 +49,7 @@ final class PlanoDeCampanha
         $plano = [
             'nome' => self::texto($bruto['nome'] ?? $briefing['nome'] ?? '', 120),
             'objetivo' => (string) ($bruto['objetivo'] ?? $briefing['objetivo'] ?? 'leads'),
-            'estrategia_lance' => strtoupper(self::texto($bruto['estrategia_lance'] ?? 'MAXIMIZE_CLICKS', 30)),
+            'estrategia_lance' => strtoupper(self::texto($bruto['estrategia_lance'] ?? 'MANUAL_CPC', 30)),
             'cpc_maximo_centavos' => self::inteiro($bruto['cpc_maximo_centavos'] ?? 200),
             'url' => self::urlDe($bruto['url'] ?? $briefing['url'] ?? ''),
             'regioes' => self::lista($bruto['regioes'] ?? $briefing['regioes'] ?? []),
@@ -69,8 +74,8 @@ final class PlanoDeCampanha
         }
 
         if (! in_array($plano['estrategia_lance'], self::ESTRATEGIAS, true)) {
-            $plano['estrategia_lance'] = 'MAXIMIZE_CLICKS';
-            $avisos[] = 'A estratégia de lance pedida não é oferecida; o plano ficou em "maximizar cliques".';
+            $plano['estrategia_lance'] = 'MANUAL_CPC';
+            $avisos[] = 'A estratégia de lance pedida não existe mais na API do Google Ads; o plano ficou em "CPC manual", com o teto de lance por grupo.';
         }
 
         $plano['orcamento_diario_centavos'] = self::orcamento($bruto, $briefing, $avisos);

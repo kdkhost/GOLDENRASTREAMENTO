@@ -190,8 +190,10 @@ return [
         ],
 
         'estrategias' => [
-            'MAXIMIZE_CLICKS' => 'Maximizar cliques',
             'MANUAL_CPC' => 'CPC manual',
+            // Plano antigo pode ainda trazer o valor aposentado; a etiqueta continua em português
+            // e diz o que a campanha realmente recebe ao ser aplicada.
+            'MAXIMIZE_CLICKS' => 'CPC manual (o "maximizar cliques" saiu da API do Google Ads)',
         ],
 
         'correspondencias' => [

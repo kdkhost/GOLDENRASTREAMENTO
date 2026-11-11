@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Livewire\RelatorioDoGoogleAds;
 use App\Models\GoogleAdsAccount;
+use App\Models\GoogleAdsCopiloto;
 use App\Models\GoogleAdsPlano;
 use App\Models\GoogleAdsRelatorio;
 use App\Models\User;
@@ -101,7 +102,7 @@ class CopilotoDoGoogleAdsTest extends TestCase
         return array_replace_recursive([
             'nome' => 'Rastreamento para frotas',
             'objetivo' => 'leads',
-            'estrategia_lance' => 'MAXIMIZE_CLICKS',
+            'estrategia_lance' => 'MANUAL_CPC',
             'cpc_maximo_centavos' => 250,
             'orcamento_diario' => 120,
             'url' => 'https://goldenrastreamento.com.br/frota',
@@ -154,9 +155,9 @@ class CopilotoDoGoogleAdsTest extends TestCase
      * lugares — e o dia em que o validador mudar, o teste continuaria passando com um plano que
      * não existe mais.
      */
-    private function planoPersistido(string $status = GoogleAdsPlano::RASCUNHO, ?User $dono = null): GoogleAdsPlano
+    private function planoPersistido(string $status = GoogleAdsPlano::RASCUNHO, ?User $dono = null, array $ajustes = []): GoogleAdsPlano
     {
-        $conferido = PlanoDeCampanha::conferir($this->planoDaIA(), $this->briefing());
+        $conferido = PlanoDeCampanha::conferir($this->planoDaIA($ajustes), $this->briefing());
 
         return GoogleAdsPlano::create([
             'user_id' => ($dono ?? $this->admin)->id,
@@ -279,7 +280,7 @@ class CopilotoDoGoogleAdsTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertSessionHas('success');
 
-        $ficha = \App\Models\GoogleAdsCopiloto::sole();
+        $ficha = GoogleAdsCopiloto::sole();
         $this->assertSame('direto e técnico', $ficha->tom);
         $this->assertSame('Nunca prometa posição no Google.', $ficha->instrucoes);
 
@@ -471,7 +472,8 @@ class CopilotoDoGoogleAdsTest extends TestCase
         $this->assertSame('PAUSED', $plano->aplicacao_json['status']);
         $this->assertSame($conta->id, $plano->google_ads_account_id);
 
-        // O corpo da campanha é o que o Google exige: pesquisa, pausada e com teto de lance.
+        // O corpo da campanha é o que a V26 aceita: pesquisa, pausada e em CPC manual — com o
+        // `maximizeClicks` aposentado fora do corpo, que é o que fazia o Google recusar a escrita.
         Http::assertSent(function (Request $requisicao): bool {
             if ($requisicao->url() !== 'https://googleads.googleapis.com/v26/customers/1234567890/campaigns:mutate') {
                 return false;
@@ -481,7 +483,8 @@ class CopilotoDoGoogleAdsTest extends TestCase
 
             return data_get($corpo, 'operations.0.create.status') === 'PAUSED'
                 && data_get($corpo, 'operations.0.create.advertisingChannelType') === 'SEARCH'
-                && data_get($corpo, 'operations.0.create.maximizeClicks') !== null;
+                && data_get($corpo, 'operations.0.create.manualCpc') !== null
+                && data_get($corpo, 'operations.0.create.maximizeClicks') === null;
         });
 
         // O token saiu do refresh token gravado, e a região foi resolvida pela sugestão — no
@@ -626,6 +629,87 @@ class CopilotoDoGoogleAdsTest extends TestCase
         });
 
         $this->assertSame([['São Paulo'], ['Campinas']], $nomes);
+    }
+
+    /**
+     * A região pedida é a que tem o nome pedido, não a primeira que o Google devolve.
+     *
+     * Na conta real, "Mato Grosso" vinha com "Mato Grosso do Sul" na frente da lista de
+     * sugestões: o `[0]` cego segmentava o estado errado e, como as duas buscas davam o mesmo
+     * identificador, o Mato Grosso de verdade era descartado como duplicata.
+     */
+    public function test_a_regiao_e_escolhida_pelo_nome_e_nao_pela_primeira_sugestao(): void
+    {
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/geoTargetConstants:suggest' => function (Request $requisicao) {
+                $nome = (string) data_get($requisicao->data(), 'locationNames.names.0');
+
+                if ($nome === 'Mato Grosso') {
+                    return Http::response(['geoTargetConstantSuggestions' => [
+                        ['geoTargetConstant' => ['resourceName' => 'geoTargetConstants/20095', 'name' => 'Mato Grosso do Sul']],
+                        ['geoTargetConstant' => ['resourceName' => 'geoTargetConstants/20096', 'name' => 'Mato Grosso']],
+                    ]]);
+                }
+
+                return Http::response(['geoTargetConstantSuggestions' => [
+                    ['geoTargetConstant' => ['resourceName' => 'geoTargetConstants/20095', 'name' => 'Mato Grosso do Sul']],
+                ]]);
+            },
+            'https://googleads.googleapis.com/v26/*' => Http::response([
+                'results' => [['resourceName' => 'customers/1234567890/objects/333']],
+            ]),
+        ]);
+
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $plano = $this->planoPersistido(GoogleAdsPlano::APROVADO, null, [
+            'regioes' => ['Mato Grosso', 'Mato Grosso do Sul'],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.aplicar', $plano), ['conta' => $conta->id])
+            ->assertSessionHas('success');
+
+        $geos = [];
+
+        Http::assertSent(function (Request $requisicao) use (&$geos): bool {
+            if ($requisicao->url() !== 'https://googleads.googleapis.com/v26/customers/1234567890/campaignCriteria:mutate') {
+                return true;
+            }
+
+            foreach ((array) data_get($requisicao->data(), 'operations', []) as $operacao) {
+                $recurso = (string) data_get($operacao, 'create.location.geoTargetConstant', '');
+
+                if ($recurso !== '') {
+                    $geos[] = $recurso;
+                }
+            }
+
+            return true;
+        });
+
+        $this->assertSame(['geoTargetConstants/20096', 'geoTargetConstants/20095'], $geos);
+    }
+
+    /**
+     * A estratégia que a API aposentou vira CPC manual, com o aviso dito na tela.
+     *
+     * O `maximizeClicks` saiu da V26 e o Google recusa a campanha inteira que ainda o pedir — o
+     * plano gravado antes precisava chegar a uma escrita que a API aceitasse.
+     */
+    public function test_a_estrategia_aposentada_pelo_google_vira_cpc_manual_com_aviso(): void
+    {
+        $conferido = PlanoDeCampanha::conferir($this->planoDaIA(['estrategia_lance' => 'MAXIMIZE_CLICKS']), $this->briefing());
+
+        $this->assertSame('MANUAL_CPC', $conferido['plano']['estrategia_lance']);
+        $this->assertStringContainsString('CPC manual', implode(' ', $conferido['avisos']));
     }
 
     /**
