@@ -13,6 +13,7 @@ use App\Services\GoogleAds\Excecoes\CopilotoIndisponivel;
 use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Services\GoogleAds\GoogleAdsWriter;
+use App\Services\GoogleAds\PlanoDeCampanha;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -163,6 +164,145 @@ class GoogleAdsCopilotoController extends Controller
         ]);
     }
 
+    /**
+     * A tela onde o plano se escreve à mão: os mesmos campos do briefing, já preenchidos com o
+     * que a IA devolveu, mais os grupos e o anúncio que ela montou.
+     */
+    public function editar(Request $request, GoogleAdsPlano $plano): View|RedirectResponse
+    {
+        $this->autoriza($request, $plano);
+
+        if ($plano->status === GoogleAdsPlano::APLICADO) {
+            return redirect()
+                ->route('admin.google-ads.copiloto.show', $plano)
+                ->with('error', 'Este plano já virou campanha no Google Ads. Faça uma cópia dele e edite a cópia.');
+        }
+
+        return view('admin.google-ads.copiloto-editar', [
+            'plano' => $plano,
+            'valores' => $this->formularioDe($plano),
+            'objetivos' => (array) config('google_ads.copiloto.objetivos'),
+            'problemas' => $plano->problemas(),
+        ]);
+    }
+
+    /**
+     * Gravar o plano digitado, conferido pela mesma régua que lê o que a IA devolve.
+     *
+     * O `briefing_json` não muda: ele é a prova do que foi pedido, e o que se edita aqui é o que
+     * a IA escreveu. Salvando, o plano volta a rascunho de propósito — quem aprovou um plano com
+     * outro orçamento não pode ter aprovado, sem querer, este aqui.
+     */
+    public function atualizar(Request $request, GoogleAdsPlano $plano): RedirectResponse
+    {
+        $this->autoriza($request, $plano);
+
+        if ($plano->status === GoogleAdsPlano::APLICADO) {
+            return back()->with('error', 'Este plano já virou campanha no Google Ads e não pode ser editado. Faça uma cópia dele e edite a cópia.');
+        }
+
+        $dados = $request->validate([
+            'nome' => ['required', 'string', 'max:120'],
+            'objetivo' => ['required', Rule::in(array_keys((array) config('google_ads.copiloto.objetivos')))],
+            'orcamento' => ['required', 'numeric', 'min:1', 'max:5000'],
+            'cpc_maximo' => ['nullable', 'numeric', 'min:0.10', 'max:50'],
+            'url' => ['required', 'string', 'max:255'],
+            'regioes' => ['required', 'string', 'max:255'],
+            'grupos' => ['required', 'array', 'max:'.(int) config('google_ads.copiloto.grupos_max', 8)],
+            'grupos.*.nome' => ['required', 'string', 'max:60'],
+            'grupos.*.tema' => ['nullable', 'string', 'max:160'],
+            'grupos.*.palavras' => ['required', 'string', 'max:2500'],
+            'grupos.*.negativas' => ['nullable', 'string', 'max:6000'],
+            'titulos' => ['required', 'string', 'max:600'],
+            'descricoes' => ['required', 'string', 'max:500'],
+            'caminhos' => ['nullable', 'string', 'max:60'],
+            'justificativa' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $conteudo = $plano->plano();
+
+        $bruto = [
+            'nome' => $dados['nome'],
+            'objetivo' => $dados['objetivo'],
+            'estrategia_lance' => $conteudo['estrategia_lance'] ?? 'MANUAL_CPC',
+            'orcamento_diario' => $dados['orcamento'],
+            'url' => $dados['url'],
+            'regioes' => $dados['regioes'],
+            'idiomas' => (array) ($conteudo['idiomas'] ?? []),
+            'grupos' => $this->gruposDoFormulario((array) $dados['grupos']),
+            'anuncios' => [
+                'titulos' => $dados['titulos'],
+                'descricoes' => $dados['descricoes'],
+                'caminhos' => $dados['caminhos'] ?? '',
+            ],
+            'justificativa' => $dados['justificativa'] ?? '',
+        ];
+
+        if (filled($dados['cpc_maximo'] ?? null)) {
+            $bruto['cpc_maximo_centavos'] = (int) round(((float) $dados['cpc_maximo']) * 100);
+        }
+
+        $conferido = PlanoDeCampanha::conferir($bruto, (array) $plano->briefing_json);
+
+        $plano->forceFill([
+            'nome' => $conferido['plano']['nome'],
+            'objetivo' => $conferido['plano']['objetivo'],
+            'orcamento_diario_centavos' => $conferido['plano']['orcamento_diario_centavos'],
+            'plano_json' => $conferido['plano'],
+            'validacao_json' => [
+                'problemas' => $conferido['problemas'],
+                'avisos' => $conferido['avisos'],
+                'forca' => $conferido['forca'],
+            ],
+            'status' => GoogleAdsPlano::RASCUNHO,
+            'erro' => null,
+        ])->save();
+
+        Activity::log(
+            'copiloto_ads_plano_editado',
+            "Plano \"{$plano->nome}\" editado na tela do copiloto.",
+            $plano,
+            ['problemas' => count($conferido['problemas'])],
+        );
+
+        return redirect()
+            ->route('admin.google-ads.copiloto.show', $plano)
+            ->with($conferido['problemas'] === [] ? 'success' : 'warning', $conferido['problemas'] === []
+                ? 'Plano atualizado. Ele voltou a ser rascunho: precisa ser aprovado de novo antes de ir ao Google Ads.'
+                : 'Plano atualizado, mas a conferência achou pendências — veja o que está em vermelho na ficha.');
+    }
+
+    /**
+     * A cópia de um plano que já existe, para mudar algo sem perder a foto do que foi publicado.
+     *
+     * O plano aplicado é o registro do que o Google recebeu; editá-lo deixaria a ficha e a
+     * campanha em mundos diferentes. A cópia nasce em rascunho com o mesmo briefing e cai direto
+     * na tela de edição, que é para onde a pessoa queria ir.
+     */
+    public function duplicar(Request $request, GoogleAdsPlano $plano): RedirectResponse
+    {
+        $this->autoriza($request, $plano);
+
+        $copia = GoogleAdsPlano::create([
+            'user_id' => $request->user()->id,
+            'google_ads_account_id' => $plano->google_ads_account_id,
+            'nome' => $plano->nome,
+            'status' => GoogleAdsPlano::RASCUNHO,
+            'objetivo' => $plano->objetivo,
+            'orcamento_diario_centavos' => $plano->orcamento_diario_centavos,
+            'briefing_json' => $plano->briefing_json,
+            'plano_json' => $plano->plano(),
+            'validacao_json' => $plano->validacao(),
+            'modelo' => $plano->modelo,
+        ]);
+
+        Activity::log('copiloto_ads_plano_duplicado', "Plano \"{$plano->nome}\" copiado como novo rascunho.", $copia);
+
+        return redirect()
+            ->route('admin.google-ads.copiloto.editar', $copia)
+            ->with('success', 'Plano copiado. É da cópia, em rascunho, que você muda tudo — a campanha que já está no Google Ads continua igual.');
+    }
+
     /** Aprovar é o ato humano que libera a escrita — não escreve nada por si só. */
     public function aprovar(Request $request, GoogleAdsPlano $plano): RedirectResponse
     {
@@ -175,7 +315,7 @@ class GoogleAdsCopilotoController extends Controller
         }
 
         if ($plano->problemas() !== []) {
-            return back()->with('error', 'Este plano tem pendências que o Google recusaria. Corrija o briefing e gere de novo.');
+            return back()->with('error', 'Este plano tem pendências que o Google recusaria. Corrija na tela de edição e salve de novo.');
         }
 
         $plano->forceFill(['status' => GoogleAdsPlano::APROVADO, 'erro' => null])->save();
@@ -205,11 +345,11 @@ class GoogleAdsCopilotoController extends Controller
         }
 
         if (! $plano->podeAplicar()) {
-            return back()->with('error', 'Este plano está como '.$plano->rotuloStatus().'. Gere um plano novo a partir do briefing.');
+            return back()->with('error', 'Este plano está como '.$plano->rotuloStatus().'. Edite o plano para ele voltar a rascunho.');
         }
 
         if ($plano->problemas() !== []) {
-            return back()->with('error', 'Este plano ainda tem pendências e o Google o recusaria. Gere um plano novo.');
+            return back()->with('error', 'Este plano ainda tem pendências e o Google o recusaria. Corrija na tela de edição e aprove de novo.');
         }
 
         $dados = $request->validate(['conta' => ['required', 'integer']]);
@@ -297,6 +437,64 @@ class GoogleAdsCopilotoController extends Controller
         return redirect()
             ->route('admin.google-ads.copiloto.index')
             ->with('success', 'Plano excluído.');
+    }
+
+    /**
+     * O plano guardado em forma de formulário: cada lista vira texto de uma linha por item, que
+     * é como a pessoa lê e reescreve uma lista no painel.
+     */
+    private function formularioDe(GoogleAdsPlano $plano): array
+    {
+        $conteudo = $plano->plano();
+
+        $grupos = [];
+
+        foreach ((array) ($conteudo['grupos'] ?? []) as $grupo) {
+            $grupos[] = [
+                'nome' => (string) ($grupo['nome'] ?? ''),
+                'tema' => (string) ($grupo['tema'] ?? ''),
+                'palavras' => implode("\n", array_map(
+                    [PlanoDeCampanha::class, 'linhaDePalavra'],
+                    (array) ($grupo['palavras_chave'] ?? [])
+                )),
+                'negativas' => implode("\n", (array) ($grupo['negativas'] ?? [])),
+            ];
+        }
+
+        $anuncios = (array) ($conteudo['anuncios'] ?? []);
+
+        return [
+            'nome' => (string) ($conteudo['nome'] ?? $plano->nome),
+            'objetivo' => (string) ($conteudo['objetivo'] ?? $plano->objetivo),
+            'orcamento' => number_format(((int) ($conteudo['orcamento_diario_centavos'] ?? $plano->orcamento_diario_centavos)) / 100, 2, '.', ''),
+            'cpc_maximo' => number_format(((int) ($conteudo['cpc_maximo_centavos'] ?? 0)) / 100, 2, '.', ''),
+            'url' => (string) ($conteudo['url'] ?? ''),
+            'regioes' => implode("\n", (array) ($conteudo['regioes'] ?? [])),
+            'grupos' => $grupos,
+            'titulos' => implode("\n", (array) ($anuncios['titulos'] ?? [])),
+            'descricoes' => implode("\n", (array) ($anuncios['descricoes'] ?? [])),
+            'caminhos' => implode("\n", (array) ($anuncios['caminhos'] ?? [])),
+            'justificativa' => (string) ($conteudo['justificativa'] ?? ''),
+        ];
+    }
+
+    /** O texto digitado de volta na forma que `PlanoDeCampanha::conferir()` lê. */
+    private function gruposDoFormulario(array $grupos): array
+    {
+        $lista = [];
+
+        foreach ($grupos as $grupo) {
+            $lista[] = [
+                'nome' => $grupo['nome'] ?? '',
+                'tema' => $grupo['tema'] ?? '',
+                // Uma linha por palavra, com a correspondência depois da barra vertical: é a única
+                // forma de a pessoa trocar "ampla" por "exata" sem mexer no JSON do plano.
+                'palavras_chave' => PlanoDeCampanha::lista($grupo['palavras'] ?? ''),
+                'negativas' => $grupo['negativas'] ?? '',
+            ];
+        }
+
+        return $lista;
     }
 
     /** A mesma régua da conta: o plano de outro só aparece para administrador. */

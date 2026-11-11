@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Models\Campaign;
 use App\Models\Category;
 use App\Models\ConhecimentoItem;
+use App\Models\Contract;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
-use App\Models\Contract;
 use App\Models\CronTarefa;
 use App\Models\Customer;
 use App\Models\Faq;
@@ -170,6 +170,7 @@ class PaginasDoPainelTest extends TestCase
             'admin.funil.edit' => ['pagina' => $funil],
             'admin.funil.show' => ['pagina' => $funil],
             'admin.google-ads.copiloto.show' => ['plano' => $planoDoCopiloto],
+            'admin.google-ads.copiloto.editar' => ['plano' => $planoDoCopiloto],
             'admin.leads.show' => ['lead' => Lead::firstOrFail()],
             'admin.notificacoes.show' => ['notificacao' => $aviso],
             'admin.pedidos.show' => ['pedido' => Order::firstOrFail()],

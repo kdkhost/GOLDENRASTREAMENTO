@@ -4,6 +4,9 @@
 @section('page_description', 'A campanha que o copiloto escreveu, conferida contra as travas do Google antes de virar algo que gasta.')
 
 @section('page_actions')
+@if ($plano->status !== \App\Models\GoogleAdsPlano::APLICADO)
+    <a href="{{ route('admin.google-ads.copiloto.editar', $plano) }}" class="btn btn-sm btn-golden"><i class="fas fa-pen me-1" aria-hidden="true"></i> Editar o plano</a>
+@endif
 <a href="{{ route('admin.google-ads.copiloto.index') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Todos os planos</a>
 @endsection
 
@@ -14,7 +17,6 @@
 @section('content')
 @php
     $ehAdmin = auth()->user()->isAdmin();
-    $correspondencias = (array) config('google_ads.copiloto.correspondencias');
     $estrategias = (array) config('google_ads.copiloto.estrategias');
     $objetivos = (array) config('google_ads.copiloto.objetivos');
     $anuncios = (array) ($conteudo['anuncios'] ?? []);
@@ -168,7 +170,7 @@
                                 @foreach ((array) ($grupo['palavras_chave'] ?? []) as $palavra)
                                     <li class="ads-chip">
                                         {{ $palavra['texto'] }}
-                                        <small>{{ $correspondencias[strtolower($palavra['correspondencia'])] ?? $palavra['correspondencia'] }}</small>
+                                        <small>{{ \App\Services\GoogleAds\PlanoDeCampanha::correspondenciaEmPortugues((string) ($palavra['correspondencia'] ?? '')) }}</small>
                                     </li>
                                 @endforeach
                             </ul>
@@ -250,7 +252,13 @@
         <x-admin.card title="O que fazer agora" icon="fa-gavel" class="mt-3">
             @if ($plano->status === \App\Models\GoogleAdsPlano::RASCUNHO)
                 @if ($problemas !== [])
-                    <p class="small text-secondary">Há pendências na conferência. Corrija o briefing e gere outro plano — este não pode ser aprovado.</p>
+                    <p class="small text-secondary mb-3">
+                        Há pendências na conferência e o Google recusaria este plano. Corrija na tela de edição:
+                        a conferência roda de novo a cada salvamento.
+                    </p>
+                    <a href="{{ route('admin.google-ads.copiloto.editar', $plano) }}" class="btn btn-golden w-100">
+                        <i class="fas fa-pen me-1" aria-hidden="true"></i> Corrigir o plano
+                    </a>
                 @elseif ($ehAdmin)
                     <p class="small text-secondary mb-3">Confira a estrutura acima. Aprovar não publica nada: só libera o passo seguinte.</p>
                     <form method="POST" action="{{ route('admin.google-ads.copiloto.aprovar', $plano) }}" data-atualiza=".app-content">
@@ -308,9 +316,25 @@
                     </form>
                 @endif
             @elseif ($plano->status === \App\Models\GoogleAdsPlano::DESCARTADO)
-                <p class="small text-secondary mb-0">Este plano foi descartado. Gere um plano novo a partir do briefing.</p>
+                <p class="small text-secondary mb-3">
+                    Este plano foi descartado. Ele volta a rascunho no primeiro salvamento — edite o que precisa.
+                </p>
+                <a href="{{ route('admin.google-ads.copiloto.editar', $plano) }}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-pen me-1" aria-hidden="true"></i> Editar o plano
+                </a>
             @else
-                <p class="small text-secondary mb-0">Este plano já foi aplicado. Para mudar algo, gere um plano novo a partir do briefing.</p>
+                <p class="small text-secondary mb-3">
+                    Este plano já virou campanha no Google Ads e fica guardado como a foto do que foi publicado.
+                    Para mudar orçamento, regiões, palavras ou anúncio, faça uma cópia: ela nasce em rascunho e é
+                    dela que você edita tudo. A campanha no Google não muda por aqui.
+                </p>
+                <form method="POST" action="{{ route('admin.google-ads.copiloto.duplicar', $plano) }}"
+                    data-confirmar="Copiar este plano como novo rascunho? A campanha que já está no Google Ads continua igual.">
+                    @csrf
+                    <button class="btn btn-golden w-100">
+                        <i class="fas fa-clone me-1" aria-hidden="true"></i> Criar um plano igual a partir deste
+                    </button>
+                </form>
             @endif
         </x-admin.card>
 

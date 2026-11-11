@@ -24,8 +24,8 @@ use App\Http\Controllers\Admin\NotificacaoController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SegurancaController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TestimonialController;
@@ -35,13 +35,6 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VideoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\DoisFatoresController;
-use App\Http\Controllers\Site\AssistenteController as SiteAssistenteController;
-use App\Http\Controllers\Site\FunnelController;
-use App\Http\Controllers\Site\LeadController as SiteLeadController;
-use App\Http\Controllers\Site\PageController;
-use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
-use App\Http\Controllers\Site\StoreController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalChamadoController;
 use App\Http\Controllers\Portal\PortalContaController;
@@ -51,6 +44,13 @@ use App\Http\Controllers\Portal\PortalDepoimentoController;
 use App\Http\Controllers\Portal\PortalFinanceiroController;
 use App\Http\Controllers\Portal\PortalPedidoController;
 use App\Http\Controllers\Portal\PortalSupervisaoController;
+use App\Http\Controllers\Site\AssistenteController as SiteAssistenteController;
+use App\Http\Controllers\Site\FunnelController;
+use App\Http\Controllers\Site\LeadController as SiteLeadController;
+use App\Http\Controllers\Site\PageController;
+use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
+use App\Http\Controllers\Site\StoreController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -343,6 +343,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::post('/copiloto', [GoogleAdsCopilotoController::class, 'gerar'])->name('copiloto.gerar');
         Route::get('/copiloto/{plano}', [GoogleAdsCopilotoController::class, 'show'])
             ->whereNumber('plano')->name('copiloto.show');
+        // Editar o plano é o caminho de volta para o rascunho: quem digitou o briefing corrige o
+        // que a IA escreveu, e a aprovação precisa ser dada de novo antes de tocar no Google.
+        Route::get('/copiloto/{plano}/editar', [GoogleAdsCopilotoController::class, 'editar'])
+            ->whereNumber('plano')->name('copiloto.editar');
+        Route::post('/copiloto/{plano}/editar', [GoogleAdsCopilotoController::class, 'atualizar'])
+            ->whereNumber('plano')->name('copiloto.atualizar');
+        // O plano aplicado é a foto do que foi publicado: quem quiser mudar algo faz uma cópia e
+        // edita a cópia, senão o registro do que existe no Google se perderia junto com o plano.
+        Route::post('/copiloto/{plano}/duplicar', [GoogleAdsCopilotoController::class, 'duplicar'])
+            ->whereNumber('plano')->name('copiloto.duplicar');
         Route::post('/copiloto/{plano}/aprovar', [GoogleAdsCopilotoController::class, 'aprovar'])
             ->whereNumber('plano')->name('copiloto.aprovar')->middleware('role:admin');
         Route::post('/copiloto/{plano}/aplicar', [GoogleAdsCopilotoController::class, 'aplicar'])

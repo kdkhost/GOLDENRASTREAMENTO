@@ -127,6 +127,11 @@
                             <a href="{{ route('admin.google-ads.copiloto.show', $p) }}" class="btn btn-sm btn-outline-secondary" title="Abrir o plano">
                                 <i class="fas fa-arrow-right" aria-hidden="true"></i>
                             </a>
+                            @if ($p->status !== \App\Models\GoogleAdsPlano::APLICADO)
+                                <a href="{{ route('admin.google-ads.copiloto.editar', $p) }}" class="btn btn-sm btn-outline-secondary" title="Editar o plano">
+                                    <i class="fas fa-pen" aria-hidden="true"></i>
+                                </a>
+                            @endif
                         </div>
                     </td>
                 </tr>

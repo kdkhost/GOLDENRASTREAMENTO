@@ -176,6 +176,41 @@ class CopilotoDoGoogleAdsTest extends TestCase
         ]);
     }
 
+    /**
+     * O formulário da tela de edição preenchido com o plano que está no banco.
+     *
+     * Montar o POST à mão deixaria um teste aprovado com um formato que a tela nunca envia: aqui a
+     * palavra volta como linha ("texto | Exata"), exatamente como o campo textarea é desenhado.
+     */
+    private function formularioDoPlano(GoogleAdsPlano $plano, array $ajustes = []): array
+    {
+        $conteudo = $plano->plano();
+        $grupo = (array) ($conteudo['grupos'][0] ?? []);
+        $anuncios = (array) ($conteudo['anuncios'] ?? []);
+
+        return array_replace([
+            'nome' => $conteudo['nome'],
+            'objetivo' => $conteudo['objetivo'],
+            'orcamento' => number_format($conteudo['orcamento_diario_centavos'] / 100, 2, '.', ''),
+            'cpc_maximo' => number_format($conteudo['cpc_maximo_centavos'] / 100, 2, '.', ''),
+            'url' => $conteudo['url'],
+            'regioes' => implode("\n", (array) $conteudo['regioes']),
+            'grupos' => [[
+                'nome' => $grupo['nome'] ?? '',
+                'tema' => $grupo['tema'] ?? '',
+                'palavras' => implode("\n", array_map(
+                    fn (array $palavra): string => $palavra['texto'].' | '.PlanoDeCampanha::correspondenciaEmPortugues((string) $palavra['correspondencia']),
+                    (array) ($grupo['palavras_chave'] ?? [])
+                )),
+                'negativas' => implode("\n", (array) ($grupo['negativas'] ?? [])),
+            ]],
+            'titulos' => implode("\n", (array) $anuncios['titulos']),
+            'descricoes' => implode("\n", (array) $anuncios['descricoes']),
+            'caminhos' => implode("\n", (array) $anuncios['caminhos']),
+            'justificativa' => $conteudo['justificativa'],
+        ], $ajustes);
+    }
+
     /** Uma linha de campanha no formato que a cache guarda — é o que o relatório lê. */
     private function campanha(string $id, string $nome): array
     {
@@ -774,6 +809,185 @@ class CopilotoDoGoogleAdsTest extends TestCase
 
         $this->assertSame(GoogleAdsPlano::FALHOU, $plano->refresh()->status);
         Http::assertNothingSent();
+    }
+
+    /**
+     * A tela de edição abre com o plano já escrito: nada de formulário vazio para a pessoa
+     * recomeçar do zero depois que a IA trabalhou.
+     */
+    public function test_a_tela_de_edicao_abre_com_o_plano_ja_preenchido(): void
+    {
+        $plano = $this->planoPersistido(GoogleAdsPlano::APROVADO);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.google-ads.copiloto.editar', $plano))
+            ->assertOk()
+            ->assertSee('Editar o plano')
+            ->assertSee('rastreamento de frota | Frase')
+            ->assertSee('Rastreie sua frota')
+            ->assertSee('Voltar à ficha');
+    }
+
+    /**
+     * Salvar a edição reescreve o plano, devolve o estado a rascunho e não toca no Google.
+     *
+     * O briefing continua o mesmo: ele é a prova do que foi pedido. O que muda é o plano, e a
+     * aprovação antiga não vale para um plano com outro orçamento.
+     */
+    public function test_salvar_a_edicao_devolve_o_plano_para_rascunho_e_guarda_o_que_mudou(): void
+    {
+        $plano = $this->planoPersistido(GoogleAdsPlano::APROVADO);
+
+        Http::fake();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.atualizar', $plano), $this->formularioDoPlano($plano, [
+                'nome' => 'Rastreamento de frota em São Paulo',
+                'orcamento' => '80.00',
+            ]))
+            ->assertRedirect(route('admin.google-ads.copiloto.show', $plano))
+            ->assertSessionHas('success', fn (string $mensagem): bool => str_contains($mensagem, 'aprovado de novo'));
+
+        $plano->refresh();
+
+        $this->assertSame(GoogleAdsPlano::RASCUNHO, $plano->status);
+        $this->assertSame('Rastreamento de frota em São Paulo', $plano->nome);
+        $this->assertSame(8000, $plano->orcamento_diario_centavos);
+        $this->assertSame('Transportadoras com frota de 10 a 200 veículos.', $plano->briefing_json['publico']);
+        $this->assertSame('Rastreamento de frota em São Paulo', $plano->plano()['nome']);
+        Http::assertNothingSent();
+    }
+
+    /**
+     * A correspondência digitada na linha da palavra é a que vai para o plano.
+     *
+     * É o motivo de a linha ter a barra: sem ela, reescrever a lista de palavras jogaria toda a
+     * estrutura que a IA escolheu no lixo e o plano inteiro voltaria a ser "frase".
+     */
+    public function test_a_edicao_troca_a_correspondencia_de_cada_palavra_pelo_que_foi_digitado(): void
+    {
+        $plano = $this->planoPersistido(GoogleAdsPlano::APROVADO);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.atualizar', $plano), $this->formularioDoPlano($plano, [
+                'grupos' => [[
+                    'nome' => 'Rastreamento de frota',
+                    'tema' => 'gestão de veículos',
+                    'palavras' => "rastreamento de frota | exata\nrastreador para transportadora | ampla\nrastreador veicular",
+                    'negativas' => "grátis\nemprego",
+                ]],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $palavras = $plano->refresh()->plano()['grupos'][0]['palavras_chave'];
+
+        $this->assertSame('EXACT', $palavras[0]['correspondencia']);
+        $this->assertSame('BROAD', $palavras[1]['correspondencia']);
+        $this->assertSame('PHRASE', $palavras[2]['correspondencia']);
+        $this->assertSame(['grátis', 'emprego'], $plano->plano()['grupos'][0]['negativas']);
+    }
+
+    /** O erro de um grupo caem na linha que a pessoa vê, não num campo invisível do formulário. */
+    public function test_a_edicao_sem_nome_de_grupo_mostra_o_erro_na_linha_do_grupo(): void
+    {
+        $plano = $this->planoPersistido(GoogleAdsPlano::RASCUNHO);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.atualizar', $plano), $this->formularioDoPlano($plano, [
+                'grupos' => [[
+                    'nome' => '',
+                    'tema' => '',
+                    'palavras' => 'rastreamento de frota | frase',
+                    'negativas' => '',
+                ]],
+            ]))
+            ->assertSessionHasErrors('grupos.0.nome');
+
+        $this->assertSame(GoogleAdsPlano::RASCUNHO, $plano->refresh()->status);
+    }
+
+    /** Quem edita é quem pode ver o plano: o administrador vê o da equipe, o resto só o seu. */
+    public function test_o_vendedor_edita_o_proprio_plano_e_o_do_administrador_nem_aparece(): void
+    {
+        $doAdmin = $this->planoPersistido(GoogleAdsPlano::APROVADO, $this->admin);
+        $doVendedor = $this->planoPersistido(GoogleAdsPlano::APROVADO, $this->vendedor);
+
+        $this->actingAs($this->vendedor)
+            ->get(route('admin.google-ads.copiloto.editar', $doVendedor))
+            ->assertOk();
+
+        $this->actingAs($this->vendedor)
+            ->get(route('admin.google-ads.copiloto.editar', $doAdmin))
+            ->assertNotFound();
+
+        $this->actingAs($this->vendedor)
+            ->post(route('admin.google-ads.copiloto.atualizar', $doAdmin), $this->formularioDoPlano($doAdmin))
+            ->assertNotFound();
+
+        $this->assertSame(GoogleAdsPlano::APROVADO, $doAdmin->refresh()->status);
+    }
+
+    /** O plano aplicado é a foto do que foi publicado: ele não se edita, e a ficha diz isso. */
+    public function test_o_plano_aplicado_nao_e_editado_e_a_ficha_oferece_a_copia(): void
+    {
+        $plano = $this->planoPersistido(GoogleAdsPlano::APLICADO);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.google-ads.copiloto.editar', $plano))
+            ->assertRedirect(route('admin.google-ads.copiloto.show', $plano))
+            ->assertSessionHas('error', fn (string $mensagem): bool => str_contains($mensagem, 'cópia'));
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.atualizar', $plano), $this->formularioDoPlano($plano, ['orcamento' => '1.00']))
+            ->assertSessionHas('error');
+
+        $plano->refresh();
+        $this->assertSame(GoogleAdsPlano::APLICADO, $plano->status);
+        $this->assertSame(12000, $plano->orcamento_diario_centavos);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.google-ads.copiloto.show', $plano))
+            ->assertOk()
+            ->assertSee('Criar um plano igual a partir deste')
+            ->assertDontSee('Editar o plano');
+    }
+
+    /** Copiar um plano aplicado nasce um rascunho igual, e a campanha do Google fica intocada. */
+    public function test_a_copia_de_um_plano_aplicado_abre_a_edicao_do_novo_rascunho(): void
+    {
+        $plano = $this->planoPersistido(GoogleAdsPlano::APLICADO);
+
+        Http::fake();
+
+        $resposta = $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.copiloto.duplicar', $plano))
+            ->assertSessionHas('success');
+
+        $copia = GoogleAdsPlano::where('id', '<>', $plano->id)->firstOrFail();
+
+        $this->assertStringContainsString(
+            '/admin/google-ads/copiloto/'.$copia->id.'/editar',
+            (string) $resposta->headers->get('Location')
+        );
+        $this->assertSame(GoogleAdsPlano::RASCUNHO, $copia->status);
+        $this->assertSame($plano->briefing_json, $copia->briefing_json);
+        $this->assertSame($plano->plano(), $copia->plano());
+        $this->assertSame(GoogleAdsPlano::APLICADO, $plano->refresh()->status);
+        Http::assertNothingSent();
+    }
+
+    /** A tela fala português até no nome que a API guarda em inglês. */
+    public function test_a_ficha_do_plano_traduz_a_correspondencia_em_vez_de_mostrar_o_codigo_da_api(): void
+    {
+        $plano = $this->planoPersistido();
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.google-ads.copiloto.show', $plano))
+            ->assertOk()
+            ->assertSee('Frase')
+            ->assertSee('Ampla')
+            ->assertDontSee('PHRASE')
+            ->assertDontSee('BROAD');
     }
 
     /** O relatório entrega a métrica ao copiloto uma vez e guarda a foto do período. */

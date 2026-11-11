@@ -384,6 +384,58 @@ final class PlanoDeCampanha
         return array_values($textos);
     }
 
+    /**
+     * A linha de uma palavra-chave no formulário: "rastreador de carro | exata".
+     *
+     * O campo é uma textarea com uma palavra por linha porque o plano inteiro é lista de texto,
+     * e a correspondência não pode se perder quando a pessoa reescreve a lista. O rótulo aceito é
+     * o mesmo que a tela mostra, em português.
+     *
+     * @return array{texto:string, correspondencia:string}
+     */
+    public static function palavraDeLinha(string $linha): array
+    {
+        [$texto, $rotulo] = array_pad(explode('|', $linha, 2), 2, null);
+
+        return [
+            'texto' => self::texto($texto, 80),
+            'correspondencia' => self::CORRESPONDENCIA[mb_strtolower(self::texto($rotulo, 10))] ?? 'PHRASE',
+        ];
+    }
+
+    /** A linha que o formulário mostra para esta palavra do plano — o inverso de `palavraDeLinha`. */
+    public static function linhaDePalavra(array $palavra): string
+    {
+        $texto = trim((string) ($palavra['texto'] ?? ''));
+        $rotulo = self::correspondenciaEmPortugues((string) ($palavra['correspondencia'] ?? ''));
+
+        return $texto === '' ? $rotulo : $texto.' | '.$rotulo;
+    }
+
+    /**
+     * O rótulo em português da correspondência como a API a guarda.
+     *
+     * O plano guarda `PHRASE`, `BROAD`, `EXACT`; a casa só escreve português na tela, e a tabela
+     * de etiquetas é a do config, chaveada por "ampla/frase/exata". Procurar a etiqueta pelo valor
+     * que o Google usa é o que impede a ficha do plano de aparecer com "PHRASE" no lugar de "Frase".
+     */
+    public static function correspondenciaEmPortugues(string $valor): string
+    {
+        $api = strtoupper(trim($valor));
+
+        if ($api === '') {
+            return 'Frase';
+        }
+
+        foreach ((array) config('google_ads.copiloto.correspondencias') as $chave => $rotulo) {
+            if (($correspondencia = self::CORRESPONDENCIA[mb_strtolower((string) $chave)] ?? strtoupper((string) $chave)) === $api) {
+                return (string) $rotulo;
+            }
+        }
+
+        return $valor;
+    }
+
     /** Uma palavra-chave em texto e correspondência; aceita string solta ou objeto do JSON. */
     private static function palavra(mixed $item): array
     {
@@ -394,7 +446,11 @@ final class PlanoDeCampanha
             return [$texto, self::CORRESPONDENCIA[$correspondencia] ?? 'PHRASE'];
         }
 
-        return [self::texto($item, 80), 'PHRASE'];
+        // A linha escrita à mão no editor ("rastreador de carro | exata") é a mesma forma que o
+        // formulário devolve: aqui a correspondência é lida, senão o plano inteiro viraria frase.
+        $palavra = self::palavraDeLinha(is_scalar($item) ? (string) $item : '');
+
+        return [$palavra['texto'], $palavra['correspondencia']];
     }
 
     /** Reais como o modelo escreve ("50", "50.00", "50,00") → centavos. */
@@ -409,7 +465,7 @@ final class PlanoDeCampanha
     }
 
     /** Uma lista vinda do JSON: array, texto com quebras de linha ou item solto. */
-    private static function lista(mixed $valor): array
+    public static function lista(mixed $valor): array
     {
         if (is_string($valor)) {
             $valor = preg_split('/\r\n|\r|\n|;/', $valor) ?: [];

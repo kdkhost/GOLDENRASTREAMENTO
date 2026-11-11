@@ -3,6 +3,50 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.63.0] - 2026-11-11
+
+### Adicionado
+- **O plano do copiloto agora tem tela de edição.** `/admin/google-ads/copiloto/{plano}/editar`
+  abre com tudo o que a IA escreveu já nos campos — nome da campanha, objetivo, orçamento diário,
+  teto de lance, página de destino, regiões, grupos com palavras e negativas, títulos, descrições,
+  rotas de exibição e a justificativa. Grupos entram e saem da tela sem recarregar
+  (`public/js/golden-grupos.js`), e o índice de cada linha é reescrito a cada mudança para que o
+  motivo devolvido pelo servidor caia exatamente no grupo que a pessoa está vendo.
+- **Salvar devolve o plano para rascunho, de propósito.** O `briefing_json` continua intocado — ele
+  é a prova do que foi pedido — e o que muda é o plano. Quem aprovou um plano com outro orçamento
+  não pode ter aprovado, sem querer, o que foi digitado depois, então a aprovação precisa ser dada
+  de novo antes de qualquer escrita no Google. A própria tela diz isso no painel lateral.
+- **A conferência é a mesma régua, não uma segunda.** O salvamento passa por
+  `PlanoDeCampanha::conferir()`, o mesmo validador que lê a resposta da IA, então o que a tela
+  aceita é exatamente o que o Google aceitaria. Problemas voltam listados na ficha, e o
+  `lista()` da classe ficou público para a tela de edição dividir a regra de "um item por linha"
+  com o resto do sistema.
+- **O plano aplicado virou foto, e a cópia é o caminho de volta.** Ele não é editável — é o registro
+  do que o Google recebeu. Na ficha dele há o botão "Criar um plano igual a partir deste", que gera
+  um rascunho novo com o mesmo briefing, plano e conta, e cai direto na tela de edição da cópia.
+- **Os atalhos onde a pessoa já está.** Botão "Editar o plano" na ficha e na lista de planos, e
+  "Corrigir o plano" na ficha de um rascunho que a conferência reprovou. As mensagens de aprovar e
+  aplicar, que mandavam gerar outro plano, agora apontam para a edição.
+
+### Corrigido
+- **A ficha mostrava o código da API em vez de português.** O rótulo de correspondência vinha de um
+  mapa que não conhecia os valores já normalizados (`PHRASE`, `BROAD`, `EXACT`) e devolvia o próprio
+  código no chip da palavra-chave. A tradução passou a viver na fonte única
+  (`PlanoDeCampanha::correspondenciaEmPortugues()`), com "Frase" como padrão.
+- **Palavra digitada com a barra perdia a correspondência.** `palavra()` aceitava o texto livre mas
+  nunca lia o rótulo depois do `|`, então um plano escrito à mão viraria inteiro em correspondência
+  de frase. Agora a linha `"rastreador de carro | exata"` é lida da mesma forma no formulário e no
+  JSON.
+
+### Testes
+- **Nove testes novos em `CopilotoDoGoogleAdsTest`.** A tela abre preenchida, salvar devolve a
+  rascunho e grava o que mudou, a correspondência digitada troca ampla por exata, erro em grupo sem
+  nome cai na linha certa, o vendedor edita o próprio plano e o do administrador nem aparece, o
+  plano aplicado recusa edição e oferece a cópia, a cópia abre na tela de edição do novo rascunho,
+  e a ficha traduz a correspondência em vez de mostrar o código da API.
+- **A tela de edição entrou no passeio do painel.** `PaginasDoPainelTest` abre toda rota GET
+  administrativa; ela agora inclui `/copiloto/{plano}/editar`.
+
 ## [2.62.6] - 2026-11-11
 
 ### Corrigido

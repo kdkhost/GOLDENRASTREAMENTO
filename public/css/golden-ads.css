@@ -84,3 +84,18 @@
 .ads-recomendacao{background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color);
     border-left:3px solid var(--bs-border-color);border-radius:var(--radius-md);padding:.65rem .8rem}
 .ads-recomendacao.is-aberta{border-left-color:var(--gold)}
+
+/* ------------------------------------------------------------------ editor de plano */
+
+/* O bloco de um grupo na tela de edição: a moldura é a do cartão interno da casa, e a entrada e a
+   saída seguem a mesma curva do resto do painel — um grupo novo não nasce em cima da lista, e o que
+   sai não deixa o de baixo fechar o vão de repente. */
+.ads-editor-grupo{border:1px solid var(--bs-border-color);border-radius:var(--radius-md);padding:1rem}
+[data-grupo]{transition:opacity .24s var(--ease),transform .24s var(--ease)}
+[data-grupo].is-entrando,[data-grupo].is-saindo{opacity:0}
+[data-grupo].is-entrando{transform:translateY(8px)}
+[data-grupo].is-saindo{transform:translateY(-6px)}
+
+@media (prefers-reduced-motion:reduce){
+    [data-grupo]{transition:none}
+}
