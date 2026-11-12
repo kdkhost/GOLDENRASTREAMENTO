@@ -117,6 +117,7 @@ class DatabaseSeeder extends Seeder
 
         // Módulos integrados: ERP (catálogo), CMS, CRM e pedidos de demonstração
         $this->call([
+            ErrorPageSeeder::class,
             CatalogSeeder::class,
             CmsSeeder::class,
             CrmSeeder::class,

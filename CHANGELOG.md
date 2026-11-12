@@ -3,6 +3,29 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.64.0] - 2026-11-12
+
+### Adicionado
+- **Páginas de Erros Personalizadas com Painel Administrativo (`/admin/erros`).** Gerenciador completo
+  para personalização dos erros HTTP 400, 401, 403, 404, 419, 429, 500 e 503. Permite customizar
+  título, subtítulo, mensagem explicativa, botões de ação e canal de suporte via WhatsApp com texto
+  pré-digitado, além de pré-visualização em tempo real e restauração para padrões de fábrica.
+- **Modo de Manutenção com Controle Interno no Painel (`/admin/manutencao`).** Sistema de contingência
+  com acionamento por interruptor rápido, escopo de bloqueio (total ou site público apenas), previsão
+  de retorno com cronômetro regressivo em tempo real, canais de plantão de emergência, whitelist de IPs
+  e chave secreta de bypass criptografada com cookie persistente de 7 dias para técnicos e diretoria.
+- **Escudo de Defesa e Segurança Militar (WAF) com Painel Administrativo (`/admin/seguranca-militar`).**
+  Perímetro de proteção em tempo real contra ataques web: detecção e bloqueio de injeção SQL (SQLi),
+  Cross-Site Scripting (XSS), Remote Code Execution (RCE), Path Traversal, varreduras e probes a
+  arquivos confidenciais (`.env`, `.git`, `wp`), agentes e scanners hostis (`sqlmap`, `nikto`, `masscan`),
+  cabeçalhos maliciosos (Log4j/Shellshock), sistema de prisão automática (Auto-Ban) com duração
+  configurável, gerenciamento de Whitelist e Blacklist de IPs com liberação direta de 1 clique, War Room
+  com métricas e central de logs de auditoria detalhados.
+
+### Testes
+- 15 novos testes cobrindo personalização de erros, ciclo de vida da manutenção com bypass e proteção
+  ativa do escudo militar contra injeções SQL, scanners e lista negra de IPs.
+
 ## [2.63.4] - 2026-11-12
 
 ### Corrigido

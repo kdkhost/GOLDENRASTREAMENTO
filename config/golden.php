@@ -904,10 +904,13 @@ return [
 
         ['titulo' => 'Sistema', 'icone' => 'fa-gear', 'admin' => true, 'filhos' => [
             ['titulo' => 'Configurações', 'rota' => 'admin.settings.index', 'prefixo' => 'admin.settings.', 'icone' => 'fa-sliders'],
+            ['titulo' => 'Páginas de erro', 'rota' => 'admin.erros.index', 'prefixo' => 'admin.erros.', 'icone' => 'fa-triangle-exclamation'],
+            ['titulo' => 'Modo de manutenção', 'rota' => 'admin.manutencao.index', 'prefixo' => 'admin.manutencao.', 'icone' => 'fa-screwdriver-wrench'],
+            ['titulo' => 'Segurança Militar', 'rota' => 'admin.seguranca-militar.index', 'prefixo' => 'admin.seguranca-militar.', 'icone' => 'fa-shield-halved'],
+            ['titulo' => 'Segurança do acesso', 'rota' => 'admin.seguranca.index', 'prefixo' => 'admin.seguranca.', 'icone' => 'fa-user-lock'],
             ['titulo' => 'Crons', 'rota' => 'admin.crons.index', 'prefixo' => 'admin.crons.', 'icone' => 'fa-clock', 'bolha' => 'crons_com_falha', 'tom' => 'red'],
             ['titulo' => 'Usuários', 'rota' => 'admin.usuarios.index', 'prefixo' => 'admin.usuarios.', 'icone' => 'fa-user-shield'],
-            ['titulo' => 'Segurança do acesso', 'rota' => 'admin.seguranca.index', 'prefixo' => 'admin.seguranca.', 'icone' => 'fa-user-lock'],
-            ['titulo' => 'Auditoria', 'rota' => 'admin.activities.index', 'prefixo' => 'admin.activities.', 'icone' => 'fa-shield-halved'],
+            ['titulo' => 'Auditoria', 'rota' => 'admin.activities.index', 'prefixo' => 'admin.activities.', 'icone' => 'fa-list-check'],
         ]],
 
         // O guia fica solto, fora de grupo e depois de tudo: é consulta, não área do sistema, e

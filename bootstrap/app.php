@@ -4,10 +4,12 @@ use App\Http\Middleware\AcessoSupervisionado;
 use App\Http\Middleware\AtestarSessaoDoPainel;
 use App\Http\Middleware\AutenticarCliente;
 use App\Http\Middleware\CabecalhosDeSeguranca;
+use App\Http\Middleware\CheckCustomMaintenance;
 use App\Http\Middleware\ControleAcesso;
 use App\Http\Middleware\GarantirDoisFatores;
 use App\Http\Middleware\IdentificadorVisita;
 use App\Http\Middleware\LojaAtiva;
+use App\Http\Middleware\MilitaryShieldMiddleware;
 use App\Http\Middleware\RegistrarRastreio;
 use App\Http\Middleware\ResponderEscritaAjax;
 use App\Support\Agendador;
@@ -45,10 +47,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // incluindo os pontos de entrada anônimos (login, portal, captura de lead), que são justamente
         // onde um navegador é induzido a confiar numa página que não é nossa.
         $middleware->append(CabecalhosDeSeguranca::class);
+        $middleware->append(MilitaryShieldMiddleware::class);
 
         $middleware->web(append: [
             IdentificadorVisita::class,
             RegistrarRastreio::class,
+            CheckCustomMaintenance::class,
             // Depois da sessão iniciada, antes de qualquer controller: é aqui que uma janela
             // encerrada pelo painel deixa de mandar no sistema.
             AtestarSessaoDoPainel::class,

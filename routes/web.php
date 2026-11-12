@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ConversaController;
 use App\Http\Controllers\Admin\CronController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ErrorPageController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\FunnelController as AdminFunnelController;
 use App\Http\Controllers\Admin\GoogleAdsAuthController;
@@ -20,6 +21,8 @@ use App\Http\Controllers\Admin\GoogleAdsCopilotoController;
 use App\Http\Controllers\Admin\GoogleAdsRelatorioController;
 use App\Http\Controllers\Admin\GuiaController;
 use App\Http\Controllers\Admin\LeadController as AdminLeadController;
+use App\Http\Controllers\Admin\MaintenanceController;
+use App\Http\Controllers\Admin\MilitarySecurityController;
 use App\Http\Controllers\Admin\NotificacaoController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
@@ -625,5 +628,50 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::post('/chaves', [SettingController::class, 'chaves'])->name('chaves');
         Route::post('/whmcs-sondar', [SettingController::class, 'sondarWhmcs'])->name('whmcs.sondar');
         Route::post('/email-sondar', [SettingController::class, 'sondarEmail'])->name('email.sondar');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Páginas de Erro Personalizadas
+    |--------------------------------------------------------------------------
+    | Permite ao administrador personalizar títulos, mensagens, botões e ações
+    | de cada código HTTP de erro (400, 401, 403, 404, 419, 429, 500, 503).
+    */
+    Route::prefix('erros')->name('erros.')->middleware('role:admin')->group(function () {
+        Route::get('/', [ErrorPageController::class, 'index'])->name('index');
+        Route::get('/{code}', [ErrorPageController::class, 'edit'])->whereNumber('code')->name('edit');
+        Route::put('/{code}', [ErrorPageController::class, 'update'])->whereNumber('code')->name('update');
+        Route::get('/{code}/preview', [ErrorPageController::class, 'preview'])->whereNumber('code')->name('preview');
+        Route::post('/{code}/restaurar', [ErrorPageController::class, 'restaurar'])->whereNumber('code')->name('restaurar');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Modo de Manutenção Completo
+    |--------------------------------------------------------------------------
+    | Ativação rápida pelo painel, contagem regressiva, canais de plantão,
+    | chave secreta de bypass para técnicos e liberação por IP.
+    */
+    Route::prefix('manutencao')->name('manutencao.')->middleware('role:admin')->group(function () {
+        Route::get('/', [MaintenanceController::class, 'index'])->name('index');
+        Route::put('/', [MaintenanceController::class, 'update'])->name('update');
+        Route::post('/toggle', [MaintenanceController::class, 'toggle'])->name('toggle');
+        Route::post('/gerar-token', [MaintenanceController::class, 'novoToken'])->name('gerar-token');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Escudo de Defesa e Segurança Militar (WAF)
+    |--------------------------------------------------------------------------
+    | War Room de segurança cibernética, bloqueio em tempo real de SQLi, XSS,
+    | RCE, Scanners hostis, probes de .env e lista branca/negra de IPs.
+    */
+    Route::prefix('seguranca-militar')->name('seguranca-militar.')->middleware('role:admin')->group(function () {
+        Route::get('/', [MilitarySecurityController::class, 'index'])->name('index');
+        Route::put('/configuracoes', [MilitarySecurityController::class, 'configuracoes'])->name('configuracoes');
+        Route::post('/ips', [MilitarySecurityController::class, 'adicionarRegraIp'])->name('ips.adicionar');
+        Route::delete('/ips/{id}', [MilitarySecurityController::class, 'removerRegraIp'])->whereNumber('id')->name('ips.remover');
+        Route::post('/whitelist-meu-ip', [MilitarySecurityController::class, 'whitelistMeuIp'])->name('whitelist.meu-ip');
+        Route::delete('/logs/limpar', [MilitarySecurityController::class, 'limparLogs'])->name('logs.limpar');
     });
 });
