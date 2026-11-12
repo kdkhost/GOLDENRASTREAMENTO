@@ -38,4 +38,16 @@ class GoogleAdsAccountFactory extends Factory
             'motivo_desconexao' => 'O Google recusou o token de atualização (OAuth_TOKEN_EXPIRED).',
         ]);
     }
+
+    /**
+     * Conta de gerente (MCC): tem token válido e alcança a árvore, mas o Google recusa
+     * métrica de gerente. Serve para provar que nenhuma tela nem job a chama.
+     */
+    public function gerente(): static
+    {
+        return $this->state(fn () => [
+            'gerente' => true,
+            'sincronizado_em' => null,
+        ]);
+    }
 }

@@ -3,6 +3,46 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.63.1] - 2026-11-11
+
+### Corrigido
+- **A conta de gerente saiu do caminho da métrica.** Conectamos o MCC `9201387315` e o painel
+  passou a bater nele a cada rodada do agendamento pedindo métrica de campanha — e o Google
+  responde sempre a mesma coisa: `REQUESTED_METRICS_FOR_MANAGER`. Cada recusa é cota gasta e
+  linha escrita em `google_ads_api_logs`, e a tela mostrava a conta no filtro "Conta" como se
+  ela tivesse número. A conta real provou: `conta=1` falhando `campanhas.metricas` às 19:31,
+  19:32, 19:35, 19:46, 19:47 e 19:50, enquanto `conta=2` (Golden Rastreamento) sincronizava.
+- **A resposta do Google agora é um fato guardado.** `google_ads_accounts` ganhou a coluna
+  `gerente`, preenchida no consentimento com o `customer.manager` que a API já devolvia e o
+  painel jogava fora. Quem conecta o MCC vê a conta marcada e a tela dizendo o que falta, em
+  vez de "Carregando…" girando atrás de um job que sempre morre.
+- **Uma conexão antiga aprende com a primeira recusa.** O job de sincronização reconhece o
+  `REQUESTED_METRICS_FOR_MANAGER`, marca a conta como gerente e esquece a janela — nenhuma
+  correção de dados precisa rodar em produção, e a conta nunca mais é chamada. Ela continua
+  conectada e útil: o que cai é a métrica, nunca o vínculo.
+
+### Alterado
+- **`GoogleAdsAccount::comCampanhas()` é a régua única de "quem tem número".** O agendamento, o
+  job, a camada de serviço, o seletor da tela de métrica e as listas do copiloto, da campanha e
+  do relatório obedecem a ela. `GoogleAdsService::buscarCampanhasComMetricas()` recusa o gerente
+  antes de montar o cliente, com a explicação em português — o que um administrador pode ler no
+  toastr em vez do código do Google.
+- **Nome duplicado na árvore agora se distingue.** O MCC e a conta de anúncio embaixo dele
+  costumam ter o mesmo `descriptive_name`; `nomeTela()` acrescenta "(gerente)" a quem não tem
+  campanha, que é justamente a pergunta que a tela faz.
+- **Sobrando só o gerente, o comando explica em vez de emudecer.** `google-ads:sync` devolve
+  aviso dizendo quantas conexões de gerente existem e de onde vem o número.
+
+### Documentação
+- O guia "Google Ads no painel" ganhou o sintoma novo na tabela de "o que a tela diz" e a regra
+  na lista do que o painel faz de propósito.
+
+### Testes
+- Quatro testes em `ConexaoGoogleAdsTest` prendem a regra: o agendamento não enfileira o
+  gerente e explica o que sobrou; o job aprende a marca na recusa e não chama o Google de novo
+  (o Mockery reclama se chamar); a camada de serviço recusa antes da rede; a tela não oferece o
+  gerente nem o número dele. A fábrica ganhou o estado `gerente()`.
+
 ## [2.63.0] - 2026-11-11
 
 ### Adicionado

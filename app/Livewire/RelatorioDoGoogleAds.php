@@ -152,7 +152,7 @@ class RelatorioDoGoogleAds extends Component
 
     public function render(): View
     {
-        $contas = GoogleAdsAccount::visiveisPara(auth()->user())->orderByDesc('id')->get();
+        $contas = GoogleAdsAccount::visiveisPara(auth()->user())->comCampanhas()->orderByDesc('id')->get();
         $conta = $this->conta($contas);
         $janela = $conta !== null ? GoogleAdsCache::metricas($conta, $this->dias) : null;
         $erro = $conta !== null ? GoogleAdsCache::erro($conta, $this->dias) : null;
@@ -181,7 +181,7 @@ class RelatorioDoGoogleAds extends Component
     /** A conta desta tela, pela mesma régua de visibilidade do painel. */
     private function conta(?Collection $contas = null): ?GoogleAdsAccount
     {
-        $contas ??= GoogleAdsAccount::visiveisPara(auth()->user())->orderByDesc('id')->get();
+        $contas ??= GoogleAdsAccount::visiveisPara(auth()->user())->comCampanhas()->orderByDesc('id')->get();
 
         return $this->contaId === null
             ? $contas->first()

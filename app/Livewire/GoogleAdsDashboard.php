@@ -88,7 +88,7 @@ class GoogleAdsDashboard extends Component
 
     public function render(): View
     {
-        $contas = GoogleAdsAccount::visiveisPara(auth()->user())->orderByDesc('id')->get();
+        $contas = $this->contasVisiveis();
         $conta = $this->conta($contas);
         $janela = $conta !== null ? GoogleAdsCache::metricas($conta, $this->dias) : null;
         $erro = $conta !== null ? GoogleAdsCache::erro($conta, $this->dias) : null;
@@ -108,6 +108,10 @@ class GoogleAdsDashboard extends Component
             // em vez de girar para sempre atrás de um job que já morreu.
             'carregando' => $conta !== null && $janela === null && $erro === null,
             'erro' => $erro,
+            // A conexão existe, mas é de gerente: não há número a mostrar nela, e dizer
+            // "conecte uma conta" para quem já conectou seria mandar a pessoa refazer um
+            // consentimento que não vai mudar nada.
+            'soGerente' => $conta === null && GoogleAdsAccount::visiveisPara(auth()->user())->exists(),
             'periodos' => config('google_ads.periodos'),
             'rotulos' => config('google_ads.rotulos_metricas'),
             'situacoes' => $this->situacoesDisponiveis($janela),
@@ -128,10 +132,14 @@ class GoogleAdsDashboard extends Component
             : $contas->firstWhere('id', $this->contaId) ?? $contas->first();
     }
 
-    /** As conexões que o usuário da sessão pode ver — a mesma consulta do seletor e da tela. */
+    /**
+     * As conexões que o usuário da sessão pode ver *e que têm campanha*: `visiveisPara` é a regra
+     * de dono, `comCampanhas` é a de quem tem número. O gerente fica fora porque o Google recusa
+     * métrica nele — oferecê-lo no seletor seria uma tela que gira em "Carregando…" para sempre.
+     */
     private function contasVisiveis(): Collection
     {
-        return GoogleAdsAccount::visiveisPara(auth()->user())->orderByDesc('id')->get();
+        return GoogleAdsAccount::visiveisPara(auth()->user())->comCampanhas()->orderByDesc('id')->get();
     }
 
     /** Enfileira a janela pedida se ela ainda está vazia — e só se ninguém já pediu ela. */

@@ -50,11 +50,25 @@ class SyncGoogleAdsMetrics implements ShouldQueue
             return;
         }
 
+        if ($conta->gerente) {
+            // Nada a sincronizar: o gerente não tem campanha, e o Google recusa em voz alta o
+            // pedido feito nele. Sair antes é o que impede a fila de reabrir a mesma ferida a
+            // cada rodada do agendamento.
+            return;
+        }
+
         try {
             $resultado = $servico->buscarCampanhasComMetricas($conta, $this->dias);
         } catch (Throwable $e) {
             if (GoogleAdsService::credencialRecusada($e)) {
                 $this->desconectar($conta, $e);
+
+                return;
+            }
+
+            if (GoogleAdsService::gerenteSemMetrica($e)) {
+                $conta->forceFill(['gerente' => true])->save();
+                GoogleAdsCache::esquecer($conta);
 
                 return;
             }

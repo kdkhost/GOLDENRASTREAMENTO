@@ -70,6 +70,16 @@
                         @else
                             <div class="small text-secondary">As chaves ficam com o administrador.</div>
                         @endcan
+                    @elseif ($soGerente)
+                        <div class="ads-painel__titulo">Só a conta gerente está conectada</div>
+                        <p class="small text-secondary mb-3">
+                            A conta que você conectou organiza as contas da árvore, e o Google não
+                            devolve métrica dela — os números vêm de cada conta de anúncio. Conecte
+                            uma conta de anúncio para ver as campanhas aqui.
+                        </p>
+                        <a href="{{ route('google-ads.redirect') }}" class="btn btn-golden btn-sm w-100">
+                            <i class="fa-brands fa-google me-1" aria-hidden="true"></i> Conectar outra conta
+                        </a>
                     @else
                         <div class="ads-painel__titulo">Tudo pronto para conectar</div>
                         <p class="small text-secondary mb-3">

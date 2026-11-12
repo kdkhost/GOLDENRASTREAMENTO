@@ -67,7 +67,7 @@ class GoogleAdsAuthController extends Controller
         }
 
         if ($request->has('error')) {
-            Activity::log('google_ads_consentimento_negado', "O usuário desistiu da conexão de Google Ads (".str_replace('_', ' ', (string) $request->input('error')).").", $usuario);
+            Activity::log('google_ads_consentimento_negado', 'O usuário desistiu da conexão de Google Ads ('.str_replace('_', ' ', (string) $request->input('error')).').', $usuario);
 
             return redirect()->route('admin.google-ads.index')
                 ->with('warning', 'A conexão foi cancelada no Google. Nenhum acesso foi guardado.');
@@ -163,6 +163,10 @@ class GoogleAdsAuthController extends Controller
             'refresh_token' => $token,
             'descriptive_name' => $detalhes['nome'],
             'currency_code' => $detalhes['moeda'],
+            // O Google acabou de responder se esta conta é gerente ou de anúncio. Guardar a
+            // resposta é o que evita a fila perguntar de novo, a cada rodada, por métrica que um
+            // gerente nunca vai ter.
+            'gerente' => (bool) $detalhes['gerente'],
             'status' => GoogleAdsAccount::ATIVO,
             'motivo_desconexao' => null,
         ])->save();
@@ -171,7 +175,9 @@ class GoogleAdsAuthController extends Controller
         // pessoa do outro lado da autorização.
         GoogleAdsCache::esquecer($conta);
 
-        SyncGoogleAdsMetrics::dispatch($conta->id, (int) config('google_ads.dias_padrao', 30));
+        if (! $conta->gerente) {
+            SyncGoogleAdsMetrics::dispatch($conta->id, (int) config('google_ads.dias_padrao', 30));
+        }
 
         return $conta;
     }

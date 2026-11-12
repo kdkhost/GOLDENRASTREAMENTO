@@ -234,6 +234,14 @@ class GoogleAdsService
      */
     public function buscarCampanhasComMetricas(GoogleAdsAccount $conta, int $dias = 30): array
     {
+        if ($conta->gerente) {
+            // Recusado aqui, antes da chamada: o pedido ao gerente sempre volta com
+            // `REQUESTED_METRICS_FOR_MANAGER`, e cada recusa dessas é cota gasta e linha escrita
+            // num log que a equipe tem que ler de madrugada. Quem precisa saber que a conta é
+            // gerente é a conta, não o Google, a cada quinze minutos.
+            throw new InvalidArgumentException('A conta '.$conta->nomeTela().' organiza as contas da árvore e não tem campanha própria: o Google não devolve métrica de gerente. A métrica vem de uma conta de anúncio.');
+        }
+
         $inicio = microtime(true);
         $gaql = $this->gaqlCampanhas($dias);
 
@@ -510,6 +518,19 @@ class GoogleAdsService
         return str_contains($e->getMessage(), 'OAUTH_TOKEN')
             || str_contains($e->getMessage(), 'REFRESH_TOKEN')
             || str_contains($e->getMessage(), 'UNAUTHENTICATED');
+    }
+
+    /**
+     * O Google acabou de dizer que esta conta é de gerente, e não de anúncio.
+     *
+     * É como uma conexão antiga aprende a marca: a linha foi gravada antes de a coluna existir,
+     * ou o `customer` não pôde ser lido no consentimento. Uma recusa basta — o job marca a conta,
+     * e o agendamento nunca mais gasta uma chamada nela. Repetir a mesma pergunta sabendo a
+     * resposta é o que enchia `google_ads_api_logs` de falha certa a cada rodada.
+     */
+    public static function gerenteSemMetrica(Throwable $e): bool
+    {
+        return str_contains(strtoupper($e->getMessage()), 'REQUESTED_METRICS_FOR_MANAGER');
     }
 
     /** O nome em inglês de um número de enumeração, ou o próprio número quando não bate. */

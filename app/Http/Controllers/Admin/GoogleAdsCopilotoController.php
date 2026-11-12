@@ -48,7 +48,7 @@ class GoogleAdsCopilotoController extends Controller
         return view('admin.google-ads.copiloto', [
             'ficha' => $ficha,
             'planos' => GoogleAdsPlano::visiveisPara($request->user())->latest('id')->paginate(itens_por_pagina()),
-            'contas' => GoogleAdsAccount::visiveisPara($request->user())->orderByDesc('id')->get(),
+            'contas' => GoogleAdsAccount::visiveisPara($request->user())->comCampanhas()->orderByDesc('id')->get(),
             'ia_pronta' => Fabrica::pronta('conversa'),
             'ia_modelo' => Fabrica::rodada('conversa'),
             'ia_faltando' => Fabrica::faltando(),
@@ -158,7 +158,7 @@ class GoogleAdsCopilotoController extends Controller
             'avisos' => $plano->avisos(),
             'forca' => (array) ($plano->validacao()['forca'] ?? []),
             'conta' => $plano->conta,
-            'contas' => GoogleAdsAccount::visiveisPara($request->user())->orderByDesc('id')->get(),
+            'contas' => GoogleAdsAccount::visiveisPara($request->user())->comCampanhas()->orderByDesc('id')->get(),
             'credenciais_faltando' => GoogleAdsService::credenciaisFaltantes(),
             'aplicacao' => (array) ($plano->aplicacao_json ?? []),
         ]);
@@ -507,7 +507,7 @@ class GoogleAdsCopilotoController extends Controller
 
     private function conta(Request $request, ?int $contaId): ?GoogleAdsAccount
     {
-        $contas = GoogleAdsAccount::visiveisPara($request->user())->orderByDesc('id')->get();
+        $contas = GoogleAdsAccount::visiveisPara($request->user())->comCampanhas()->orderByDesc('id')->get();
 
         return $contaId === null ? $contas->first() : $contas->firstWhere('id', $contaId);
     }

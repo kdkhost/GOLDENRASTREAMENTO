@@ -62,12 +62,18 @@ class SyncGoogleAdsCommand extends Command
 
         // O agendamento sincroniza o mundo: a regra de "cada um vê só a sua conta" é da tela
         // e da policy, não da fila — aqui não há usuário autenticado para filtrar por.
-        $contas = GoogleAdsAccount::ativas()
+        // `comCampanhas` é a outra régua: enfileirar um gerente é pôr na fila um job cuja única
+        // resposta possível é uma recusa do Google.
+        $contas = GoogleAdsAccount::ativas()->comCampanhas()
             ->when($this->option('conta'), fn ($consulta, $id): mixed => $consulta->whereKey($id))
             ->get();
 
         if ($contas->isEmpty()) {
-            $this->warn('Nenhuma conta de Google Ads conectada.');
+            $gerentes = GoogleAdsAccount::ativas()->where('gerente', true)->count();
+
+            $this->warn($gerentes > 0
+                ? "Nada para sincronizar: {$gerentes} conexão(ões) de gerente conectada(s), e o Google não devolve métrica de gerente — a métrica vem das contas de anúncio da árvore."
+                : 'Nenhuma conta de Google Ads conectada.');
 
             return self::SUCCESS;
         }

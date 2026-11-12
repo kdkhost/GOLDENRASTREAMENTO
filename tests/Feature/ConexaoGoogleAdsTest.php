@@ -19,6 +19,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use InvalidArgumentException;
 use Laravel\Socialite\Contracts\Provider as ProviderContract;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
@@ -158,7 +159,7 @@ class ConexaoGoogleAdsTest extends TestCase
     public function test_o_callback_guarda_a_conta_com_o_token_cifrado_e_pede_a_primeira_sincronizacao(): void
     {
         $this->mockarSocialite($this->usuarioAutorizado('1//04token-de-renovacao'));
-        $this->serviceDeConexao(['1234567890'], ['nome' => 'Golden Rastreamento', 'moeda' => 'BRL', 'gerente' => true]);
+        $this->serviceDeConexao(['1234567890'], ['nome' => 'Golden Rastreamento', 'moeda' => 'BRL', 'gerente' => false]);
 
         $this->actingAs($this->admin)
             ->get(route('google-ads.callback'))
@@ -404,6 +405,95 @@ class ConexaoGoogleAdsTest extends TestCase
         $erro = GoogleAdsCache::erro($conta, 30);
         $this->assertNotNull($erro);
         $this->assertStringContainsString('recusou a credencial', $erro['mensagem']);
+    }
+
+    public function test_o_agendamento_nao_enfileira_a_conta_de_gerente_e_explica_o_que_sobrou(): void
+    {
+        $gerente = GoogleAdsAccount::factory()->gerente()->create([
+            'user_id' => $this->admin->id,
+            'descriptive_name' => 'Gerente da agência',
+        ]);
+        $anunciante = GoogleAdsAccount::factory()->create(['user_id' => $this->admin->id]);
+
+        // Uma chamada de métrica no gerente tem resposta certa — a recusa —, e o agendamento
+        // rodando a cada quinze minutos é o que enchia `google_ads_api_logs` de falha prevista.
+        $this->artisan('google-ads:sync')
+            ->expectsOutputToContain('1 conta(s) enfileirada(s)')
+            ->assertSuccessful();
+
+        Queue::assertPushed(SyncGoogleAdsMetrics::class, fn (SyncGoogleAdsMetrics $job): bool => $job->contaId === $anunciante->id);
+        Queue::assertNotPushed(SyncGoogleAdsMetrics::class, fn (SyncGoogleAdsMetrics $job): bool => $job->contaId === $gerente->id);
+
+        // Sobrando só o gerente, o silêncio seria pior que a falha: a equipe não teria como
+        // saber se o cron morreu ou se não há mesmo o que sincronizar.
+        $anunciante->delete();
+
+        $this->artisan('google-ads:sync --agendamento')
+            ->expectsOutputToContain('o Google não devolve métrica de gerente')
+            ->assertSuccessful();
+
+        Queue::assertPushed(SyncGoogleAdsMetrics::class, 1);
+    }
+
+    public function test_o_job_aprende_que_a_conta_e_de_gerente_na_recusa_e_para_de_bater_nela(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create(['user_id' => $this->admin->id]);
+        GoogleAdsCache::gravar($conta, 30, [$this->campanha('1234', 'Rastreamento de frota')], $this->resumo());
+
+        $servico = Mockery::mock(GoogleAdsService::class);
+        // `once()` é o teste: se a segunda rodada chamasse o Google de novo, o Mockery reclama.
+        $servico->shouldReceive('buscarCampanhasComMetricas')->once()->andThrow(new ApiException(
+            'Error 0: Requested metrics for a manager account. (Error: REQUESTED_METRICS_FOR_MANAGER)',
+            Code::INVALID_ARGUMENT,
+            'REQUESTED_METRICS_FOR_MANAGER'
+        ));
+        $this->app->instance(GoogleAdsService::class, $servico);
+
+        (new SyncGoogleAdsMetrics($conta->id, 30))->handle($servico);
+
+        $conta->refresh();
+        $this->assertTrue($conta->gerente);
+        // A conta continua conectada e útil para o copiloto; o que cai é a janela de métrica,
+        // que nunca teve número.
+        $this->assertSame(GoogleAdsAccount::ATIVO, $conta->status);
+        $this->assertNull(GoogleAdsCache::metricas($conta, 30));
+
+        (new SyncGoogleAdsMetrics($conta->id, 30))->handle($servico);
+    }
+
+    public function test_a_camada_de_servico_recusa_o_gerente_antes_de_falar_com_o_google(): void
+    {
+        $gerente = GoogleAdsAccount::factory()->gerente()->create([
+            'descriptive_name' => 'Gerente da agência',
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('o Google não devolve métrica de gerente');
+
+        app(GoogleAdsService::class)->buscarCampanhasComMetricas($gerente, 30);
+    }
+
+    public function test_a_tela_nao_oferece_o_gerente_nem_pede_numero_que_ele_nao_tem(): void
+    {
+        GoogleAdsAccount::factory()->gerente()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '9201387315',
+            'descriptive_name' => 'Gerente da agência',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.google-ads.index'))
+            ->assertOk()
+            // A régua é o botão, não o título: o cartão do guia cita a frase da tela de
+            // propósito, e o guia mora num `<template>` dentro desta mesma página.
+            ->assertSee('Conectar outra conta')
+            ->assertDontSee('Tudo pronto para conectar')
+            // Fora do seletor e fora de qualquer número: oferecê-la seria uma tela girando
+            // em "Carregando…" para sempre, atrás de um job que o Google recusa.
+            ->assertDontSee('Gerente da agência')
+            ->assertDontSee('9201387315');
+
+        Queue::assertPushed(SyncGoogleAdsMetrics::class, 0);
     }
 
     public function test_o_editor_aplica_as_travas_do_google_e_mostra_o_corte_da_busca(): void

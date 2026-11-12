@@ -56,7 +56,7 @@ class GoogleAdsRelatorioController extends Controller
 
     private function conta(Request $request, ?int $contaId): ?GoogleAdsAccount
     {
-        $contas = GoogleAdsAccount::visiveisPara($request->user())->orderByDesc('id')->get();
+        $contas = GoogleAdsAccount::visiveisPara($request->user())->comCampanhas()->orderByDesc('id')->get();
 
         return $contaId === null ? $contas->first() : $contas->firstWhere('id', $contaId);
     }

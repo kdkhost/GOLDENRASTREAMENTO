@@ -199,9 +199,11 @@ return [
                     'Reconectar a mesma conta atualiza o registro existente; não nasce conta duplicada.',
                     'O token de renovação fica cifrado no banco, e o token de desenvolvedor não aparece em tela, JSON ou log — nunca.',
                     'Pausar e ativar campanha têm confirmação antes e passam por uma operação simulada (`validate_only`) antes da escrita de verdade.',
+                    'Conta de gerente (MCC) conectada não traz número nenhum, e é de propósito: o Google recusa métrica de quem não tem campanha. O painel guarda que aquela conta é gerente e deixa de chamá-la — o que se conecta ao lado dela é cada conta de anúncio da árvore.',
                 ]],
                 ['tipo' => 'tabela', 'cabecalho' => ['O que a tela diz', 'O que fazer'], 'linhas' => [
                     ['Ligar o Google Ads — o cartão de abertura', 'Ele diz quantas chaves faltam, lista os nomes e leva direto a Configurações → Chaves de integração; com as chaves no lugar, o mesmo cartão oferece "Conectar conta Google Ads".'],
+                    ['Só a conta gerente está conectada', 'Quem foi conectada foi a MCC, que organiza as contas mas não tem campanha própria. Use o mesmo botão para conectar uma conta de anúncio; é dela que vêm os números.'],
                     ['Carregando… por mais de dois minutos', 'Veja se o cron do agendador está ativo e se a fila anda: php artisan queue:work --stop-when-empty.'],
                     ['A última sincronização não terminou', 'O cartão marca desde quando e o motivo; "Tentar de novo" enfileira outra.'],
                     ['Conta desconectada, com e-mail para o dono', 'O Google recusou a credencial — token revogado ou senha da conta alterada. Reconecte pela tela.'],

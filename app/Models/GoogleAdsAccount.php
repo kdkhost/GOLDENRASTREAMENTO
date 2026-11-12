@@ -33,13 +33,14 @@ class GoogleAdsAccount extends Model
 
     protected $fillable = [
         'user_id', 'customer_id', 'refresh_token',
-        'descriptive_name', 'currency_code', 'status', 'motivo_desconexao', 'sincronizado_em',
+        'descriptive_name', 'currency_code', 'gerente', 'status', 'motivo_desconexao', 'sincronizado_em',
     ];
 
     protected $casts = [
         // Nunca em claro: o token dá acesso à conta inteira do anunciante.
         'refresh_token' => 'encrypted',
         'sincronizado_em' => 'datetime',
+        'gerente' => 'boolean',
     ];
 
     /** O token cifrado jamais volta para a tela como valor do formulário. */
@@ -59,6 +60,19 @@ class GoogleAdsAccount extends Model
     public function scopeAtivas(Builder $query): Builder
     {
         return $query->where('status', self::ATIVO);
+    }
+
+    /**
+     * As contas que têm campanha própria, e portanto métrica: as de anúncio.
+     *
+     * O gerente (MCC) alcança a árvore inteira, mas o Google recusa pedido de métrica feito nele
+     * com `REQUESTED_METRICS_FOR_MANAGER` — a resposta é sempre a mesma e sempre negativa. Esta é
+     * a única régua: fila, comando agendado e todo seletor de conta passam por aqui, e é por isso
+     * que nenhuma tela pode acabar oferecendo uma conta que nunca vai ter número.
+     */
+    public function scopeComCampanhas(Builder $query): Builder
+    {
+        return $query->where('gerente', false);
     }
 
     /**
@@ -100,7 +114,12 @@ class GoogleAdsAccount extends Model
     /** Nome que a conta anuncia no painel: o descritivo do Google, ou o número. */
     public function nomeTela(): string
     {
-        return $this->descriptive_name ?: 'Conta '.$this->numeroConta();
+        $nome = $this->descriptive_name ?: 'Conta '.$this->numeroConta();
+
+        // O gerente costuma ter o mesmo descritivo da conta de anúncio logo abaixo dele, e as
+        // duas linhas chegam com nomes iguais na tela. Sem a palavra "gerente" ninguém tem como
+        // saber qual das duas tem campanha — que é justamente a pergunta que a tela faz.
+        return $this->gerente ? $nome.' (gerente)' : $nome;
     }
 
     /**
