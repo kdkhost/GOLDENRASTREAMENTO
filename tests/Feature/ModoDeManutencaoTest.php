@@ -80,3 +80,4 @@ class ModoDeManutencaoTest extends TestCase
         $response->assertOk();
     }
 }
+

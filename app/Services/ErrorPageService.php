@@ -236,3 +236,4 @@ class ErrorPageService
         ];
     }
 }
+

@@ -196,3 +196,4 @@ class MilitarySecurityController extends Controller
             ->with('success', "{$removidos} logs antigos foram limpos!");
     }
 }
+

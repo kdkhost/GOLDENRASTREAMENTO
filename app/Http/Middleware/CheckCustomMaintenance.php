@@ -48,3 +48,4 @@ class CheckCustomMaintenance
             ->header('Retry-After', '300');
     }
 }
+

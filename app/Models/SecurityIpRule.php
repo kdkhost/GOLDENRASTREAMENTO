@@ -71,3 +71,4 @@ class SecurityIpRule extends Model
         return $this->expira_em !== null && $this->expira_em->isPast();
     }
 }
+

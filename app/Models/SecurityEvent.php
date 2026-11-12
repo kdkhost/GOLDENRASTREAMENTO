@@ -85,3 +85,4 @@ class SecurityEvent extends Model
         };
     }
 }
+

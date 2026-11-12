@@ -588,3 +588,4 @@ class MilitaryShield
         return SecurityEvent::where('created_at', '<', now()->subDays($dias))->delete();
     }
 }
+

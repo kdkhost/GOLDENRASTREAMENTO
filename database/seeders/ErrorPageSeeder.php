@@ -113,3 +113,4 @@ class ErrorPageSeeder extends Seeder
         }
     }
 }
+

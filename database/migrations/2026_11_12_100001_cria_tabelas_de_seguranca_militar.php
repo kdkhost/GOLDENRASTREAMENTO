@@ -42,3 +42,4 @@ return new class extends Migration
         Schema::dropIfExists('security_ip_rules');
     }
 };
+

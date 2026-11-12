@@ -98,3 +98,4 @@ class ErrorPageController extends Controller
             ->with('success', "Textos padrão da página de erro HTTP {$code} restaurados!");
     }
 }
+

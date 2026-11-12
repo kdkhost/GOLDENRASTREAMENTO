@@ -44,3 +44,4 @@ class MilitaryShieldMiddleware
         return $next($request);
     }
 }
+
