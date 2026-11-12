@@ -207,7 +207,17 @@
                         <div class="ads-painel h-100">
                             <div class="ads-painel__titulo">Campanha</div>
                             <code>{{ $campanhaCriada !== '' ? $campanhaCriada : '—' }}</code>
-                            <div class="text-secondary mt-1">{{ $aplicacao['status_rotulo'] ?? 'Pausada' }}</div>
+                            <div class="mt-1">
+                                @if (($aplicacao['status'] ?? 'PAUSED') === 'ENABLED')
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="fas fa-play me-1" aria-hidden="true"></i> {{ $aplicacao['status_rotulo'] ?? 'Ativa' }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                        <i class="fas fa-pause me-1" aria-hidden="true"></i> {{ $aplicacao['status_rotulo'] ?? 'Pausada' }}
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                     </div>
                     <div class="col-12 col-md-8">
@@ -230,20 +240,39 @@
                         <a href="{{ route('admin.google-ads.campanhas.show', $parametrosCampanha) }}" class="btn btn-outline-secondary btn-sm">
                             <i class="fas fa-bullhorn me-1" aria-hidden="true"></i> Abrir a campanha
                         </a>
-                        <form method="POST" action="{{ route('admin.google-ads.campanhas.status', ['campanha' => $campanhaCriada]) }}"
-                            data-sem-ajax
-                            data-confirmar="Ativar a campanha no Google Ads agora? Ela começa a veicular e a gastar o orçamento diário.">
-                            @csrf
-                            <input type="hidden" name="status" value="ENABLED">
-                            <input type="hidden" name="conta" value="{{ $contaAplicada }}">
-                            <input type="hidden" name="voltar" value="plano">
-                            <input type="hidden" name="plano" value="{{ $plano->id }}">
-                            <button class="btn btn-golden btn-sm"><i class="fas fa-play me-1" aria-hidden="true"></i> Ativar agora</button>
-                        </form>
+                        @if (($aplicacao['status'] ?? 'PAUSED') === 'ENABLED')
+                            <form method="POST" action="{{ route('admin.google-ads.campanhas.status', ['campanha' => $campanhaCriada]) }}"
+                                data-sem-ajax
+                                data-confirmar="Pausar a campanha no Google Ads agora? Ela deixará de veicular e de gastar orçamento.">
+                                @csrf
+                                <input type="hidden" name="status" value="PAUSED">
+                                <input type="hidden" name="conta" value="{{ $contaAplicada }}">
+                                <input type="hidden" name="voltar" value="plano">
+                                <input type="hidden" name="plano" value="{{ $plano->id }}">
+                                <button class="btn btn-outline-warning btn-sm"><i class="fas fa-pause me-1" aria-hidden="true"></i> Pausar campanha</button>
+                            </form>
+                        @else
+                            <form method="POST" action="{{ route('admin.google-ads.campanhas.status', ['campanha' => $campanhaCriada]) }}"
+                                data-sem-ajax
+                                data-confirmar="Ativar a campanha no Google Ads agora? Ela começa a veicular e a gastar o orçamento diário.">
+                                @csrf
+                                <input type="hidden" name="status" value="ENABLED">
+                                <input type="hidden" name="conta" value="{{ $contaAplicada }}">
+                                <input type="hidden" name="voltar" value="plano">
+                                <input type="hidden" name="plano" value="{{ $plano->id }}">
+                                <button class="btn btn-golden btn-sm"><i class="fas fa-play me-1" aria-hidden="true"></i> Ativar agora</button>
+                            </form>
+                        @endif
                     </div>
-                    <p class="form-hint mt-2 mb-0">
-                        A campanha nasceu pausada e não gasta nada. Na ficha dela você edita orçamento, regiões, grupos e imagens — e pode pausar de novo quando quiser.
-                    </p>
+                    @if (($aplicacao['status'] ?? 'PAUSED') === 'ENABLED')
+                        <p class="form-hint mt-2 mb-0 text-success">
+                            <i class="fas fa-circle-check me-1"></i> A campanha está ativa e veiculando no Google Ads conforme o orçamento configurado.
+                        </p>
+                    @else
+                        <p class="form-hint mt-2 mb-0">
+                            A campanha está pausada e não consome orçamento. Na ficha dela você edita orçamento, regiões, grupos e imagens — ou clique em "Ativar agora" para iniciar a veiculação.
+                        </p>
+                    @endif
                 @else
                     <p class="form-hint mt-3 mb-0">
                         A campanha está pausada. <a href="{{ route('admin.google-ads.index') }}">Abra as métricas</a> para revisar e ativar quando quiser começar a veicular.

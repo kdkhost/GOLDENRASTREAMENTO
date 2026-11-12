@@ -546,7 +546,7 @@ final class GoogleAdsEditor
 
     private function lerCriterios(GoogleAdsAccount $conta, string $campanhaId, array &$lida): void
     {
-        $linhas = $this->consultar($conta, "SELECT campaign_criterion.resource_name, campaign_criterion.type, campaign_criterion.negative, campaign_criterion.keyword.text, campaign_criterion.keyword.match_type, campaign_criterion.location.geo_target_constant, campaign_criterion.language.language_constant FROM campaign_criterion WHERE campaign.id = {$campanhaId} AND campaign_criterion.type IN ('LOCATION', 'LANGUAGE', 'KEYWORD') AND campaign_criterion.status != 'REMOVED'", 'campanha.criterios');
+        $linhas = $this->consultar($conta, "SELECT campaign.id, campaign_criterion.resource_name, campaign_criterion.type, campaign_criterion.negative, campaign_criterion.status, campaign_criterion.keyword.text, campaign_criterion.keyword.match_type, campaign_criterion.location.geo_target_constant, campaign_criterion.language.language_constant FROM campaign_criterion WHERE campaign.id = {$campanhaId} AND campaign_criterion.type IN ('LOCATION', 'LANGUAGE', 'KEYWORD') AND campaign_criterion.status != 'REMOVED'", 'campanha.criterios');
 
         $constantes = [];
 
@@ -591,7 +591,7 @@ final class GoogleAdsEditor
             $ids = implode(', ', array_map(static fn (string $c): string => basename($c), $constantes));
             $nomes = [];
 
-            foreach ($this->consultar($conta, "SELECT geo_target_constant.resource_name, geo_target_constant.name, geo_target_constant.canonical_name FROM geo_target_constant WHERE geo_target_constant.id IN ({$ids})", 'regioes.nomes') as $linha) {
+            foreach ($this->consultar($conta, "SELECT geo_target_constant.id, geo_target_constant.resource_name, geo_target_constant.name, geo_target_constant.canonical_name FROM geo_target_constant WHERE geo_target_constant.id IN ({$ids})", 'regioes.nomes') as $linha) {
                 $constante = (array) ($linha['geoTargetConstant'] ?? []);
                 $nomes[(string) ($constante['resourceName'] ?? '')] = (string) ($constante['name'] ?? '');
             }
@@ -609,7 +609,7 @@ final class GoogleAdsEditor
     {
         $grupos = [];
 
-        foreach ($this->consultar($conta, "SELECT ad_group.id, ad_group.resource_name, ad_group.name, ad_group.status, ad_group.cpc_bid_micros FROM ad_group WHERE campaign.id = {$campanhaId} AND ad_group.status != 'REMOVED' ORDER BY ad_group.id", 'grupos.ler') as $linha) {
+        foreach ($this->consultar($conta, "SELECT campaign.id, ad_group.id, ad_group.resource_name, ad_group.name, ad_group.status, ad_group.cpc_bid_micros FROM ad_group WHERE campaign.id = {$campanhaId} AND ad_group.status != 'REMOVED' ORDER BY ad_group.id", 'grupos.ler') as $linha) {
             $grupo = (array) ($linha['adGroup'] ?? []);
             $id = (string) ($grupo['id'] ?? '');
             $status = (string) ($grupo['status'] ?? 'UNKNOWN');
@@ -630,7 +630,7 @@ final class GoogleAdsEditor
             return;
         }
 
-        foreach ($this->consultar($conta, "SELECT ad_group.id, ad_group_ad.resource_name, ad_group_ad.status, ad_group_ad.ad.id, ad_group_ad.ad.final_urls, ad_group_ad.ad.responsive_search_ad.headlines, ad_group_ad.ad.responsive_search_ad.descriptions, ad_group_ad.ad.responsive_search_ad.path1, ad_group_ad.ad.responsive_search_ad.path2, ad_group_ad.policy_summary.approval_status FROM ad_group_ad WHERE campaign.id = {$campanhaId} AND ad_group_ad.status != 'REMOVED'", 'anuncios.ler') as $linha) {
+        foreach ($this->consultar($conta, "SELECT campaign.id, ad_group.id, ad_group_ad.resource_name, ad_group_ad.status, ad_group_ad.ad.id, ad_group_ad.ad.final_urls, ad_group_ad.ad.responsive_search_ad.headlines, ad_group_ad.ad.responsive_search_ad.descriptions, ad_group_ad.ad.responsive_search_ad.path1, ad_group_ad.ad.responsive_search_ad.path2, ad_group_ad.policy_summary.approval_status FROM ad_group_ad WHERE campaign.id = {$campanhaId} AND ad_group_ad.status != 'REMOVED'", 'anuncios.ler') as $linha) {
             $grupoId = (string) data_get($linha, 'adGroup.id', '');
 
             if (! isset($grupos[$grupoId])) {
@@ -656,7 +656,7 @@ final class GoogleAdsEditor
             ];
         }
 
-        foreach ($this->consultar($conta, "SELECT ad_group.id, ad_group_criterion.resource_name, ad_group_criterion.status, ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type FROM ad_group_criterion WHERE campaign.id = {$campanhaId} AND ad_group_criterion.type = 'KEYWORD' AND ad_group_criterion.status != 'REMOVED' AND ad_group_criterion.negative = FALSE", 'palavras.ler') as $linha) {
+        foreach ($this->consultar($conta, "SELECT campaign.id, ad_group.id, ad_group_criterion.resource_name, ad_group_criterion.status, ad_group_criterion.type, ad_group_criterion.negative, ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type FROM ad_group_criterion WHERE campaign.id = {$campanhaId} AND ad_group_criterion.type = 'KEYWORD' AND ad_group_criterion.status != 'REMOVED' AND ad_group_criterion.negative = FALSE", 'palavras.ler') as $linha) {
             $grupoId = (string) data_get($linha, 'adGroup.id', '');
 
             if (! isset($grupos[$grupoId])) {
@@ -678,7 +678,7 @@ final class GoogleAdsEditor
 
     private function lerRecursos(GoogleAdsAccount $conta, string $campanhaId, array &$lida): void
     {
-        foreach ($this->consultar($conta, "SELECT campaign_asset.resource_name, campaign_asset.field_type, campaign_asset.status, asset.id, asset.name, asset.final_urls, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels, asset.sitelink_asset.link_text, asset.sitelink_asset.description1, asset.sitelink_asset.description2, asset.callout_asset.callout_text FROM campaign_asset WHERE campaign.id = {$campanhaId} AND campaign_asset.field_type IN ('AD_IMAGE', 'SITELINK', 'CALLOUT') AND campaign_asset.status != 'REMOVED'", 'recursos.ler') as $linha) {
+        foreach ($this->consultar($conta, "SELECT campaign.id, campaign_asset.resource_name, campaign_asset.field_type, campaign_asset.status, asset.id, asset.name, asset.final_urls, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels, asset.sitelink_asset.link_text, asset.sitelink_asset.description1, asset.sitelink_asset.description2, asset.callout_asset.callout_text FROM campaign_asset WHERE campaign.id = {$campanhaId} AND campaign_asset.field_type IN ('AD_IMAGE', 'SITELINK', 'CALLOUT') AND campaign_asset.status != 'REMOVED'", 'recursos.ler') as $linha) {
             $vinculo = (array) ($linha['campaignAsset'] ?? []);
             $asset = (array) ($linha['asset'] ?? []);
             $base = [

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SyncGoogleAdsMetrics;
 use App\Models\Activity;
 use App\Models\GoogleAdsAccount;
+use App\Models\GoogleAdsPlano;
 use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
 use App\Services\GoogleAds\GoogleAdsEditor;
 use App\Services\GoogleAds\GoogleAdsService;
@@ -112,6 +113,16 @@ class GoogleAdsCampanhaController extends Controller
             $conta,
             ['campaign_id' => $campanha, 'status' => $dados['status']],
         );
+
+        if ($request->filled('plano')) {
+            $planoModel = GoogleAdsPlano::find((int) $request->input('plano'));
+            if ($planoModel) {
+                $aplicacao = (array) ($planoModel->aplicacao_json ?? []);
+                $aplicacao['status'] = $dados['status'];
+                $aplicacao['status_rotulo'] = $rotulo;
+                $planoModel->forceFill(['aplicacao_json' => $aplicacao])->save();
+            }
+        }
 
         // A linha velha da tabela é a da conta do Google antes da mudança: descarta a janela e
         // pede de novo, para a tela mostrar o status que o Google aceita agora.

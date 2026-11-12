@@ -11,6 +11,7 @@ use App\Services\Assistente\Provedores\Fabrica;
 use App\Services\GoogleAds\Copiloto;
 use App\Services\GoogleAds\Excecoes\CopilotoIndisponivel;
 use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
+use App\Services\GoogleAds\GoogleAdsEditor;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Services\GoogleAds\GoogleAdsWriter;
 use App\Services\GoogleAds\PlanoDeCampanha;
@@ -151,6 +152,23 @@ class GoogleAdsCopilotoController extends Controller
     {
         $this->autoriza($request, $plano);
 
+        $aplicacao = (array) ($plano->aplicacao_json ?? []);
+        $campanhaCriada = (string) ($aplicacao['campanha_id'] ?? '');
+
+        if ($campanhaCriada !== '' && $plano->conta && $plano->conta->status === GoogleAdsAccount::ATIVO) {
+            try {
+                $lida = app(GoogleAdsEditor::class)->ler($plano->conta, $campanhaCriada);
+                $statusVivo = (string) ($lida['status'] ?? '');
+                if ($statusVivo !== '' && ($aplicacao['status'] ?? null) !== $statusVivo) {
+                    $aplicacao['status'] = $statusVivo;
+                    $aplicacao['status_rotulo'] = $lida['status_rotulo'] ?? app(GoogleAdsService::class)->traduzStatus($statusVivo);
+                    $plano->forceFill(['aplicacao_json' => $aplicacao])->save();
+                }
+            } catch (Throwable) {
+                // Preserva o estado local caso a leitura da API não responda
+            }
+        }
+
         return view('admin.google-ads.copiloto-show', [
             'plano' => $plano,
             'conteudo' => $plano->plano(),
@@ -160,7 +178,7 @@ class GoogleAdsCopilotoController extends Controller
             'conta' => $plano->conta,
             'contas' => GoogleAdsAccount::visiveisPara($request->user())->comCampanhas()->orderByDesc('id')->get(),
             'credenciais_faltando' => GoogleAdsService::credenciaisFaltantes(),
-            'aplicacao' => (array) ($plano->aplicacao_json ?? []),
+            'aplicacao' => $aplicacao,
         ]);
     }
 
