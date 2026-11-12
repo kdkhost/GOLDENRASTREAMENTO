@@ -5,6 +5,7 @@ namespace App\Services\Security;
 use App\Models\SecurityEvent;
 use App\Models\SecurityIpRule;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -95,9 +96,9 @@ class MilitaryShield
             return null;
         }
 
-        // Administradores e operadores no painel nunca são bloqueados pelo WAF
-        $user = $request->user();
-        if ($user && ($user->role === 'admin' || $user->role === 'vendedor') && ($request->is('admin*') || $request->routeIs('admin.*'))) {
+        // Administradores e operadores autenticados nunca são bloqueados pelo WAF
+        $user = $this->usuarioAutenticado($request);
+        if ($user && in_array($user->role, ['admin', 'vendedor'], true)) {
             return null;
         }
 
@@ -285,8 +286,10 @@ class MilitaryShield
 
         if ($ehCritico || $infracoes >= $this->limiteAutoBan()) {
             $horas = $ehCritico ? ($this->horasAutoBan() * 2) : $this->horasAutoBan();
-            $motivoBase = substr((string) ($ameaca['motivo'] ?? 'Ameaça interceptada'), 0, 160);
-            $motivo = "Auto-Ban Militar: {$motivoBase} ({$infracoes}x)";
+            $motivoBase = (string) ($ameaca['motivo'] ?? 'Ameaça interceptada');
+            $motivoBase = (string) preg_replace('/^(Auto-Ban Militar:\s*|Endereço IP listado na Lista Negra:\s*)+/i', '', $motivoBase);
+            $motivoBase = substr(trim($motivoBase), 0, 140);
+            $motivo = "Auto-Ban Militar: {$motivoBase} ({$infracoes} infração(ões))";
 
             $this->adicionarRegraIp(
                 $ip,
@@ -599,5 +602,51 @@ class MilitaryShield
     public function limparLogsAntigos(int $dias = 30): int
     {
         return SecurityEvent::where('created_at', '<', now()->subDays($dias))->delete();
+    }
+
+    /**
+     * Resolve o usuário autenticado mesmo quando a requisição é interceptada antes do middleware de sessão.
+     */
+    protected function usuarioAutenticado(Request $request): ?User
+    {
+        $user = $request->user();
+        if ($user instanceof User) {
+            return $user;
+        }
+
+        if (auth()->check()) {
+            $authUser = auth()->user();
+            if ($authUser instanceof User) {
+                return $authUser;
+            }
+        }
+
+        $cookieNome = config('session.cookie');
+        $sessionId = $request->cookies->get($cookieNome);
+        if ($sessionId && is_string($sessionId)) {
+            try {
+                $encrypter = app('encrypter');
+                $decryptedSessionId = $encrypter->decrypt($sessionId, false);
+                if (is_string($decryptedSessionId) && str_contains($decryptedSessionId, '|')) {
+                    $decryptedSessionId = explode('|', $decryptedSessionId, 2)[1] ?? $decryptedSessionId;
+                }
+                $handler = app('session')->driver();
+                $data = $handler->read($decryptedSessionId);
+                if ($data) {
+                    $payload = @unserialize($data);
+                    if (is_array($payload)) {
+                        foreach ($payload as $key => $val) {
+                            if (str_starts_with($key, 'login_web_') && is_numeric($val)) {
+                                return User::find((int) $val);
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Silencioso se o cookie não puder ser descriptografado
+            }
+        }
+
+        return null;
     }
 }

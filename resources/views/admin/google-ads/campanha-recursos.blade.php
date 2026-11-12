@@ -262,7 +262,7 @@
                 <dd class="col-7 mb-2"><code>{{ $campanha['id'] }}</code></dd>
 
                 <dt class="col-5 text-secondary fw-normal">Status</dt>
-                <dd class="col-7 mb-2"><x-admin.status :rotulo="$campanha['status_rotulo']" :tom="tom_por_status('campanha_ads', $campanha['status'])" /></dd>
+                <dd class="col-7 mb-2"><x-admin.status :rotulo="$campanha['status_rotulo'] ?? $campanha['status'] ?? 'Desconhecido'" :tom="tom_por_status('campanha_ads', $campanha['status'] ?? 'UNKNOWN')" /></dd>
 
                 <dt class="col-5 text-secondary fw-normal">Conta</dt>
                 <dd class="col-7 mb-0">{{ $conta->nomeTela() }}</dd>
