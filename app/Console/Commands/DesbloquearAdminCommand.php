@@ -8,12 +8,28 @@ use Illuminate\Support\Facades\Cache;
 
 class DesbloquearAdminCommand extends Command
 {
-    protected $signature = 'seguranca:desbloquear {ip?}';
+    protected $signature = 'seguranca:desbloquear {ip?} {--listar}';
 
     protected $description = 'Remove IP da blacklist e adiciona a whitelist';
 
     public function handle(): int
     {
+        if ($this->option('listar')) {
+            $this->table(
+                ['ID', 'IP', 'Tipo', 'Motivo', 'Nível', 'Expira Em', 'Bloqueios'],
+                SecurityIpRule::all()->map(fn ($r) => [
+                    $r->id,
+                    $r->ip,
+                    $r->tipo,
+                    $r->motivo,
+                    $r->nivel_ameaca,
+                    $r->expira_em ? $r->expira_em->format('d/m/Y H:i') : 'Permanente',
+                    $r->tentativas_bloqueadas,
+                ])
+            );
+
+            return Command::SUCCESS;
+        }
         $ip = $this->argument('ip') ?: '177.192.4.34';
 
         SecurityIpRule::where('ip', $ip)->delete();
@@ -33,3 +49,4 @@ class DesbloquearAdminCommand extends Command
         return Command::SUCCESS;
     }
 }
+
