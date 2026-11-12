@@ -3,6 +3,20 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.63.2] - 2026-11-12
+
+### Corrigido
+- **Sidebar inteira, sem menu vazando abaixo do rodapé.** Painel e portal compartilham uma
+  coluna da altura útil da janela, com marca preservada e rolagem própria do menu. Os últimos
+  itens continuam acessíveis em telas baixas, com zoom ou no celular; o menu extenso não cria
+  mais uma área vazia depois do rodapé. Acordeão e botão de recolher continuam nativos.
+- **Rodapé na base em páginas curtas.** Painel, portal, site e páginas de campanha ocupam pelo
+  menos a altura da janela. Em páginas longas, o rodapé acompanha o fim do documento sem
+  sobrepor conteúdo. A rolagem principal e o botão de voltar ao topo foram preservados.
+
+### Testes
+- Regressões da estrutura compartilhada do painel/portal e da altura mínima do site/funil.
+
 ## [2.63.1] - 2026-11-11
 
 ### Corrigido

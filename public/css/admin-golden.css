@@ -1,5 +1,11 @@
 /* Golden admin — ajustes sobre AdminLTE 4. As cores vêm todas de golden-theme.css. */
 
+.app-wrapper{min-height:100vh;min-height:100dvh}
+/* O menu rola dentro da sidebar; seu excedente não pode aumentar o documento além do rodapé. */
+.sidebar-expand-lg.layout-fixed .app-sidebar{display:flex;flex-direction:column;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh}
+.app-sidebar .sidebar-brand{flex-shrink:0}
+.sidebar-expand-lg.layout-fixed .app-sidebar .sidebar-wrapper{flex:1 1 auto;min-height:0;height:auto;overflow-y:auto;overscroll-behavior-y:contain}
+
 /* Sidebar: o menu é escuro nos dois temas, então fixa o par de cores em vez de herdar.
    O dourado de "página aberta" entra pelos tokens de cor do próprio AdminLTE, e o seletor
    precisa carregar o [data-bs-theme]: é assim que o tema escuro da sidebar define os dele,

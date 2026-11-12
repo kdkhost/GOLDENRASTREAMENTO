@@ -24,7 +24,9 @@ class PaginaDeFunilTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private FunnelPage $campanha;
+
     private string $cookie;
 
     protected function setUp(): void
@@ -48,6 +50,20 @@ class PaginaDeFunilTest extends TestCase
             ->assertSee('property="og:image"', false)
             ->assertSee('"@type":"FAQPage"', false)
             ->assertSee('name="funnel_page_id" value="'.$this->campanha->id.'"', false);
+    }
+
+    public function test_site_e_funil_compartilham_a_estrutura_que_empurra_o_rodape(): void
+    {
+        foreach (['/', '/c/frota-j16'] as $url) {
+            $html = $this->get($url)->assertOk()->getContent();
+            $this->assertStringContainsString('css/golden-site.css', $html);
+            $this->assertMatchesRegularExpression('/<main[^>]*>.*<\/main>\s*<footer/s', $html);
+        }
+
+        $css = file_get_contents(public_path('css/golden-site.css'));
+        $this->assertStringContainsString('display:flex;flex-direction:column;min-height:100vh;min-height:100dvh', $css);
+        $this->assertStringContainsString('body>main{flex:1 0 auto;min-width:0}', $css);
+        $this->assertStringContainsString('body>header,body>footer{flex-shrink:0}', $css);
     }
 
     public function test_a_campanha_nao_aparece_em_nenhum_lugar_do_site(): void
@@ -269,8 +285,8 @@ class PaginaDeFunilTest extends TestCase
         $modal = file_get_contents(resource_path('views/site/partials/video-modal.blade.php'));
         $player = file_get_contents(resource_path('views/site/partials/video-player.blade.php'));
 
-        $this->assertStringContainsString("site.partials.video-player", $funil);
-        $this->assertStringContainsString("site.partials.video-player", $modal);
+        $this->assertStringContainsString('site.partials.video-player', $funil);
+        $this->assertStringContainsString('site.partials.video-player', $modal);
         $this->assertFileDoesNotExist(public_path('js/golden-funil.js'));
         $this->assertStringNotContainsString('video-modal-yt', $modal);
         // A peça não traz nenhum iframe escrito no HTML: o quadro é buraco vazio até um toque.
@@ -321,7 +337,7 @@ class PaginaDeFunilTest extends TestCase
         // O plano B quando o navegador recusa: a casa gira o próprio quadro.
         $this->assertStringContainsString("palco.classList.add('giro')", $js);
         // Play da barra e toque do card passam pelo mesmo deitar.
-        $this->assertStringContainsString("if (!tocando()) deitar();", $js);
+        $this->assertStringContainsString('if (!tocando()) deitar();', $js);
         $this->assertStringContainsString('if (tocarJa) deitar();', $js);
         // Levantar acontece tanto no fechar do vídeo quanto na saída dada pelo sistema.
         $this->assertStringContainsString("['fullscreenchange', 'webkitfullscreenchange']", $js);

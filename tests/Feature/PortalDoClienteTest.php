@@ -721,6 +721,8 @@ class PortalDoClienteTest extends TestCase
             'class="app-wrapper"',
             'class="app-header navbar',
             'class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark"',
+            'class="sidebar-wrapper"',
+            'layout-fixed sidebar-expand-lg sidebar-mini',
             'class="app-main"',
             'app-content-header',
             'class="app-footer',
@@ -736,6 +738,16 @@ class PortalDoClienteTest extends TestCase
             $this->assertStringContainsString($trecho, $admin, "Faltou «{$trecho}» na layout do painel.");
             $this->assertStringContainsString($trecho, $portal, "Faltou «{$trecho}» na layout do portal — ele deixou de ser o painel.");
         }
+    }
+
+    public function test_o_menu_rola_dentro_da_sidebar_sem_esticar_o_documento(): void
+    {
+        $css = file_get_contents(public_path('css/admin-golden.css'));
+
+        $this->assertStringContainsString('.app-wrapper{min-height:100vh;min-height:100dvh}', $css);
+        $this->assertStringContainsString('.sidebar-expand-lg.layout-fixed .app-sidebar{display:flex;flex-direction:column;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh}', $css);
+        $this->assertStringContainsString('.app-sidebar .sidebar-brand{flex-shrink:0}', $css);
+        $this->assertStringContainsString('.sidebar-expand-lg.layout-fixed .app-sidebar .sidebar-wrapper{flex:1 1 auto;min-height:0;height:auto;overflow-y:auto;overscroll-behavior-y:contain}', $css);
     }
 
     /**
