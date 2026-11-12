@@ -561,6 +561,47 @@ class ConexaoGoogleAdsTest extends TestCase
             ->assertSee('Frases de destaque');
     }
 
+    public function test_tela_de_novo_grupo_de_anuncios_carrega_com_sucesso(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/googleAds:search' => Http::response([
+                'results' => [
+                    [
+                        'campaign' => [
+                            'id' => '24456385340',
+                            'name' => 'Golden Rastreamento',
+                            'status' => 'ENABLED',
+                            'advertisingChannelType' => 'SEARCH',
+                            'campaignBudget' => 'customers/1234567890/campaignBudgets/1',
+                            'startDateTime' => '2026-11-12 10:00:00',
+                            'endDateTime' => '2030-11-12 10:00:00',
+                        ],
+                        'campaignBudget' => [
+                            'amountMicros' => '15000000',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.google-ads.campanhas.grupos.novo', ['campanha' => '24456385340', 'conta' => $conta->id]))
+            ->assertOk()
+            ->assertSee('Novo grupo de anúncios')
+            ->assertSee('O grupo de anúncios')
+            ->assertSee('Palavras-chave')
+            ->assertSee('O anúncio responsivo de pesquisa');
+    }
+
     /** Uma linha no formato exato que `linhaParaTela` escreve — a tela lê destas chaves. */
     private function campanha(string $id, string $nome): array
     {
