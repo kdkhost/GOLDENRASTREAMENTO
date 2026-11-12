@@ -24,7 +24,7 @@ use App\Services\Assistente\Resposta;
  *    navegador precisa de cabeçalho de 44 bytes na frente, e a hospedagem compartilhada não tem
  *    ffmpeg para converter. O cabeçalho é montado à mão, em `cabecalhoDeWav()`.
  */
-class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFalar
+class Gemini extends Provedor implements PodeConversar, PodeFalar, PodeTranscrever
 {
     /** A voz do Gemini sai em PCM 16 bits, mono, a esta taxa — é o que o cabeçalho do WAV descreve. */
     private const TAXA_DE_AMOSTRAGEM = 24000;
@@ -64,14 +64,40 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
 
         $inicio = microtime(true);
         $pedido = $this->pedidoLogavel($chamada);
+        $candidatos = $this->modelosCandidatos();
+        $ultimaFalha = null;
+        $resposta = null;
+        $texto = null;
+        $modeloUtilizado = $this->modelo;
 
-        try {
-            $resposta = $this->post($this->endpoint('generateContent'), $corpo, $capacidade);
-            $texto = $this->textoDe($resposta);
-        } catch (ChamadaFalhou $falha) {
-            $this->registrar($chamada, $capacidade, $pedido, null, $falha->getMessage(), $this->decorrido($inicio));
+        foreach ($candidatos as $m) {
+            $modeloUtilizado = $m;
+            $corpo['generationConfig'] = array_merge([
+                'temperature' => 0.4,
+                'maxOutputTokens' => $chamada->maxTokens ?? (int) config('assistente.resposta.caracteres_max') * 2,
+            ], $this->pensamentoCurto($m));
 
-            throw $falha;
+            try {
+                $resposta = $this->post($this->endpoint('generateContent', $m), $corpo, $capacidade);
+                $texto = $this->textoDe($resposta);
+                $ultimaFalha = null;
+                break;
+            } catch (ChamadaFalhou $falha) {
+                $ultimaFalha = $falha;
+
+                if (in_array($falha->status, [404, 429, 503], true) || str_contains($falha->getMessage(), 'timed out')) {
+                    continue;
+                }
+
+                break;
+            }
+        }
+
+        if ($ultimaFalha !== null || $texto === null) {
+            $msg = $ultimaFalha?->getMessage() ?? 'Todos os modelos do Gemini falharam.';
+            $this->registrar($chamada, $capacidade, $pedido, null, $msg, $this->decorrido($inicio));
+
+            throw $ultimaFalha ?? new ChamadaFalhou($msg);
         }
 
         $tokensEntrada = (int) data_get($resposta, 'usageMetadata.promptTokenCount', 0) ?: null;
@@ -80,7 +106,7 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
 
         $this->registrar($chamada, $capacidade, $pedido, $resposta, null, $decorrido, $tokensEntrada, $tokensSaida);
 
-        return Resposta::deTexto($texto, static::id(), $this->modelo, $tokensEntrada, $tokensSaida, $decorrido);
+        return Resposta::deTexto($texto, static::id(), $modeloUtilizado, $tokensEntrada, $tokensSaida, $decorrido);
     }
 
     /**
@@ -96,28 +122,59 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
             throw new ChamadaFalhou('O Gemini recebeu um pedido de transcrição sem áudio na chamada.');
         }
 
-        $corpo = [
-            'contents' => [[
-                'role' => 'user',
-                'parts' => [
-                    $this->arquivoNaFala($peca),
-                    ['text' => 'Transcreva este áudio literalmente, em português do Brasil. '
-                        .'Não resuma, não corrija e não responda ao que foi dito — devolva só o texto falado.'],
-                ],
-            ]],
-            'generationConfig' => array_merge(['temperature' => 0], $this->pensamentoCurto()),
-        ];
-
         $inicio = microtime(true);
-        $resposta = $this->post($this->endpoint('generateContent'), $corpo, 'transcricao');
-        $texto = $this->textoDe($resposta);
+        $candidatos = $this->modelosCandidatos();
+        $ultimaFalha = null;
+        $resposta = null;
+        $texto = null;
+        $modeloUtilizado = $this->modelo;
+
+        foreach ($candidatos as $m) {
+            $modeloUtilizado = $m;
+            $corpo = [
+                'contents' => [[
+                    'role' => 'user',
+                    'parts' => [
+                        $this->arquivoNaFala($peca),
+                        ['text' => 'Transcreva este áudio literalmente, em português do Brasil. '
+                            .'Não resuma, não corrija e não responda ao que foi dito — devolva só o texto falado.'],
+                    ],
+                ]],
+                'generationConfig' => array_merge(['temperature' => 0], $this->pensamentoCurto($m)),
+            ];
+
+            try {
+                $resposta = $this->post($this->endpoint('generateContent', $m), $corpo, 'transcricao');
+                $texto = $this->textoDe($resposta);
+                $ultimaFalha = null;
+                break;
+            } catch (ChamadaFalhou $falha) {
+                $ultimaFalha = $falha;
+
+                if (in_array($falha->status, [404, 429, 503], true) || str_contains($falha->getMessage(), 'timed out')) {
+                    continue;
+                }
+
+                break;
+            }
+        }
+
+        if ($ultimaFalha !== null || $texto === null) {
+            $msg = $ultimaFalha?->getMessage() ?? 'Falha ao transcrever o áudio.';
+            $this->registrar($chamada, 'transcricao', [
+                'audio' => $this->marcasDe([$peca]),
+                'modelo' => $this->modelo,
+            ], null, $msg, $this->decorrido($inicio));
+
+            throw $ultimaFalha ?? new ChamadaFalhou($msg);
+        }
 
         $this->registrar($chamada, 'transcricao', [
             'audio' => $this->marcasDe([$peca]),
-            'modelo' => $this->modelo,
+            'modelo' => $modeloUtilizado,
         ], $resposta, null, $this->decorrido($inicio));
 
-        return Resposta::deTexto($texto, static::id(), $this->modelo, null, null, $this->decorrido($inicio));
+        return Resposta::deTexto($texto, static::id(), $modeloUtilizado, null, null, $this->decorrido($inicio));
     }
 
     /**
@@ -160,9 +217,23 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
         return Resposta::deAudio($wav, 'audio/wav', static::id(), $this->modelo, $this->decorrido($inicio));
     }
 
-    private function endpoint(string $acao): string
+    /** Os modelos candidatos a atender caso o principal sofra 503, 429 ou 404. */
+    private function modelosCandidatos(): array
     {
-        return "{$this->base()}/models/{$this->modelo}:{$acao}?key={$this->chave}";
+        return array_values(array_unique(array_filter([
+            $this->modelo,
+            'gemini-flash-lite-latest',
+            'gemini-3.1-flash-lite',
+            'gemini-3.8-flash',
+            'gemini-3-flash-preview',
+        ])));
+    }
+
+    private function endpoint(string $acao, ?string $modelo = null): string
+    {
+        $m = $modelo ?: $this->modelo;
+
+        return "{$this->base()}/models/{$m}:{$acao}?key={$this->chave}";
     }
 
     /** O arquivo vira uma parte da fala do usuário, com o base64 dentro do JSON. */
@@ -251,9 +322,11 @@ class Gemini extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
      * cliente recebe um começo de frase. O nível mínimo deixa o orçamento para a resposta; modelos
      * que não conhecem o campo não o recebem, para não trocar um chat ruim por um erro de API.
      */
-    private function pensamentoCurto(): array
+    private function pensamentoCurto(?string $modelo = null): array
     {
-        return str_starts_with($this->modelo, 'gemini-3')
+        $m = $modelo ?: $this->modelo;
+
+        return str_starts_with($m, 'gemini-3')
             ? ['thinkingConfig' => ['thinkingLevel' => 'minimal']]
             : [];
     }

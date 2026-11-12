@@ -773,7 +773,7 @@ final class Atendedor
     {
         $fontes = Busca::fontes($pergunta);
 
-        if ($fontes !== [] || Busca::eCortesia($pergunta) || count(Busca::palavrasDaPergunta($pergunta)) >= 4) {
+        if ($fontes !== [] || Busca::eCortesia($pergunta)) {
             return $fontes;
         }
 
@@ -783,7 +783,15 @@ final class Atendedor
             ->reorder('id', 'desc')
             ->first();
 
-        return $anterior === null ? $fontes : Busca::fontes($pergunta.' '.$anterior->textoVisivel());
+        if ($anterior !== null) {
+            $comAnterior = Busca::fontes($pergunta.' '.$anterior->textoVisivel());
+
+            if ($comAnterior !== []) {
+                return $comAnterior;
+            }
+        }
+
+        return $fontes;
     }
 
     /**

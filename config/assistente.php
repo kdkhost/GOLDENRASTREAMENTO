@@ -74,15 +74,14 @@ return [
         'conversa' => [
             'rotulo' => 'Conversar com o cliente',
             'descricao' => 'A resposta que sai no chat. É a capacidade principal: todo o resto existe para alimentá-la.',
-            'padrao' => 'gemini/gemini-3-flash-preview',
+            'padrao' => 'gemini/gemini-flash-lite-latest',
             'segundos' => 45,
             'modelos' => [
                 'gemini' => [
-                    'gemini-3-flash-preview' => 'Gemini 3 Flash — conversa, imagem, documento e áudio',
-                    'gemini-3.1-flash-lite' => 'Gemini 3.1 Flash Lite — o mais barato, para volume',
-                    'gemini-3.5-flash' => 'Gemini 3.5 Flash — mais capaz, sujeito a fila do provedor',
-                    'gemini-3.8-flash' => 'Gemini 3.8 Flash — o mais novo da casa',
-                    'gemini-flash-lite-latest' => 'Gemini Flash Lite (o apelido do momento)',
+                    'gemini-flash-lite-latest' => 'Gemini Flash Lite (alta disponibilidade e velocidade)',
+                    'gemini-3.1-flash-lite' => 'Gemini 3.1 Flash Lite',
+                    'gemini-3.8-flash' => 'Gemini 3.8 Flash',
+                    'gemini-3-flash-preview' => 'Gemini 3 Flash Preview',
                 ],
                 'openai' => [
                     'gpt-4o-mini' => 'GPT-4o mini — barato, lê imagem',
@@ -95,13 +94,14 @@ return [
         'visao' => [
             'rotulo' => 'Ler imagem',
             'descricao' => 'Foto do equipamento, print da tela, nota fiscal. O texto que o provedor devolve é o que entra na conversa.',
-            'padrao' => 'gemini/gemini-3-flash-preview',
+            'padrao' => 'gemini/gemini-flash-lite-latest',
             'segundos' => 60,
             'modelos' => [
                 'gemini' => [
-                    'gemini-3-flash-preview' => 'Gemini 3 Flash',
+                    'gemini-flash-lite-latest' => 'Gemini Flash Lite',
                     'gemini-3.1-flash-lite' => 'Gemini 3.1 Flash Lite',
                     'gemini-3.8-flash' => 'Gemini 3.8 Flash — para imagem detalhada',
+                    'gemini-3-flash-preview' => 'Gemini 3 Flash Preview',
                 ],
                 'openai' => [
                     'gpt-4o-mini' => 'GPT-4o mini',
@@ -113,13 +113,14 @@ return [
         'documento' => [
             'rotulo' => 'Ler documento',
             'descricao' => 'PDF, contrato, orçamento. Onde o provedor não lê o arquivo, a capacidade fica desligada — e a tela avisa em vez de mandar um texto vazio.',
-            'padrao' => 'gemini/gemini-3-flash-preview',
+            'padrao' => 'gemini/gemini-flash-lite-latest',
             'segundos' => 90,
             'modelos' => [
                 'gemini' => [
-                    'gemini-3-flash-preview' => 'Gemini 3 Flash',
+                    'gemini-flash-lite-latest' => 'Gemini Flash Lite',
                     'gemini-3.1-flash-lite' => 'Gemini 3.1 Flash Lite',
                     'gemini-3.8-flash' => 'Gemini 3.8 Flash — documento longo',
+                    'gemini-3-flash-preview' => 'Gemini 3 Flash Preview',
                 ],
             ],
         ],
@@ -127,12 +128,13 @@ return [
         'transcricao' => [
             'rotulo' => 'Transcrever áudio',
             'descricao' => 'O cliente manda voz, o sistema entende. A transcrição fica gravada na mensagem — é a prova do que foi dito.',
-            'padrao' => 'gemini/gemini-3-flash-preview',
+            'padrao' => 'gemini/gemini-flash-lite-latest',
             'segundos' => 60,
             'modelos' => [
                 'gemini' => [
-                    'gemini-3-flash-preview' => 'Gemini 3 Flash — áudio direto na conversa',
+                    'gemini-flash-lite-latest' => 'Gemini Flash Lite — áudio direto na conversa',
                     'gemini-3.1-flash-lite' => 'Gemini 3.1 Flash Lite',
+                    'gemini-3-flash-preview' => 'Gemini 3 Flash Preview',
                 ],
                 'openai' => [
                     'whisper-1' => 'Whisper — transcrição pura',

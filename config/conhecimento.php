@@ -33,8 +33,8 @@ return [
         [
             'referencia' => 'golden:o-que-a-ana-resolve',
             'titulo' => 'O que a assistente Ana resolve',
-            'tags' => 'ajuda assuntos atendimento vendas serviços produtos dúvidas o que você faz',
-            'corpo' => 'A Ana ajuda a entender e contratar os serviços da Golden. Ela explica como funciona cada rastreador, qual equipamento combina com cada uso, como é a instalação, como funciona o bloqueio remoto, a cobertura do chip M2M, os planos e a mensalidade. Também mostra como acessar a plataforma de rastreamento (Servidor 1, Servidor 2 e aplicativo) e o portal do cliente, onde ficam pedidos, chamados, contratos, serviços e faturas. Assuntos financeiros ela orienta pelo portal e pelo canal de cobrança. O que ela não faz: fechar proposta sozinha, prometer desconto, alterar conta ou pedir documento, senha ou dados de pagamento pelo chat.',
+            'tags' => 'ajuda assuntos atendimento vendas serviços produtos dúvidas o que você faz quem é você como pode me ajudar consultora',
+            'corpo' => 'A Ana é a consultora virtual da Golden Rastreamento. Ela ajuda a entender e contratar os serviços da Golden, explicando como funciona cada rastreador (J16 para carros e motos), qual equipamento combina com cada veículo, como funciona a instalação com profissional de confiança, o bloqueio remoto via relé e chicote, a cobertura do chip M2M multi-operadora (Vivo, Claro, TIM e Algar), os planos e a mensalidade (incluindo Plano Frota). Mostra como acessar a plataforma web, Servidor 1, Servidor 2 e aplicativo móvel, e o portal do cliente. Para segunda via de fatura, ela pode iniciar a conferência de dados diretamente no chat para envio seguro ao e-mail cadastrado. O que ela não faz: fechar desconto sem o time comercial, alterar contas diretamente ou pedir senhas e cartões pelo chat.',
         ],
 
         [
@@ -96,8 +96,8 @@ return [
         [
             'referencia' => 'golden:faturas-e-financeiro',
             'titulo' => 'Faturas, pagamento e financeiro',
-            'tags' => 'fatura faturas faturamento financeiro boleto pix pagar pagamento vencimento segunda via atraso cobrança mensalidade onde vejo minhas faturas',
-            'corpo' => 'As faturas dos serviços aparecem no portal do cliente (:portal), na área de faturas, com vencimento, valor e situação de cada uma. A fatura aberta leva ao financeiro para pagamento e para a segunda via. O sistema financeiro antigo continua no ar em :financeiro para quem já usava esse endereço. Se uma fatura não aparecer, ou se o pagamento não baixar, a equipe de cobrança resolve pelo WhatsApp :whatsapp. A Ana não vê fatura pelo chat nem recebe pagamento: ela orienta o caminho.',
+            'tags' => 'fatura faturas faturamento financeiro boleto pix pagar pagamento vencimento segunda via 2 via 2a via atraso cobrança mensalidade onde vejo minhas faturas boleto atrasado',
+            'corpo' => 'As faturas dos serviços aparecem no portal do cliente (:portal), na área de faturas, com vencimento, valor e situação de cada uma. A fatura aberta leva ao financeiro para pagamento e para a segunda via. O sistema financeiro antigo continua no ar em :financeiro para quem já usava esse endereço. Pelo próprio chat da Ana, o cliente pode solicitar a segunda via da fatura: o sistema confere com segurança os dados cadastrais e envia o boleto diretamente para o e-mail registrado. Se uma fatura não aparecer, ou se o pagamento não baixar, a equipe de cobrança resolve pelo WhatsApp :whatsapp.',
         ],
 
         [
@@ -201,8 +201,8 @@ return [
         [
             'referencia' => 'golden:segunda-via-e-pagamento',
             'titulo' => 'Segunda via e pagamento que não baixou',
-            'tags' => 'segunda via fatura boleto pagamento não baixou comprovante atraso vencimento financeiro',
-            'corpo' => 'A segunda via da fatura fica no portal do cliente (:portal), na área de faturas, com vencimento, valor e situação. Se o pagamento não baixar ou a fatura não aparecer, fale com o Faturamento & Mensalidade pelo WhatsApp :whatsapp e envie o comprovante. A Ana não altera status de pagamento nem emite segunda via pelo chat.',
+            'tags' => 'segunda via 2 via 2a via fatura boleto pagamento não baixou comprovante atraso vencimento financeiro reenviar emitir',
+            'corpo' => 'A segunda via da fatura pode ser solicitada diretamente aqui no chat com a Ana: o sistema inicia uma conferência segura dos seus dados e envia a fatura em aberto para o seu e-mail cadastrado. Também fica disponível no portal do cliente (:portal), na área de faturas. Se o pagamento não baixar ou a fatura não aparecer, fale com o Faturamento & Mensalidade pelo WhatsApp :whatsapp e envie o comprovante.',
         ],
 
         [

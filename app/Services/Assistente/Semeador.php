@@ -44,12 +44,14 @@ class Semeador
             if ($existente === null) {
                 ConhecimentoItem::create($dados + ['origem' => 'painel', 'referencia' => $item['referencia']]);
                 $contagem['criados']++;
+
                 continue;
             }
 
             if ($atualizar) {
                 $existente->update($dados);
                 $contagem['atualizados']++;
+
                 continue;
             }
 
@@ -89,7 +91,7 @@ class Semeador
             ['origem' => 'painel', 'referencia' => 'golden:catalogo'],
             [
                 'titulo' => 'Catálogo de produtos e serviços da Golden',
-                'corpo' => "Produtos e serviços publicados hoje pela Golden, com o valor da loja. "
+                'corpo' => 'Produtos e serviços publicados hoje pela Golden, com o valor da loja. '
                     ."Valores e disponibilidade podem mudar: a proposta e a fatura confirmam o valor vigente.\n\n".$linhas,
                 'tags' => 'catálogo catálogo produtos serviços preço valores valor quanto custa loja comprar rastreador chip acessório plano',
                 'ativo' => true,
@@ -113,6 +115,10 @@ class Semeador
             'saudacao' => (string) ($padrao['saudacao'] ?? ''),
             'tom' => (string) ($padrao['tom'] ?? 'amigavel'),
             'regras' => (string) ($padrao['regras'] ?? ''),
+            'ativo' => true,
+            'no_site' => true,
+            'no_funil' => true,
+            'no_chamado' => true,
         ];
 
         if (blank($ficha->nome)) {

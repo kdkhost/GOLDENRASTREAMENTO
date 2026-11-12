@@ -81,6 +81,21 @@ class BuscaDoAssistenteTest extends TestCase
         $this->assertFalse(Busca::eCortesia('tudo bem, quero cancelar'));
     }
 
+    public function test_reconhece_plurais_e_flexoes_com_o_radical(): void
+    {
+        $item = $this->item([
+            'titulo' => 'Como funciona o rastreador J16',
+            'corpo' => 'Equipamento de rastreamento veicular para monitorar carros e motos.',
+            'tags' => 'carro, moto, rastreamento',
+        ]);
+
+        $fontes = Busca::fontes('Quero rastreadores para meus carros');
+        $achada = collect($fontes)->firstWhere('id', $item->id);
+
+        $this->assertNotNull($achada, 'Não encontrou o item usando termos no plural.');
+        $this->assertTrue($achada['ancorado'], 'O item deveria ter sido ancorado pelo radical do título.');
+    }
+
     /** A nota do item como a busca a calcula, sem depender da ordem do banco nem do piso. */
     private function cobertura(string $pergunta, ConhecimentoItem $item): float
     {

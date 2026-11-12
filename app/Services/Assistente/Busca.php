@@ -32,11 +32,13 @@ final class Busca
     private const PARADAS = [
         'a', 'o', 'as', 'os', 'um', 'uma', 'uns', 'umas', 'de', 'do', 'da', 'dos', 'das', 'no', 'na',
         'nos', 'nas', 'ao', 'aos', 'em', 'por', 'para', 'pro', 'com', 'sem', 'que', 'qual', 'quais',
-        'como', 'quando', 'onde', 'quem', 'e', 'ou', 'se', 'sua', 'seu', 'suas', 'meu', 'minha',
+        'como', 'quando', 'onde', 'quem', 'e', 'ou', 'se', 'sua', 'seu', 'suas', 'seus', 'meu', 'minha',
+        'meus', 'minhas', 'nosso', 'nossa', 'nossos', 'nossas',
         'você', 'voces', 'voce', 'eu', 'ele', 'ela', 'eles', 'elas', 'isto', 'isso', 'aquilo',
         'tem', 'tenho', 'tiene', 'possui', 'sobre', 'é', 'eh', 'sou', 'somos', 'ser', 'está', 'esta',
         'estao', 'sao', 'fazer', 'faz', 'mais', 'menos', 'muito', 'pouco', 'tambem', 'também',
         'ja', 'já', 'sim', 'nao', 'não', 'oi', 'ola', 'olá', 'bom', 'boa', 'por favor',
+        'pra', 'pras', 'pros', 'aqui', 'ali', 'la', 'dele', 'dela', 'deles', 'delas',
     ];
 
     /**
@@ -149,20 +151,25 @@ final class Busca
         $assuntos = self::dividir((string) $item->tags);
         $corpo = self::dividir($item->corpo);
 
+        $titulosRadicais = array_map(self::radical(...), $titulos);
+        $assuntosRadicais = array_map(self::radical(...), $assuntos);
+        $corpoRadicais = array_map(self::radical(...), $corpo);
+
         $alcance = 0;
         $nota = 0.0;
         $ancorado = false;
 
         foreach ($palavras as $palavra) {
             $alcance += 3;
+            $rad = self::radical($palavra);
 
-            if (in_array($palavra, $titulos, true)) {
+            if (in_array($palavra, $titulos, true) || in_array($rad, $titulosRadicais, true)) {
                 $nota += 3;
                 $ancorado = true;
-            } elseif (in_array($palavra, $assuntos, true)) {
+            } elseif (in_array($palavra, $assuntos, true) || in_array($rad, $assuntosRadicais, true)) {
                 $nota += 2;
                 $ancorado = true;
-            } elseif (in_array($palavra, $corpo, true)) {
+            } elseif (in_array($palavra, $corpo, true) || in_array($rad, $corpoRadicais, true)) {
                 $nota += 1;
             }
         }
@@ -175,6 +182,52 @@ final class Busca
             'pontuacao' => $alcance === 0 ? 0.0 : round($nota / $alcance, 4),
             'ancorado' => $ancorado,
         ];
+    }
+
+    /**
+     * O radical da palavra para casar plurais e flexões em português (rastreadores -> rastreador/rastre).
+     */
+    public static function radical(string $palavra): string
+    {
+        $p = Str::ascii(mb_strtolower(trim($palavra)));
+
+        if (mb_strlen($p) <= 3) {
+            return $p;
+        }
+
+        if (str_ends_with($p, 'res') && mb_strlen($p) >= 5) {
+            $p = substr($p, 0, -2);
+        } elseif (str_ends_with($p, 'oes') && mb_strlen($p) >= 5) {
+            $p = substr($p, 0, -3).'ao';
+        } elseif (str_ends_with($p, 'ais') && mb_strlen($p) >= 5) {
+            $p = substr($p, 0, -3).'al';
+        } elseif (str_ends_with($p, 'eis') && mb_strlen($p) >= 5) {
+            $p = substr($p, 0, -3).'el';
+        } elseif (str_ends_with($p, 'is') && mb_strlen($p) >= 4) {
+            $p = substr($p, 0, -2).'il';
+        } elseif (str_ends_with($p, 'ns') && mb_strlen($p) >= 4) {
+            $p = substr($p, 0, -2).'m';
+        } elseif (str_ends_with($p, 's') && mb_strlen($p) >= 4) {
+            $p = substr($p, 0, -1);
+        }
+
+        if (str_starts_with($p, 'rastre') && mb_strlen($p) >= 6) {
+            return 'rastre';
+        }
+        if (str_starts_with($p, 'instal') && mb_strlen($p) >= 6) {
+            return 'instal';
+        }
+        if (str_starts_with($p, 'bloque') && mb_strlen($p) >= 6) {
+            return 'bloque';
+        }
+        if (str_starts_with($p, 'localiz') && mb_strlen($p) >= 7) {
+            return 'localiz';
+        }
+        if (str_starts_with($p, 'monitor') && mb_strlen($p) >= 7) {
+            return 'monitor';
+        }
+
+        return $p;
     }
 
     /** O texto em palavras nuas: sem acento, sem sinal, sem espaço sobrando. */
