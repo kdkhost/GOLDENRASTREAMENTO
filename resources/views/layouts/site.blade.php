@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/golden-scroll-animations.css') }}?v={{ filemtime(public_path('css/golden-scroll-animations.css')) }}">
     {{-- O assistente é um dos atendentes da caixa do WhatsApp: folha e script só pesam quando
          existe caixa (ou quando ele é o único atendente) e ele atende neste canal. --}}
     @php $bolha = $golden['assistente_na_caixa'] && \App\Models\Assistente::atendeVisitante('site'); @endphp
@@ -146,6 +147,7 @@
 <script>window.GOLDEN = { tracking: {{ $golden['tracking'] ? 'true' : 'false' }}, farol: @json(route('site.rastreio.evento')) };</script>
 <script src="{{ asset('js/golden-site.js') }}?v={{ filemtime(public_path('js/golden-site.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
+<script src="{{ asset('js/golden-scroll-animations.js') }}?v={{ filemtime(public_path('js/golden-scroll-animations.js')) }}"></script>
 @if($bolha)
 <script src="{{ asset('js/golden-assistente.js') }}?v={{ filemtime(public_path('js/golden-assistente.js')) }}"></script>
 @endif

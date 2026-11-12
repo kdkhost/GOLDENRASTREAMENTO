@@ -20,5 +20,7 @@
     @if($w) width="{{ $w }}" @endif
     @if($h) height="{{ $h }}" @endif
     @if($prioridade) fetchpriority="high" @elseif($lazy) loading="lazy" @endif
+    decoding="async"
+    data-scroll-reveal
     {{ $attributes->except('alt') }}>
 @endif

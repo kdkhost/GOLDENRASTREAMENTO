@@ -41,6 +41,9 @@ class RelatorioDoGoogleAds extends Component
     /** A falha da última tentativa de análise, em português. */
     public ?string $falha = null;
 
+    /** Contador de tentativas de polling para evitar loops infinitos. */
+    public int $tentativas = 0;
+
     public function mount(): void
     {
         $this->dias = $this->periodoValido((int) request()->query('dias', config('google_ads.dias_padrao', 30)));
@@ -56,6 +59,7 @@ class RelatorioDoGoogleAds extends Component
         $this->pagina = 1;
         $this->relatorioId = null;
         $this->falha = null;
+        $this->tentativas = 0;
         $this->sincronizarSeFaltar();
     }
 
@@ -64,6 +68,7 @@ class RelatorioDoGoogleAds extends Component
         $this->pagina = 1;
         $this->relatorioId = null;
         $this->falha = null;
+        $this->tentativas = 0;
         $this->sincronizarSeFaltar();
     }
 
@@ -159,6 +164,24 @@ class RelatorioDoGoogleAds extends Component
         $erro = $conta !== null ? GoogleAdsCache::erro($conta, $this->dias) : null;
         $historico = $this->historico($conta);
 
+        $carregando = $conta !== null && $janela === null && $erro === null;
+        if ($carregando) {
+            $this->tentativas++;
+            if ($this->tentativas > 3) {
+                $this->sincronizarSeFaltar();
+                $janela = GoogleAdsCache::metricas($conta, $this->dias);
+                $carregando = false;
+                if ($janela === null && $erro === null) {
+                    $erro = [
+                        'mensagem' => 'Nenhuma movimentação de métricas reportada pelo Google Ads para este período.',
+                        'desde' => now()->toIso8601String(),
+                    ];
+                }
+            }
+        } else {
+            $this->tentativas = 0;
+        }
+
         $relatorio = $this->relatorioId !== null
             ? $historico->firstWhere('id', $this->relatorioId)
             : $historico->first();
@@ -169,7 +192,7 @@ class RelatorioDoGoogleAds extends Component
             'resumo' => $janela['resumo'] ?? null,
             'campanhas' => $this->paginar($janela['campanhas'] ?? []),
             'sincronizado_em' => $janela['sincronizado_em'] ?? null,
-            'carregando' => $conta !== null && $janela === null && $erro === null,
+            'carregando' => $carregando,
             'erro' => $erro,
             'relatorio' => $relatorio,
             'relatorios' => $historico,
