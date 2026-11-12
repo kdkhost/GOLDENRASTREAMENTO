@@ -2,13 +2,14 @@
 
 namespace App\Livewire;
 
-use App\Jobs\SyncGoogleAdsMetrics;
 use App\Models\GoogleAdsAccount;
 use App\Models\GoogleAdsRelatorio;
 use App\Services\Assistente\Provedores\Fabrica;
 use App\Services\GoogleAds\Copiloto;
 use App\Services\GoogleAds\Excecoes\CopilotoIndisponivel;
+use App\Services\GoogleAds\GoogleAdsService;
 use App\Support\GoogleAdsCache;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -66,7 +67,7 @@ class RelatorioDoGoogleAds extends Component
         $this->sincronizarSeFaltar();
     }
 
-    /** "Atualizar agora": descarta a janela e deixa o job trazer de novo. */
+    /** "Atualizar agora": descarta a janela e sincroniza de novo imediatamente. */
     public function atualizar(): void
     {
         $conta = $this->conta();
@@ -76,7 +77,7 @@ class RelatorioDoGoogleAds extends Component
         }
 
         GoogleAdsCache::esquecerJanela($conta, $this->dias);
-        SyncGoogleAdsMetrics::dispatch($conta->id, $this->dias);
+        $this->sincronizarSeFaltar();
     }
 
     /** Abre uma análise do histórico — nenhuma chamada nova à IA. */
@@ -202,13 +203,13 @@ class RelatorioDoGoogleAds extends Component
             ->get();
     }
 
-    private function historicoQuery(): \Illuminate\Database\Eloquent\Builder
+    private function historicoQuery(): Builder
     {
         return GoogleAdsRelatorio::query()
             ->when(! auth()->user()->isAdmin(), fn ($q) => $q->where('user_id', auth()->id()));
     }
 
-    /** Sem métrica não se enfileira duas vezes: a trava é a mesma da tela de campanhas. */
+    /** Sem métrica, sincroniza imediatamente para entregar os números de pronto, com fallback seguro. */
     private function sincronizarSeFaltar(): void
     {
         $conta = $this->conta();
@@ -217,11 +218,18 @@ class RelatorioDoGoogleAds extends Component
             return;
         }
 
-        if (GoogleAdsCache::acabaDeSerEnfileirado($conta, $this->dias)) {
-            return;
+        try {
+            $servico = app(GoogleAdsService::class);
+            $resultado = $servico->buscarCampanhasComMetricas($conta, $this->dias);
+            GoogleAdsCache::gravar($conta, $this->dias, $resultado['campanhas'], $resultado['resumo']);
+            $conta->forceFill(['sincronizado_em' => now()])->save();
+        } catch (\Throwable $e) {
+            if (GoogleAdsService::credencialRecusada($e)) {
+                $conta->desconectar('O Google recusou a credencial.');
+            } else {
+                GoogleAdsCache::gravarErro($conta, $this->dias, $e->getMessage());
+            }
         }
-
-        SyncGoogleAdsMetrics::dispatch($conta->id, $this->dias);
     }
 
     private function paginar(array $campanhas): LengthAwarePaginator

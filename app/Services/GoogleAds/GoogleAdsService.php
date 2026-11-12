@@ -582,7 +582,7 @@ class GoogleAdsService
      */
     private function clausulaData(int $dias): string
     {
-        if (in_array($dias, [7, 14, 30, 60, 90, 180, 365], true)) {
+        if (in_array($dias, [7, 14, 30], true)) {
             return "segments.date DURING LAST_{$dias}_DAYS ";
         }
 
