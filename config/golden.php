@@ -371,6 +371,12 @@ return [
             'ENABLED' => 'green', 'PAUSED' => 'amber', 'REMOVED' => 'red',
             'PENDING' => 'gold', 'PENDING_REVIEW' => 'gold', 'UNREVIEWED' => 'gold', 'DRAFT' => 'neutral',
         ],
+        // Revisão do anúncio pelo Google (policy_summary.approval_status). O rótulo vem de
+        // config('google_ads.aprovacao_anuncio'); em revisão é dourado porque ainda não há veredito.
+        'aprovacao_anuncio' => [
+            'APPROVED' => 'green', 'APPROVED_LIMITED' => 'amber', 'AREA_OF_INTEREST_ONLY' => 'amber',
+            'DISAPPROVED' => 'red', 'UNSPECIFIED' => 'gold', 'UNKNOWN' => 'gold',
+        ],
         // Conversa de atendimento do site/funil (Conversa::statuses(), que lê
         // config('assistente.status_conversa')): o mesmo selo veste a caixa de entrada e a
         // ficha da conversa. Aguardar a equipe é âmbar porque é o que chama gente.

@@ -334,6 +334,33 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::post('/campanhas/{campanha}/status', [GoogleAdsCampanhaController::class, 'mudarStatus'])
             ->whereNumber('campanha')->name('campanhas.status');
 
+        // A campanha que já existe no Google: a ficha viva (lida da API a cada abertura), a
+        // edição, os grupos e os recursos. Ler e ativar/pausar é de quem atende; mudar a
+        // estrutura — nome, orçamento, grupos, imagens — é do administrador.
+        Route::prefix('campanhas/{campanha}')->whereNumber('campanha')->name('campanhas.')->group(function () {
+            Route::get('/', [GoogleAdsCampanhaController::class, 'show'])->name('show');
+
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/editar', [GoogleAdsCampanhaController::class, 'editar'])->name('editar');
+                Route::post('/editar', [GoogleAdsCampanhaController::class, 'atualizar'])->name('atualizar');
+                Route::get('/grupos/novo', [GoogleAdsCampanhaController::class, 'novoGrupo'])->name('grupos.novo');
+                Route::post('/grupos', [GoogleAdsCampanhaController::class, 'criarGrupo'])->name('grupos.criar');
+                Route::get('/grupos/{grupo}/editar', [GoogleAdsCampanhaController::class, 'editarGrupo'])
+                    ->whereNumber('grupo')->name('grupos.editar');
+                Route::post('/grupos/{grupo}/editar', [GoogleAdsCampanhaController::class, 'atualizarGrupo'])
+                    ->whereNumber('grupo')->name('grupos.atualizar');
+                Route::post('/grupos/{grupo}/status', [GoogleAdsCampanhaController::class, 'statusDoGrupo'])
+                    ->whereNumber('grupo')->name('grupos.status');
+                Route::delete('/grupos/{grupo}', [GoogleAdsCampanhaController::class, 'removerGrupo'])
+                    ->whereNumber('grupo')->name('grupos.remover');
+                Route::get('/recursos', [GoogleAdsCampanhaController::class, 'recursos'])->name('recursos');
+                Route::post('/recursos/imagem', [GoogleAdsCampanhaController::class, 'vincularImagem'])->name('recursos.imagem');
+                Route::post('/recursos/sitelink', [GoogleAdsCampanhaController::class, 'vincularSitelink'])->name('recursos.sitelink');
+                Route::post('/recursos/frase', [GoogleAdsCampanhaController::class, 'vincularFrase'])->name('recursos.frase');
+                Route::delete('/recursos', [GoogleAdsCampanhaController::class, 'desvincularRecurso'])->name('recursos.remover');
+            });
+        });
+
         // O copiloto: ficha da assistente, briefing em português e os planos que ela montou.
         // Quem pede o plano é quem atende; aprovar e publicar no Google é do administrador —
         // é a única porta por onde um plano vira campanha que pode gastar.

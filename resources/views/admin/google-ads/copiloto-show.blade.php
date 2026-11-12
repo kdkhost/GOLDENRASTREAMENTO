@@ -196,12 +196,17 @@
         @endif
 
         @if ($aplicacao !== [])
+            @php
+                $campanhaCriada = (string) ($aplicacao['campanha_id'] ?? '');
+                $contaAplicada = $plano->google_ads_account_id;
+                $parametrosCampanha = array_filter(['campanha' => $campanhaCriada, 'conta' => $contaAplicada, 'plano' => $plano->id]);
+            @endphp
             <x-admin.card title="Aplicado no Google Ads" icon="fa-circle-check" class="mt-3">
                 <div class="row g-3 small">
                     <div class="col-12 col-md-4">
                         <div class="ads-painel h-100">
                             <div class="ads-painel__titulo">Campanha</div>
-                            <code>{{ $aplicacao['campanha_id'] ?? '—' }}</code>
+                            <code>{{ $campanhaCriada !== '' ? $campanhaCriada : '—' }}</code>
                             <div class="text-secondary mt-1">{{ $aplicacao['status_rotulo'] ?? 'Pausada' }}</div>
                         </div>
                     </div>
@@ -209,10 +214,10 @@
                         <div class="ads-painel h-100">
                             <div class="ads-painel__titulo">O que foi criado</div>
                             <ul class="ads-chips mb-0">
-                                <li class="ads-chip">{{ count((array) ($aplicacao['grupos'] ?? [])) }} grupo(s)</li>
-                                <li class="ads-chip">{{ count((array) ($aplicacao['anuncios'] ?? [])) }} anúncio(s)</li>
-                                <li class="ads-chip">{{ count((array) ($aplicacao['palavras_chave'] ?? [])) }} palavra(s)-chave</li>
-                                <li class="ads-chip">{{ count((array) ($aplicacao['negativas'] ?? [])) }} negativa(s)</li>
+                                <li class="ads-chip">{{ (int) ($aplicacao['grupos'] ?? 0) }} grupo(s)</li>
+                                <li class="ads-chip">{{ (int) ($aplicacao['anuncios'] ?? 0) }} anúncio(s)</li>
+                                <li class="ads-chip">{{ (int) ($aplicacao['palavras_chave'] ?? 0) }} palavra(s)-chave</li>
+                                <li class="ads-chip">{{ (int) ($aplicacao['negativas'] ?? 0) }} negativa(s)</li>
                                 @if ($plano->aplicado_em)
                                     <li class="ads-chip">em {{ $plano->aplicado_em->format('d/m/Y H:i') }}</li>
                                 @endif
@@ -220,9 +225,30 @@
                         </div>
                     </div>
                 </div>
-                <p class="form-hint mt-3 mb-0">
-                    A campanha está pausada. <a href="{{ route('admin.google-ads.index') }}">Abra as métricas</a> para revisar e ativar quando quiser começar a veicular.
-                </p>
+                @if ($campanhaCriada !== '')
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <a href="{{ route('admin.google-ads.campanhas.show', $parametrosCampanha) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-bullhorn me-1" aria-hidden="true"></i> Abrir a campanha
+                        </a>
+                        <form method="POST" action="{{ route('admin.google-ads.campanhas.status', ['campanha' => $campanhaCriada]) }}"
+                            data-sem-ajax
+                            data-confirmar="Ativar a campanha no Google Ads agora? Ela começa a veicular e a gastar o orçamento diário.">
+                            @csrf
+                            <input type="hidden" name="status" value="ENABLED">
+                            <input type="hidden" name="conta" value="{{ $contaAplicada }}">
+                            <input type="hidden" name="voltar" value="plano">
+                            <input type="hidden" name="plano" value="{{ $plano->id }}">
+                            <button class="btn btn-golden btn-sm"><i class="fas fa-play me-1" aria-hidden="true"></i> Ativar agora</button>
+                        </form>
+                    </div>
+                    <p class="form-hint mt-2 mb-0">
+                        A campanha nasceu pausada e não gasta nada. Na ficha dela você edita orçamento, regiões, grupos e imagens — e pode pausar de novo quando quiser.
+                    </p>
+                @else
+                    <p class="form-hint mt-3 mb-0">
+                        A campanha está pausada. <a href="{{ route('admin.google-ads.index') }}">Abra as métricas</a> para revisar e ativar quando quiser começar a veicular.
+                    </p>
+                @endif
             </x-admin.card>
         @endif
     </div>

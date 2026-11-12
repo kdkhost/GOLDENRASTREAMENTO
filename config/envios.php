@@ -126,4 +126,21 @@ return [
         'dimensao' => '256 × 256 px',
         'proporcao' => '1:1',
     ],
+
+    /*
+    | A imagem que vai para a campanha do Google Ads (Admin → Google Ads → campanha → recursos).
+    | Os limites são os da extensão de imagem do Google: JPG ou PNG de até 5 MB, paisagem 1,91:1
+    | (1200 × 628) ou quadrada (1200 × 1200). WebP o Google não aceita. O arquivo fica no disco só
+    | até ser vinculado: depois que o Google o guarda, a cópia local é apagada.
+    */
+    'google_ads_imagem' => [
+        'tipo' => 'imagem',
+        'pasta' => 'google-ads',
+        'titulo' => 'Imagem do anúncio',
+        'chamada' => 'Arraste a imagem aqui ou clique para escolher',
+        'formatos' => ['jpg', 'jpeg', 'png'],
+        'max_mb' => 5,
+        'dimensao' => '1200 × 628 px',
+        'proporcao' => '1,91:1 ou 1:1',
+    ],
 ];

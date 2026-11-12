@@ -50,3 +50,7 @@ __pycache__/
 # Saída bruta do gerador de imagens (PNGs pesados). Só as JPEGs já
 # comprimidas em public/img/home/ fazem parte do produto.
 /vibe_images/
+
+# Grafo de código local
+/graphify-out/
+

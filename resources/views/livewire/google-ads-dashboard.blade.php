@@ -247,7 +247,7 @@
         @foreach ($campanhas as $c)
             <tr>
                 <td>
-                    <div class="fw-semibold">{{ $c['nome'] }}</div>
+                    <a href="{{ route('admin.google-ads.campanhas.show', ['campanha' => $c['id'], 'conta' => $conta->id]) }}" class="fw-semibold" wire:navigate.hover="false" title="Abrir a ficha da campanha">{{ $c['nome'] }}</a>
                     <div class="small text-secondary"><code>{{ $c['id'] }}</code></div>
                 </td>
                 <td><x-admin.status :rotulo="$c['status_rotulo']" :tom="tom_por_status('campanha_ads', $c['status'])" /></td>

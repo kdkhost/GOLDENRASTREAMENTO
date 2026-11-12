@@ -100,6 +100,21 @@ return [
     ],
 
     /*
+    | A revisão de política do anúncio (`ad_group_ad.policy_summary.approval_status`): é o que
+    | diz se o texto foi aceito pelo Google. Um anúncio ativo e reprovado não veicula, e a tela
+    | da campanha precisa dizer isso em português.
+    */
+    'aprovacao_anuncio' => [
+        'APPROVED' => 'Aprovado',
+        'APPROVED_LIMITED' => 'Aprovado com limitações',
+        'DISAPPROVED' => 'Reprovado',
+        'AREA_OF_INTEREST_ONLY' => 'Só por interesse',
+        'UNSPECIFIED' => 'Em revisão',
+        'UNKNOWN' => 'Em revisão',
+        '' => '',
+    ],
+
+    /*
     | Rótulo PT-BR de cada métrica lida da API. É a única lista de nomes de coluna do
     | painel: a tabela, os cartões de resumo e o CSV perguntam daqui.
     */

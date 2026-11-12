@@ -73,7 +73,7 @@ class DatabaseSeeder extends Seeder
 
                 $lead = Lead::create([
                     'name' => $this->nome(),
-                    'phone' => '(3' . rand(1, 9) . ') 9' . rand(1000, 9999) . '-' . rand(1000, 9999),
+                    'phone' => '(3'.rand(1, 9).') 9'.rand(1000, 9999).'-'.rand(1000, 9999),
                     'profile' => $perfis[array_rand($perfis)],
                     'fleet_size' => [1, 5, 10, '10+'][array_rand([1, 5, 10, '10+'])],
                     'kit' => $kits[array_rand($kits)],
@@ -122,12 +122,14 @@ class DatabaseSeeder extends Seeder
             CrmSeeder::class,
             OrdersSeeder::class,
             FunnelSeeder::class,
+            CampanhaMultiOperadoraSeeder::class,
         ]);
     }
 
     private function nome(): string
     {
         $nomes = ['Carlos Mendes', 'Mariana Silva', 'João Pedro Alves', 'Fernanda Rocha', 'Rafael Souza', 'Juliana Costa', 'Bruno Ferreira', 'Patrícia Gomes', 'Diego Martins', 'Camila Barbosa', 'Lucas Ramos', 'Beatriz Lima', 'Eduardo Nunes', 'Larissa Melo', 'Gustavo Pinto'];
+
         return $nomes[array_rand($nomes)];
     }
 }

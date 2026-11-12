@@ -3,6 +3,18 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.63.3] - 2026-11-12
+
+### Adicionado
+- **Campanha Google Ads do Rastreador J6 Multi-Operadora.** Página pública de alta conversão
+  em `/c/google-ads-multi-operadora` com 11 blocos de conteúdo, fotos de alta resolução,
+  destaque para o equipamento J6 4G (especificações técnicas, bateria de backup, bloqueio
+  remoto, homologação Anatel), conectividade multi-operadora inteligente (Vivo, Claro, TIM e
+  Algar), aplicativo mobile e plataforma web, planos, prova social e formulário completo de
+  captura de leads com atribuição de campanha.
+- **Seeder e testes automatizados da campanha.** `CampanhaMultiOperadoraSeeder` registrado no
+  `DatabaseSeeder` e teste de regressão em `PaginaDeFunilTest`.
+
 ## [2.63.2] - 2026-11-12
 
 ### Corrigido

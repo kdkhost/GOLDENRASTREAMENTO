@@ -52,6 +52,28 @@ class PaginaDeFunilTest extends TestCase
             ->assertSee('name="funnel_page_id" value="'.$this->campanha->id.'"', false);
     }
 
+    public function test_campanha_google_ads_multi_operadora_com_rastreador_j6_e_formulario(): void
+    {
+        $campanhaJ6 = FunnelPage::where('slug', 'google-ads-multi-operadora')->firstOrFail();
+
+        $this->get('/c/google-ads-multi-operadora')
+            ->assertOk()
+            ->assertSee('Rastreador J6 4G com Chip Multi-Operadora e Bloqueio pelo Celular', false)
+            ->assertSee('Rastreador J6 4G: Alta Tecnologia, Precisão e Máxima Discrição', false)
+            ->assertSee('Conectividade Multi-Operadora: Nunca Mais Fique Sem Sinal', false)
+            ->assertSee('Receba sua Proposta do Rastreador J6 Multi-Operadora', false)
+            ->assertSee('img/home/hero-monitoramento.jpg', false)
+            ->assertSee('img/home/rastreador-j6.jpg', false)
+            ->assertSee('img/home/estrada-por-do-sol.jpg', false)
+            ->assertSee('img/home/plataforma-monitor.jpg', false)
+            ->assertSee('name="name"', false)
+            ->assertSee('name="phone"', false)
+            ->assertSee('name="fleet_size"', false)
+            ->assertSee('name="profile"', false)
+            ->assertSee('name="funnel_page_id" value="'.$campanhaJ6->id.'"', false)
+            ->assertSee('Perguntas Frequentes sobre o Rastreador J6 e Multi-Operadora', false);
+    }
+
     public function test_site_e_funil_compartilham_a_estrutura_que_empurra_o_rodape(): void
     {
         foreach (['/', '/c/frota-j16'] as $url) {
