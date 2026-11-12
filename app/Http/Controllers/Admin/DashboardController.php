@@ -25,7 +25,8 @@ class DashboardController extends Controller
             $porStatus = Lead::query()
                 ->selectRaw('status, COUNT(*) total')
                 ->groupBy('status')
-                ->pluck('total', 'status');
+                ->pluck('total', 'status')
+                ->all();
 
             $total = Lead::count();
             $vendido = (int) ($porStatus['vendido'] ?? 0);
@@ -37,7 +38,10 @@ class DashboardController extends Controller
             // Série dos últimos 30 dias
             $porDia = Lead::where('created_at', '>=', $inicio)
                 ->selectRaw('date(created_at) dia, COUNT(*) total')
-                ->groupBy('dia')->pluck('total', 'dia');
+                ->groupBy('dia')
+                ->pluck('total', 'dia')
+                ->all();
+
             $labels = [];
             $serie = [];
             for ($i = 0; $i < 30; $i++) {
@@ -45,14 +49,6 @@ class DashboardController extends Controller
                 $labels[] = (clone $inicio)->addDays($i)->format('d/m');
                 $serie[] = (int) ($porDia[$d] ?? 0);
             }
-
-            // Conversão por campanha
-            $campanhas = Campaign::withCount('leads')
-                ->withCount(['leads as leads_vendidos' => fn ($q) => $q->where('status', 'vendido')])
-                ->withCount(['leads as leads_novos' => fn ($q) => $q->where('status', 'novo')])
-                ->orderByDesc('leads_count')
-                ->limit(8)
-                ->get();
 
             // Visão consolidada dos módulos integrados (CRM + ERP + CMS)
             $modulos = [
@@ -77,12 +73,19 @@ class DashboardController extends Controller
                 'receita' => $receita,
                 'labels' => $labels,
                 'serie' => $serie,
-                'campanhas' => $campanhas,
                 'modulos' => $modulos,
             ];
         });
 
-        $porStatus = $metricas['porStatus'];
+        // Conversão por campanha (consulta leve com limite 8)
+        $campanhas = Campaign::withCount('leads')
+            ->withCount(['leads as leads_vendidos' => fn ($q) => $q->where('status', 'vendido')])
+            ->withCount(['leads as leads_novos' => fn ($q) => $q->where('status', 'novo')])
+            ->orderByDesc('leads_count')
+            ->limit(8)
+            ->get();
+
+        $porStatus = (array) ($metricas['porStatus'] ?? []);
 
         return view('admin.dashboard', [
             'total' => $metricas['total'],
