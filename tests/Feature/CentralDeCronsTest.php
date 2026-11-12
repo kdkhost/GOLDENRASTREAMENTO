@@ -36,9 +36,9 @@ class CentralDeCronsTest extends TestCase
         $this->actingAs($this->admin);
     }
 
-    public function test_a_agenda_nasce_com_as_quatro_tarefas_que_o_sistema_ja_fazia(): void
+    public function test_a_agenda_nasce_com_as_tarefas_do_sistema(): void
     {
-        $this->assertSame(4, CronTarefa::doSistema()->count());
+        $this->assertSame(11, CronTarefa::doSistema()->count());
         $this->assertSame(CronTarefa::count(), CronTarefa::ativas()->count());
         $this->assertSame([], CronTarefa::ativas()->get()->filter(fn (CronTarefa $t): bool => $t->expressao === '')->all());
     }
