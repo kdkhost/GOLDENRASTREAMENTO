@@ -98,7 +98,7 @@ class DashboardController extends Controller
             'receita' => $metricas['receita'],
             'labels' => $metricas['labels'],
             'serie' => $metricas['serie'],
-            'campanhas' => $metricas['campanhas'],
+            'campanhas' => $campanhas,
             'modulos' => $metricas['modulos'],
             'recentes' => Lead::with('campaign')->latest()->limit(8)->get(),
         ]);
