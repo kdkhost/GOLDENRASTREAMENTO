@@ -397,7 +397,7 @@ final class GoogleAdsEditor
             'imageAsset' => ['data' => base64_encode($conteudo)],
         ], 'imagem.criar');
 
-        return ['asset' => $asset, 'vinculo' => $this->vincularAsset($conta, $campanha, $asset, 'AD_IMAGE', 'imagem.vincular')];
+        return ['asset' => $asset, 'vinculo' => $this->vincularAsset($conta, $campanha, $asset, 'IMAGE', 'imagem.vincular')];
     }
 
     /**
@@ -678,7 +678,7 @@ final class GoogleAdsEditor
 
     private function lerRecursos(GoogleAdsAccount $conta, string $campanhaId, array &$lida): void
     {
-        foreach ($this->consultar($conta, "SELECT campaign.id, campaign_asset.resource_name, campaign_asset.field_type, campaign_asset.status, asset.id, asset.name, asset.final_urls, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels, asset.sitelink_asset.link_text, asset.sitelink_asset.description1, asset.sitelink_asset.description2, asset.callout_asset.callout_text FROM campaign_asset WHERE campaign.id = {$campanhaId} AND campaign_asset.field_type IN ('AD_IMAGE', 'SITELINK', 'CALLOUT') AND campaign_asset.status != 'REMOVED'", 'recursos.ler') as $linha) {
+        foreach ($this->consultar($conta, "SELECT campaign.id, campaign_asset.resource_name, campaign_asset.field_type, campaign_asset.status, asset.id, asset.name, asset.final_urls, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels, asset.sitelink_asset.link_text, asset.sitelink_asset.description1, asset.sitelink_asset.description2, asset.callout_asset.callout_text FROM campaign_asset WHERE campaign.id = {$campanhaId} AND campaign_asset.field_type IN ('IMAGE', 'AD_IMAGE', 'SITELINK', 'CALLOUT') AND campaign_asset.status != 'REMOVED'", 'recursos.ler') as $linha) {
             $vinculo = (array) ($linha['campaignAsset'] ?? []);
             $asset = (array) ($linha['asset'] ?? []);
             $base = [
@@ -688,6 +688,7 @@ final class GoogleAdsEditor
             ];
 
             switch ((string) ($vinculo['fieldType'] ?? '')) {
+                case 'IMAGE':
                 case 'AD_IMAGE':
                     $lida['recursos']['imagens'][] = $base + [
                         'nome' => (string) ($asset['name'] ?? ''),

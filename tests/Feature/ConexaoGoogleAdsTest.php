@@ -7,6 +7,7 @@ use App\Livewire\RsaPreview;
 use App\Mail\ContaGoogleAdsDesconectada;
 use App\Models\GoogleAdsAccount;
 use App\Models\User;
+use App\Services\GoogleAds\GoogleAdsEditor;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Support\GoogleAdsCache;
 use Google\Ads\GoogleAds\Lib\V26\GoogleAdsClient;
@@ -16,6 +17,7 @@ use Google\Ads\GoogleAds\V26\Services\MutateCampaignsResponse;
 use Google\ApiCore\ApiException;
 use Google\Rpc\Code;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -600,6 +602,55 @@ class ConexaoGoogleAdsTest extends TestCase
             ->assertSee('O grupo de anúncios')
             ->assertSee('Palavras-chave')
             ->assertSee('O anúncio responsivo de pesquisa');
+    }
+
+    public function test_vincular_imagem_usa_field_type_image_no_google_ads(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'img');
+        file_put_contents($tempFile, 'fake-image-bytes');
+
+        $campanha = [
+            'id' => '24456385340',
+            'resource' => 'customers/1234567890/campaigns/24456385340',
+        ];
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/assets:mutate' => Http::response([
+                'results' => [
+                    ['resourceName' => 'customers/1234567890/assets/999'],
+                ],
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/campaignAssets:mutate' => function (Request $request) {
+                $payload = $request->data();
+                $fieldType = data_get($payload, 'operations.0.create.fieldType');
+                if ($fieldType !== 'IMAGE') {
+                    return Http::response(['error' => 'UNSUPPORTED_FIELD_TYPE'], 400);
+                }
+
+                return Http::response([
+                    'results' => [
+                        ['resourceName' => 'customers/1234567890/campaignAssets/24456385340~999~IMAGE'],
+                    ],
+                ]);
+            },
+        ]);
+
+        $editor = app(GoogleAdsEditor::class);
+        $res = $editor->vincularImagem($conta, $campanha, $tempFile, 'Logo');
+
+        $this->assertSame('customers/1234567890/assets/999', $res['asset']);
+        $this->assertSame('customers/1234567890/campaignAssets/24456385340~999~IMAGE', $res['vinculo']);
+
+        @unlink($tempFile);
     }
 
     /** Uma linha no formato exato que `linhaParaTela` escreve — a tela lê destas chaves. */
