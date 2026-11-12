@@ -11,7 +11,7 @@
             </p>
         @endisset
 
-        <ul class="pagination pagination-sm mb-0">
+        <ul class="pagination pagination-sm mb-0 flex-wrap">
             <li class="page-item {{ $paginator->onFirstPage() ? 'disabled' : '' }}" @if ($paginator->onFirstPage()) aria-disabled="true" @endif>
                 @if ($paginator->onFirstPage())
                     <span class="page-link" aria-hidden="true"><i class="fas fa-chevron-left"></i></span>

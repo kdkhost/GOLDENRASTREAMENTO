@@ -36,7 +36,7 @@ class AttributionController extends Controller
             'porLanding' => $this->agrupar($request, $periodo, 'landing_path', 10),
             'porOrigem' => $this->agrupar($request, $periodo, 'origem_host', 10),
             'dispositivos' => $this->dispositivos($request, $periodo),
-            'visitas' => $this->visitas($request, $periodo)->withCount('leads')->latest('ultima_em')->paginate(itens_por_pagina())->withQueryString(),
+            'visitas' => $this->visitas($request, $periodo)->withCount('leads')->latest('ultima_em')->paginate(itens_por_pagina())->onEachSide(1)->withQueryString(),
             'periodo' => $periodo,
             'canais' => Atribuidor::canaisParaFiltro(),
             'redes' => $this->redesNoPeriodo($periodo),

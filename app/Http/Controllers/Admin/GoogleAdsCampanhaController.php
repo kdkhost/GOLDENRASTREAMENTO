@@ -75,7 +75,7 @@ class GoogleAdsCampanhaController extends Controller
             return $this->volta($request, 'error', "A conta {$conta->nomeTela()} está desconectada: reconecte antes de mudar o status de uma campanha.");
         }
 
-        $dias = (int) ($dados['dias'] ?: config('google_ads.dias_padrao', 30));
+        $dias = (int) (($dados['dias'] ?? null) ?: config('google_ads.dias_padrao', 30));
         $campanha_tela = collect(GoogleAdsCache::metricas($conta, $dias)['campanhas'] ?? [])
             ->firstWhere('id', $campanha);
 
@@ -83,9 +83,12 @@ class GoogleAdsCampanhaController extends Controller
         // leitura viva prova que ela existe nesta conta e dá o nome para o recado.
         if ($campanha_tela === null) {
             try {
-                $campanha_tela = ['id' => $campanha, 'nome' => $this->editor->ler($conta, $campanha)['nome']];
+                $lida = $this->editor->ler($conta, $campanha);
+                $campanha_tela = ['id' => $campanha, 'nome' => $lida['nome'] ?? "Campanha #{$campanha}"];
             } catch (GoogleAdsFalhou $e) {
                 return $this->volta($request, 'error', 'Esta campanha não está nesta conta do Google Ads: '.$e->motivoPublico);
+            } catch (Throwable $e) {
+                return $this->volta($request, 'error', 'Não foi possível ler a campanha no Google Ads: '.$e->getMessage());
             }
         }
 

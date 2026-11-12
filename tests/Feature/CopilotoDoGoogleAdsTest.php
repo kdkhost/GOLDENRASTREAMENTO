@@ -8,6 +8,7 @@ use App\Models\GoogleAdsCopiloto;
 use App\Models\GoogleAdsPlano;
 use App\Models\GoogleAdsRelatorio;
 use App\Models\User;
+use App\Services\GoogleAds\GoogleAdsEditor;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Services\GoogleAds\PlanoDeCampanha;
 use App\Support\GoogleAdsCache;
@@ -1133,5 +1134,47 @@ class CopilotoDoGoogleAdsTest extends TestCase
         $this->assertMatchesRegularExpression('/FROM campaign WHERE segments\.date/', $consultas[0]);
         $this->assertMatchesRegularExpression('/FROM ad_group_ad WHERE ad_group\.id = \d+ AND segments\.date/', $consultas[1]);
         $this->assertSame([0, 0], $paginas, 'O Google fixa a página em 10.000 linhas e recusa qualquer page_size.');
+    }
+
+    public function test_editor_consulta_campanha_com_start_date_time_e_end_date_time(): void
+    {
+        $reflection = new \ReflectionClass(GoogleAdsEditor::class);
+        $arquivo = file_get_contents($reflection->getFileName());
+
+        $this->assertStringNotContainsString('campaign.start_date,', $arquivo, 'campaign.start_date é depreciado na V26 e causa UNRECOGNIZED_FIELD');
+        $this->assertStringNotContainsString('campaign.end_date,', $arquivo, 'campaign.end_date é depreciado na V26 e causa UNRECOGNIZED_FIELD');
+        $this->assertStringContainsString('campaign.start_date_time', $arquivo);
+        $this->assertStringContainsString('campaign.end_date_time', $arquivo);
+    }
+
+    public function test_mudar_status_da_campanha_sem_campo_dias_nao_dispara_erro_500(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+            'status' => GoogleAdsAccount::ATIVO,
+        ]);
+
+        $plano = $this->planoPersistido(GoogleAdsPlano::APLICADO, $this->admin);
+
+        GoogleAdsCache::gravar($conta, 30, [$this->campanha('9876543210', 'Campanha Ativada Teste')], $this->resumo());
+
+        $servico = Mockery::mock(GoogleAdsService::class);
+        $servico->shouldReceive('traduzStatus')->with('ENABLED')->andReturn('Ativa');
+        $servico->shouldReceive('validarOperacao')->once()->with(Mockery::type(GoogleAdsAccount::class), '9876543210', 'ENABLED');
+        $servico->shouldReceive('mudarStatus')->once()->with(Mockery::type(GoogleAdsAccount::class), '9876543210', 'ENABLED');
+        $this->app->instance(GoogleAdsService::class, $servico);
+
+        // Submete sem 'dias' exatamente como vem do botão "Ativar agora" no copiloto
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.campanhas.status', ['campanha' => '9876543210']), [
+                'status' => 'ENABLED',
+                'conta' => $conta->id,
+                'voltar' => 'plano',
+                'plano' => $plano->id,
+            ]);
+
+        $response->assertRedirect(route('admin.google-ads.copiloto.show', $plano->id));
+        $response->assertSessionHas('success');
     }
 }

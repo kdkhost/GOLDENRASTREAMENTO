@@ -3,6 +3,22 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.63.4] - 2026-11-12
+
+### Corrigido
+- **Google Ads API V26: campos start_date_time e end_date_time.** Corrigido erro `UNRECOGNIZED_FIELD` ao
+  ler campanhas no Google Ads, substituindo os campos depreciados `start_date` e `end_date` por
+  `start_date_time` e `end_date_time` com retrocompatibilidade no `GoogleAdsEditor`.
+- **Ativação de Campanha no Copiloto do Google Ads (Erro 500).** Corrigida exceção por chave `dias`
+  indefinida ao submeter formulário de ativação direta e adicionado tratamento seguro com captura de
+  exceções na leitura da campanha.
+- **Quebra de layout na paginação de Atribuição de Tráfego (`/admin/atribuicao`).** Adicionado
+  `flex-wrap: wrap`, ajuste de espaçamento (`gap: 4px`), largura máxima de 100% e paginação compacta
+  com `onEachSide(1)` para evitar que o navegador expanda a tabela além da tela.
+
+### Testes
+- Adicionados testes para consulta com `start_date_time`/`end_date_time` e ativação de campanha sem `dias`.
+
 ## [2.63.3] - 2026-11-12
 
 ### Adicionado

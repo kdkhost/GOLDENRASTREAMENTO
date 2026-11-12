@@ -76,7 +76,7 @@ final class GoogleAdsEditor
 
         $this->prepararEscrita($conta);
 
-        $linha = $this->consultar($conta, "SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type, campaign.campaign_budget, campaign.start_date, campaign.end_date, campaign_budget.amount_micros FROM campaign WHERE campaign.id = {$campanhaId} AND campaign.status != 'REMOVED'", 'campanha.ler')[0] ?? null;
+        $linha = $this->consultar($conta, "SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type, campaign.campaign_budget, campaign.start_date_time, campaign.end_date_time, campaign_budget.amount_micros FROM campaign WHERE campaign.id = {$campanhaId} AND campaign.status != 'REMOVED'", 'campanha.ler')[0] ?? null;
 
         if ($linha === null) {
             throw new GoogleAdsFalhou('Esta campanha não existe nesta conta do Google Ads (ou foi removida).');
@@ -92,8 +92,8 @@ final class GoogleAdsEditor
             'status' => $status,
             'status_rotulo' => $this->rotulo($status),
             'tipo' => (string) ($campanha['advertisingChannelType'] ?? ''),
-            'inicio' => (string) ($campanha['startDate'] ?? ''),
-            'fim' => (string) ($campanha['endDate'] ?? ''),
+            'inicio' => (string) ($campanha['startDateTime'] ?? $campanha['start_date_time'] ?? $campanha['startDate'] ?? ''),
+            'fim' => (string) ($campanha['endDateTime'] ?? $campanha['end_date_time'] ?? $campanha['endDate'] ?? ''),
             'orcamento' => [
                 'resource' => (string) ($campanha['campaignBudget'] ?? ''),
                 'diario_centavos' => (int) round(((int) data_get($linha, 'campaignBudget.amountMicros', 0)) / 10000),
