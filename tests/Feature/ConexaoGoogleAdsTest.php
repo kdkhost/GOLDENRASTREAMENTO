@@ -17,6 +17,7 @@ use Google\ApiCore\ApiException;
 use Google\Rpc\Code;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use InvalidArgumentException;
@@ -517,6 +518,47 @@ class ConexaoGoogleAdsTest extends TestCase
             $tela->call('adicionarTitulo');
         }
         $tela->assertSet('titulos', fn (array $titulos): bool => count($titulos) === 15);
+    }
+
+    public function test_a_tela_de_recursos_da_campanha_renderiza_com_sucesso(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/googleAds:search' => Http::response([
+                'results' => [
+                    [
+                        'campaign' => [
+                            'id' => '24456385340',
+                            'name' => 'Golden Rastreamento',
+                            'status' => 'ENABLED',
+                            'advertisingChannelType' => 'SEARCH',
+                            'campaignBudget' => 'customers/1234567890/campaignBudgets/1',
+                            'startDateTime' => '2026-11-12 10:00:00',
+                            'endDateTime' => '2030-11-12 10:00:00',
+                        ],
+                        'campaignBudget' => [
+                            'amountMicros' => '15000000',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.google-ads.campanhas.recursos', ['campanha' => '24456385340', 'conta' => $conta->id]))
+            ->assertOk()
+            ->assertSee('Recursos da campanha')
+            ->assertSee('Imagens vinculadas')
+            ->assertSee('Sitelinks')
+            ->assertSee('Frases de destaque');
     }
 
     /** Uma linha no formato exato que `linhaParaTela` escreve — a tela lê destas chaves. */
