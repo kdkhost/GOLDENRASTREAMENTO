@@ -95,6 +95,12 @@ class MilitaryShield
             return null;
         }
 
+        // Administradores e operadores no painel nunca são bloqueados pelo WAF
+        $user = $request->user();
+        if ($user && ($user->role === 'admin' || $user->role === 'vendedor') && ($request->is('admin*') || $request->routeIs('admin.*'))) {
+            return null;
+        }
+
         // 2. Checa se o sistema está em modo LOCKDOWN total (apenas Whitelist entra)
         if ($this->nivelRigor() === self::RIGOR_LOCKDOWN) {
             return [
@@ -114,8 +120,9 @@ class MilitaryShield
             return [
                 'evento' => 'blacklisted_access',
                 'nivel' => $regraBlacklist->nivel_ameaca,
-                'motivo' => 'Endereço IP listado na Lista Negra: '.$regraBlacklist->motivo,
+                'motivo' => 'Endereço IP listado na Lista Negra',
                 'payload' => null,
+                'ja_banido' => true,
             ];
         }
 
@@ -251,6 +258,11 @@ class MilitaryShield
             // Não quebra a requisição se o log falhar
         }
 
+        // Se o IP já estava na blacklist, não duplica e nem dispara novo auto-ban em loop
+        if (! empty($ameaca['ja_banido'])) {
+            return;
+        }
+
         // Lógica de Prisão Automática (Auto-Ban)
         if ($this->autoBanAtivo() && $this->nivelRigor() !== self::RIGOR_MONITORAMENTO) {
             $this->processarAutoBan($ip, $ameaca);
@@ -273,7 +285,8 @@ class MilitaryShield
 
         if ($ehCritico || $infracoes >= $this->limiteAutoBan()) {
             $horas = $ehCritico ? ($this->horasAutoBan() * 2) : $this->horasAutoBan();
-            $motivo = "Auto-Ban Militar: {$ameaca['motivo']} ({$infracoes} infração(ões))";
+            $motivoBase = substr((string) ($ameaca['motivo'] ?? 'Ameaça interceptada'), 0, 160);
+            $motivo = "Auto-Ban Militar: {$motivoBase} ({$infracoes}x)";
 
             $this->adicionarRegraIp(
                 $ip,
@@ -318,7 +331,7 @@ class MilitaryShield
         return SecurityIpRule::updateOrCreate(
             ['ip' => trim($ip), 'tipo' => $tipo],
             [
-                'motivo' => $motivo,
+                'motivo' => substr(trim($motivo), 0, 250),
                 'nivel_ameaca' => $nivel,
                 'expira_em' => $expiraEm,
                 'created_by_user_id' => $userId,
@@ -588,4 +601,3 @@ class MilitaryShield
         return SecurityEvent::where('created_at', '<', now()->subDays($dias))->delete();
     }
 }
-
