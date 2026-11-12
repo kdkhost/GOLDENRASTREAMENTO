@@ -8,12 +8,28 @@ use Illuminate\Support\Facades\Cache;
 
 class DesbloquearAdminCommand extends Command
 {
-    protected $signature = 'seguranca:desbloquear {ip?} {--listar}';
+    protected $signature = 'seguranca:desbloquear {ip?} {--listar} {--eventos}';
 
     protected $description = 'Remove IP da blacklist e adiciona a whitelist';
 
     public function handle(): int
     {
+        if ($this->option('eventos')) {
+            $this->table(
+                ['ID', 'IP', 'Evento', 'Nível', 'URL', 'Data/Hora'],
+                \App\Models\SecurityEvent::latest('created_at')->limit(15)->get()->map(fn ($e) => [
+                    $e->id,
+                    $e->ip,
+                    $e->evento,
+                    $e->nivel,
+                    substr($e->url, 0, 40),
+                    $e->created_at?->format('d/m/Y H:i:s'),
+                ])
+            );
+
+            return Command::SUCCESS;
+        }
+
         if ($this->option('listar')) {
             $this->table(
                 ['ID', 'IP', 'Tipo', 'Motivo', 'Nível', 'Expira Em', 'Bloqueios'],
