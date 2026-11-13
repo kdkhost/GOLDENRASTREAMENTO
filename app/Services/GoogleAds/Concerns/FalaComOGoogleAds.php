@@ -229,6 +229,18 @@ trait FalaComOGoogleAds
 
     private function falha(Response $resposta, string $etapa): GoogleAdsFalhou
     {
+        $erro = (array) data_get((array) $resposta->json(), 'error.details.0.errors.0', []);
+        $codigo = (array) ($erro['errorCode'] ?? []);
+        $nomeCodigo = (string) (reset($codigo) ?: '');
+        $trigger = (string) data_get($erro, 'trigger.stringValue', '');
+
+        if ($nomeCodigo === 'UNSUPPORTED_FIELD_TYPE' && ($etapa === 'imagem.vincular' || $trigger === 'AD_IMAGE')) {
+            return new GoogleAdsFalhou(
+                'O Google Ads restringe o uso de recursos de imagem em contas recentes. A conta precisa ter pelo menos 60 dias de criação, boa conformidade com as políticas e veiculação ativa em pesquisas nos últimos 30 dias para liberar imagens. Sitelinks e frases de destaque continuam funcionando normalmente.',
+                'HTTP '.$resposta->status().' em '.$etapa.': '.mb_substr($resposta->body(), 0, 1500),
+            );
+        }
+
         $motivo = match (true) {
             $resposta->status() === 401 => 'O Google recusou o acesso da conta conectada. Reconecte a conta do Google Ads e tente de novo.',
             $resposta->status() === 403 => 'A conta conectada não tem permissão para escrever nesta conta de anúncios. Confira o acesso de quem conectou a conta.',

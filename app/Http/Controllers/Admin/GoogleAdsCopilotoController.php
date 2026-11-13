@@ -157,11 +157,10 @@ class GoogleAdsCopilotoController extends Controller
 
         if ($campanhaCriada !== '' && $plano->conta && $plano->conta->status === GoogleAdsAccount::ATIVO) {
             try {
-                $lida = app(GoogleAdsEditor::class)->ler($plano->conta, $campanhaCriada);
-                $statusVivo = (string) ($lida['status'] ?? '');
-                if ($statusVivo !== '' && ($aplicacao['status'] ?? null) !== $statusVivo) {
+                $statusVivo = app(GoogleAdsEditor::class)->lerStatus($plano->conta, $campanhaCriada);
+                if ($statusVivo !== null && ($aplicacao['status'] ?? null) !== $statusVivo) {
                     $aplicacao['status'] = $statusVivo;
-                    $aplicacao['status_rotulo'] = $lida['status_rotulo'] ?? app(GoogleAdsService::class)->traduzStatus($statusVivo);
+                    $aplicacao['status_rotulo'] = app(GoogleAdsEditor::class)->rotulo($statusVivo);
                     $plano->forceFill(['aplicacao_json' => $aplicacao])->save();
                 }
             } catch (Throwable) {

@@ -7,6 +7,7 @@ use App\Livewire\RsaPreview;
 use App\Mail\ContaGoogleAdsDesconectada;
 use App\Models\GoogleAdsAccount;
 use App\Models\User;
+use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
 use App\Services\GoogleAds\GoogleAdsEditor;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Support\GoogleAdsCache;
@@ -604,7 +605,7 @@ class ConexaoGoogleAdsTest extends TestCase
             ->assertSee('O anúncio responsivo de pesquisa');
     }
 
-    public function test_vincular_imagem_usa_field_type_image_no_google_ads(): void
+    public function test_vincular_imagem_usa_field_type_ad_image_no_google_ads(): void
     {
         $conta = GoogleAdsAccount::factory()->create([
             'user_id' => $this->admin->id,
@@ -632,13 +633,13 @@ class ConexaoGoogleAdsTest extends TestCase
             'https://googleads.googleapis.com/v26/customers/1234567890/campaignAssets:mutate' => function (Request $request) {
                 $payload = $request->data();
                 $fieldType = data_get($payload, 'operations.0.create.fieldType');
-                if ($fieldType !== 'IMAGE') {
+                if ($fieldType !== 'AD_IMAGE') {
                     return Http::response(['error' => 'UNSUPPORTED_FIELD_TYPE'], 400);
                 }
 
                 return Http::response([
                     'results' => [
-                        ['resourceName' => 'customers/1234567890/campaignAssets/24456385340~999~IMAGE'],
+                        ['resourceName' => 'customers/1234567890/campaignAssets/24456385340~999~AD_IMAGE'],
                     ],
                 ]);
             },
@@ -648,9 +649,68 @@ class ConexaoGoogleAdsTest extends TestCase
         $res = $editor->vincularImagem($conta, $campanha, $tempFile, 'Logo');
 
         $this->assertSame('customers/1234567890/assets/999', $res['asset']);
-        $this->assertSame('customers/1234567890/campaignAssets/24456385340~999~IMAGE', $res['vinculo']);
+        $this->assertSame('customers/1234567890/campaignAssets/24456385340~999~AD_IMAGE', $res['vinculo']);
 
         @unlink($tempFile);
+    }
+
+    public function test_vincular_imagem_traduz_erro_unsupported_field_type_do_google_ads(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'img');
+        file_put_contents($tempFile, 'fake-image-bytes');
+
+        $campanha = [
+            'id' => '24456385340',
+            'resource' => 'customers/1234567890/campaigns/24456385340',
+        ];
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/assets:mutate' => Http::response([
+                'results' => [
+                    ['resourceName' => 'customers/1234567890/assets/999'],
+                ],
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/campaignAssets:mutate' => Http::response([
+                'error' => [
+                    'code' => 400,
+                    'message' => 'Request contains an invalid argument.',
+                    'status' => 'INVALID_ARGUMENT',
+                    'details' => [
+                        [
+                            '@type' => 'type.googleapis.com/google.ads.googleads.v26.errors.GoogleAdsFailure',
+                            'errors' => [
+                                [
+                                    'errorCode' => ['assetLinkError' => 'UNSUPPORTED_FIELD_TYPE'],
+                                    'message' => 'The given field type is not supported to be added directly through asset links.',
+                                    'trigger' => ['stringValue' => 'AD_IMAGE'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 400),
+        ]);
+
+        $editor = app(GoogleAdsEditor::class);
+
+        try {
+            $editor->vincularImagem($conta, $campanha, $tempFile, 'Logo');
+            $this->fail('Deveria ter lançado GoogleAdsFalhou.');
+        } catch (GoogleAdsFalhou $e) {
+            $this->assertStringContainsString('60 dias', $e->motivoPublico);
+            $this->assertStringContainsString('Sitelinks e frases de destaque', $e->motivoPublico);
+        } finally {
+            @unlink($tempFile);
+        }
     }
 
     /** Uma linha no formato exato que `linhaParaTela` escreve — a tela lê destas chaves. */

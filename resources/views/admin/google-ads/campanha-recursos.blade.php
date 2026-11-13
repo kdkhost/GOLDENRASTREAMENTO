@@ -47,6 +47,13 @@
         {{-- SEÇÃO 1: IMAGENS --}}
         <x-admin.card title="Imagens vinculadas" icon="fa-image"
             descricao="Imagens exibidas ao lado do anúncio nas buscas móveis e computadores.">
+            <div class="alert alert-info d-flex align-items-start gap-2 mb-3 py-2 px-3 small border-0 bg-info-subtle text-info-emphasis">
+                <i class="fas fa-info-circle mt-1 flex-shrink-0"></i>
+                <div>
+                    <strong>Requisito do Google Ads:</strong> O Google só permite vincular recursos de imagem (extensões <code>AD_IMAGE</code>) em contas com mais de 60 dias de criação e histórico recente de veiculação em campanhas de pesquisa. Em contas recentes, use <strong>Sitelinks</strong> e <strong>Frases de destaque</strong> logo abaixo, liberados de imediato.
+                </div>
+            </div>
+
             @if ($imagens !== [])
                 <div class="row g-3 mb-4">
                     @foreach ($imagens as $imagem)

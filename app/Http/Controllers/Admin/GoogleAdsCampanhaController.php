@@ -415,7 +415,7 @@ class GoogleAdsCampanhaController extends Controller
             'google_ads_recurso_vinculado',
             "Imagem \"{$nome}\" vinculada à campanha {$lida['nome']} na conta {$conta->numeroConta()}.",
             $conta,
-            ['campaign_id' => $lida['id'], 'tipo' => 'IMAGE', 'asset' => $resultado['asset']],
+            ['campaign_id' => $lida['id'], 'tipo' => 'AD_IMAGE', 'asset' => $resultado['asset']],
         );
 
         return $this->paraRecursos($conta, $lida, 'success', 'Imagem vinculada à campanha. O Google revisa o recurso antes de exibi-lo.');
