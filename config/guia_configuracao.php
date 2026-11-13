@@ -200,6 +200,32 @@ return [
             ],
         ],
 
+        'google_ads_tag_id' => [
+            'onde' => 'A tag do Google Ads (ID da tag / Pixel de conversão). Tem o formato `AW-` seguido de números (ex: `AW-123456789`). Rastreia visitantes em todo o site para alimentar públicos e otimizar campanhas.',
+            'passos' => [
+                ['icone' => 'fa-arrow-up-right-from-square', 'titulo' => 'Abra sua conta do Google Ads', 'texto' => 'Acesse ads.google.com com a conta que gerencia as campanhas da Golden.'],
+                ['icone' => 'fa-bullseye', 'titulo' => 'Acesse Ferramentas → Metas / Conversões', 'texto' => 'No menu superior ou lateral, clique em Ferramentas e configurações → Conversões (ou Resumo de Metas) → Tag do Google.'],
+                ['icone' => 'fa-tag', 'titulo' => 'Copie o ID da Tag', 'texto' => 'Localize o ID da tag no formato `AW-XXXXXXXXXX`. Cole neste campo sem espaços.'],
+                ['icone' => 'fa-check', 'titulo' => 'Verifique o status', 'texto' => 'Após salvar com a medição ativada, a tag passa a carregar em todas as páginas do site.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Google Ads', 'url' => 'https://ads.google.com/'],
+                ['rotulo' => 'Configurar a tag do Google', 'url' => 'https://support.google.com/google-ads/answer/7548399'],
+            ],
+        ],
+
+        'google_ads_conversion_label' => [
+            'onde' => 'O rótulo da ação de conversão de Leads gerada no Google Ads. É disparado automaticamente sempre que um visitante envia o formulário de proposta ou contato no site.',
+            'passos' => [
+                ['icone' => 'fa-bullseye', 'titulo' => 'Crie uma Ação de Conversão', 'texto' => 'Em Google Ads → Metas → Resumo → Nova ação de conversão → Site. Crie uma ação com categoria "Envio de formulário de lead".'],
+                ['icone' => 'fa-code', 'titulo' => 'Obtenha o rótulo de conversão', 'texto' => 'Na etapa de instalação da tag, visualize o snippet de evento ou selecione a opção do Gerenciador de tags. Copie o Rótulo (ex: `AbC-D_ef123` ou `AW-XXXXXXXXXX/AbC-D_ef123`).'],
+                ['icone' => 'fa-floppy-disk', 'titulo' => 'Cole e salve', 'texto' => 'Cole o rótulo neste campo. O sistema enviará o evento de conversão sempre que um lead preencher o formulário.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ações de conversão no Google Ads', 'url' => 'https://support.google.com/google-ads/answer/6095821'],
+            ],
+        ],
+
         'ga_measurement_id' => [
             'onde' => 'O identificador que liga o site à propriedade do Google Analytics 4. Tem o formato `G-` seguido de letras e números.',
             'passos' => [
@@ -1234,7 +1260,7 @@ return [
         'assistente_imagem_mb' => [
             'onde' => 'O tamanho máximo, em megabytes, de uma imagem recebida no chat.',
             'passos' => [
-                ['icone' => 'fa-camera-retro' , 'titulo' => 'Foto de celular hoje passa dos 5 MB', 'texto' => 'Um teto apertado demais recusa a foto que o cliente mais manda; meio caminho é o que cabe em rede de celular.'],
+                ['icone' => 'fa-camera-retro', 'titulo' => 'Foto de celular hoje passa dos 5 MB', 'texto' => 'Um teto apertado demais recusa a foto que o cliente mais manda; meio caminho é o que cabe em rede de celular.'],
                 ['icone' => 'fa-compress', 'titulo' => 'A leitura não precisa de resolução de impressão', 'texto' => 'O modelo de visão trabalha com muito menos pixels do que a câmera entrega.'],
             ],
         ],

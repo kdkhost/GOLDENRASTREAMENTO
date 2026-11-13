@@ -290,8 +290,11 @@ class AppServiceProvider extends ServiceProvider
             'portal_url' => route($rotaConta),
             'acessos' => $acessos,
             'tracking' => $pegar('tracking_enabled', '0') === '1',
+            'google_ads_tag' => $pegar('google_ads_tag_id'),
+            'google_ads_conversion' => $pegar('google_ads_conversion_label'),
             'ga_id' => $pegar('ga_measurement_id'),
             'meta_pixel' => $pegar('meta_pixel_id'),
+            'gtm_id' => $pegar('gtm_id'),
         ];
     }
 

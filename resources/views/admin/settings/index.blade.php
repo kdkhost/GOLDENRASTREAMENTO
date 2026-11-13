@@ -267,9 +267,11 @@
                         <x-admin.card title="Medição e consentimento" icon="fa-chart-area"
                             descricao="Só habilite a coleta depois de publicar a Política de Privacidade e o banner de consentimento.">
                             <div class="row g-3">
-                                <x-admin.switch name="tracking_enabled" label="Ativar coleta de eventos (GA4, Meta Pixel, GTM)" :checked="($settings['tracking_enabled'] ?? '0') === '1'" />
+                                <x-admin.switch name="tracking_enabled" label="Ativar coleta de eventos (Google Ads, GA4, Meta Pixel, GTM)" :checked="($settings['tracking_enabled'] ?? '0') === '1'" />
+                                <x-admin.field name="google_ads_tag_id" label="Google Ads Tag ID (Pixel / Tag)" :value="$settings['google_ads_tag_id'] ?? ''" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="AW-XXXXXXXXXX" hint="ID da tag do Google Ads (ex: AW-123456789) para rastrear visitantes no site." />
+                                <x-admin.field name="google_ads_conversion_label" label="Rótulo de Conversão de Leads (Google Ads)" :value="$settings['google_ads_conversion_label'] ?? ''" col="col-12 col-md-6" maxlength="100" :opcional="true" placeholder="AW-XXXXXXXXXX/AbCdEfGhIjK ou AbCdEfGhIjK" hint="Rótulo do evento disparado ao cadastrar lead pelo site." />
                                 <x-admin.field name="ga_measurement_id" label="GA4 Measurement ID" :value="$settings['ga_measurement_id'] ?? ''" col="col-12 col-md-4" maxlength="60" :opcional="true" placeholder="G-XXXXXXX" />
-                                <x-admin.field name="meta_pixel_id" label="Meta Pixel ID" :value="$settings['meta_pixel_id'] ?? ''" col="col-12 col-md-4" maxlength="60" :opcional="true" />
+                                <x-admin.field name="meta_pixel_id" label="Meta Pixel ID" :value="$settings['meta_pixel_id'] ?? ''" col="col-12 col-md-4" maxlength="60" :opcional="true" placeholder="123456789012345" />
                                 <x-admin.field name="gtm_id" label="GTM ID" :value="$settings['gtm_id'] ?? ''" col="col-12 col-md-4" maxlength="60" :opcional="true" placeholder="GTM-XXXX" />
                             </div>
                         </x-admin.card>
@@ -386,6 +388,14 @@
                     @foreach ($gruposDeChaves as $id => $grupo)
                         <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="aba-chaves-{{ $id }}" data-aba-painel="{{ $id }}" role="tabpanel" aria-labelledby="aba-chaves-{{ $id }}-botao" tabindex="0">
                             <x-admin.card :title="$grupo['rotulo']" :icon="$grupo['icone']" :descricao="$grupo['descricao']" :ajuda="$id">
+                                @if($id === 'google-ads')
+                                    <div class="alert alert-info d-flex align-items-center gap-2 mb-3 py-2 px-3 small">
+                                        <i class="fas fa-bullseye fa-lg text-info" aria-hidden="true"></i>
+                                        <div>
+                                            Para configurar a <strong>Tag de Rastreamento (Pixel)</strong> e o <strong>Rótulo de Conversão de Leads</strong> do Google Ads no site, acesse a aba <a href="#aba-medicao" data-bs-toggle="tab" data-bs-target="#aba-medicao" class="alert-link text-decoration-underline">Medição</a>.
+                                        </div>
+                                    </div>
+                                @endif
                                 <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3" data-atualiza=".app-content">
                                     @csrf
                                     <input type="hidden" name="grupo" value="{{ $id }}">

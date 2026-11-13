@@ -30,9 +30,31 @@
     @stack('styles')
 
     @if($golden['tracking'])
-        @if($golden['ga_id'])
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $golden['ga_id'] }}"></script>
-        <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ $golden['ga_id'] }}');</script>
+        @php
+            $gtagId = $golden['ga_id'] ?: $golden['google_ads_tag'];
+        @endphp
+        @if($gtagId)
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gtagId }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            @if($golden['ga_id'])
+            gtag('config', '{{ $golden['ga_id'] }}');
+            @endif
+            @if($golden['google_ads_tag'])
+            gtag('config', '{{ $golden['google_ads_tag'] }}');
+            @endif
+        </script>
+        @endif
+        @if($golden['gtm_id'])
+        <!-- Google Tag Manager -->
+        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','{{ $golden['gtm_id'] }}');</script>
+        <!-- End Google Tag Manager -->
         @endif
         @if($golden['meta_pixel'])
         <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;t=b.getElementsByTagName(e)[0];s=b.createElement(e);s.async=!0;s.src=v;b.parentNode.insertBefore(s,t)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','{{ $golden['meta_pixel'] }}');fbq('track','PageView');</script>
@@ -40,6 +62,12 @@
     @endif
 </head>
 <body>
+@if($golden['tracking'] && !empty($golden['gtm_id']))
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $golden['gtm_id'] }}"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+@endif
 <header class="site-header">
     <div class="wrap nav">
         <a class="brand" href="{{ route('site.home') }}">
@@ -144,7 +172,34 @@
 @include('site.partials.cookie-bar')
 
 @include('partials.avisos', ['confirmacoes' => false])
-<script>window.GOLDEN = { tracking: {{ $golden['tracking'] ? 'true' : 'false' }}, farol: @json(route('site.rastreio.evento')) };</script>
+@php
+    $medicaoSite = [
+        'tracking' => (bool) $golden['tracking'],
+        'farol' => route('site.rastreio.evento'),
+        'google_ads_tag' => $golden['google_ads_tag'] ?? null,
+        'google_ads_conversion' => $golden['google_ads_conversion'] ?? null,
+    ];
+@endphp
+<script>window.GOLDEN = @json($medicaoSite);</script>
+@if(session('lead_ok') && $golden['tracking'] && !empty($golden['google_ads_conversion']))
+    @php
+        $sendToLead = $golden['google_ads_conversion'];
+        if (!str_contains($sendToLead, '/') && !empty($golden['google_ads_tag'])) {
+            $sendToLead = $golden['google_ads_tag'] . '/' . $sendToLead;
+        }
+    @endphp
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            if (typeof gtag === 'function') {
+                gtag('event', 'conversion', {
+                    'send_to': '{{ $sendToLead }}',
+                    'value': 1.0,
+                    'currency': 'BRL'
+                });
+            }
+        });
+    </script>
+@endif
 <script src="{{ asset('js/golden-site.js') }}?v={{ filemtime(public_path('js/golden-site.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
 <script src="{{ asset('js/golden-scroll-animations.js') }}?v={{ filemtime(public_path('js/golden-scroll-animations.js')) }}"></script>

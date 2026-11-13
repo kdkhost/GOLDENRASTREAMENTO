@@ -53,9 +53,15 @@
    */
   function conversaoDeAnuncio() {
     var f = G.funil || {};
-    if (f.conversao_google_ads && window.gtag) {
+    var adsConversao = f.conversao_google_ads || G.google_ads_conversion;
+    if (adsConversao && window.gtag) {
+      var sendTo = adsConversao;
+      var adsTag = (f.pixel_google_ads || G.google_ads_tag || '');
+      if (sendTo.indexOf('/') === -1 && adsTag) {
+        sendTo = adsTag + '/' + sendTo;
+      }
       window.gtag('event', 'conversion', {
-        send_to: f.conversao_google_ads,
+        send_to: sendTo,
         value: f.preco_cents ? f.preco_cents / 100 : 1,
         currency: 'BRL'
       });

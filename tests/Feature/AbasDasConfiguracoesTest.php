@@ -162,6 +162,43 @@ class AbasDasConfiguracoesTest extends TestCase
         $this->assertSame('5519997101483', Setting::get('contato_whatsapp'));
     }
 
+    public function test_a_aba_de_medicao_salva_tag_e_conversao_do_google_ads(): void
+    {
+        $this->actingAs($this->admin)->post(route('admin.settings.update'), [
+            '_aba' => 'medicao',
+            'tracking_enabled' => '1',
+            'ga_measurement_id' => 'G-ABC123456',
+            'google_ads_tag_id' => 'AW-123456789',
+            'google_ads_conversion_label' => 'AW-123456789/AbCdEfGhIjK',
+        ])->assertRedirect()->assertSessionHas('success', 'Medição e consentimento salvos.');
+
+        $this->assertSame('1', Setting::get('tracking_enabled'));
+        $this->assertSame('G-ABC123456', Setting::get('ga_measurement_id'));
+        $this->assertSame('AW-123456789', Setting::get('google_ads_tag_id'));
+        $this->assertSame('AW-123456789/AbCdEfGhIjK', Setting::get('google_ads_conversion_label'));
+
+        // O layout do site deve receber a tag do Google Ads e expor no window.GOLDEN
+        $response = $this->get(route('site.home'));
+        $response->assertOk();
+        $response->assertSee('googletagmanager.com/gtag/js?id=G-ABC123456', false);
+        $response->assertSee("gtag('config', 'G-ABC123456')", false);
+        $response->assertSee("gtag('config', 'AW-123456789')", false);
+        $response->assertSee('"google_ads_tag":"AW-123456789"', false);
+        $response->assertSee('"google_ads_conversion":"AW-123456789\/AbCdEfGhIjK"', false);
+    }
+
+    public function test_dispara_evento_de_conversao_quando_lead_e_enviado(): void
+    {
+        Setting::set('tracking_enabled', '1');
+        Setting::set('google_ads_tag_id', 'AW-123456789');
+        Setting::set('google_ads_conversion_label', 'AbCdEfGhIjK');
+
+        $response = $this->withSession(['lead_ok' => true])->get(route('site.home'));
+        $response->assertOk();
+        $response->assertSee("gtag('event', 'conversion',", false);
+        $response->assertSee("'send_to': 'AW-123456789/AbCdEfGhIjK'", false);
+    }
+
     public function test_o_contato_continua_obrigatorio_na_propria_aba(): void
     {
         $this->actingAs($this->admin)->post(route('admin.settings.update'), [

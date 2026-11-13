@@ -84,6 +84,8 @@ class SettingController extends Controller
             'acesso_ajuda' => ['nullable', 'string', 'max:120'],
             'acesso_ajuda_link' => ['nullable', 'string', 'max:60'],
             'tracking_enabled' => ['nullable', 'boolean'],
+            'google_ads_tag_id' => ['nullable', 'string', 'max:60'],
+            'google_ads_conversion_label' => ['nullable', 'string', 'max:100'],
             'ga_measurement_id' => ['nullable', 'string', 'max:60'],
             'meta_pixel_id' => ['nullable', 'string', 'max:60'],
             'gtm_id' => ['nullable', 'string', 'max:60'],
