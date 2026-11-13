@@ -977,6 +977,11 @@ return [
         'nota_minima' => (int) env('GOOGLE_BUSINESS_NOTA_MINIMA', 4),
     ],
 
+    'google_places' => [
+        'place_id' => env('GOOGLE_PLACES_PLACE_ID', ''),
+        'api_key' => env('GOOGLE_PLACES_API_KEY', ''),
+    ],
+
     'faq' => [
         ['q' => 'O rastreador funciona em qualquer veículo?', 'a' => 'O J16 4G/2G é compatível com a maioria dos veículos leves, motos e linha pesada. Confirme a compatibilidade no atendimento.'],
         ['q' => 'A instalação é feita pela Golden?', 'a' => 'Não. A instalação é contratada e paga pelo cliente diretamente ao profissional de sua confiança.'],

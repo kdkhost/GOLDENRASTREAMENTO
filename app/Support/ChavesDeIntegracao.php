@@ -141,13 +141,32 @@ class ChavesDeIntegracao
             'avaliacoes' => [
                 'rotulo' => 'Avaliações do Google',
                 'icone' => 'fa-star',
-                'descricao' => 'Lê as avaliações do ficha do Google para a tela de Depoimentos. Sem o token, a importação não roda — e o sistema não inventa avaliação.',
+                'descricao' => 'Lê as avaliações da ficha do Google para a tela de Depoimentos. Recomendado: use o Place ID do Google Maps e uma Chave de API (não expira).',
                 'campos' => [
+                    [
+                        'chave' => 'google_places_place_id',
+                        'config' => 'golden.google_places.place_id',
+                        'ambiente' => 'GOOGLE_PLACES_PLACE_ID',
+                        'label' => 'Place ID do Google Maps (Recomendado)',
+                        'opcional' => true,
+                        'regras' => ['string', 'max:120'],
+                        'dica' => 'Identificador da sua empresa no Google Maps (ex: ChIJ...). Nunca expira.',
+                    ],
+                    [
+                        'chave' => 'google_places_api_key',
+                        'config' => 'golden.google_places.api_key',
+                        'ambiente' => 'GOOGLE_PLACES_API_KEY',
+                        'label' => 'Chave de API do Google Cloud (Places API)',
+                        'segredo' => true,
+                        'opcional' => true,
+                        'regras' => ['string', 'max:120'],
+                        'dica' => 'Chave de API gerada no Google Cloud com a "Places API" ativada. Não expira.',
+                    ],
                     [
                         'chave' => 'google_business_account',
                         'config' => 'golden.google_business.account',
                         'ambiente' => 'GOOGLE_BUSINESS_ACCOUNT',
-                        'label' => 'Conta do Business Profile',
+                        'label' => 'Conta do Business Profile (Legado)',
                         'opcional' => true,
                         'regras' => ['string', 'max:60'],
                         'dica' => 'Só o número, ou o endereço inteiro que a API usa: mybusinessapi.googleapis.com/v1/accounts/<número>.',
@@ -156,7 +175,7 @@ class ChavesDeIntegracao
                         'chave' => 'google_business_location',
                         'config' => 'golden.google_business.location',
                         'ambiente' => 'GOOGLE_BUSINESS_LOCATION',
-                        'label' => 'Local (ficha)',
+                        'label' => 'Local / ficha (Legado)',
                         'opcional' => true,
                         'regras' => ['string', 'max:60'],
                         'dica' => 'O número da ficha, ou locations/<número>/reviews como está na API.',
@@ -165,10 +184,10 @@ class ChavesDeIntegracao
                         'chave' => 'google_business_token',
                         'config' => 'golden.google_business.token',
                         'ambiente' => 'GOOGLE_BUSINESS_TOKEN',
-                        'label' => 'Token de acesso',
+                        'label' => 'Token de acesso (Legado)',
                         'segredo' => true,
                         'opcional' => true,
-                        'dica' => 'Bearer de OAuth de uma conta que administra essa ficha. Renove quando expirar.',
+                        'dica' => 'Bearer de OAuth de uma conta que administra essa ficha. Expira em 60 minutos.',
                     ],
                     [
                         'chave' => 'google_business_limite',
@@ -1227,7 +1246,22 @@ class ChavesDeIntegracao
      */
     public static function faltantesDasAvaliacoes(): array
     {
+        // Se as chaves do Google Places API estiverem preenchidas, a conexão está completa.
+        if (filled(self::vigente('google_places_place_id')) && filled(self::vigente('google_places_api_key'))) {
+            return [];
+        }
+
+        // Se as credenciais do Business Profile estiverem preenchidas, a conexão está completa.
+        $conta = filled(self::vigente('google_business_account'));
+        $local = filled(self::vigente('google_business_location'));
+        $token = filled(self::vigente('google_business_token'));
+        if ($conta && $local && $token) {
+            return [];
+        }
+
+        // Caso contrário, lista os campos faltantes do método legado ou recomendado
         return collect(self::grupos()['avaliacoes']['campos'])
+            ->filter(fn (array $campo): bool => in_array($campo['chave'], ['google_business_account', 'google_business_location', 'google_business_token'], true))
             ->filter(fn (array $campo): bool => blank(self::vigente($campo['chave'])))
             ->map(fn (array $campo): string => $campo['label'].' ('.$campo['ambiente'].')')
             ->values()

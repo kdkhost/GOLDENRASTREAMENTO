@@ -245,6 +245,47 @@ class DepoimentosDasTresOrigensTest extends TestCase
         $this->assertTrue(Testimonial::where('externo_id', 'rev-1')->exists());
     }
 
+    public function test_importa_avaliacoes_via_places_api_com_sucesso(): void
+    {
+        config([
+            'golden.google_business.account' => '',
+            'golden.google_business.location' => '',
+            'golden.google_business.token' => '',
+            'golden.google_places.place_id' => 'ChIJ_test_place_id',
+            'golden.google_places.api_key' => 'AIzaSy_test_key',
+        ]);
+        Setting::esquecerMemoria();
+
+        $this->assertTrue(DepoimentosDoGoogle::usandoPlacesApi());
+        $this->assertTrue(DepoimentosDoGoogle::configurado());
+        $this->assertSame([], DepoimentosDoGoogle::faltantes());
+
+        Http::fake([
+            'maps.googleapis.com/maps/api/place/details/json*' => Http::response([
+                'status' => 'OK',
+                'result' => [
+                    'reviews' => [[
+                        'author_name' => 'Carlos Cliente',
+                        'profile_photo_url' => 'https://lh3.googleusercontent.com/a/foto-carlos',
+                        'rating' => 5,
+                        'text' => 'Excelente rastreamento, suporte impecável!',
+                        'time' => 1729000000,
+                    ]],
+                ],
+            ]),
+            'lh3.googleusercontent.com/*' => Http::response('bytes-da-foto', 200, ['Content-Type' => 'image/jpeg']),
+        ]);
+
+        $this->artisan('depoimentos:google')->assertSuccessful();
+
+        $depoimento = Testimonial::where('nome', 'Carlos Cliente')->first();
+        $this->assertNotNull($depoimento);
+        $this->assertSame(5, $depoimento->nota);
+        $this->assertSame('google', $depoimento->fonte);
+        $this->assertTrue($depoimento->aprovado);
+        $this->assertStringContainsString('Excelente rastreamento', $depoimento->texto);
+    }
+
     public function test_o_cliente_ativo_envia_pelo_portal_e_nasce_oculto_assinado_pela_ficha(): void
     {
         $cliente = Customer::create([

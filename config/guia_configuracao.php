@@ -680,6 +680,32 @@ return [
             'nota' => 'Token de OAuth expira. Quando a importação passar a responder `unauthorized`, o conserto é gerar outro token — não reinstalar nada.',
         ],
 
+        'google_places_place_id' => [
+            'onde' => 'O Place ID da sua empresa no Google Maps. É um código único que começa com `ChIJ` (ex: `ChIJN1t_tDeuEmsRUsoyG83frY4`). Identifica a sua ficha no Google Maps e nunca expira.',
+            'passos' => [
+                ['icone' => 'fa-magnifying-glass', 'titulo' => 'Abra o Place ID Finder da Google', 'texto' => 'Acesse developers.google.com/maps/documentation/places/web-service/place-id.'],
+                ['icone' => 'fa-store', 'titulo' => 'Pesquise por Golden Rastreamento', 'texto' => 'Digite o nome da empresa ou o endereço em Três Pontas e selecione o local no mapa.'],
+                ['icone' => 'fa-copy', 'titulo' => 'Copie o Place ID', 'texto' => 'Copie o código que aparece em "Place ID" (começa com `ChIJ`). Cole neste campo.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Buscador de Place ID da Google', 'url' => 'https://developers.google.com/maps/documentation/places/web-service/place-id'],
+            ],
+        ],
+
+        'google_places_api_key' => [
+            'onde' => 'A chave de API do Google Cloud com a "Places API" habilitada. Ela permite a sincronização automática e periódica de avaliações sem expirar.',
+            'passos' => [
+                ['icone' => 'fa-cloud', 'titulo' => 'Acesse o Google Cloud Console', 'texto' => 'Abra console.cloud.google.com no projeto da empresa.'],
+                ['icone' => 'fa-plug', 'titulo' => 'Ative a Places API', 'texto' => 'No menu lateral, vá em "APIs e serviços" → "Biblioteca" → pesquise "Places API" e clique em "Ativar".'],
+                ['icone' => 'fa-key', 'titulo' => 'Gere a Chave de API', 'texto' => 'Em "APIs e serviços" → "Credenciais" → clique em "+ Criar credenciais" → "Chave de API".'],
+                ['icone' => 'fa-check', 'titulo' => 'Cole e salve', 'texto' => 'Cole a chave aqui. Ela nunca expira e o agendador atualizará as avaliações automaticamente todos os dias.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Google Cloud Console', 'url' => 'https://console.cloud.google.com/'],
+                ['rotulo' => 'Documentação da Places API', 'url' => 'https://developers.google.com/maps/documentation/places/web-service/overview'],
+            ],
+        ],
+
         'google_business_account' => [
             'onde' => 'O número da conta do Google Business Profile que administra a sua ficha.',
             'passos' => [

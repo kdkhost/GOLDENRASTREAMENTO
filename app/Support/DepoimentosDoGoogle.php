@@ -38,7 +38,22 @@ class DepoimentosDoGoogle
     /** O perfil e o token: sem um dos dois a leitura não tem como acontecer. */
     public static function configurado(): bool
     {
-        return static::recurso() !== null && static::token() !== '';
+        return static::usandoPlacesApi() || (static::recurso() !== null && static::token() !== '');
+    }
+
+    public static function usandoPlacesApi(): bool
+    {
+        return static::placesApiKey() !== '' && static::placesPlaceId() !== '';
+    }
+
+    public static function placesApiKey(): string
+    {
+        return trim((string) config('golden.google_places.api_key'));
+    }
+
+    public static function placesPlaceId(): string
+    {
+        return trim((string) config('golden.google_places.place_id'));
     }
 
     private static function token(): string
@@ -54,6 +69,10 @@ class DepoimentosDoGoogle
      */
     public static function faltantes(): array
     {
+        if (static::usandoPlacesApi()) {
+            return [];
+        }
+
         $faltam = ChavesDeIntegracao::faltantesDasAvaliacoes();
 
         if ($faltam === [] && static::recurso() === null) {
@@ -106,6 +125,10 @@ class DepoimentosDoGoogle
             throw new RuntimeException(static::avisoDeConfiguracao());
         }
 
+        if (static::usandoPlacesApi()) {
+            return static::avaliacoesPlacesApi($limite);
+        }
+
         $recurso = static::recurso();
         $token = static::token();
 
@@ -139,12 +162,60 @@ class DepoimentosDoGoogle
     }
 
     /**
+     * Lê as avaliações diretamente pela Places API do Google Maps (Place Details).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function avaliacoesPlacesApi(?int $limite = null): array
+    {
+        $key = static::placesApiKey();
+        $placeId = static::placesPlaceId();
+        $limite = max(1, $limite ?? (int) config('golden.google_business.limite', 50));
+
+        $url = 'https://maps.googleapis.com/maps/api/place/details/json';
+        $resposta = Http::timeout(20)->get($url, [
+            'place_id' => $placeId,
+            'fields' => 'name,rating,reviews,user_ratings_total',
+            'key' => $key,
+            'language' => 'pt-BR',
+        ]);
+
+        if ($resposta->failed()) {
+            throw new RuntimeException('O Google Places recusou a consulta ('.$resposta->status().').');
+        }
+
+        $json = $resposta->json();
+        if (($json['status'] ?? '') !== 'OK') {
+            throw new RuntimeException('O Google Places devolveu erro: '.($json['error_message'] ?? $json['status'] ?? 'desconhecido'));
+        }
+
+        $avaliacoes = [];
+        foreach ($json['result']['reviews'] ?? [] as $r) {
+            $autor = trim((string) ($r['author_name'] ?? '')) ?: 'Cliente no Google';
+            $tempo = $r['time'] ?? null;
+            $externoId = 'place_rev_'.substr(md5($autor.':'.$tempo), 0, 24);
+
+            $avaliacoes[] = [
+                'externo_id' => $externoId,
+                'nome' => $autor,
+                'texto' => trim((string) ($r['text'] ?? '')),
+                'nota' => (int) ($r['rating'] ?? 5),
+                'avatar_remoto' => trim((string) ($r['profile_photo_url'] ?? '')) ?: null,
+                'avaliado_em' => $tempo ? date('c', (int) $tempo) : null,
+            ];
+        }
+
+        return array_slice($avaliacoes, 0, $limite);
+    }
+
+    /**
      * @param  array<string,mixed>  $avaliacao
      * @return array<string,mixed>
      */
     private static function mapear(array $avaliacao): array
     {
         $autor = $avaliacao['reviewer'] ?? [];
+
         return [
             'externo_id' => (string) ($avaliacao['reviewId'] ?? ''),
             'nome' => trim((string) ($autor['displayName'] ?? '')) ?: 'Cliente no Google',
@@ -170,11 +241,13 @@ class DepoimentosDoGoogle
 
             if ($avaliacao['externo_id'] === '' || $avaliacao['texto'] === '') {
                 $resumo['sem_texto']++;
+
                 continue;
             }
 
             if ($avaliacao['nota'] < $minima) {
                 $resumo['abaixo_da_minima']++;
+
                 continue;
             }
 
@@ -194,6 +267,7 @@ class DepoimentosDoGoogle
                 unset($dados['aprovado']);
                 $depoimento->update($dados);
                 $resumo['atualizados']++;
+
                 continue;
             }
 
