@@ -396,6 +396,14 @@
                                         </div>
                                     </div>
                                 @endif
+                                @if($id === 'avaliacoes')
+                                    <div class="alert alert-info d-flex align-items-center gap-2 mb-3 py-2 px-3 small">
+                                        <i class="fas fa-info-circle fa-lg text-info" aria-hidden="true"></i>
+                                        <div>
+                                            <strong>Dica:</strong> Para exibir depoimentos com o selo oficial do Google no site, você não precisa obrigatoriamente preencher esta API. Você pode cadastrar as avaliações dos clientes diretamente em <a href="{{ route('admin.conteudo.depoimentos.index') }}" class="alert-link text-decoration-underline">Conteúdo → Depoimentos</a> escolhendo a origem <strong>Google</strong>.
+                                        </div>
+                                    </div>
+                                @endif
                                 <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3" data-atualiza=".app-content">
                                     @csrf
                                     <input type="hidden" name="grupo" value="{{ $id }}">

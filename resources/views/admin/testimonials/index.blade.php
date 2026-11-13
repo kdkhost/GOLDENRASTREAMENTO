@@ -28,13 +28,13 @@
 @endif
 
 @if(!$google_configurado)
-<div class="alert alert-secondary py-2 small">
-    <i class="fa-brands fa-google me-1" aria-hidden="true"></i>
-    A leitura das avaliações do Google usa três chaves — conta do Business Profile, local e token de acesso.
-    Falta {{ count($google_faltantes) === 1 ? 'o campo' : 'os campos' }}:
-    <strong>{{ implode('; ', $google_faltantes) }}</strong>.
-    <a href="{{ $google_chaves_em }}" class="ms-1">Preencher em Configurações → Chaves de integração</a>.
-    Enquanto isso, o botão "Atualizar do Google" e o <code>php artisan depoimentos:google</code> avisam em vez de chamar a API.
+<div class="alert alert-secondary py-2 small d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div>
+        <i class="fa-brands fa-google me-1 text-primary" aria-hidden="true"></i>
+        <strong>Depoimentos do Google:</strong> Você pode adicionar depoimentos com o selo oficial do Google clicando em <strong>Novo depoimento</strong> e selecionando a origem <strong>Google</strong>.
+        <span class="text-secondary d-block mt-1">A sincronização automática via API do Google Business Profile é opcional e requer credenciais em <a href="{{ $google_chaves_em }}">Configurações → Chaves de integração</a> (falta: {{ implode('; ', $google_faltantes) }}).</span>
+    </div>
+    <a href="{{ route('admin.conteudo.depoimentos.create') }}" class="btn btn-sm btn-golden text-nowrap"><i class="fas fa-plus me-1"></i> Adicionar depoimento</a>
 </div>
 @endif
 
