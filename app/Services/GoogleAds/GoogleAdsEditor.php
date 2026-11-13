@@ -102,7 +102,7 @@ final class GoogleAdsEditor
             'idiomas' => [],
             'negativas' => [],
             'grupos' => [],
-            'recursos' => ['imagens' => [], 'sitelinks' => [], 'frases' => []],
+            'recursos' => ['imagens' => [], 'sitelinks' => [], 'frases' => [], 'empresa' => null],
         ];
 
         $this->lerCriterios($conta, $campanhaId, $lida);
@@ -396,19 +396,28 @@ final class GoogleAdsEditor
     }
 
     /**
-     * Sobe a imagem como recurso da conta e vincula à campanha.
+     * Sobe a imagem como recurso da conta e vincula à campanha (como AD_IMAGE ou BUSINESS_LOGO).
      *
      * A imagem vai em base64 dentro do JSON — a API não tem upload separado. O recurso nasce
      * na conta (vale para outras campanhas) e o vínculo é o que faz a campanha usá-la.
      *
-     * @return array{asset: string, vinculo: string}
+     * @return array{asset: string, vinculo: string, tipo: string}
      */
-    public function vincularImagem(GoogleAdsAccount $conta, array $campanha, string $caminhoAbsoluto, string $nome): array
+    public function vincularImagem(GoogleAdsAccount $conta, array $campanha, string $caminhoAbsoluto, string $nome, string $tipo = 'AUTO'): array
     {
         $conteudo = is_file($caminhoAbsoluto) ? file_get_contents($caminhoAbsoluto) : false;
 
         if ($conteudo === false || $conteudo === '') {
             throw new GoogleAdsFalhou('A imagem não foi encontrada no servidor. Envie o arquivo de novo.');
+        }
+
+        $info = @getimagesize($caminhoAbsoluto);
+        $largura = (int) ($info[0] ?? 0);
+        $altura = (int) ($info[1] ?? 0);
+        $eQuadrada = $largura > 0 && $altura > 0 && abs($largura - $altura) / max($largura, $altura) <= 0.08;
+
+        if ($tipo === 'AUTO') {
+            $tipo = $eQuadrada ? 'BUSINESS_LOGO' : 'AD_IMAGE';
         }
 
         $this->prepararEscrita($conta);
@@ -418,7 +427,40 @@ final class GoogleAdsEditor
             'imageAsset' => ['data' => base64_encode($conteudo)],
         ], 'imagem.criar');
 
-        return ['asset' => $asset, 'vinculo' => $this->vincularAsset($conta, $campanha, $asset, 'AD_IMAGE', 'imagem.vincular')];
+        try {
+            $vinculo = $this->vincularAsset($conta, $campanha, $asset, $tipo, 'imagem.vincular');
+        } catch (GoogleAdsFalhou $e) {
+            if ($tipo === 'AD_IMAGE' && $eQuadrada) {
+                try {
+                    $vinculo = $this->vincularAsset($conta, $campanha, $asset, 'BUSINESS_LOGO', 'imagem.vincular.logo');
+
+                    return ['asset' => $asset, 'vinculo' => $vinculo, 'tipo' => 'BUSINESS_LOGO'];
+                } catch (\Throwable) {
+                    throw $e;
+                }
+            }
+
+            throw $e;
+        }
+
+        return ['asset' => $asset, 'vinculo' => $vinculo, 'tipo' => $tipo];
+    }
+
+    /**
+     * Define ou atualiza o nome da empresa exibido no topo do anúncio de busca (BUSINESS_NAME).
+     *
+     * @return array{asset: string, vinculo: string}
+     */
+    public function vincularNomeEmpresa(GoogleAdsAccount $conta, array $campanha, string $nomeEmpresa): array
+    {
+        $this->prepararEscrita($conta);
+
+        $asset = $this->criarAsset($conta, [
+            'name' => mb_substr('Nome: '.$nomeEmpresa, 0, 128),
+            'textAsset' => ['text' => mb_substr(trim($nomeEmpresa), 0, 25)],
+        ], 'nome_empresa.criar');
+
+        return ['asset' => $asset, 'vinculo' => $this->vincularAsset($conta, $campanha, $asset, 'BUSINESS_NAME', 'nome_empresa.vincular')];
     }
 
     /**
@@ -699,22 +741,29 @@ final class GoogleAdsEditor
 
     private function lerRecursos(GoogleAdsAccount $conta, string $campanhaId, array &$lida): void
     {
-        foreach ($this->consultar($conta, "SELECT campaign.id, campaign_asset.resource_name, campaign_asset.field_type, campaign_asset.status, asset.id, asset.name, asset.final_urls, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels, asset.sitelink_asset.link_text, asset.sitelink_asset.description1, asset.sitelink_asset.description2, asset.callout_asset.callout_text FROM campaign_asset WHERE campaign.id = {$campanhaId} AND campaign_asset.field_type IN ('AD_IMAGE', 'SITELINK', 'CALLOUT') AND campaign_asset.status != 'REMOVED'", 'recursos.ler') as $linha) {
+        $gaql = "SELECT campaign.id, campaign_asset.resource_name, campaign_asset.field_type, campaign_asset.status, asset.id, asset.name, asset.final_urls, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels, asset.sitelink_asset.link_text, asset.sitelink_asset.description1, asset.sitelink_asset.description2, asset.callout_asset.callout_text, asset.text_asset.text FROM campaign_asset WHERE campaign.id = {$campanhaId} AND campaign_asset.field_type IN ('AD_IMAGE', 'BUSINESS_LOGO', 'LOGO', 'LANDSCAPE_LOGO', 'SITELINK', 'CALLOUT', 'BUSINESS_NAME') AND campaign_asset.status != 'REMOVED'";
+
+        foreach ($this->consultar($conta, $gaql, 'recursos.ler') as $linha) {
             $vinculo = (array) ($linha['campaignAsset'] ?? []);
             $asset = (array) ($linha['asset'] ?? []);
             $base = [
                 'vinculo' => (string) ($vinculo['resourceName'] ?? ''),
                 'asset_id' => (string) ($asset['id'] ?? ''),
                 'status' => (string) ($vinculo['status'] ?? ''),
+                'campo' => (string) ($vinculo['fieldType'] ?? ''),
             ];
 
             switch ((string) ($vinculo['fieldType'] ?? '')) {
                 case 'AD_IMAGE':
+                case 'BUSINESS_LOGO':
+                case 'LOGO':
+                case 'LANDSCAPE_LOGO':
                     $lida['recursos']['imagens'][] = $base + [
                         'nome' => (string) ($asset['name'] ?? ''),
                         'url' => (string) data_get($asset, 'imageAsset.fullSize.url', ''),
                         'largura' => (int) data_get($asset, 'imageAsset.fullSize.widthPixels', 0),
                         'altura' => (int) data_get($asset, 'imageAsset.fullSize.heightPixels', 0),
+                        'tipo_rotulo' => in_array($vinculo['fieldType'], ['BUSINESS_LOGO', 'LOGO', 'LANDSCAPE_LOGO'], true) ? 'Logotipo' : 'Imagem de anúncio',
                     ];
                     break;
                 case 'SITELINK':
@@ -728,6 +777,11 @@ final class GoogleAdsEditor
                 case 'CALLOUT':
                     $lida['recursos']['frases'][] = $base + [
                         'texto' => (string) data_get($asset, 'calloutAsset.calloutText', ''),
+                    ];
+                    break;
+                case 'BUSINESS_NAME':
+                    $lida['recursos']['empresa'] = $base + [
+                        'nome' => (string) data_get($asset, 'textAsset.text', ''),
                     ];
                     break;
             }

@@ -358,6 +358,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
                     ->whereNumber('grupo')->name('grupos.remover');
                 Route::get('/recursos', [GoogleAdsCampanhaController::class, 'recursos'])->name('recursos');
                 Route::post('/recursos/imagem', [GoogleAdsCampanhaController::class, 'vincularImagem'])->name('recursos.imagem');
+                Route::post('/recursos/nome-empresa', [GoogleAdsCampanhaController::class, 'vincularNomeEmpresa'])->name('recursos.nome-empresa');
                 Route::post('/recursos/sitelink', [GoogleAdsCampanhaController::class, 'vincularSitelink'])->name('recursos.sitelink');
                 Route::post('/recursos/frase', [GoogleAdsCampanhaController::class, 'vincularFrase'])->name('recursos.frase');
                 Route::delete('/recursos', [GoogleAdsCampanhaController::class, 'desvincularRecurso'])->name('recursos.remover');

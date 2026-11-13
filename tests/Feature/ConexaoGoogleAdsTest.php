@@ -646,12 +646,106 @@ class ConexaoGoogleAdsTest extends TestCase
         ]);
 
         $editor = app(GoogleAdsEditor::class);
-        $res = $editor->vincularImagem($conta, $campanha, $tempFile, 'Logo');
+        $res = $editor->vincularImagem($conta, $campanha, $tempFile, 'Logo', 'AD_IMAGE');
 
         $this->assertSame('customers/1234567890/assets/999', $res['asset']);
         $this->assertSame('customers/1234567890/campaignAssets/24456385340~999~AD_IMAGE', $res['vinculo']);
 
         @unlink($tempFile);
+    }
+
+    public function test_vincular_imagem_com_tipo_business_logo_usa_field_type_business_logo(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'img');
+        file_put_contents($tempFile, 'fake-image-bytes');
+
+        $campanha = [
+            'id' => '24456385340',
+            'resource' => 'customers/1234567890/campaigns/24456385340',
+        ];
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/assets:mutate' => Http::response([
+                'results' => [
+                    ['resourceName' => 'customers/1234567890/assets/888'],
+                ],
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/campaignAssets:mutate' => function (Request $request) {
+                $payload = $request->data();
+                $fieldType = data_get($payload, 'operations.0.create.fieldType');
+                if ($fieldType !== 'BUSINESS_LOGO') {
+                    return Http::response(['error' => 'UNSUPPORTED_FIELD_TYPE'], 400);
+                }
+
+                return Http::response([
+                    'results' => [
+                        ['resourceName' => 'customers/1234567890/campaignAssets/24456385340~888~BUSINESS_LOGO'],
+                    ],
+                ]);
+            },
+        ]);
+
+        $editor = app(GoogleAdsEditor::class);
+        $res = $editor->vincularImagem($conta, $campanha, $tempFile, 'Logo', 'BUSINESS_LOGO');
+
+        $this->assertSame('customers/1234567890/assets/888', $res['asset']);
+        $this->assertSame('customers/1234567890/campaignAssets/24456385340~888~BUSINESS_LOGO', $res['vinculo']);
+        $this->assertSame('BUSINESS_LOGO', $res['tipo']);
+
+        @unlink($tempFile);
+    }
+
+    public function test_vincular_nome_empresa_usa_field_type_business_name(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $campanha = [
+            'id' => '24456385340',
+            'resource' => 'customers/1234567890/campaigns/24456385340',
+        ];
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/assets:mutate' => Http::response([
+                'results' => [
+                    ['resourceName' => 'customers/1234567890/assets/777'],
+                ],
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/campaignAssets:mutate' => function (Request $request) {
+                $payload = $request->data();
+                $fieldType = data_get($payload, 'operations.0.create.fieldType');
+                if ($fieldType !== 'BUSINESS_NAME') {
+                    return Http::response(['error' => 'UNSUPPORTED_FIELD_TYPE'], 400);
+                }
+
+                return Http::response([
+                    'results' => [
+                        ['resourceName' => 'customers/1234567890/campaignAssets/24456385340~777~BUSINESS_NAME'],
+                    ],
+                ]);
+            },
+        ]);
+
+        $editor = app(GoogleAdsEditor::class);
+        $res = $editor->vincularNomeEmpresa($conta, $campanha, 'Golden Rastreamento');
+
+        $this->assertSame('customers/1234567890/assets/777', $res['asset']);
+        $this->assertSame('customers/1234567890/campaignAssets/24456385340~777~BUSINESS_NAME', $res['vinculo']);
     }
 
     public function test_vincular_imagem_traduz_erro_unsupported_field_type_do_google_ads(): void

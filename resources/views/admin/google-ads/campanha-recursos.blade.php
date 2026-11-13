@@ -36,21 +36,22 @@
 @section('content')
 @php
     $endereco = ['campanha' => $campanha['id'], 'conta' => $conta->id];
-    $recursos = $campanha['recursos'] ?? ['imagens' => [], 'sitelinks' => [], 'frases' => []];
+    $recursos = $campanha['recursos'] ?? ['imagens' => [], 'sitelinks' => [], 'frases' => [], 'empresa' => null];
     $imagens = $recursos['imagens'] ?? [];
     $sitelinks = $recursos['sitelinks'] ?? [];
     $frases = $recursos['frases'] ?? [];
+    $empresa = $recursos['empresa'] ?? null;
 @endphp
 
 <div class="row g-3">
     <div class="col-lg-8">
         {{-- SEÇÃO 1: IMAGENS --}}
         <x-admin.card title="Imagens vinculadas" icon="fa-image"
-            descricao="Imagens exibidas ao lado do anúncio nas buscas móveis e computadores.">
+            descricao="Imagens e logotipos exibidos junto ao anúncio nas buscas móveis e computadores.">
             <div class="alert alert-info d-flex align-items-start gap-2 mb-3 py-2 px-3 small border-0 bg-info-subtle text-info-emphasis">
                 <i class="fas fa-info-circle mt-1 flex-shrink-0"></i>
                 <div>
-                    <strong>Requisito do Google Ads:</strong> O Google só permite vincular recursos de imagem (extensões <code>AD_IMAGE</code>) em contas com mais de 60 dias de criação e histórico recente de veiculação em campanhas de pesquisa. Em contas recentes, use <strong>Sitelinks</strong> e <strong>Frases de destaque</strong> logo abaixo, liberados de imediato.
+                    <strong>Recursos Visuais no Google Ads:</strong> O Google Ads libera <strong>Logotipos da Empresa (1:1 quadrado)</strong> de imediato para qualquer conta ativa. Já as <strong>Extensões de Imagem de Anúncio (AD_IMAGE)</strong> exigem que a conta tenha mais de 60 dias de criação e histórico de veiculação em pesquisas.
                 </div>
             </div>
 
@@ -74,9 +75,14 @@
                                                 {{ $imagem['largura'] }} × {{ $imagem['altura'] }} px
                                             @endif
                                         </div>
-                                        @if ($imagem['status'])
-                                            <span class="badge bg-secondary-subtle text-secondary small py-0 px-1">{{ $imagem['status'] }}</span>
-                                        @endif
+                                        <div class="d-flex align-items-center gap-1 mt-1">
+                                            @if ($imagem['tipo_rotulo'] ?? '')
+                                                <span class="badge bg-primary-subtle text-primary small py-0 px-1">{{ $imagem['tipo_rotulo'] }}</span>
+                                            @endif
+                                            @if ($imagem['status'])
+                                                <span class="badge bg-secondary-subtle text-secondary small py-0 px-1">{{ $imagem['status'] }}</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                                 <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.remover', $endereco) }}"
@@ -93,28 +99,34 @@
                     @endforeach
                 </div>
             @else
-                <p class="small text-secondary mb-3">Nenhuma imagem vinculada a esta campanha no momento.</p>
+                <p class="small text-secondary mb-3">Nenhuma imagem ou logotipo vinculado a esta campanha no momento.</p>
             @endif
 
             <div class="border-top pt-3">
-                <h6 class="fw-semibold mb-2 small"><i class="fas fa-plus me-1 text-golden"></i> Vincular nova imagem</h6>
+                <h6 class="fw-semibold mb-2 small"><i class="fas fa-plus me-1 text-golden"></i> Vincular nova imagem ou logotipo</h6>
                 <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.imagem', $endereco) }}">
                     @csrf
                     <div class="row g-3">
-                        <div class="col-12 col-md-8">
+                        <div class="col-12 col-md-7">
                             @include('partials.upload', [
                                 'campo' => 'google_ads_imagem',
                                 'name' => 'imagem',
                                 'valor' => old('imagem'),
-                                'dica' => 'Proporção recomendada 1,91:1 (ex: 1200×628 px) ou quadrada 1:1 (ex: 1200×1200 px). JPG ou PNG.',
+                                'dica' => 'Proporção recomendada: 1:1 quadrada (ex: 512×512 ou 1200×1200 px) para Logotipo (liberado) ou 1,91:1 (ex: 1200×628 px) para Extensão de Anúncio.',
                             ])
                         </div>
-                        <div class="col-12 col-md-4 d-flex flex-column justify-content-between">
+                        <div class="col-12 col-md-5 d-flex flex-column justify-content-between">
                             <div>
+                                <label class="form-label small" for="tipo-imagem">Tipo do recurso</label>
+                                <select id="tipo-imagem" name="tipo" class="form-select form-select-sm mb-2">
+                                    <option value="AUTO" selected>Automático (identificar proporção)</option>
+                                    <option value="BUSINESS_LOGO">Logotipo da Empresa (1:1 quadrado — Liberado)</option>
+                                    <option value="AD_IMAGE">Extensão de Anúncio (1,91:1 ou 1:1 — 60 dias)</option>
+                                </select>
                                 <label class="form-label small" for="nome-imagem">Nome do recurso <span class="text-secondary">(opcional)</span></label>
                                 <input type="text" id="nome-imagem" name="nome" class="form-control form-control-sm"
-                                    maxlength="128" placeholder="Ex: Rastreamento Veicular Destaque" value="{{ old('nome') }}">
-                                <div class="form-text small">Ajuda a identificar a imagem na conta.</div>
+                                    maxlength="128" placeholder="Ex: Logotipo Golden Rastreamento" value="{{ old('nome') }}">
+                                <div class="form-text small">Ajuda a identificar o arquivo na biblioteca.</div>
                             </div>
                             <div class="mt-3">
                                 <button class="btn btn-golden btn-sm w-100">
@@ -250,6 +262,41 @@
     </div>
 
     <div class="col-lg-4">
+        <x-admin.card title="Nome da Empresa (no anúncio)" icon="fa-id-badge" class="mb-3"
+            descricao="Nome da sua marca exibido no topo do anúncio de pesquisa no Google.">
+            @if ($empresa)
+                <div class="recurso-item d-flex align-items-center justify-content-between gap-2 py-2 px-3 mb-3">
+                    <div>
+                        <div class="fw-semibold small text-primary">{{ $empresa['nome'] }}</div>
+                        <span class="badge bg-success-subtle text-success small py-0 px-1 mt-1">{{ $empresa['status'] }}</span>
+                    </div>
+                    <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.remover', $endereco) }}"
+                        data-confirmar="Desvincular o nome da empresa desta campanha?">
+                        @csrf
+                        @method('DELETE')
+                        <input type="hidden" name="vinculo" value="{{ $empresa['vinculo'] }}">
+                        <button class="btn btn-outline-danger btn-sm" title="Desvincular">
+                            <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            @else
+                <p class="small text-secondary mb-3">Nenhum nome de empresa vinculado diretamente a esta campanha.</p>
+            @endif
+
+            <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.nome-empresa', $endereco) }}">
+                @csrf
+                <div class="mb-2">
+                    <label class="form-label small" for="ne-nome">Nome da empresa (máx. 25 carac.)</label>
+                    <input type="text" id="ne-nome" name="nome" class="form-control form-control-sm"
+                        maxlength="25" required placeholder="Ex: Golden Rastreamento" value="{{ old('nome', $empresa['nome'] ?? 'Golden Rastreamento') }}">
+                </div>
+                <button class="btn btn-golden btn-sm w-100">
+                    <i class="fas fa-save me-1"></i> {{ $empresa ? 'Atualizar nome da marca' : 'Vincular nome da marca' }}
+                </button>
+            </form>
+        </x-admin.card>
+
         <x-admin.card title="Sobre os recursos" icon="fa-circle-info"
             descricao="Como o Google Ads utiliza recursos nas campanhas.">
             <ul class="small text-secondary ps-3 mb-0">

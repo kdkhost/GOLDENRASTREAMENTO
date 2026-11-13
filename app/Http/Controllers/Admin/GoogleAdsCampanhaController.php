@@ -394,6 +394,7 @@ class GoogleAdsCampanhaController extends Controller
         $dados = $request->validate([
             'imagem' => ['required', 'string', 'max:255'],
             'nome' => ['nullable', 'string', 'max:128'],
+            'tipo' => ['nullable', 'string', 'in:AUTO,BUSINESS_LOGO,AD_IMAGE'],
         ]);
 
         if (! Envio::caminhoConfere($dados['imagem'], 'google_ads_imagem')) {
@@ -401,9 +402,10 @@ class GoogleAdsCampanhaController extends Controller
         }
 
         $nome = trim((string) ($dados['nome'] ?? '')) ?: pathinfo((string) $dados['imagem'], PATHINFO_FILENAME);
+        $tipo = (string) ($dados['tipo'] ?? 'AUTO');
 
         try {
-            $resultado = $this->editor->vincularImagem($conta, $lida, Storage::disk('public')->path($dados['imagem']), $nome);
+            $resultado = $this->editor->vincularImagem($conta, $lida, Storage::disk('public')->path($dados['imagem']), $nome, $tipo);
         } catch (Throwable $e) {
             return $this->erro($e, 'vincular a imagem');
         }
@@ -411,14 +413,44 @@ class GoogleAdsCampanhaController extends Controller
         // O Google já guarda a imagem; a cópia local só ocuparia disco.
         Envio::remover($dados['imagem'], 'google_ads_imagem');
 
+        $tipoFinal = $resultado['tipo'] ?? 'AD_IMAGE';
+        $tipoRotulo = $tipoFinal === 'BUSINESS_LOGO' ? 'Logotipo' : 'Imagem';
+
         Activity::log(
             'google_ads_recurso_vinculado',
-            "Imagem \"{$nome}\" vinculada à campanha {$lida['nome']} na conta {$conta->numeroConta()}.",
+            "{$tipoRotulo} \"{$nome}\" vinculado à campanha {$lida['nome']} na conta {$conta->numeroConta()}.",
             $conta,
-            ['campaign_id' => $lida['id'], 'tipo' => 'AD_IMAGE', 'asset' => $resultado['asset']],
+            ['campaign_id' => $lida['id'], 'tipo' => $tipoFinal, 'asset' => $resultado['asset']],
         );
 
-        return $this->paraRecursos($conta, $lida, 'success', 'Imagem vinculada à campanha. O Google revisa o recurso antes de exibi-lo.');
+        return $this->paraRecursos($conta, $lida, 'success', "{$tipoRotulo} vinculado à campanha com sucesso! O Google revisa o recurso antes de exibi-lo.");
+    }
+
+    public function vincularNomeEmpresa(Request $request, string $campanha): RedirectResponse
+    {
+        $aberta = $this->abrir($request, $campanha);
+
+        if ($aberta instanceof RedirectResponse) {
+            return $aberta;
+        }
+
+        [$conta, $lida] = $aberta;
+        $dados = $request->validate(['nome' => ['required', 'string', 'max:25']]);
+
+        try {
+            $resultado = $this->editor->vincularNomeEmpresa($conta, $lida, $dados['nome']);
+        } catch (Throwable $e) {
+            return $this->erro($e, 'vincular o nome da empresa');
+        }
+
+        Activity::log(
+            'google_ads_recurso_vinculado',
+            "Nome da empresa \"{$dados['nome']}\" vinculado à campanha {$lida['nome']} na conta {$conta->numeroConta()}.",
+            $conta,
+            ['campaign_id' => $lida['id'], 'tipo' => 'BUSINESS_NAME', 'asset' => $resultado['asset']],
+        );
+
+        return $this->paraRecursos($conta, $lida, 'success', 'Nome da empresa "'.$dados['nome'].'" vinculado à campanha.');
     }
 
     public function vincularSitelink(Request $request, string $campanha): RedirectResponse
