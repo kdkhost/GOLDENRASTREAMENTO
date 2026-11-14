@@ -37,7 +37,7 @@ section{padding:84px 0}
 .center .lead-sub{margin-inline:auto}
 
 /* Botões */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:.98rem;padding:14px 26px;border-radius:999px;border:1.5px solid transparent;cursor:pointer;transition:.2s transform,.2s box-shadow,.2s background;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:.98rem;padding:14px 26px;border-radius:999px;border:1.5px solid transparent;cursor:pointer;transition:.2s transform,.2s box-shadow,.2s background;white-space:nowrap;box-sizing:border-box;max-width:100%}
 .btn:hover{transform:translateY(-2px)}
 .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#241a06;box-shadow:0 12px 26px -12px rgba(224,163,62,.7)}
 .btn-gold:hover{box-shadow:0 16px 30px -12px rgba(224,163,62,.85)}
@@ -461,11 +461,12 @@ body.acesso-aberto{overflow:hidden}
 /* Formulário de lead */
 .lead-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
 .form-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:34px;box-shadow:var(--shadow)}
-.field{margin-bottom:16px}
+.field{margin-bottom:16px;min-width:0}
 .field label{display:block;font-weight:600;font-size:.88rem;margin-bottom:7px;color:var(--ink)}
-.field input,.field select,.field textarea{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:11px;font:inherit;color:var(--ink);background:#fff;transition:.15s}
+.field input,.field select,.field textarea{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:11px;font:inherit;color:var(--ink);background:#fff;transition:.15s;box-sizing:border-box}
+.field input:not([type=radio]):not([type=checkbox]),.field select{min-height:48px}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px rgba(224,163,62,.14)}
-.row-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.row-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
 .field-title{display:block;font-weight:600;font-size:.88rem;margin-bottom:7px;color:var(--ink)}
 .field input[type=radio],.field input[type=checkbox]{width:auto;flex:none;accent-color:var(--gold)}
 .form-err{display:block;color:#d06a5f;font-size:.8rem;margin-top:6px}

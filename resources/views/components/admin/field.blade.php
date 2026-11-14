@@ -31,16 +31,15 @@
 @if($type === 'icon' || $type === 'icon-picker')
     <x-admin.icon-picker :name="$name" :label="$label" :value="$atual" :col="$col" :required="$required" :opcional="$opcional" :hint="$hint" :ajuda="$ajuda" />
 @else
-<div class="{{ $col }}">
-    {{-- O rótulo e o ícone na mesma linha; a dica embaixo. Dentro do `<label>` a dica empurrava o
-         ícone para a última linha do bloco, e ele ficava solto em campo com explicação. --}}
-    <div class="{{ $gaveta ? 'ajuda-rotulo' : '' }}">
+<div class="{{ $col }} admin-field-col">
+    {{-- O rótulo e o ícone de ajuda na mesma linha; a dica vai abaixo do controle para
+         manter todos os campos da mesma linha alinhados horizontalmente. --}}
+    <div class="{{ $gaveta ? 'ajuda-rotulo' : 'admin-label-row' }}">
         <label class="form-label" for="{{ $id }}">
             {{ $label }}
             @if($opcional)<span class="form-hint">(opcional)</span>@endif
         </label>
         @if($gaveta)<x-admin.ajuda :gaveta="$gaveta" />@endif
-        @if($hint)<span class="form-hint d-block">{{ $hint }}</span>@endif
     </div>
 
     @if($travado)
@@ -72,6 +71,7 @@
             @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required && !$travado) required @endif @if($travado) disabled @endif {!! $extra !!}>
     @endif
 
+    @if($hint)<div class="form-hint mt-1">{{ $hint }}</div>@endif
     @error($chave)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 </div>
 @endif
