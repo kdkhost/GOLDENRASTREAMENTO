@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $dados['title'] ?? 'Erro' }} | Golden Rastreamento</title>
     <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
+    @include('partials.icones')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         :root {
@@ -233,8 +234,14 @@
         </a>
 
         @if(!empty($dados['icon']))
+            @php
+                $iconeRaw = trim($dados['icon']);
+                if (!str_contains($iconeRaw, 'fa-solid') && !str_contains($iconeRaw, 'fa-regular') && !str_contains($iconeRaw, 'fa-brands') && !str_contains($iconeRaw, 'fas') && !str_contains($iconeRaw, 'far') && !str_contains($iconeRaw, 'fab')) {
+                    $iconeRaw = 'fa-solid ' . (str_starts_with($iconeRaw, 'fa-') ? $iconeRaw : 'fa-' . $iconeRaw);
+                }
+            @endphp
             <div class="icon-circle">
-                <i class="fas {{ $dados['icon'] }}"></i>
+                <i class="{{ $iconeRaw }}"></i>
             </div>
         @endif
 

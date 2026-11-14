@@ -63,8 +63,8 @@
                 <div class="row g-3">
                     <x-admin.field name="dica" label="Dica ao passar o mouse" :value="$assistente->dica" col="col-12 col-md-6" maxlength="80" :opcional="true"
                         placeholder="Falar com :nome" hint="Use :nome para o nome da ficha." />
-                    <x-admin.field name="icone" type="select" label="Ícone sem foto" :value="$assistente->icone" :options="$icones" col="col-12 col-md-6" empty="Balões de conversa" :opcional="true"
-                        hint="Só aparece quando não há rosto enviado." />
+                    <x-admin.field name="icone" type="icon" label="Ícone sem foto" :value="$assistente->icone" col="col-12 col-md-6" :opcional="true"
+                        hint="Só aparece quando não há rosto enviado. Selecione pelo ícone." />
                     <x-admin.field name="status" label="Selo de status" :value="$assistente->status" col="col-12 col-md-6" maxlength="60" :opcional="true"
                         placeholder="Online agora" />
                     <x-admin.field name="placeholder" label="Texto do campo de mensagem" :value="$assistente->placeholder" col="col-12 col-md-6" maxlength="120" :opcional="true"

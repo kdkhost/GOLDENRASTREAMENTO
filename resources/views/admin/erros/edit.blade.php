@@ -62,15 +62,10 @@
                 </div>
 
                 <div class="row g-3 mb-4">
-                    <div class="col-12 col-md-6">
-                        <label for="campo-icon" class="form-label fw-bold">Ícone Central (FontAwesome)</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas {{ old('icon', $registro->icon ?? $dados['icon']) }}"></i></span>
-                            <input type="text" id="campo-icon" name="icon" class="form-control"
-                                value="{{ old('icon', $registro->icon ?? $dados['icon']) }}" required maxlength="60">
-                        </div>
-                        <div class="form-hint">Ex: <code>fa-compass</code>, <code>fa-shield-halved</code>, <code>fa-server</code>, <code>fa-lock</code></div>
-                    </div>
+                    <x-admin.icon-picker name="icon" label="Ícone Central da Página de Erro"
+                        :value="old('icon', $registro->icon ?? $dados['icon'])" col="col-12 col-md-6" required
+                        hint="Selecione visualmente pelo ícone. Nunca é necessário digitar o código." />
+
                     <div class="col-12 col-md-6">
                         <label class="form-label fw-bold d-block">Status da Personalização</label>
                         <div class="form-check form-switch mt-2">

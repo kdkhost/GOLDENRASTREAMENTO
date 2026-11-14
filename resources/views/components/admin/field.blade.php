@@ -28,6 +28,9 @@
     // por exemplo). Sem entrada no config, o ícone não existe e o rótulo fica como sempre esteve.
     $gaveta = \App\Support\GuiaConfiguracao::gaveta($ajuda ?? $name, $label);
 @endphp
+@if($type === 'icon' || $type === 'icon-picker')
+    <x-admin.icon-picker :name="$name" :label="$label" :value="$atual" :col="$col" :required="$required" :opcional="$opcional" :hint="$hint" :ajuda="$ajuda" />
+@else
 <div class="{{ $col }}">
     {{-- O rótulo e o ícone na mesma linha; a dica embaixo. Dentro do `<label>` a dica empurrava o
          ícone para a última linha do bloco, e ele ficava solto em campo com explicação. --}}
@@ -71,3 +74,4 @@
 
     @error($chave)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 </div>
+@endif

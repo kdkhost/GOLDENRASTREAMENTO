@@ -144,8 +144,8 @@
                                 <x-admin.field name="acesso_servidor_2_url" type="url" label="Endereço do servidor 2" :value="$settings['acesso_servidor_2_url'] ?? config('golden.acessos.servidor_2')" col="col-12 col-md-6" maxlength="255" :opcional="true" placeholder="http://203.0.113.10:8082/" ajuda="acesso_servidor_url" />
                                 <x-admin.field name="acesso_servidor_1_titulo" label="Nome do servidor 1" :value="$settings['acesso_servidor_1_titulo'] ?? $textosAcesso['servidor_1_titulo']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Servidor 1" hint="É o que o cliente lê no modal — o endereço fica só no link." />
                                 <x-admin.field name="acesso_servidor_2_titulo" label="Nome do servidor 2" :value="$settings['acesso_servidor_2_titulo'] ?? $textosAcesso['servidor_2_titulo']" col="col-12 col-md-6" maxlength="60" :opcional="true" placeholder="Servidor 2" />
-                                <x-admin.field name="acesso_servidor_1_icone" type="select" label="Ícone do servidor 1" :value="$settings['acesso_servidor_1_icone'] ?? $textosAcesso['servidor_1_icone']" :options="$iconesAcesso" col="col-12 col-md-6" empty="Ícone padrão" :opcional="true" />
-                                <x-admin.field name="acesso_servidor_2_icone" type="select" label="Ícone do servidor 2" :value="$settings['acesso_servidor_2_icone'] ?? $textosAcesso['servidor_2_icone']" :options="$iconesAcesso" col="col-12 col-md-6" empty="Ícone padrão" :opcional="true" />
+                                <x-admin.field name="acesso_servidor_1_icone" type="icon" label="Ícone do servidor 1" :value="$settings['acesso_servidor_1_icone'] ?? $textosAcesso['servidor_1_icone']" col="col-12 col-md-6" :opcional="true" hint="Selecione visualmente pelo ícone" />
+                                <x-admin.field name="acesso_servidor_2_icone" type="icon" label="Ícone do servidor 2" :value="$settings['acesso_servidor_2_icone'] ?? $textosAcesso['servidor_2_icone']" col="col-12 col-md-6" :opcional="true" hint="Selecione visualmente pelo ícone" />
                             </div>
                         </x-admin.card>
                     </div>
@@ -332,7 +332,7 @@
                                 <div class="row g-3">
                                     <x-admin.field name="{{ $chave }}_nome" label="Nome do atendente" :value="$settings[$chave.'_nome'] ?? ''" col="col-12 col-md-6" maxlength="60" :opcional="true" :placeholder="$canal['nome']" />
                                     <x-admin.field name="{{ $chave }}_desc" label="Descrição" :value="$settings[$chave.'_desc'] ?? ''" col="col-12 col-md-6" maxlength="120" :opcional="true" :placeholder="$canal['desc']" />
-                                    <x-admin.field name="{{ $chave }}_icone" type="select" label="Ícone" :value="$settings[$chave.'_icone'] ?? ''" :options="config('golden.whatsapp_box.icones')" col="col-12 col-md-6" empty="Ícone padrão do canal" :opcional="true" />
+                                    <x-admin.field name="{{ $chave }}_icone" type="icon" label="Ícone do canal" :value="$settings[$chave.'_icone'] ?? ''" col="col-12 col-md-6" :opcional="true" hint="Selecione visualmente pelo ícone" />
                                     <x-admin.field name="{{ $chave }}_numero" label="Número do WhatsApp" :value="$settings[$chave.'_numero'] ?? ''" col="col-12 col-md-6" maxlength="20" :opcional="true" placeholder="só dígitos" hint="Vazio, usa o principal." />
                                     <x-admin.field name="{{ $chave }}_msg" type="textarea" :rows="2" label="Mensagem pronta no WhatsApp" :value="$settings[$chave.'_msg'] ?? ''" col="col-12" maxlength="300" :opcional="true" :placeholder="$canal['msg']" />
                                 </div>

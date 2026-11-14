@@ -92,7 +92,7 @@ class CabecalhosDeSeguranca
         return [
             'script' => $cdn.' '.$tags.' '.$google.' https://www.youtube.com https://www.youtube-nocookie.com',
             'estilo' => $cdn.' '.$google,
-            'fonte' => $google.' https://cdn.jsdelivr.net',
+            'fonte' => $google.' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com',
             'imagem' => 'https://i.ytimg.com https://img.youtube.com',
             'conexao' => $tags.' https://region1.google-analytics.com',
             'quadro' => 'https://www.youtube.com https://www.youtube-nocookie.com https://connect.facebook.net',
