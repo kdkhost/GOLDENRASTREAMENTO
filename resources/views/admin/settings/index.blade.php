@@ -89,6 +89,13 @@
                     <i class="fas fa-key" aria-hidden="true"></i><span>Chaves de integração</span>
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" type="button" role="tab" id="aba-preloader-botao"
+                    data-bs-toggle="tab" data-bs-target="#aba-preloader" data-aba="preloader"
+                    aria-controls="aba-preloader" aria-selected="false">
+                    <i class="fas fa-spinner" aria-hidden="true"></i><span>Preloader</span>
+                </button>
+            </li>
         </ul>
     </div>
 
@@ -564,6 +571,79 @@
                 </dl>
                 <p class="small text-secondary mb-0 mt-2">Ficam no <code>.env</code> só o que é deste servidor e não decisão de ninguém: a ligação com o banco (<code>DB_CONNECTION=mysql</code>, <code>php artisan migrate --force</code> — as migrations rodam nos dois bancos), a chave da aplicação e o transporte do Google Ads (<code>GOOGLE_ADS_TRANSPORT</code>, <code>GOOGLE_ADS_CACHE_STORE</code>), que dependem do que a máquina tem.</p>
             </x-admin.card>
+        </div>
+
+        {{-- 8. Preloader personalizado (Site Público e Painel Admin) --}}
+        <div class="tab-pane fade" id="aba-preloader" data-aba-painel="preloader" role="tabpanel" aria-labelledby="aba-preloader-botao" tabindex="0">
+            @php
+                $preloaderSite = ($settings['preloader_site_ativo'] ?? '1') === '1';
+                $preloaderAdmin = ($settings['preloader_admin_ativo'] ?? '1') === '1';
+                $preloaderEstilo = $settings['preloader_estilo'] ?? 'radar';
+                $preloaderTitulo = $settings['preloader_titulo'] ?? ($golden['marca']['nome'] ?? 'Golden Rastreamento');
+                $preloaderSubtitulo = $settings['preloader_subtitulo'] ?? 'Proteção e monitoramento 24h';
+                $preloaderCor = $settings['preloader_cor'] ?? '#d4a017';
+            @endphp
+            <form method="POST" action="{{ route('admin.settings.update') }}" data-atualiza=".app-content">
+                @csrf
+                <input type="hidden" name="_aba" value="preloader">
+                <x-admin.card title="Preloader Personalizado Golden" icon="fa-spinner"
+                    descricao="Animação de carregamento exibida na abertura das páginas. Ative ou desative individualmente para o site público e para o painel administrativo.">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded-3 p-3 h-100">
+                                <div class="form-check form-switch mb-1">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="preloader_site_ativo" name="preloader_site_ativo" value="1" @checked($preloaderSite)>
+                                    <label class="form-check-label fw-semibold" for="preloader_site_ativo">Ativar no Site Público</label>
+                                </div>
+                                <div class="form-hint mb-0">Exibe o preloader para visitantes em todas as páginas públicas e loja.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded-3 p-3 h-100">
+                                <div class="form-check form-switch mb-1">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="preloader_admin_ativo" name="preloader_admin_ativo" value="1" @checked($preloaderAdmin)>
+                                    <label class="form-check-label fw-semibold" for="preloader_admin_ativo">Ativar no Painel Admin</label>
+                                </div>
+                                <div class="form-hint mb-0">Exibe o preloader ao abrir ou recarregar telas administrativas.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label class="form-label" for="preloader_estilo">Estilo da animação</label>
+                            <select class="form-select" id="preloader_estilo" name="preloader_estilo">
+                                <option value="radar" @selected($preloaderEstilo === 'radar')>Radar GPS Golden</option>
+                                <option value="orbita" @selected($preloaderEstilo === 'orbita')>Órbita Dourada</option>
+                                <option value="pulso" @selected($preloaderEstilo === 'pulso')>Pulso Minimalista</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label class="form-label" for="preloader_titulo">Título exibido</label>
+                            <input type="text" class="form-control" id="preloader_titulo" name="preloader_titulo" value="{{ $preloaderTitulo }}" maxlength="80">
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label class="form-label" for="preloader_cor">Cor de destaque</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" class="form-control form-control-color" id="preloader_cor" name="preloader_cor" value="{{ $preloaderCor }}">
+                                <span class="small text-secondary font-monospace">{{ $preloaderCor }}</span>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label" for="preloader_subtitulo">Subtítulo</label>
+                            <input type="text" class="form-control" id="preloader_subtitulo" name="preloader_subtitulo" value="{{ $preloaderSubtitulo }}" maxlength="120" placeholder="Proteção e monitoramento 24h">
+                        </div>
+
+                        <div class="col-12 d-flex flex-wrap gap-2 align-items-center pt-2">
+                            <button type="submit" class="btn btn-golden">
+                                <i class="fas fa-save me-1" aria-hidden="true"></i> Salvar preloader
+                            </button>
+                        </div>
+                    </div>
+                </x-admin.card>
+            </form>
         </div>
     </div>
 </div>

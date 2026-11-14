@@ -51,7 +51,7 @@ class SettingController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $aba = (string) $request->input('_aba');
-        $aba = in_array($aba, ['contato', 'acessos', 'medicao'], true) ? $aba : 'contato';
+        $aba = in_array($aba, ['contato', 'acessos', 'medicao', 'preloader'], true) ? $aba : 'contato';
         $contato = $aba === 'contato';
 
         $data = $request->validate([
@@ -89,6 +89,12 @@ class SettingController extends Controller
             'ga_measurement_id' => ['nullable', 'string', 'max:60'],
             'meta_pixel_id' => ['nullable', 'string', 'max:60'],
             'gtm_id' => ['nullable', 'string', 'max:60'],
+            'preloader_site_ativo' => ['nullable', 'boolean'],
+            'preloader_admin_ativo' => ['nullable', 'boolean'],
+            'preloader_estilo' => ['nullable', 'string', 'in:radar,orbita,pulso'],
+            'preloader_titulo' => ['nullable', 'string', 'max:80'],
+            'preloader_subtitulo' => ['nullable', 'string', 'max:120'],
+            'preloader_cor' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ]);
 
         if (isset($data['contato_whatsapp'])) {
@@ -99,6 +105,11 @@ class SettingController extends Controller
             $data['tracking_enabled'] = $request->boolean('tracking_enabled') ? '1' : '0';
         }
 
+        if ($aba === 'preloader') {
+            $data['preloader_site_ativo'] = $request->boolean('preloader_site_ativo') ? '1' : '0';
+            $data['preloader_admin_ativo'] = $request->boolean('preloader_admin_ativo') ? '1' : '0';
+        }
+
         foreach ($data as $chave => $valor) {
             Setting::set($chave, $valor);
         }
@@ -107,6 +118,7 @@ class SettingController extends Controller
             'contato' => 'Contato e endereço',
             'acessos' => 'Acessos do site',
             'medicao' => 'Medição e consentimento',
+            'preloader' => 'Preloader personalizado',
         ];
 
         Activity::log('configuracao_salva', 'Configurações de '.$rotulos[$aba].' atualizadas.');

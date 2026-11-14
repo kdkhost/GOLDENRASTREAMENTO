@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\SyncGoogleAdsMetrics;
+use App\Livewire\GoogleAdsDashboard;
 use App\Livewire\RsaPreview;
 use App\Mail\ContaGoogleAdsDesconectada;
 use App\Models\GoogleAdsAccount;
@@ -655,6 +656,39 @@ class ConexaoGoogleAdsTest extends TestCase
             ->assertRedirect();
 
         Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'assets:mutate'));
+    }
+
+    public function test_dashboard_google_ads_nao_fica_em_loop_infinito_quando_fila_nao_processa(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+            'status' => GoogleAdsAccount::ATIVO,
+        ]);
+
+        Queue::fake();
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/googleAds:search' => Http::response([
+                'results' => [],
+            ]),
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $tela = Livewire::test(GoogleAdsDashboard::class)
+            ->assertSet('tentativasPoll', 0)
+            ->call('verificarSincronizacao')
+            ->assertSet('tentativasPoll', 1)
+            ->call('verificarSincronizacao')
+            ->assertSet('tentativasPoll', 2);
+
+        // Na 2a checagem o componente sincroniza direto e sai do estado de carregamento infinito.
+        $tela->assertDontSee('A métrica destes 30 dias está sendo sincronizada.');
     }
 
     public function test_a_tela_de_recursos_da_campanha_renderiza_com_sucesso(): void

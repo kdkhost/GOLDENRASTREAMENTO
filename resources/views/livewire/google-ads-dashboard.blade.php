@@ -199,16 +199,29 @@
     @endif
 
     @if ($carregando)
-        <div class="card shadow-sm mb-3" wire:poll.3000ms="$refresh">
+        <div class="card shadow-sm mb-3" wire:poll.3000ms="verificarSincronizacao">
             <div class="card-body d-flex align-items-center gap-3 py-4">
                 <span class="spinner-border spinner-border-sm text-tone-gold" aria-hidden="true"></span>
                 <div>
                     <div class="fw-semibold">Carregando…</div>
                     <div class="small text-secondary">
-                        A métrica destes {{ $dias }} dias está sendo sincronizada em segundo plano.
-                        Esta tela se atualiza sozinha assim que os números chegam — nada aqui espera pelo Google.
+                        A métrica destes {{ $dias }} dias está sendo sincronizada.
+                        Se a fila não responder em alguns segundos, a busca é feita automaticamente.
                     </div>
                 </div>
+            </div>
+        </div>
+    @elseif ($sincronizacaoDemorada)
+        <div class="card shadow-sm mb-3 ads-aviso">
+            <div class="card-body d-flex flex-wrap gap-3 align-items-center py-4">
+                <span class="text-tone-amber"><i class="fas fa-clock fa-lg" aria-hidden="true"></i></span>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">A sincronização demorou mais que o esperado</div>
+                    <div class="small text-secondary">
+                        Não houve resposta da fila nem da API dentro do tempo limite. Tente atualizar novamente.
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-golden" wire:click="atualizar">Tentar de novo</button>
             </div>
         </div>
     @endif

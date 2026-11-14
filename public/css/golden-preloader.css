@@ -1,0 +1,159 @@
+/* Golden Rastreamento — Preloader Personalizável (Site Público & Admin) */
+.golden-preloader {
+    --gp-accent: #d4a017;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 42%, #181c24 0%, #0b0d12 72%);
+    color: #f8f9fa;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.42s ease, transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.golden-preloader.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(1.03);
+}
+
+.golden-preloader__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem;
+    max-width: 340px;
+}
+
+.golden-preloader__stage {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.golden-preloader__core {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--gp-accent), color-mix(in srgb, var(--gp-accent) 65%, #ffffff));
+    color: #0b0d12;
+    display: grid;
+    place-items: center;
+    font-size: 1.25rem;
+    box-shadow: 0 0 28px color-mix(in srgb, var(--gp-accent) 45%, transparent);
+    z-index: 2;
+}
+
+/* Estilo 1: Radar GPS */
+.golden-preloader--radar .gp-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid color-mix(in srgb, var(--gp-accent) 55%, transparent);
+    animation: gp-radar-pulse 1.9s cubic-bezier(0.15, 0.65, 0.35, 1) infinite;
+}
+.golden-preloader--radar .gp-ring--2 {
+    animation-delay: 0.65s;
+}
+.golden-preloader--radar .gp-sweep {
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, color-mix(in srgb, var(--gp-accent) 42%, transparent) 0deg, transparent 75deg);
+    animation: gp-spin 1.6s linear infinite;
+}
+
+/* Estilo 2: Órbita Dourada */
+.golden-preloader--orbita .gp-orbit {
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--gp-accent) 18%, transparent);
+    border-top-color: var(--gp-accent);
+    animation: gp-spin 1.15s cubic-bezier(0.55, 0.2, 0.45, 0.8) infinite;
+}
+.golden-preloader--orbita .gp-orbit--inner {
+    inset: 15px;
+    border-top-color: transparent;
+    border-bottom-color: color-mix(in srgb, var(--gp-accent) 75%, #ffffff);
+    animation-direction: reverse;
+    animation-duration: 0.9s;
+}
+
+/* Estilo 3: Pulso Minimalista */
+.golden-preloader--pulso .golden-preloader__core {
+    animation: gp-breathe 1.4s ease-in-out infinite;
+}
+.golden-preloader--pulso .gp-halo {
+    position: absolute;
+    inset: 12px;
+    border-radius: 22px;
+    border: 1.5px solid color-mix(in srgb, var(--gp-accent) 45%, transparent);
+    animation: gp-breathe 1.4s ease-in-out infinite;
+}
+
+.golden-preloader__title {
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+    margin-bottom: 0.25rem;
+}
+
+.golden-preloader__subtitle {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 1rem;
+}
+
+.golden-preloader__bar {
+    width: 148px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.golden-preloader__bar-fill {
+    width: 45%;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, var(--gp-accent), #ffffff, var(--gp-accent), transparent);
+    animation: gp-shimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes gp-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes gp-radar-pulse {
+    0% { transform: scale(0.48); opacity: 0.95; }
+    100% { transform: scale(1.12); opacity: 0; }
+}
+
+@keyframes gp-breathe {
+    0%, 100% { transform: scale(0.95); opacity: 0.85; }
+    50% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes gp-shimmer {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(260%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .golden-preloader,
+    .golden-preloader * {
+        animation: none !important;
+        transition: none !important;
+    }
+}

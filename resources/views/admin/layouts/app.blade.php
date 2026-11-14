@@ -19,10 +19,13 @@
     {{-- A folha do guia também veste a gaveta de ajuda, que existe em toda tela do painel: um
          arquivo só para o passo a passo não ter duas versões de tipografia. --}}
     <link rel="stylesheet" href="{{ asset('css/golden-guia.css') }}?v={{ filemtime(public_path('css/golden-guia.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/golden-preloader.css') }}?v={{ filemtime(public_path('css/golden-preloader.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/golden-tooltips.css') }}?v={{ filemtime(public_path('css/golden-tooltips.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/admin-golden.css') }}?v={{ filemtime(public_path('css/admin-golden.css')) }}">
     @yield('styles')
 </head>
 <body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
+@include('partials.preloader', ['area' => 'admin'])
 <div class="app-wrapper">
 
     {{-- NAVBAR --}}
@@ -123,6 +126,7 @@
 <script src="{{ asset('js/golden-ajuda.js') }}?v={{ filemtime(public_path('js/golden-ajuda.js')) }}"></script>
 <script src="{{ asset('js/admin-notificacoes.js') }}?v={{ filemtime(public_path('js/admin-notificacoes.js')) }}"></script>
 <script src="{{ asset('js/admin-live-search.js') }}?v={{ filemtime(public_path('js/admin-live-search.js')) }}"></script>
+<script src="{{ asset('js/golden-tooltips.js') }}?v={{ filemtime(public_path('js/golden-tooltips.js')) }}"></script>
 @yield('scripts')
 @stack('scripts')
 </body>

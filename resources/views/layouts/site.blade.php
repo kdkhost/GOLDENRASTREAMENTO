@@ -19,6 +19,8 @@
     @include('partials.icones')
     <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/golden-preloader.css') }}?v={{ filemtime(public_path('css/golden-preloader.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/golden-tooltips.css') }}?v={{ filemtime(public_path('css/golden-tooltips.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
     {{-- O assistente é um dos atendentes da caixa do WhatsApp: folha e script só pesam quando
          existe caixa (ou quando ele é o único atendente) e ele atende neste canal. --}}
@@ -61,6 +63,7 @@
     @endif
 </head>
 <body>
+@include('partials.preloader', ['area' => 'site'])
 @if($golden['tracking'] && !empty($golden['gtm_id']))
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $golden['gtm_id'] }}"
@@ -201,6 +204,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 @endif
 <script src="{{ asset('js/golden-site.js') }}?v={{ filemtime(public_path('js/golden-site.js')) }}"></script>
 <script src="{{ asset('js/golden-to-top.js') }}?v={{ filemtime(public_path('js/golden-to-top.js')) }}"></script>
+<script src="{{ asset('js/golden-tooltips.js') }}?v={{ filemtime(public_path('js/golden-tooltips.js')) }}"></script>
 @if($bolha)
 <script src="{{ asset('js/golden-assistente.js') }}?v={{ filemtime(public_path('js/golden-assistente.js')) }}"></script>
 @endif

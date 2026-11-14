@@ -1,0 +1,25 @@
+/* Golden Rastreamento — Tooltips modernos em substituição ao title nativo do navegador */
+.golden-tooltip {
+    position: fixed;
+    z-index: 10900;
+    max-width: 260px;
+    padding: 0.42rem 0.7rem;
+    border-radius: 8px;
+    background: rgba(17, 19, 24, 0.96);
+    color: #f8f9fa;
+    border: 1px solid rgba(212, 160, 23, 0.38);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    font-size: 0.76rem;
+    font-weight: 500;
+    line-height: 1.35;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+    word-wrap: break-word;
+}
+
+.golden-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}

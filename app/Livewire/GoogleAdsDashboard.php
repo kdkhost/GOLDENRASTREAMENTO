@@ -39,6 +39,11 @@ class GoogleAdsDashboard extends Component
     /** A conta escolhida por um administrador que opera mais de uma conexão. */
     public ?int $contaId = null;
 
+    /** Quantas vezes a tela perguntou pela fila antes de assumir e sincronizar direto. */
+    public int $tentativasPoll = 0;
+
+    public bool $sincronizacaoDemorada = false;
+
     public function mount(): void
     {
         $this->dias = $this->periodoValido((int) request()->query('dias', config('google_ads.dias_padrao', 30)));
@@ -59,14 +64,56 @@ class GoogleAdsDashboard extends Component
             return;
         }
 
+        $this->tentativasPoll = 0;
+        $this->sincronizacaoDemorada = false;
+
         GoogleAdsCache::esquecerJanela($conta, $this->dias);
         SyncGoogleAdsMetrics::dispatch($conta->id, $this->dias);
+    }
+
+    /**
+     * Chamado pelo polling enquanto "Carregando…" aparece. Se a fila não processar em ~6s
+     * (comum em hospedagem compartilhada sem daemon 24/7), executa a sincronização direto
+     * para impedir que a tela fique em loop infinito.
+     */
+    public function verificarSincronizacao(GoogleAdsService $servico): void
+    {
+        $conta = $this->conta();
+
+        if ($conta === null) {
+            return;
+        }
+
+        if (GoogleAdsCache::metricas($conta, $this->dias) !== null || GoogleAdsCache::erro($conta, $this->dias) !== null) {
+            $this->tentativasPoll = 0;
+            $this->sincronizacaoDemorada = false;
+
+            return;
+        }
+
+        $this->tentativasPoll++;
+
+        if ($this->tentativasPoll === 2) {
+            try {
+                (new SyncGoogleAdsMetrics($conta->id, $this->dias))->handle($servico);
+            } catch (\Throwable $e) {
+                GoogleAdsCache::guardarErro($conta, $this->dias, $e->getMessage());
+            }
+
+            return;
+        }
+
+        if ($this->tentativasPoll >= 5) {
+            $this->sincronizacaoDemorada = true;
+        }
     }
 
     public function updatedDias(mixed $valor): void
     {
         $this->dias = $this->periodoValido((int) $valor);
         $this->pagina = 1;
+        $this->tentativasPoll = 0;
+        $this->sincronizacaoDemorada = false;
         $this->sincronizarSeFaltar();
     }
 
@@ -104,9 +151,9 @@ class GoogleAdsDashboard extends Component
             'resumo' => $janela['resumo'] ?? null,
             'campanhas' => $this->paginar($janela['campanhas'] ?? []),
             'sincronizado_em' => $janela['sincronizado_em'] ?? null,
-            // Sem métrica e sem erro na fila: é o "Carregando…". Com erro, a tela diz o motivo
-            // em vez de girar para sempre atrás de um job que já morreu.
-            'carregando' => $conta !== null && $janela === null && $erro === null,
+            // Sem métrica e sem erro na fila: é o "Carregando…". Com erro ou timeout, para de girar.
+            'carregando' => $conta !== null && $janela === null && $erro === null && ! $this->sincronizacaoDemorada,
+            'sincronizacaoDemorada' => $this->sincronizacaoDemorada && $conta !== null && $janela === null && $erro === null,
             'erro' => $erro,
             // A conexão existe, mas é de gerente: não há número a mostrar nela, e dizer
             // "conecte uma conta" para quem já conectou seria mandar a pessoa refazer um
