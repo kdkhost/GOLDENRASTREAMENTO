@@ -74,7 +74,9 @@ Route::get('/privacidade', [PageController::class, 'privacidade'])->name('site.p
 // Rastreamento público de encomendas (Correios / Mercado Livre / Golden)
 Route::get('/rastreamento', [RastreamentoController::class, 'index'])->name('site.rastreio.index');
 Route::get('/rastreamento/{codigo}', [RastreamentoController::class, 'index'])->name('site.rastreio.show');
+Route::get('/rastrear', fn () => redirect()->route('site.rastreio.index'));
 Route::get('/rastrear/{codigo}', fn (string $codigo) => redirect()->route('site.rastreio.show', ['codigo' => $codigo]));
+Route::get('/rastreio-encomenda', fn () => redirect()->route('site.rastreio.index'));
 
 // Funil de vendas pago: não entra no menu, no rodapé nem na busca — só chega quem tem o link.
 Route::get('/c/{slug}', [FunnelController::class, 'show'])->name('site.funil');
