@@ -79,5 +79,64 @@ class ModoDeManutencaoTest extends TestCase
 
         $response->assertOk();
     }
-}
 
+    public function test_admin_consegue_atualizar_configuracoes_completas_incluindo_animacao_whatsapp_e_redes(): void
+    {
+        $response = $this->actingAs($this->admin)->put(route('admin.manutencao.update'), [
+            'ativa' => 1,
+            'modo' => 'total',
+            'titulo' => 'Upgrade de Servidores Golden',
+            'subtitulo' => 'Rastreamento 100% Ativo via Satélite',
+            'mensagem' => 'Estamos em melhoria de infraestrutura técnica.',
+            'previsao_fim' => now()->addHours(2)->format('Y-m-d\TH:i'),
+            'exibir_cronometro' => 1,
+            'exibir_plantao' => 1,
+            'telefone' => '(19) 99710-1483',
+            'email' => 'suporte@goldenrastreamento.com.br',
+            'exibir_animacao' => 1,
+            'velocidade_animacao' => 'rapida',
+            'exibir_satelite' => 1,
+            'exibir_whatsapp' => 1,
+            'whatsapp_numero' => '5519997101483',
+            'whatsapp_mensagem' => 'Gostaria de falar com o plantão.',
+            'exibir_redes' => 1,
+            'instagram' => 'https://instagram.com/goldenrastreamento',
+            'facebook' => 'https://facebook.com/goldenrastreamento',
+            'youtube' => 'https://youtube.com/@goldenrastreamento',
+            'linkedin' => 'https://linkedin.com/company/goldenrastreamento',
+        ]);
+
+        $response->assertRedirect(route('admin.manutencao.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertSame('1', Setting::get('manutencao_ativa'));
+        $this->assertSame('Upgrade de Servidores Golden', Setting::get('manutencao_titulo'));
+        $this->assertSame('1', Setting::get('manutencao_exibir_animacao'));
+        $this->assertSame('rapida', Setting::get('manutencao_velocidade_animacao'));
+        $this->assertSame('1', Setting::get('manutencao_exibir_satelite'));
+        $this->assertSame('1', Setting::get('manutencao_exibir_whatsapp'));
+        $this->assertSame('5519997101483', Setting::get('manutencao_whatsapp_numero'));
+    }
+
+    public function test_tela_503_renderiza_elementos_personalizados_de_animacao_satelite_e_whatsapp(): void
+    {
+        Setting::set('manutencao_ativa', '1');
+        Setting::set('manutencao_titulo', 'Upgrade Satelital em Andamento');
+        Setting::set('manutencao_subtitulo', 'Monitoramento Ativo 24h');
+        Setting::set('manutencao_exibir_animacao', '1');
+        Setting::set('manutencao_exibir_satelite', '1');
+        Setting::set('manutencao_exibir_whatsapp', '1');
+        Setting::set('manutencao_whatsapp_numero', '5519997101483');
+        Setting::set('manutencao_exibir_redes', '1');
+        Setting::set('manutencao_instagram', 'https://instagram.com/goldenrastreamento');
+
+        $response = $this->get('/');
+
+        $response->assertStatus(503);
+        $response->assertSee('Upgrade Satelital em Andamento');
+        $response->assertSee('Monitoramento Ativo 24h');
+        $response->assertSee('traffic-sat-canvas');
+        $response->assertSee('wa.me/5519997101483');
+        $response->assertSee('instagram.com/goldenrastreamento');
+    }
+}

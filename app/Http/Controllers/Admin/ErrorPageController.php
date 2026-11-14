@@ -75,6 +75,10 @@ class ErrorPageController extends Controller
     {
         abort_unless(in_array($code, ErrorPageService::CODIGOS, true), 404);
 
+        if ($code === 503) {
+            return view('errors.503');
+        }
+
         $dados = $this->errorService->obter($code);
 
         return view('errors.layout', ['dados' => $dados]);
@@ -98,4 +102,3 @@ class ErrorPageController extends Controller
             ->with('success', "Textos padrão da página de erro HTTP {$code} restaurados!");
     }
 }
-

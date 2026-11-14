@@ -75,6 +75,69 @@ class MaintenanceService
         return (string) (Setting::get('manutencao_email') ?: Setting::get('contato_email', 'suporte@goldenrastreamento.com.br'));
     }
 
+    public function exibirAnimacao(): bool
+    {
+        return (string) Setting::get('manutencao_exibir_animacao', '1') === '1';
+    }
+
+    public function velocidadeAnimacao(): string
+    {
+        $vel = (string) Setting::get('manutencao_velocidade_animacao', 'normal');
+
+        return in_array($vel, ['suave', 'normal', 'rapida'], true) ? $vel : 'normal';
+    }
+
+    public function exibirSatelite(): bool
+    {
+        return (string) Setting::get('manutencao_exibir_satelite', '1') === '1';
+    }
+
+    public function exibirWhatsapp(): bool
+    {
+        return (string) Setting::get('manutencao_exibir_whatsapp', '1') === '1';
+    }
+
+    public function whatsappNumero(): string
+    {
+        $num = (string) Setting::get('manutencao_whatsapp_numero');
+
+        if ($num !== '') {
+            return preg_replace('/\D/', '', $num);
+        }
+
+        return preg_replace('/\D/', '', (string) Setting::get('contato_whatsapp', '5519997101483'));
+    }
+
+    public function whatsappMensagem(): string
+    {
+        return (string) Setting::get('manutencao_whatsapp_mensagem', 'Olá! Gostaria de informações durante o período de manutenção da Golden Rastreamento.');
+    }
+
+    public function exibirRedes(): bool
+    {
+        return (string) Setting::get('manutencao_exibir_redes', '1') === '1';
+    }
+
+    public function instagram(): string
+    {
+        return (string) Setting::get('manutencao_instagram', 'https://instagram.com/goldenrastreamento');
+    }
+
+    public function facebook(): string
+    {
+        return (string) Setting::get('manutencao_facebook', 'https://facebook.com/goldenrastreamento');
+    }
+
+    public function youtube(): string
+    {
+        return (string) Setting::get('manutencao_youtube', 'https://youtube.com/@goldenrastreamento');
+    }
+
+    public function linkedin(): string
+    {
+        return (string) Setting::get('manutencao_linkedin', '');
+    }
+
     public function tokenBypass(): string
     {
         $token = (string) Setting::get('manutencao_token_bypass', '');
@@ -173,6 +236,20 @@ class MaintenanceService
         Setting::set('manutencao_telefone', (string) ($dados['telefone'] ?? ''));
         Setting::set('manutencao_email', (string) ($dados['email'] ?? ''));
 
+        Setting::set('manutencao_exibir_animacao', ! empty($dados['exibir_animacao']) ? '1' : '0');
+        Setting::set('manutencao_velocidade_animacao', in_array($dados['velocidade_animacao'] ?? '', ['suave', 'normal', 'rapida'], true) ? $dados['velocidade_animacao'] : 'normal');
+        Setting::set('manutencao_exibir_satelite', ! empty($dados['exibir_satelite']) ? '1' : '0');
+
+        Setting::set('manutencao_exibir_whatsapp', ! empty($dados['exibir_whatsapp']) ? '1' : '0');
+        Setting::set('manutencao_whatsapp_numero', preg_replace('/\D/', '', (string) ($dados['whatsapp_numero'] ?? '')));
+        Setting::set('manutencao_whatsapp_mensagem', (string) ($dados['whatsapp_mensagem'] ?? ''));
+
+        Setting::set('manutencao_exibir_redes', ! empty($dados['exibir_redes']) ? '1' : '0');
+        Setting::set('manutencao_instagram', (string) ($dados['instagram'] ?? ''));
+        Setting::set('manutencao_facebook', (string) ($dados['facebook'] ?? ''));
+        Setting::set('manutencao_youtube', (string) ($dados['youtube'] ?? ''));
+        Setting::set('manutencao_linkedin', (string) ($dados['linkedin'] ?? ''));
+
         if (! empty($dados['token_bypass'])) {
             Setting::set('manutencao_token_bypass', trim((string) $dados['token_bypass']));
         }
@@ -182,4 +259,3 @@ class MaintenanceService
         }
     }
 }
-
