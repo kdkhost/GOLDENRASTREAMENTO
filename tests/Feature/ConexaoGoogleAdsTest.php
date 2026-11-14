@@ -523,6 +523,25 @@ class ConexaoGoogleAdsTest extends TestCase
         $tela->assertSet('titulos', fn (array $titulos): bool => count($titulos) === 15);
     }
 
+    public function test_o_estudio_rsa_aplica_modelos_sorteia_combinacoes_e_limpa_rascunho(): void
+    {
+        $tela = Livewire::test(RsaPreview::class);
+
+        $tela->call('aplicarModelo', 'veicular')
+            ->assertSet('rota1', 'rastreamento')
+            ->assertSet('rota2', '24h')
+            ->assertSee('Rastreamento Veicular 24h')
+            ->assertSee('Dentro das travas do Google');
+
+        $tela->call('sortearCombinacoes')
+            ->assertSet('semente', 1);
+
+        $tela->call('limparRascunho')
+            ->assertSet('url_final', '')
+            ->assertSet('titulos', ['', '', ''])
+            ->assertSet('descricoes', ['']);
+    }
+
     public function test_a_tela_de_recursos_da_campanha_renderiza_com_sucesso(): void
     {
         $conta = GoogleAdsAccount::factory()->create([

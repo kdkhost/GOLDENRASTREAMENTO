@@ -2,12 +2,13 @@
    Nenhuma cor própria: tudo sai dos tokens de golden-theme.css (o par .tone-* e os
    --anuncio-* da prévia), assim claro e escuro continuam iguais aqui como no resto do painel. */
 
-/* A linha do editor: campo, contador e o botão de tirar, numa régua só. */
-.ads-linha{display:flex;align-items:flex-start;gap:.5rem}
+/* A linha do editor: índice, campo, contador e o botão de tirar, numa régua só. */
+.ads-linha{display:flex;align-items:center;gap:.5rem}
 .ads-linha>.form-control{flex:1 1 auto;min-width:0}
-.ads-linha--textarea{flex-direction:column}
+.ads-linha--textarea{flex-direction:column;align-items:stretch}
 .ads-linha--textarea .form-control{width:100%}
-.ads-linha--textarea>div{align-self:flex-end}
+.ads-indice{font-variant-numeric:tabular-nums;font-size:.75rem;font-weight:700;color:var(--bs-secondary-color);min-width:1.65rem;text-align:center;flex:none}
+.ads-remover{flex:none;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 
 /* O semáforo de caracteres: verde até faltar um pedaço, laranja perto do limite,
    vermelho quando o Google não aceita. As cores vêm dos tons do tema, nunca de hex. */

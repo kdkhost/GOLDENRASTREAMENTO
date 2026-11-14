@@ -14,11 +14,8 @@ use Livewire\Component;
  * descrição que o próprio Google sorteia entre as opções aceitas.
  *
  * As travas não são preferências daqui: quinze títulos de até 30 caracteres, quatro descrições
- * de até 90, duas rotas dedisplay de até 15. Entraram em `config('google_ads.rsa')`, e o
+ * de até 90, duas rotas de display de até 15. Entraram em `config('google_ads.rsa')`, e o
  * contador e o preview leem da mesma lista — se o Google mudar um número, muda um lugar.
- *
- * Nada desta tela fala com a API: ela não precisa de conta conectada nem de token. É o
- * rascunho que a pessoa leva para o Google Ads, ou para a fase 2 do painel.
  */
 class RsaPreview extends Component
 {
@@ -40,21 +37,31 @@ class RsaPreview extends Component
     /** No desktop a primeira linha da descrição aparece sozinha; "mais" abre o resto. */
     public bool $descricao_aberta = false;
 
+    /** Semente para rotacionar as combinações exibidas na prévia. */
+    public int $semente = 0;
+
     public function render(): View
     {
         $limites = config('google_ads.rsa');
+        $faltam = $this->faltas($limites);
 
         return view('livewire.rsa-preview', [
             'limites' => $limites,
             'contadores' => [
-                'titulos' => $this->contadores($this->titulos, $limites['caracteres_titulo']),
-                'descricoes' => $this->contadores($this->descricoes, $limites['caracteres_descricao']),
-                'rotas' => [$this->contador($this->rota1, $limites['caracteres_rota']), $this->contador($this->rota2, $limites['caracteres_rota'])],
+                'titulos' => $this->contadores($this->titulos, (int) $limites['caracteres_titulo']),
+                'descricoes' => $this->contadores($this->descricoes, (int) $limites['caracteres_descricao']),
+                'rotas' => [
+                    $this->contador($this->rota1, (int) $limites['caracteres_rota']),
+                    $this->contador($this->rota2, (int) $limites['caracteres_rota']),
+                ],
             ],
             'combinacoes' => $this->combinacoes((int) $limites['combinacoes']),
             'dominio' => $this->dominio(),
             'caminho' => $this->caminho(),
-            'faltam' => $this->faltas($limites),
+            'faltam' => $faltam,
+            'forca' => $this->forcaDoAnuncio($limites, $faltam),
+            'textoExportacao' => $this->textoExportacao(),
+            'modelos' => $this->modelosDisponiveis(),
         ]);
     }
 
@@ -105,6 +112,40 @@ class RsaPreview extends Component
         $this->descricao_aberta = ! $this->descricao_aberta;
     }
 
+    public function sortearCombinacoes(): void
+    {
+        $this->semente++;
+    }
+
+    public function aplicarModelo(string $chave): void
+    {
+        $modelos = $this->modelosDisponiveis();
+
+        if (! isset($modelos[$chave])) {
+            return;
+        }
+
+        $modelo = $modelos[$chave];
+        $this->titulos = $modelo['titulos'];
+        $this->descricoes = $modelo['descricoes'];
+        $this->url_final = $modelo['url_final'];
+        $this->rota1 = $modelo['rota1'];
+        $this->rota2 = $modelo['rota2'];
+        $this->semente = 0;
+        $this->descricao_aberta = false;
+    }
+
+    public function limparRascunho(): void
+    {
+        $this->titulos = ['', '', ''];
+        $this->descricoes = [''];
+        $this->url_final = '';
+        $this->rota1 = '';
+        $this->rota2 = '';
+        $this->semente = 0;
+        $this->descricao_aberta = false;
+    }
+
     /**
      * As combinações que a busca pode montar. Uma por linha, rodando as listas: é assim que o
      * Google mistura as opções aceitas — e é por isso que todo título precisa fazer sentido
@@ -122,18 +163,26 @@ class RsaPreview extends Component
         }
 
         $combinacoes = [];
+        $totalTitulos = count($titulos);
+        $totalDescricoes = count($descricoes);
+        $deslocamento = $this->semente;
 
         for ($n = 0; $n < $quantas; $n++) {
-            $principal = $titulos[$n % count($titulos)];
-            $extra = count($titulos) > 1 ? $titulos[($n + 1) % count($titulos)] : null;
-            $descricao = $descricoes[$n % count($descricoes)];
+            $idxTitulo = ($n + $deslocamento) % $totalTitulos;
+            $idxExtra = ($n + 1 + ($deslocamento * 2)) % $totalTitulos;
+            if ($totalTitulos > 1 && $idxExtra === $idxTitulo) {
+                $idxExtra = ($idxTitulo + 1) % $totalTitulos;
+            }
+
+            $principal = $titulos[$idxTitulo];
+            $extra = $totalTitulos > 1 ? $titulos[$idxExtra] : null;
+            $descricao = $descricoes[($n + $deslocamento) % $totalDescricoes];
 
             $combinacoes[] = [
                 'titulo' => $principal,
                 'titulo_extra' => $extra,
                 'descricao' => $descricao,
-                // O celular corta a descrição em volta dos 90 caracteres de uma linha: o que
-                // passa de lá não é escolha do redator, é a busca que esconde.
+                // O celular corta a descrição em volta dos 70-90 caracteres na prévia compacta.
                 'cortada' => mb_substr($descricao, 0, 70),
             ];
         }
@@ -141,7 +190,192 @@ class RsaPreview extends Component
         return $combinacoes;
     }
 
-    /** O que o preview usa: texto aprovado, sem linha vazia e sem estourar o limite. */
+    /**
+     * Calcula a força estimada do anúncio responsivo com base nas diretrizes do Google Ads.
+     *
+     * @param  array<string, mixed>  $limites
+     * @param  array<int, string>  $faltam
+     * @return array{percentual:int, rotulo:string, tom:string, dica:string}
+     */
+    private function forcaDoAnuncio(array $limites, array $faltam): array
+    {
+        $titulosValidos = count(array_filter(
+            $this->opcionaveis($this->titulos),
+            fn (string $texto): bool => mb_strlen($texto) <= (int) $limites['caracteres_titulo']
+        ));
+        $descricoesValidas = count(array_filter(
+            $this->opcionaveis($this->descricoes),
+            fn (string $texto): bool => mb_strlen($texto) <= (int) $limites['caracteres_descricao']
+        ));
+
+        $pontos = 0;
+        if ($titulosValidos >= 3) {
+            $pontos += 25;
+        }
+        if ($titulosValidos >= 6) {
+            $pontos += 20;
+        }
+        if ($titulosValidos >= 10) {
+            $pontos += 15;
+        }
+        if ($descricoesValidas >= 1) {
+            $pontos += 15;
+        }
+        if ($descricoesValidas >= 2) {
+            $pontos += 15;
+        }
+        if ($descricoesValidas >= 3) {
+            $pontos += 10;
+        }
+
+        if ($faltam !== [] && $pontos > 40) {
+            $pontos = 40;
+        }
+
+        if ($faltam !== []) {
+            return [
+                'percentual' => $pontos,
+                'rotulo' => 'Incompleto',
+                'tom' => 'amber',
+                'dica' => 'Corrija os itens pendentes abaixo para liberar a publicação.',
+            ];
+        }
+
+        if ($pontos >= 85) {
+            return [
+                'percentual' => 100,
+                'rotulo' => 'Excelente',
+                'tom' => 'green',
+                'dica' => 'Ótima variedade de títulos e descrições para o algoritmo testar.',
+            ];
+        }
+
+        if ($pontos >= 60) {
+            return [
+                'percentual' => $pontos,
+                'rotulo' => 'Bom',
+                'tom' => 'green',
+                'dica' => 'Adicione mais títulos (meta: 10+) ou descrições para chegar a Excelente.',
+            ];
+        }
+
+        return [
+            'percentual' => $pontos,
+            'rotulo' => 'Razoável',
+            'tom' => 'amber',
+            'dica' => 'Passa nas travas mínimas, mas incluir 6+ títulos melhora a entrega.',
+        ];
+    }
+
+    /**
+     * Monta texto pronto para colar no Google Ads ou enviar para aprovação.
+     */
+    private function textoExportacao(): string
+    {
+        $titulos = $this->opcionaveis($this->titulos);
+        $descricoes = $this->opcionaveis($this->descricoes);
+        $linhas = [];
+
+        if ($this->url_final !== '') {
+            $linhas[] = 'URL FINAL: '.trim($this->url_final);
+        }
+
+        $caminho = $this->caminho();
+        if ($caminho !== '') {
+            $linhas[] = 'ROTAS: '.$this->dominio().'/'.$caminho;
+        }
+
+        if ($titulos !== []) {
+            $linhas[] = "\nTÍTULOS:";
+            foreach ($titulos as $i => $titulo) {
+                $linhas[] = ($i + 1).'. '.$titulo;
+            }
+        }
+
+        if ($descricoes !== []) {
+            $linhas[] = "\nDESCRIÇÕES:";
+            foreach ($descricoes as $i => $descricao) {
+                $linhas[] = ($i + 1).'. '.$descricao;
+            }
+        }
+
+        return implode("\n", $linhas);
+    }
+
+    /**
+     * Modelos prontos específicos para Golden Rastreamento.
+     *
+     * @return array<string, array{nome:string, icone:string, url_final:string, rota1:string, rota2:string, titulos:array<int, string>, descricoes:array<int, string>}>
+     */
+    private function modelosDisponiveis(): array
+    {
+        return [
+            'veicular' => [
+                'nome' => 'Rastreamento Veicular',
+                'icone' => 'fa-car',
+                'url_final' => 'https://goldenrastreamento.com.br/loja',
+                'rota1' => 'rastreamento',
+                'rota2' => '24h',
+                'titulos' => [
+                    'Rastreamento Veicular 24h',
+                    'Golden Rastreamento Oficial',
+                    'Bloqueio Remoto pelo App',
+                    'Instalação Rápida e Segura',
+                    'Proteja Seu Carro Hoje',
+                    'Central 24h em Todo Brasil',
+                    'Sem Burocracia na Adesão',
+                    'Planos a Partir de R$ 49,90',
+                ],
+                'descricoes' => [
+                    'Acompanhe seu veículo em tempo real pelo celular com alertas e bloqueio imediato.',
+                    'Tecnologia 4G com central 24h para carro, moto e utilitário. Peça sua instalação hoje.',
+                    'Histórico de rotas, cerca eletrônica e suporte humano sempre que você precisar.',
+                ],
+            ],
+            'frota' => [
+                'nome' => 'Gestão de Frotas B2B',
+                'icone' => 'fa-truck',
+                'url_final' => 'https://goldenrastreamento.com.br/para-empresas',
+                'rota1' => 'frotas',
+                'rota2' => 'empresas',
+                'titulos' => [
+                    'Gestão de Frotas em Tempo Real',
+                    'Reduza Custos da Sua Frota',
+                    'Controle de Rotas e Paradas',
+                    'Rastreador para Caminhões',
+                    'Relatórios Completos no Painel',
+                    'Solicite Proposta Comercial',
+                    'Suporte Dedicado para Empresas',
+                ],
+                'descricoes' => [
+                    'Monitore velocidade, ociosidade e trajetos da sua frota em um só painel web e app.',
+                    'Mais segurança para cargas e motoristas com atendimento 24h e instalação ágil.',
+                    'Condições especiais para frotas a partir de 3 veículos. Fale com um consultor.',
+                ],
+            ],
+            'moto' => [
+                'nome' => 'Rastreador para Motos',
+                'icone' => 'fa-motorcycle',
+                'url_final' => 'https://goldenrastreamento.com.br/loja',
+                'rota1' => 'motos',
+                'rota2' => 'protecao',
+                'titulos' => [
+                    'Rastreador para Moto 24h',
+                    'Não Descarrega a Bateria',
+                    'Bloqueio Instantâneo no App',
+                    'Localização Precisa via GPS',
+                    'Ideal para Entregas e Uso Diário',
+                    'Instalação Discreta e Rápida',
+                ],
+                'descricoes' => [
+                    'Equipamento compacto à prova d’água com baixo consumo de bateria e alerta de movimento.',
+                    'Recupere sua moto com agilidade usando nossa central 24h e bloqueio pelo celular.',
+                ],
+            ],
+        ];
+    }
+
+    /** O que o preview usa: texto aprovado, sem linha vazia. */
     private function opcionaveis(array $linhas): array
     {
         return collect($linhas)
@@ -193,8 +427,6 @@ class RsaPreview extends Component
     {
         $limite = (int) config('google_ads.rsa.caracteres_rota');
 
-        // A trava é por segmento, não pela linha inteira: 20 caracteres na primeira rota não
-        // podem comer os 15 da segunda, que a busca ainda mostraria.
         $rotas = collect([$this->rota1, $this->rota2])
             ->map(fn (string $rota): string => mb_substr(trim($rota, ' /'), 0, $limite))
             ->filter()
