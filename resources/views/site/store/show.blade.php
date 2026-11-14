@@ -146,11 +146,7 @@
         <h3 style="font-size:1.2rem;margin-bottom:14px">Você também pode querer</h3>
         <div class="grid-3">
             @foreach($relacionados as $r)
-            <a href="{{ route('site.loja.produto', $r['slug']) }}" class="card prod-card" style="text-decoration:none;color:inherit">
-                <div class="prod-thumb">@if($r['imagem'])<img src="{{ produto_foto_url($r['imagem']) }}" alt="{{ $r['nome'] }}">@else<i class="fa-solid fa-satellite-dish"></i>@endif</div>
-                <h3 style="font-size:1rem">{{ $r['nome'] }}</h3>
-                <div class="prod-price"><b>{{ brl($r['preco']) }}</b></div>
-            </a>
+                @include('site.store._product-card', ['p' => $r])
             @endforeach
         </div>
     </div>
@@ -159,6 +155,7 @@
 @endsection
 
 @push('scripts')
+@include('site.store._product-card-scripts')
 <style>
 .prod-media{position:relative;height:380px;border-radius:18px;background:linear-gradient(160deg,#1b2127,#0d1114);display:grid;place-items:center;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
 .prod-media img{width:100%;height:100%;object-fit:contain;padding:16px;transition:opacity .2s ease-in-out}
