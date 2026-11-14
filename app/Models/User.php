@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use App\Services\PermissionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
@@ -77,14 +78,44 @@ class User extends Authenticatable
         return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
     }
 
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return in_array($this->role, ['superadmin', 'admin'], true);
     }
 
     public function podeGerir(): bool
     {
-        return in_array($this->role, ['admin', 'vendedor'], true);
+        return in_array($this->role, array_keys(PermissionService::PERFIS), true);
+    }
+
+    public function temPermissao(string $modulo, string $acao = 'ver'): bool
+    {
+        return app(PermissionService::class)->temPermissao($this, $modulo, $acao);
+    }
+
+    public function podeVer(string $modulo): bool
+    {
+        return $this->temPermissao($modulo, 'ver');
+    }
+
+    public function podeEditar(string $modulo): bool
+    {
+        return $this->temPermissao($modulo, 'editar');
+    }
+
+    public function podeDeletar(string $modulo): bool
+    {
+        return $this->temPermissao($modulo, 'deletar');
+    }
+
+    public function nomePerfil(): string
+    {
+        return PermissionService::PERFIS[$this->role]['nome'] ?? ucfirst((string) $this->role);
     }
 
     public function leads(): HasMany

@@ -910,6 +910,7 @@ return [
             ['titulo' => 'Segurança do acesso', 'rota' => 'admin.seguranca.index', 'prefixo' => 'admin.seguranca.', 'icone' => 'fa-user-lock'],
             ['titulo' => 'Crons', 'rota' => 'admin.crons.index', 'prefixo' => 'admin.crons.', 'icone' => 'fa-clock', 'bolha' => 'crons_com_falha', 'tom' => 'red'],
             ['titulo' => 'Usuários', 'rota' => 'admin.usuarios.index', 'prefixo' => 'admin.usuarios.', 'icone' => 'fa-user-shield'],
+            ['titulo' => 'Permissões e Perfis', 'rota' => 'admin.permissoes.index', 'prefixo' => 'admin.permissoes.', 'icone' => 'fa-key'],
             ['titulo' => 'Auditoria', 'rota' => 'admin.activities.index', 'prefixo' => 'admin.activities.', 'icone' => 'fa-list-check'],
         ]],
 

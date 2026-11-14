@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\MilitarySecurityController;
 use App\Http\Controllers\Admin\NotificacaoController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SegurancaController;
 use App\Http\Controllers\Admin\SettingController;
@@ -640,6 +641,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::get('/{user}/editar', [UserController::class, 'edit'])->name('edit');
         Route::post('/{user}', [UserController::class, 'update'])->name('update');
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('permissoes')->name('permissoes.')->middleware('role:admin')->group(function () {
+        Route::get('/', [PermissionController::class, 'index'])->name('index');
+        Route::put('/', [PermissionController::class, 'update'])->name('update');
+        Route::post('/restaurar', [PermissionController::class, 'restaurar'])->name('restaurar');
     });
 
     Route::prefix('configuracoes')->name('settings.')->middleware('role:admin')->group(function () {

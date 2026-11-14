@@ -77,6 +77,8 @@ class AppServiceProvider extends ServiceProvider
         // As rotas continuam travadas pelo middleware de papel (a regra que vale é a da
         // rota); o gate serve para a tela não oferecer um botão que a rota negaria.
         Gate::define('admin', fn (User $usuario): bool => $usuario->isAdmin());
+        Gate::define('superadmin', fn (User $usuario): bool => $usuario->isSuperAdmin());
+        Gate::define('permissao', fn (User $usuario, string $modulo, string $acao = 'ver'): bool => $usuario->temPermissao($modulo, $acao));
 
         View::composer(['layouts.site', 'layouts.funil', 'site.*', 'portal.*', 'admin.layouts.app'], function ($view) {
             $view->with('golden', $this->dadosDoSite());

@@ -173,7 +173,7 @@ class MaintenanceService
         // 1. O painel administrativo nunca é bloqueado para administradores
         if ($request->is('admin*') || $request->is('login*') || $request->routeIs('login*') || $request->routeIs('admin.*')) {
             $user = $request->user();
-            if ($user && ($user->role === 'admin' || $user->role === 'vendedor')) {
+            if ($user && $user->podeGerir()) {
                 return true;
             }
             // Permite carregar a tela de login para que o admin possa autenticar

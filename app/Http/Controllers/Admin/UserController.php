@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\SessaoDoPainel;
 use App\Models\User;
+use App\Services\PermissionService;
 use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,16 +17,13 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    /** O que o select oferece é o que a validação aceita: filtro, cadastro e regra num lugar só. */
-    private const PERFIS = ['vendedor' => 'Vendedor', 'visualizador' => 'Visualizador', 'admin' => 'Administrador'];
-
     private const SITUACOES = ['ativo' => 'Ativo', 'inativo' => 'Inativo'];
 
     public function index(Request $request): View
     {
         return view('admin.users.index', [
             'usuarios' => $this->query($request)->paginate(itens_por_pagina())->withQueryString(),
-            'perfis' => self::PERFIS,
+            'perfis' => PermissionService::opcoesPerfis(),
             'situacoes' => self::SITUACOES,
         ]);
     }
@@ -35,7 +33,7 @@ class UserController extends Controller
     {
         return User::withCount('leads')
             ->when($request->filled('busca'), function ($q) use ($request) {
-                $t = '%' . $request->busca . '%';
+                $t = '%'.$request->busca.'%';
                 $q->where(fn ($w) => $w->where('name', 'like', $t)
                     ->orWhere('email', 'like', $t)
                     ->orWhere('cargo', 'like', $t)
@@ -55,6 +53,8 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
+        abort_if($user->isSuperAdmin() && ! auth()->user()?->isSuperAdmin(), 403, 'Apenas Super Administradores podem visualizar ou editar contas Superadmin.');
+
         // Quem entrou antes desta coluna existir não fica sem a informação: a auditoria já
         // registrava cada login, e é dela que sai o último acesso enquanto a coluna está vazia.
         $ultimoLogin = Activity::where('user_id', $user->id)
@@ -75,7 +75,7 @@ class UserController extends Controller
     {
         return [
             'usuario' => $usuario,
-            'perfis' => self::PERFIS,
+            'perfis' => PermissionService::opcoesPerfis(auth()->user()),
             'situacoes' => self::SITUACOES,
         ];
     }
@@ -95,10 +95,12 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        abort_if($user->isSuperAdmin() && ! $request->user()->isSuperAdmin(), 403, 'Apenas Super Administradores podem alterar contas Superadmin.');
+
         $avatarAnterior = $user->avatar;
         $data = $this->validar($request, $user);
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {
             unset($data['password']);
@@ -131,7 +133,7 @@ class UserController extends Controller
                 $user ? Rule::unique('users')->ignore($user->id) : 'unique:users,email',
             ],
             'telefone' => ['nullable', 'string', 'max:32'],
-            'role' => ['required', Rule::in(array_keys(self::PERFIS))],
+            'role' => ['required', Rule::in(array_keys(PermissionService::opcoesPerfis($request->user())))],
             'status' => [$user ? 'required' : 'nullable', Rule::in(array_keys(self::SITUACOES))],
             'password' => [$user ? 'nullable' : 'required', 'string', 'min:8'],
             'cargo' => ['nullable', 'string', 'max:80'],
@@ -156,6 +158,8 @@ class UserController extends Controller
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
+        abort_if($user->isSuperAdmin() && ! $request->user()->isSuperAdmin(), 403, 'Apenas Super Administradores podem excluir contas Superadmin.');
+
         if ($user->id === $request->user()->id) {
             return back()->with('error', 'Você não pode excluir a si mesmo.');
         }

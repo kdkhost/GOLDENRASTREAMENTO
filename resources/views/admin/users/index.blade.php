@@ -4,6 +4,9 @@
 @section('page_description', 'Quem tem acesso ao painel e o que cada perfil pode fazer.')
 
 @section('page_actions')
+@if(auth()->user()->podeVer('permissoes'))
+    <a href="{{ route('admin.permissoes.index') }}" class="btn btn-outline-warning btn-sm me-1"><i class="fas fa-key me-1"></i> Configurar permissões</a>
+@endif
 <a href="{{ route('admin.usuarios.create') }}" class="btn btn-golden btn-sm"><i class="fas fa-user-plus me-1"></i> Novo usuário</a>
 @endsection
 
