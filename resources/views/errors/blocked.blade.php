@@ -67,24 +67,13 @@
             min-height: 100dvh;
         }
 
-        /* Atmosfera de Defesa Perimetral */
+        /* Atmosfera de Defesa Perimetral Suave */
         .shield-atmosphere {
             position: fixed;
             inset: 0;
             pointer-events: none;
             z-index: 0;
             overflow: hidden;
-        }
-
-        .shield-grid {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(to right, rgba(239, 68, 68, 0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(239, 68, 68, 0.04) 1px, transparent 1px);
-            background-size: clamp(32px, 5vw, 48px) clamp(32px, 5vw, 48px);
-            mask-image: radial-gradient(circle at 50% 50%, #000 35%, transparent 85%);
-            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 35%, transparent 85%);
         }
 
         .shield-orb-crimson {
@@ -431,7 +420,6 @@
 </head>
 <body>
     <div class="shield-atmosphere">
-        <div class="shield-grid"></div>
         <div class="shield-orb-crimson"></div>
         <div class="shield-orb-secondary"></div>
     </div>

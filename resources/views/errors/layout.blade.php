@@ -67,24 +67,13 @@
             min-height: 100dvh;
         }
 
-        /* Atmosfera de fundo: Grid com gradiente espacial de alta precisão */
+        /* Atmosfera de fundo: Gradiente espacial suave de alta precisão */
         .err-bg-atmosphere {
             position: fixed;
             inset: 0;
             pointer-events: none;
             z-index: 0;
             overflow: hidden;
-        }
-
-        .err-bg-grid {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-            background-size: clamp(32px, 5vw, 48px) clamp(32px, 5vw, 48px);
-            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 85%);
-            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 85%);
         }
 
         .err-glow-orb-primary {
@@ -557,9 +546,8 @@
     @stack('styles')
 </head>
 <body>
-    {{-- Efeito visual de profundidade espacial e malha de monitoramento --}}
+    {{-- Efeito visual de profundidade espacial e nébula ambiente suave --}}
     <div class="err-bg-atmosphere">
-        <div class="err-bg-grid"></div>
         <div class="err-glow-orb-primary"></div>
         <div class="err-glow-orb-secondary"></div>
     </div>
