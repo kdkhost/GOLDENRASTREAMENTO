@@ -376,6 +376,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
                     ->whereNumber('grupo')->name('grupos.remover');
                 Route::get('/recursos', [GoogleAdsCampanhaController::class, 'recursos'])->name('recursos');
                 Route::post('/recursos/imagem', [GoogleAdsCampanhaController::class, 'vincularImagem'])->name('recursos.imagem');
+                Route::post('/recursos/imagem/substituir', [GoogleAdsCampanhaController::class, 'substituirImagem'])->name('recursos.imagem.substituir');
                 Route::post('/recursos/existente', [GoogleAdsCampanhaController::class, 'vincularAssetExistente'])->name('recursos.existente');
                 Route::post('/recursos/nome-empresa', [GoogleAdsCampanhaController::class, 'vincularNomeEmpresa'])->name('recursos.nome-empresa');
                 Route::post('/recursos/sitelink', [GoogleAdsCampanhaController::class, 'vincularSitelink'])->name('recursos.sitelink');

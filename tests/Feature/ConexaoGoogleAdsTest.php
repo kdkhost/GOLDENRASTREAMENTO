@@ -19,6 +19,7 @@ use Google\ApiCore\ApiException;
 use Google\Rpc\Code;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -604,6 +605,56 @@ class ConexaoGoogleAdsTest extends TestCase
                 && ($op['status'] ?? '') === 'PAUSED'
                 && count($op['ad']['responsiveSearchAd']['headlines'] ?? []) === 8;
         });
+    }
+
+    public function test_o_estudio_rsa_bloqueia_texto_fora_da_politica_do_google(): void
+    {
+        $tela = Livewire::test(RsaPreview::class);
+
+        $tela->set('titulos', ['RASTREAMENTO AGORA', 'Proteção Veicular 24h', 'Golden Rastreamento'])
+            ->set('descricoes', ['Ligue (11) 99999-8888!!'])
+            ->assertSee('Evite palavras inteiras em MAIÚSCULAS')
+            ->assertSee('Remova pontuação repetida');
+    }
+
+    public function test_substituir_imagem_rejeita_dimensao_invalida_antes_da_api(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+            'status' => GoogleAdsAccount::ATIVO,
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/googleAds:search' => Http::response([
+                'results' => [[
+                    'campaign' => [
+                        'id' => '24456385340',
+                        'name' => 'Golden Rastreamento',
+                        'status' => 'ENABLED',
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $arquivoPequeno = UploadedFile::fake()->image('pequena.png', 50, 50);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.google-ads.campanhas.recursos.imagem.substituir', [
+                'campanha' => '24456385340',
+                'conta' => $conta->id,
+            ]), [
+                'vinculo_antigo' => 'customers/1234567890/campaignAssets/1',
+                'arquivo' => $arquivoPequeno,
+                'tipo' => 'BUSINESS_LOGO',
+            ])
+            ->assertRedirect();
+
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'assets:mutate'));
     }
 
     public function test_a_tela_de_recursos_da_campanha_renderiza_com_sucesso(): void

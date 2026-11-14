@@ -17,6 +17,7 @@ use App\Services\GoogleAds\GoogleAdsWriter;
 use App\Services\GoogleAds\PlanoDeCampanha;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
@@ -376,9 +377,15 @@ class GoogleAdsCopilotoController extends Controller
             return back()->with('error', 'Escolha uma conta conectada para aplicar o plano.');
         }
 
+        $trava = Cache::lock('google_ads_aplicar_conta_'.$conta->id, 120);
+        if (! $trava->get()) {
+            return back()->with('error', 'Já existe uma campanha sendo criada nesta conta agora. Aguarde alguns segundos antes de enviar outra.');
+        }
+
         try {
             $resultado = $this->escritor->aplicar($conta, $plano->plano(), $plano->id);
         } catch (GoogleAdsFalhou $e) {
+            $trava->release();
             $plano->forceFill([
                 'status' => GoogleAdsPlano::FALHOU,
                 'erro' => $e->motivoPublico,
@@ -393,6 +400,7 @@ class GoogleAdsCopilotoController extends Controller
 
             return back()->with('error', $e->motivoPublico);
         } catch (Throwable $e) {
+            $trava->release();
             $plano->forceFill([
                 'status' => GoogleAdsPlano::FALHOU,
                 'erro' => 'A aplicação parou no meio. Confira a conta no Google Ads antes de gerar outro plano.',
@@ -403,6 +411,8 @@ class GoogleAdsCopilotoController extends Controller
 
             return back()->with('error', 'A aplicação parou no meio. Confira a conta no Google Ads antes de gerar outro plano.');
         }
+
+        $trava->release();
 
         $plano->forceFill([
             'status' => GoogleAdsPlano::APLICADO,

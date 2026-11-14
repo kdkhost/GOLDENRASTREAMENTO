@@ -470,6 +470,49 @@ class GoogleAdsCampanhaController extends Controller
         return $this->paraRecursos($conta, $lida, 'success', "{$tipoRotulo} vinculado à campanha com sucesso! O Google revisa o recurso antes de exibi-lo.");
     }
 
+    public function substituirImagem(Request $request, string $campanha): RedirectResponse
+    {
+        $aberta = $this->abrir($request, $campanha);
+
+        if ($aberta instanceof RedirectResponse) {
+            return $aberta;
+        }
+
+        [$conta, $lida] = $aberta;
+        $dados = $request->validate([
+            'vinculo_antigo' => ['required', 'string', 'max:255'],
+            'arquivo' => ['required', 'file', 'image', 'max:5120'],
+            'nome' => ['nullable', 'string', 'max:128'],
+            'tipo' => ['nullable', 'string', 'in:AUTO,BUSINESS_LOGO,AD_IMAGE'],
+        ]);
+
+        $arquivo = $request->file('arquivo');
+        $nome = trim((string) ($dados['nome'] ?? '')) ?: pathinfo($arquivo->getClientOriginalName(), PATHINFO_FILENAME);
+        $tipo = (string) ($dados['tipo'] ?? 'AUTO');
+
+        try {
+            $resultado = $this->editor->substituirImagem(
+                $conta,
+                $lida,
+                (string) $dados['vinculo_antigo'],
+                $arquivo->getRealPath(),
+                $nome,
+                $tipo
+            );
+        } catch (Throwable $e) {
+            return $this->erro($e, 'substituir a imagem');
+        }
+
+        Activity::log(
+            'google_ads_recurso_substituido',
+            "Imagem \"{$nome}\" substituiu recurso anterior na campanha {$lida['nome']} na conta {$conta->numeroConta()}.",
+            $conta,
+            ['campaign_id' => $lida['id'], 'vinculo_antigo' => $dados['vinculo_antigo'], 'asset' => $resultado['asset']],
+        );
+
+        return $this->paraRecursos($conta, $lida, 'success', 'Imagem substituída na campanha com sucesso!');
+    }
+
     public function vincularAssetExistente(Request $request, string $campanha): RedirectResponse
     {
         $aberta = $this->abrir($request, $campanha);

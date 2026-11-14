@@ -100,15 +100,27 @@
                                     </div>
                                 </div>
                                 @if (!empty($imagem['vinculo']))
-                                    <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.remover', $endereco) }}"
-                                        data-confirmar="Desvincular esta imagem da campanha? O arquivo continuará salvo na sua biblioteca do Google Ads.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="vinculo" value="{{ $imagem['vinculo'] }}">
-                                        <button class="btn btn-outline-danger btn-sm" title="Desvincular">
-                                            <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                                        </button>
-                                    </form>
+                                    <div class="d-flex flex-column gap-1 flex-shrink-0">
+                                        <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.imagem.substituir', $endereco) }}"
+                                            enctype="multipart/form-data">
+                                            @csrf
+                                            <input type="hidden" name="vinculo_antigo" value="{{ $imagem['vinculo'] }}">
+                                            <input type="hidden" name="tipo" value="{{ $imagem['campo'] ?? 'AUTO' }}">
+                                            <label class="btn btn-outline-secondary btn-sm mb-0" title="Substituir esta imagem por outra" style="cursor: pointer;">
+                                                <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
+                                                <input type="file" name="arquivo" accept="image/png,image/jpeg,image/webp" class="d-none" onchange="this.form.submit()">
+                                            </label>
+                                        </form>
+                                        <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.remover', $endereco) }}"
+                                            data-confirmar="Desvincular esta imagem da campanha? O arquivo continuará salvo na sua biblioteca do Google Ads.">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="vinculo" value="{{ $imagem['vinculo'] }}">
+                                            <button class="btn btn-outline-danger btn-sm w-100" title="Remover da campanha">
+                                                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 @endif
                             </div>
                         </div>

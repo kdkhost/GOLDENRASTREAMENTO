@@ -675,6 +675,27 @@ class RsaPreview extends Component
             }
         }
 
+        // Regras de política do Google Ads para aprovação 100% automática sem reprovação:
+        $todosTextos = array_merge($this->opcionaveis($this->titulos), $this->opcionaveis($this->descricoes));
+        foreach ($todosTextos as $texto) {
+            if (preg_match('/\b[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]{4,}\b/u', $texto)) {
+                $faltas[] = 'Evite palavras inteiras em MAIÚSCULAS (o Google reprova por capitalização).';
+                break;
+            }
+        }
+
+        foreach ($todosTextos as $texto) {
+            if (preg_match('/[!?\*]{2,}/', $texto) || preg_match('/\b(?:\(?\d{2}\)?\s*)?(?:9?\d{4}[-.\s]?\d{4}|0800[-.\s]?\d{3}[-.\s]?\d{4})\b/', $texto)) {
+                $faltas[] = 'Remova pontuação repetida (!!/??) ou telefones do texto (o Google reprova automaticamente).';
+                break;
+            }
+        }
+
+        $titulosLimpos = array_map(static fn (string $t): string => mb_strtolower($t), $this->opcionaveis($this->titulos));
+        if (count($titulosLimpos) !== count(array_unique($titulosLimpos))) {
+            $faltas[] = 'Há títulos repetidos: varie os textos para manter força Excelente.';
+        }
+
         return collect($faltas)->unique()->values()->all();
     }
 }

@@ -231,9 +231,17 @@
                     </div>
 
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 pt-2 border-top">
-                        <span class="form-hint mb-0">
-                            Cria um novo anúncio responsivo (RSA) no grupo escolhido sem alterar os anúncios atuais.
-                        </span>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="form-hint mb-0">
+                                Cria um novo anúncio responsivo (RSA) no grupo escolhido sem alterar os anúncios atuais.
+                            </span>
+                            @if ($campanhaId !== '' && $contaId !== null)
+                                <a href="{{ route('admin.google-ads.campanhas.recursos', ['campanha' => $campanhaId, 'conta' => $contaId]) }}"
+                                    class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-images me-1" aria-hidden="true"></i> Gerenciar imagens e sitelinks
+                                </a>
+                            @endif
+                        </div>
                         <button type="button" class="btn btn-golden" wire:click="publicarNoGoogleAds"
                             wire:loading.attr="disabled" wire:target="publicarNoGoogleAds"
                             @disabled($faltam !== [] || $grupoResource === '')>

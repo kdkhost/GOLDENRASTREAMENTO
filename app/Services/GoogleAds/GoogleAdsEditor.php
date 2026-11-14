@@ -406,20 +406,7 @@ final class GoogleAdsEditor
      */
     public function vincularImagem(GoogleAdsAccount $conta, array $campanha, string $caminhoAbsoluto, string $nome, string $tipo = 'AUTO'): array
     {
-        $conteudo = is_file($caminhoAbsoluto) ? file_get_contents($caminhoAbsoluto) : false;
-
-        if ($conteudo === false || $conteudo === '') {
-            throw new GoogleAdsFalhou('A imagem não foi encontrada no servidor. Envie o arquivo de novo.');
-        }
-
-        $info = @getimagesize($caminhoAbsoluto);
-        $largura = (int) ($info[0] ?? 0);
-        $altura = (int) ($info[1] ?? 0);
-        $eQuadrada = $largura > 0 && $altura > 0 && abs($largura - $altura) / max($largura, $altura) <= 0.08;
-
-        if ($tipo === 'AUTO') {
-            $tipo = $eQuadrada ? 'BUSINESS_LOGO' : 'AD_IMAGE';
-        }
+        [$conteudo, $extensao, $eQuadrada, $tipo] = $this->prepararImagemParaGoogleAds($caminhoAbsoluto, $tipo);
 
         $this->prepararEscrita($conta);
 
@@ -435,7 +422,6 @@ final class GoogleAdsEditor
         if (! is_dir($pastaCache)) {
             @mkdir($pastaCache, 0755, true);
         }
-        $extensao = strtolower(pathinfo($caminhoAbsoluto, PATHINFO_EXTENSION)) ?: ($eQuadrada ? 'png' : 'jpg');
         @file_put_contents($pastaCache.'/'.$assetId.'.'.$extensao, $conteudo);
 
         try {
@@ -474,6 +460,105 @@ final class GoogleAdsEditor
 
             throw $e;
         }
+    }
+
+    /**
+     * Substitui uma imagem vinculada: envia e vincula a nova imagem primeiro e só remove o
+     * vínculo antigo depois do sucesso, evitando que a campanha fique sem recurso visual.
+     *
+     * @return array{asset: string, vinculo: string, tipo: string}
+     */
+    public function substituirImagem(
+        GoogleAdsAccount $conta,
+        array $campanha,
+        string $vinculoAntigo,
+        string $caminhoAbsoluto,
+        string $nome,
+        string $tipo = 'AUTO'
+    ): array {
+        $nova = $this->vincularImagem($conta, $campanha, $caminhoAbsoluto, $nome, $tipo);
+
+        if ($vinculoAntigo !== '' && $vinculoAntigo !== $nova['vinculo']) {
+            $this->desvincularRecurso($conta, $vinculoAntigo);
+        }
+
+        return $nova;
+    }
+
+    /**
+     * Valida dimensões, proporção, tamanho e formato antes do envio ao Google Ads para evitar
+     * rejeições automáticas por imagem fora do padrão.
+     *
+     * @return array{0: string, 1: string, 2: bool, 3: string}
+     */
+    private function prepararImagemParaGoogleAds(string $caminhoAbsoluto, string $tipo): array
+    {
+        $conteudo = is_file($caminhoAbsoluto) ? file_get_contents($caminhoAbsoluto) : false;
+
+        if ($conteudo === false || $conteudo === '') {
+            throw new GoogleAdsFalhou('A imagem não foi encontrada no servidor. Envie o arquivo de novo.');
+        }
+
+        $info = @getimagesize($caminhoAbsoluto);
+        if ($info === false) {
+            $extensao = strtolower(pathinfo($caminhoAbsoluto, PATHINFO_EXTENSION)) ?: 'jpg';
+            if ($tipo === 'AUTO') {
+                $tipo = 'AD_IMAGE';
+            }
+
+            return [$conteudo, $extensao, false, $tipo];
+        }
+
+        $largura = (int) ($info[0] ?? 0);
+        $altura = (int) ($info[1] ?? 0);
+        $imageType = (int) ($info[2] ?? 0);
+        $eQuadrada = $largura > 0 && $altura > 0 && abs($largura - $altura) / max($largura, $altura) <= 0.08;
+
+        // Converte WebP/GIF para PNG ou JPEG quando GD estiver disponível para evitar recusa do Google Ads.
+        if (! in_array($imageType, [IMAGETYPE_JPEG, IMAGETYPE_PNG], true)) {
+            if (! function_exists('imagecreatefromstring')) {
+                throw new GoogleAdsFalhou('Formato de imagem não suportado pelo Google Ads. Envie JPG ou PNG.');
+            }
+            $recurso = @imagecreatefromstring($conteudo);
+            if ($recurso === false) {
+                throw new GoogleAdsFalhou('Não foi possível ler esta imagem. Salve como JPG ou PNG e tente novamente.');
+            }
+            ob_start();
+            if ($eQuadrada) {
+                imagepng($recurso);
+                $extensao = 'png';
+            } else {
+                imagejpeg($recurso, null, 92);
+                $extensao = 'jpg';
+            }
+            $conteudo = (string) ob_get_clean();
+            imagedestroy($recurso);
+        } else {
+            $extensao = $imageType === IMAGETYPE_PNG ? 'png' : 'jpg';
+        }
+
+        if (strlen($conteudo) > 5 * 1024 * 1024) {
+            throw new GoogleAdsFalhou('A imagem excede o limite máximo de 5 MB do Google Ads.');
+        }
+
+        if ($tipo === 'AUTO') {
+            $tipo = $eQuadrada ? 'BUSINESS_LOGO' : 'AD_IMAGE';
+        }
+
+        if ($tipo === 'BUSINESS_LOGO' && ($largura < 128 || $altura < 128)) {
+            throw new GoogleAdsFalhou("Logotipo muito pequeno ({$largura}×{$altura}px). O Google Ads exige no mínimo 128×128px (ideal: 1200×1200px) para aprovação automática.");
+        }
+
+        if ($tipo === 'AD_IMAGE') {
+            if ($eQuadrada && ($largura < 300 || $altura < 300)) {
+                throw new GoogleAdsFalhou("Imagem quadrada muito pequena ({$largura}×{$altura}px). O Google Ads exige no mínimo 300×300px (ideal: 1200×1200px).");
+            }
+            if (! $eQuadrada && ($largura < 600 || $altura < 314)) {
+                throw new GoogleAdsFalhou("Imagem paisagem muito pequena ({$largura}×{$altura}px). O Google Ads exige no mínimo 600×314px (ideal: 1200×628px).");
+            }
+        }
+
+        return [$conteudo, $extensao, $eQuadrada, $tipo];
     }
 
     /**
