@@ -146,15 +146,28 @@ class Envio
     public static function descritor(string $caminho, string $campo, ?string $nome = null): array
     {
         $r = self::regra($campo);
-        $absoluto = Storage::disk('public')->path($caminho);
-        $bytes = is_file($absoluto) ? (int) filesize($absoluto) : 0;
-        $dimensoes = $r['tipo'] === 'imagem' && is_file($absoluto) ? @getimagesize($absoluto) : false;
+        $ehUrlExterna = Str::startsWith($caminho, ['http://', 'https://']);
+        $ehAssetPublico = Str::startsWith($caminho, 'img/');
+
+        if ($ehUrlExterna) {
+            $absoluto = null;
+            $url = $caminho;
+        } elseif ($ehAssetPublico) {
+            $absoluto = public_path($caminho);
+            $url = asset($caminho);
+        } else {
+            $absoluto = Storage::disk('public')->path($caminho);
+            $url = asset('storage/'.$caminho);
+        }
+
+        $bytes = $absoluto && is_file($absoluto) ? (int) filesize($absoluto) : 0;
+        $dimensoes = $r['tipo'] === 'imagem' && $absoluto && is_file($absoluto) ? @getimagesize($absoluto) : false;
 
         return [
             'campo' => $campo,
             'tipo' => $r['tipo'],
             'caminho' => $caminho,
-            'url' => asset('storage/'.$caminho),
+            'url' => $url,
             'nome' => $nome ?: basename($caminho),
             'bytes' => $bytes,
             'bytes_texto' => self::textoTamanho($bytes),
@@ -167,13 +180,11 @@ class Envio
     /**
      * O caminho veio mesmo de um envio deste campo? Usado ao receber o valor do
      * formulário (que é texto) — barreiras: pasta certa, sem travessia, arquivo
-     * existe no disco público.
+     * existe no disco público (ou é um asset estático válido em public/img/).
      */
     public static function caminhoConfere(?string $caminho, string $campo): bool
     {
-        $pasta = self::regra($campo)['pasta'];
-
-        if ($caminho === null || $caminho === '' || ! Str::startsWith($caminho, $pasta.'/')) {
+        if ($caminho === null || $caminho === '') {
             return false;
         }
 
@@ -181,12 +192,26 @@ class Envio
             return false;
         }
 
+        if (Str::startsWith($caminho, 'img/') && is_file(public_path($caminho))) {
+            return true;
+        }
+
+        $pasta = self::regra($campo)['pasta'];
+
+        if (! Str::startsWith($caminho, $pasta.'/')) {
+            return false;
+        }
+
         return Storage::disk('public')->exists($caminho);
     }
 
-    /** Apaga um caminho de envio, se ele existir e pertencer àquele campo. */
+    /** Apaga um caminho de envio, se ele existir e pertencer àquele campo (nunca apaga assets em public/img). */
     public static function remover(?string $caminho, string $campo): void
     {
+        if ($caminho === null || Str::startsWith($caminho, 'img/')) {
+            return;
+        }
+
         if (self::caminhoConfere($caminho, $campo)) {
             Storage::disk('public')->delete($caminho);
         }

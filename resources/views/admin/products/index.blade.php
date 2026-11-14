@@ -30,7 +30,7 @@
                 <div class="d-flex align-items-center gap-2">
                     <span class="table-thumb">
                         @php $capa = $p->todasImagens()[0] ?? null; @endphp
-                        @if($capa)<img src="{{ asset('storage/'.$capa) }}" alt="" loading="lazy">@else<i class="fas fa-box" aria-hidden="true"></i>@endif
+                        @if($capa)<img src="{{ produto_foto_url($capa) }}" alt="" loading="lazy">@else<i class="fas fa-box" aria-hidden="true"></i>@endif
                     </span>
                     <span>
                         <span class="fw-semibold">{{ $p->nome }}</span>
