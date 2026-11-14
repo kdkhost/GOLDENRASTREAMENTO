@@ -16,28 +16,9 @@
     $h = is_numeric($altura) ? (int) $altura : ($altura ? ($registro['altura'] ?? null) : null);
 @endphp
 @if($url)
-@php
-    $urlWebp = preg_replace('/\.(jpg|jpeg|png)$/i', '.webp', $url);
-    $temWebp = ($urlWebp !== $url);
-@endphp
-@if($temWebp)
-<picture>
-    <source srcset="{{ $urlWebp }}" type="image/webp">
-    <img src="{{ $url }}" alt="{{ $alt ?? site_img_alt($imagem) }}"
-        @if($w) width="{{ $w }}" @endif
-        @if($h) height="{{ $h }}" @endif
-        @if($prioridade) fetchpriority="high" @elseif($lazy) loading="lazy" @endif
-        decoding="async"
-        data-scroll-reveal
-        {{ $attributes->except('alt') }}>
-</picture>
-@else
 <img src="{{ $url }}" alt="{{ $alt ?? site_img_alt($imagem) }}"
     @if($w) width="{{ $w }}" @endif
     @if($h) height="{{ $h }}" @endif
     @if($prioridade) fetchpriority="high" @elseif($lazy) loading="lazy" @endif
-    decoding="async"
-    data-scroll-reveal
     {{ $attributes->except('alt') }}>
-@endif
 @endif

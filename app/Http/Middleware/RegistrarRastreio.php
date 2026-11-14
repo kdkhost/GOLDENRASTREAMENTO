@@ -21,17 +21,14 @@ class RegistrarRastreio
         $response = $next($request);
 
         if ($this->deveRegistrar($request, $response)) {
-            // Executa o registro de visita após a entrega da resposta ao navegador (assíncrono para o visitante)
-            app()->terminating(function () use ($request): void {
-                $visita = $this->rastreio->registrarVisita($request);
-                $this->rastreio->registrarNaVisita(
-                    $visita,
-                    'view',
-                    '/'.ltrim($request->path(), '/'),
-                    null,
-                    $request->query('utm_content') ?: null
-                );
-            });
+            $visita = $this->rastreio->registrarVisita($request);
+            $this->rastreio->registrarNaVisita(
+                $visita,
+                'view',
+                '/'.ltrim($request->path(), '/'),
+                null,
+                $request->query('utm_content') ?: null
+            );
         }
 
         return $response;
