@@ -122,7 +122,7 @@
                                 };
                             @endphp
                             <div class="col-12 col-md-6">
-                                <div class="p-2 rounded bg-light border h-100">
+                                <div class="p-2 rounded bg-body-tertiary border h-100">
                                     <div class="d-flex align-items-center justify-content-between mb-1">
                                         <span class="fw-semibold small"><i class="fas {{ $iconeStatus }} me-1" aria-hidden="true"></i> {{ $pilar['titulo'] }}</span>
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $pilar['nota'] }}/{{ $pilar['max'] }}</span>
@@ -136,12 +136,12 @@
                     {{-- Recomendações Acionáveis --}}
                     @if(!empty($otimizacao['recomendacoes']))
                         <div class="border-top pt-3">
-                            <h6 class="fw-bold small mb-2 text-dark"><i class="fas fa-lightbulb text-warning me-1" aria-hidden="true"></i> Recomendações imediatas para melhorar o desempenho:</h6>
+                            <h6 class="fw-bold small mb-2"><i class="fas fa-lightbulb text-warning me-1" aria-hidden="true"></i> Recomendações imediatas para melhorar o desempenho:</h6>
                             <div class="vstack gap-2">
                                 @foreach($otimizacao['recomendacoes'] as $rec)
                                     <div class="p-2 rounded border d-flex flex-wrap align-items-center justify-content-between gap-2">
                                         <div>
-                                            <div class="fw-semibold small text-dark">{{ $rec['titulo'] }}</div>
+                                            <div class="fw-semibold small">{{ $rec['titulo'] }}</div>
                                             <div class="small text-secondary">{{ $rec['detalhe'] }}</div>
                                             <div class="small text-success fw-medium mt-1"><i class="fas fa-chart-line me-1" aria-hidden="true"></i> Impacto: {{ $rec['impacto'] }}</div>
                                         </div>

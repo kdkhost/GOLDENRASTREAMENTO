@@ -26,6 +26,12 @@
 .btn-golden:hover{color:var(--brand-gold-ink);filter:brightness(1.06)}
 .text-gold{color:var(--t-gold-fg)!important}
 
+/* Garantia de tema escuro: nenhum bloco utilitário .bg-light/.bg-white/.text-dark fica branco no dark mode. */
+[data-bs-theme="dark"] .app-wrapper .bg-light,
+[data-bs-theme="dark"] .app-wrapper .table-light{background-color:var(--bs-tertiary-bg)!important;color:var(--bs-body-color)!important}
+[data-bs-theme="dark"] .app-wrapper .bg-white{background-color:var(--bs-body-bg)!important;color:var(--bs-body-color)!important}
+[data-bs-theme="dark"] .app-wrapper .text-dark:not(.badge){color:var(--bs-body-color)!important}
+
 /* Cards: um único raio para todo o painel — nenhuma página escreve style inline. */
 .app-content .card{border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg)}
 .app-content .card-header{border-bottom:1px solid var(--bs-border-color-translucent);font-weight:700}

@@ -166,7 +166,7 @@
                         </button>
                     </div>
 
-                    <div id="resultadoRastreio" class="small p-2 rounded bg-light border">
+                    <div id="resultadoRastreio" class="small p-2 rounded bg-body-tertiary border">
                         <div class="d-flex align-items-center justify-content-between">
                             <span><strong>Código:</strong> <code>{{ $pedido->codigo_rastreio }}</code></span>
                             <span class="badge bg-secondary">{{ $pedido->transportadoraLabel() }}</span>
