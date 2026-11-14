@@ -1177,4 +1177,38 @@ class CopilotoDoGoogleAdsTest extends TestCase
         $response->assertRedirect(route('admin.google-ads.copiloto.show', $plano->id));
         $response->assertSessionHas('success');
     }
+
+    public function test_plano_de_campanha_normaliza_e_retorna_sitelinks_padrao_golden(): void
+    {
+        $dados = $this->planoDaIA();
+        unset($dados['sitelinks']);
+
+        $conferido = PlanoDeCampanha::conferir($dados, $this->briefing());
+        $sitelinks = $conferido['plano']['sitelinks'];
+
+        $this->assertNotEmpty($sitelinks);
+        $this->assertCount(4, $sitelinks);
+
+        foreach ($sitelinks as $sitelink) {
+            $this->assertNotEmpty($sitelink['texto']);
+            $this->assertLessThanOrEqual(25, mb_strlen($sitelink['texto']));
+            $this->assertLessThanOrEqual(35, mb_strlen($sitelink['descricao1']));
+            $this->assertLessThanOrEqual(35, mb_strlen($sitelink['descricao2']));
+            $this->assertStringStartsWith('http', $sitelink['url']);
+        }
+    }
+
+    public function test_plano_de_campanha_imagens_recomendadas_apontam_para_arquivos_existentes(): void
+    {
+        $imagens = PlanoDeCampanha::imagensRecomendadas();
+
+        $this->assertNotEmpty($imagens);
+        foreach ($imagens as $img) {
+            $this->assertNotEmpty($img['nome']);
+            $this->assertContains($img['tipo'], ['BUSINESS_LOGO', 'AD_IMAGE']);
+            $caminho = public_path($img['arquivo']);
+            $this->assertFileExists($caminho, "O arquivo de imagem '{$img['arquivo']}' deve existir em public/.");
+            $this->assertTrue($img['existe']);
+        }
+    }
 }

@@ -150,6 +150,69 @@
             </p>
         </x-admin.card>
 
+        {{-- SEÇÃO DE SITELINKS DO ANÚNCIO --}}
+        @php
+            $sitelinksPlano = (array) ($conteudo['sitelinks'] ?? config('google_ads.copiloto.sitelinks_padrao', []));
+            $imagensPlano = (array) ($conteudo['imagens_recomendadas'] ?? \App\Services\GoogleAds\PlanoDeCampanha::imagensRecomendadas());
+        @endphp
+
+        <x-admin.card title="Sitelinks do anúncio (links adicionais no Google)" icon="fa-link" class="mb-3"
+            descricao="Extensões de sitelink que aumentam o espaço do anúncio no Google e levam direto às seções estratégicas do site.">
+            <div class="row g-2">
+                @foreach ($sitelinksPlano as $sitelink)
+                    <div class="col-12 col-md-6">
+                        <div class="recurso-item h-100 p-2" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="fw-semibold text-primary small"><i class="fas fa-arrow-up-right-from-square me-1"></i> {{ $sitelink['texto'] }}</span>
+                                <span class="badge bg-secondary-subtle text-secondary small py-0" style="font-size: 0.7rem;">Sitelink</span>
+                            </div>
+                            @if (!empty($sitelink['descricao1']))
+                                <div class="text-light small" style="font-size: 0.8rem;">
+                                    {{ $sitelink['descricao1'] }}
+                                    @if (!empty($sitelink['descricao2']))
+                                        · {{ $sitelink['descricao2'] }}
+                                    @endif
+                                </div>
+                            @endif
+                            <div class="text-secondary small text-truncate mt-1" style="font-size: 0.75rem;" title="{{ $sitelink['url'] }}">
+                                {{ $sitelink['url'] }}
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </x-admin.card>
+
+        {{-- SEÇÃO DE IMAGENS E PRODUTOS REAIS --}}
+        <x-admin.card title="Recursos visuais e produtos reais da Golden" icon="fa-images" class="mb-3"
+            descricao="Imagens dos produtos e serviços reais sincronizados com a página de destino e catálogo da Golden Rastreamento.">
+            <div class="row g-2">
+                @foreach ($imagensPlano as $imgRec)
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="recurso-item p-2 h-100 d-flex flex-column justify-content-between" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;">
+                            <div>
+                                <div class="position-relative mb-2 mx-auto rounded overflow-hidden" style="width: 100%; height: 95px; background: #111; display: flex; align-items: center; justify-content: center;">
+                                    @if ($imgRec['existe'])
+                                        <img src="{{ $imgRec['url'] }}" alt="{{ $imgRec['nome'] }}" style="max-width: 100%; max-height: 100%; object-fit: cover;" loading="lazy">
+                                    @else
+                                        <i class="fas fa-image text-secondary"></i>
+                                    @endif
+                                    <span class="position-absolute top-0 end-0 m-1 badge {{ $imgRec['tipo'] === 'BUSINESS_LOGO' ? 'bg-warning text-dark' : 'bg-primary' }} py-0" style="font-size: 0.65rem;">
+                                        {{ $imgRec['tipo'] === 'BUSINESS_LOGO' ? 'Logotipo (1:1)' : 'Extensão Imagem' }}
+                                    </span>
+                                </div>
+                                <div class="fw-semibold small text-truncate" title="{{ $imgRec['nome'] }}">{{ $imgRec['nome'] }}</div>
+                                <div class="text-secondary small mt-1" style="font-size: 0.75rem; line-height: 1.2;">{{ $imgRec['descricao'] }}</div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div class="alert alert-info py-2 px-3 small border-0 bg-info-subtle text-info-emphasis mt-3 mb-0">
+                <i class="fas fa-shield-halved me-1"></i> Ao aplicar este plano, o <strong>Logotipo da Golden Rastreamento</strong> e os <strong>Sitelinks</strong> são vinculados automaticamente à campanha no Google Ads.
+            </div>
+        </x-admin.card>
+
         <x-admin.card title="Grupos de anúncios" icon="fa-layer-group"
             descricao="Cada grupo tem o seu conjunto de palavras-chave e as negativas que barram o que não serve.">
             <div class="row g-3">

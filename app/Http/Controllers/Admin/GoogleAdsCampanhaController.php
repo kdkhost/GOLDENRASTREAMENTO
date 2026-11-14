@@ -16,8 +16,10 @@ use App\Support\GoogleAdsCache;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 /**
@@ -418,12 +420,119 @@ class GoogleAdsCampanhaController extends Controller
 
         Activity::log(
             'google_ads_recurso_vinculado',
-            "{$tipoRotulo} \"{$nome}\" vinculado à campanha {$lida['nome']} na conta {$conta->numeroConta()}.",
+            "{$tipoRotulo} \"{$nome}\" processado na campanha {$lida['nome']} na conta {$conta->numeroConta()}.",
             $conta,
             ['campaign_id' => $lida['id'], 'tipo' => $tipoFinal, 'asset' => $resultado['asset']],
         );
 
+        if (! empty($resultado['aviso'])) {
+            return $this->paraRecursos($conta, $lida, 'info', $resultado['aviso']);
+        }
+
         return $this->paraRecursos($conta, $lida, 'success', "{$tipoRotulo} vinculado à campanha com sucesso! O Google revisa o recurso antes de exibi-lo.");
+    }
+
+    public function vincularAssetExistente(Request $request, string $campanha): RedirectResponse
+    {
+        $aberta = $this->abrir($request, $campanha);
+
+        if ($aberta instanceof RedirectResponse) {
+            return $aberta;
+        }
+
+        [$conta, $lida] = $aberta;
+        $dados = $request->validate([
+            'asset_id' => ['required', 'string', 'max:64'],
+            'tipo' => ['required', 'string', 'in:BUSINESS_LOGO,AD_IMAGE'],
+        ]);
+
+        $assetResource = 'customers/'.$conta->customer_id.'/assets/'.$dados['asset_id'];
+
+        try {
+            $ref = new \ReflectionClass($this->editor);
+            $prep = $ref->getMethod('prepararEscrita');
+            $prep->setAccessible(true);
+            $prep->invoke($this->editor, $conta);
+
+            $vincular = $ref->getMethod('vincularAsset');
+            $vincular->setAccessible(true);
+            $vincular->invoke($this->editor, $conta, $lida, $assetResource, $dados['tipo'], 'imagem.vincular.existente');
+        } catch (Throwable $e) {
+            if (str_contains($e->getMessage(), 'UNSUPPORTED_FIELD_TYPE')) {
+                return $this->paraRecursos($conta, $lida, 'warning', 'O Google Ads restringe extensões de imagem de anúncio (AD_IMAGE) em contas com menos de 60 dias de histórico. Logotipos da empresa (1:1 quadrado) continuam liberados normalmente.');
+            }
+
+            return $this->erro($e, 'vincular recurso existente');
+        }
+
+        Activity::log(
+            'google_ads_recurso_vinculado',
+            "Recurso {$dados['asset_id']} ({$dados['tipo']}) vinculado à campanha {$lida['nome']}.",
+            $conta,
+            ['campaign_id' => $lida['id'], 'asset_id' => $dados['asset_id'], 'tipo' => $dados['tipo']],
+        );
+
+        return $this->paraRecursos($conta, $lida, 'success', 'Recurso #'.$dados['asset_id'].' vinculado à campanha com sucesso!');
+    }
+
+    /**
+     * Entrega a imagem de um recurso do Google Ads com cache local seguro.
+     * Evita bloqueios de adblockers em domínios de terceiros (googlesyndication) e elimina imagens quebradas.
+     */
+    public function imagemAsset(Request $request, string $conta, string $asset): Response
+    {
+        $pastaCache = storage_path('app/public/google-ads/assets');
+        $arquivos = glob($pastaCache.'/'.$asset.'.*');
+
+        if (! empty($arquivos) && is_file($arquivos[0])) {
+            return response()->file($arquivos[0], [
+                'Cache-Control' => 'public, max-age=604800, immutable',
+            ]);
+        }
+
+        // Tenta baixar a imagem a partir da URL do Google Ads
+        $contaModel = GoogleAdsAccount::find($conta);
+        if ($contaModel) {
+            try {
+                $ref = new \ReflectionClass($this->editor);
+                $prep = $ref->getMethod('prepararEscrita');
+                $prep->setAccessible(true);
+                $prep->invoke($this->editor, $contaModel);
+
+                $cons = $ref->getMethod('consultar');
+                $cons->setAccessible(true);
+                $linhas = $cons->invoke($this->editor, $contaModel, "SELECT asset.id, asset.image_asset.full_size.url FROM asset WHERE asset.id = {$asset}", 'asset.imagem.baixar');
+                $url = (string) data_get($linhas, '0.asset.imageAsset.fullSize.url', '');
+
+                if ($url !== '') {
+                    $resp = Http::timeout(10)->withHeaders([
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                    ])->get($url);
+
+                    if ($resp->successful() && strlen($resp->body()) > 100) {
+                        if (! is_dir($pastaCache)) {
+                            @mkdir($pastaCache, 0755, true);
+                        }
+                        $caminhoNovo = $pastaCache.'/'.$asset.'.jpg';
+                        file_put_contents($caminhoNovo, $resp->body());
+
+                        return response()->file($caminhoNovo, [
+                            'Cache-Control' => 'public, max-age=604800, immutable',
+                        ]);
+                    }
+                }
+            } catch (Throwable) {
+                // segue para fallback
+            }
+        }
+
+        // Fallback: SVG elegante de recurso visual
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#18181b"/><path d="M25 70 L45 45 L58 58 L72 38 L88 70 Z" fill="#3f3f46"/><circle cx="38" cy="32" r="7" fill="#d4a017"/></svg>';
+
+        return response($svg, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
     }
 
     public function vincularNomeEmpresa(Request $request, string $campanha): RedirectResponse

@@ -141,13 +141,14 @@ final class Copiloto
             'Responda sempre em português do Brasil.',
             'Devolva **apenas** um objeto JSON válido: sem texto antes ou depois, sem comentários e sem cerca de código.',
             'Formato exato do plano:'
-                .' {"nome":"...","objetivo":"leads|vendas|whatsapp|ligacoes",'
+                .' {"nome":"...","objetivo":"pesquisa|vendas|leads|whatsapp|ligacoes",'
                 .'"estrategia_lance":"MANUAL_CPC",'
                 .'"cpc_maximo_centavos":200,"orcamento_diario":40.00,'
                 .'"url":"https://...","regioes":["..."],"idiomas":["Português"],'
                 .'"grupos":[{"nome":"...","tema":"...",'
                 .'"palavras_chave":[{"texto":"...","correspondencia":"frase"}],"negativas":["..."]}],'
                 .'"anuncios":{"titulos":["..."],"descricoes":["..."],"caminhos":["..."]},'
+                .'"sitelinks":[{"texto":"...","url":"https://...","descricao1":"...","descricao2":"..."}],'
                 .'"justificativa":"..."}',
             'Regras do plano:'
                 .' use de 3 a '.$this->limite('grupos_max', 8).' grupos;'
@@ -155,7 +156,8 @@ final class Copiloto
                 .' até '.$this->limite('negativas_max', 60).' negativas;'
                 .' de 8 a '.(int) config('google_ads.rsa.titulos_max', 15).' títulos de até '.(int) config('google_ads.rsa.caracteres_titulo', 30).' caracteres;'
                 .' de 3 a '.(int) config('google_ads.rsa.descricoes_max', 4).' descrições de até '.(int) config('google_ads.rsa.caracteres_descricao', 90).' caracteres;'
-                .' até 2 caminhos de até '.(int) config('google_ads.rsa.caracteres_rota', 15).' caracteres, sem espaço.',
+                .' até 2 caminhos de até '.(int) config('google_ads.rsa.caracteres_rota', 15).' caracteres, sem espaço;'
+                .' de 2 a 4 sitelinks (texto até 25 caracteres, url válida, descrições 1 e 2 até 35 caracteres).',
             'O anúncio precisa ser específico do serviço e do público; nada de texto genérico que serviria para qualquer empresa.',
             'Nunca invente preço, prazo, endereço, percentual ou condição que o briefing não informe. '
                 .'Se faltar um dado, escreva o anúncio sem ele em vez de preencher com suposição.',
@@ -195,10 +197,20 @@ final class Copiloto
         $objetivos = (array) config('google_ads.copiloto.objetivos');
         $objetivo = (string) ($briefing['objetivo'] ?? 'leads');
 
+        $diretrizObjetivo = match ($objetivo) {
+            'pesquisa' => 'Diretriz de pesquisa: foque em termos de busca de alta relevância, dúvidas frequentes sobre rastreamento veicular, comparativos de tecnologia e autoridade da marca Golden Rastreamento.',
+            'vendas' => 'Diretriz de vendas diretas: foque em conversão e fechamento comercial com planos a partir de R$ 49,90/mês, kit rastreador J16 4G com chip M2M, bloqueio remoto, instalação rápida e chamadas fortes para ação (Compre Já, Instale Hoje).',
+            'leads' => 'Diretriz de leads: foque em frotas e empresas corporativas, controle de rotas e combustível, telemetria e solicitação de orçamento.',
+            'whatsapp' => 'Diretriz de WhatsApp: foque em atendimento imediato e personalizado pelo WhatsApp dos consultores comerciais.',
+            'ligacoes' => 'Diretriz de ligações: foque em contato telefônico imediato com a central comercial.',
+            default => 'Diretriz: equilibre atração de tráfego qualificado e conversão de novos clientes.',
+        };
+
         return implode("\n", array_filter([
             'Briefing da campanha de pesquisa:',
             $this->linha('Nome sugerido', $briefing['nome'] ?? ''),
-            $this->linha('Objetivo', $objetivos[$objetivo] ?? $objetivo),
+            $this->linha('Objetivo do anúncio', $objetivos[$objetivo] ?? $objetivo),
+            $this->linha('Foco estratégico', $diretrizObjetivo),
             $this->linha('Orçamento diário (R$)', $briefing['orcamento'] ?? ''),
             $this->linha('Página de destino', $briefing['url'] ?? ''),
             $this->linha('Regiões', $briefing['regioes'] ?? ''),

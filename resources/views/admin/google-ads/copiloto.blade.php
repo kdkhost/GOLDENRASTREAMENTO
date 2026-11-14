@@ -26,17 +26,63 @@
                 <form method="POST" action="{{ route('admin.google-ads.copiloto.gerar') }}">
                     @csrf
                     <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold d-flex align-items-center gap-2 mb-2">
+                                <i class="fas fa-bullseye text-golden"></i> Qual é o foco principal do seu anúncio?
+                            </label>
+                            <div class="row g-2" id="seletor-objetivo">
+                                <div class="col-12 col-md-6">
+                                    <div class="card p-3 h-100 cursor-pointer border hover-border-golden objetivo-card active" data-objetivo="vendas" style="cursor: pointer; background: rgba(212,160,23,0.06); border-color: rgba(212,160,23,0.4) !important;">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-shopping-cart me-1"></i> Vendas Diretas</span>
+                                            <span class="badge bg-success-subtle text-success small py-0">Alta Conversão</span>
+                                        </div>
+                                        <div class="small fw-semibold text-light mb-1">Kits de Rastreadores e Planos</div>
+                                        <div class="text-secondary small">Focado em fechamento imediato com planos a partir de R$ 49,90/mês, rastreador J16 4G com chip M2M, preços transparentes e chamada "Compre Já".</div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="card p-3 h-100 cursor-pointer border hover-border-golden objetivo-card" data-objetivo="pesquisa" style="cursor: pointer; background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1);">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="badge bg-info-subtle text-info"><i class="fas fa-search me-1"></i> Pesquisa & Tráfego</span>
+                                            <span class="badge bg-primary-subtle text-primary small py-0">Volume de Buscas</span>
+                                        </div>
+                                        <div class="small fw-semibold text-light mb-1">Captura de Dúvidas e Busca Orgânica</div>
+                                        <div class="text-secondary small">Focado em capturar quem busca no Google por "como rastrear carro", "melhor rastreador com bloqueio", autoridade da Golden e cliques qualificados.</div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="card p-2 h-100 cursor-pointer border hover-border-golden objetivo-card" data-objetivo="leads" style="cursor: pointer; background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1);">
+                                        <div class="fw-semibold small text-light mb-1"><i class="fas fa-truck text-secondary me-1"></i> Leads & Frotas</div>
+                                        <div class="text-secondary small" style="font-size: 0.78rem;">Orçamentos para empresas, telemetria e gestão de frota.</div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="card p-2 h-100 cursor-pointer border hover-border-golden objetivo-card" data-objetivo="whatsapp" style="cursor: pointer; background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1);">
+                                        <div class="fw-semibold small text-light mb-1"><i class="fab fa-whatsapp text-success me-1"></i> WhatsApp Direto</div>
+                                        <div class="text-secondary small" style="font-size: 0.78rem;">Inicie conversas imediatas com a equipe comercial.</div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="card p-2 h-100 cursor-pointer border hover-border-golden objetivo-card" data-objetivo="ligacoes" style="cursor: pointer; background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1);">
+                                        <div class="fw-semibold small text-light mb-1"><i class="fas fa-phone text-warning me-1"></i> Ligações Imediatas</div>
+                                        <div class="text-secondary small" style="font-size: 0.78rem;">Ligações diretas para a central de vendas da Golden.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         @if ($contas->isNotEmpty())
                             <x-admin.field name="conta" type="select" label="Conta do Google Ads" :options="$contas->mapWithKeys(fn ($c) => [$c->id => $c->nomeTela()])->all()"
                                 col="col-12 col-md-6" empty="Escolher depois, na hora de aplicar" :opcional="true"
                                 hint="Onde a campanha vai nascer quando você aplicar o plano. O plano pode ser escrito antes de conectar a conta." />
                         @endif
 
-                        <x-admin.field name="nome" label="Nome da campanha" :required="true" maxlength="120" col="col-12"
-                            placeholder="Ex.: Rastreamento para frotas em São Paulo" />
+                        <x-admin.field name="nome" label="Nome da campanha" :required="true" maxlength="120" col="col-12 col-md-6"
+                            placeholder="Ex.: Vendas — Kit Rastreador J16 4G e Planos" />
 
-                        <x-admin.field name="objetivo" type="select" label="Objetivo" :options="$rotulosObjetivo" :required="true"
-                            col="col-12 col-md-6" hint="O que a campanha precisa entregar." />
+                        <x-admin.field name="objetivo" type="select" label="Objetivo confirmado" :options="$rotulosObjetivo" :required="true"
+                            col="col-12 col-md-6" value="vendas" hint="Selecione ou clique nos cartões acima." />
 
                         <x-admin.field name="orcamento" type="number" label="Orçamento diário (R$)" :required="true" col="col-12 col-md-6"
                             step="0.01" min="1" max="5000" placeholder="40,00"
@@ -243,4 +289,87 @@
         </x-admin.card>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const cards = document.querySelectorAll('.objetivo-card');
+    const selectObjetivo = document.querySelector('select[name="objetivo"]');
+    const inputNome = document.querySelector('input[name="nome"]');
+    const inputUrl = document.querySelector('input[name="url"]');
+    const inputOferta = document.querySelector('textarea[name="oferta"]');
+
+    const sugestoes = {
+        vendas: {
+            nome: 'Vendas — Kit Rastreador J16 4G e Planos',
+            url: 'https://goldenrastreamento.com.br/planos',
+            oferta: 'Kit Rastreador J16 4G homologado Anatel com chip M2M multi-operadora, planos a partir de R$ 49,90/mês, bloqueio remoto antifurto imediato e instalação expressa sem carência.'
+        },
+        pesquisa: {
+            nome: 'Pesquisa — Rastreamento Veicular e Segurança 24h',
+            url: 'https://goldenrastreamento.com.br/como-funciona',
+            oferta: 'Plataforma web e app Android/iOS em tempo real, tecnologia 4G/2G, alertas de ignição e cerca virtual. Atendimento 24h e suporte dedicado da Golden Rastreamento.'
+        },
+        leads: {
+            nome: 'Leads — Gestão de Frotas e Telemetria Corporativa',
+            url: 'https://goldenrastreamento.com.br/solucoes',
+            oferta: 'Redução de custos operacionais, controle de velocidade e telemetria avançada para caminhões, frotas e transportadoras. Solicite proposta personalizada.'
+        },
+        whatsapp: {
+            nome: 'Vendas WhatsApp — Cotação Imediata de Rastreador',
+            url: 'https://goldenrastreamento.com.br/contato',
+            oferta: 'Fale direto com especialista no WhatsApp, tire dúvidas sobre compatibilidade veicular e contrate sem burocracia.'
+        },
+        ligacoes: {
+            nome: 'Ligações — Central Comercial Golden Rastreamento',
+            url: 'https://goldenrastreamento.com.br/contato',
+            oferta: 'Ligue agora para nossa central comercial e garanta condições especiais de instalação para seu carro ou moto.'
+        }
+    };
+
+    function selecionarObjetivo(obj) {
+        cards.forEach(c => {
+            const ehEsse = c.getAttribute('data-objetivo') === obj;
+            if (ehEsse) {
+                c.style.background = 'rgba(212,160,23,0.08)';
+                c.style.borderColor = 'rgba(212,160,23,0.5)';
+            } else {
+                c.style.background = 'rgba(255,255,255,0.02)';
+                c.style.borderColor = 'rgba(255,255,255,0.1)';
+            }
+        });
+
+        if (selectObjetivo) {
+            selectObjetivo.value = obj;
+        }
+
+        if (sugestoes[obj]) {
+            if (inputNome && (!inputNome.value || inputNome.value.startsWith('Vendas —') || inputNome.value.startsWith('Pesquisa —') || inputNome.value.startsWith('Leads —') || inputNome.value.startsWith('Ligações —'))) {
+                inputNome.value = sugestoes[obj].nome;
+            }
+            if (inputUrl && (!inputUrl.value || inputUrl.value.includes('goldenrastreamento.com.br'))) {
+                inputUrl.value = sugestoes[obj].url;
+            }
+            if (inputOferta && !inputOferta.value) {
+                inputOferta.placeholder = sugestoes[obj].oferta;
+            }
+        }
+    }
+
+    cards.forEach(c => {
+        c.addEventListener('click', function () {
+            const obj = this.getAttribute('data-objetivo');
+            selecionarObjetivo(obj);
+        });
+    });
+
+    if (selectObjetivo) {
+        selectObjetivo.addEventListener('change', function () {
+            selecionarObjetivo(this.value);
+        });
+        selecionarObjetivo(selectObjetivo.value || 'vendas');
+    }
+});
+</script>
 @endsection

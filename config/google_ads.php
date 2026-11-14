@@ -198,10 +198,78 @@ return [
         'tipo_campanha' => 'PESQUISA',
 
         'objetivos' => [
-            'leads' => 'Mais contatos e orçamentos',
-            'vendas' => 'Mais vendas na loja',
-            'whatsapp' => 'Mais conversas no WhatsApp',
-            'ligacoes' => 'Mais ligações',
+            'pesquisa' => 'Pesquisa e Tráfego (Termos de busca, dúvidas e reconhecimento da marca)',
+            'vendas' => 'Vendas Diretas de Rastreadores (Kits 4G, preços e conversão imediata)',
+            'leads' => 'Leads e Orçamentos (Frotas e Empresas)',
+            'whatsapp' => 'Atendimento e Vendas no WhatsApp',
+            'ligacoes' => 'Ligações Imediatas para Central Comercial',
+        ],
+
+        // Sitelinks oficiais da Golden Rastreamento gerados e vinculados pelo Copiloto
+        'sitelinks_padrao' => [
+            [
+                'texto' => 'Planos e Preços',
+                'url' => 'https://goldenrastreamento.com.br/planos',
+                'descricao1' => 'Planos a partir de R$ 49,90',
+                'descricao2' => 'Rastreamento 24h sem fidelidade',
+            ],
+            [
+                'texto' => 'Rastreador J16 4G',
+                'url' => 'https://goldenrastreamento.com.br/como-funciona',
+                'descricao1' => 'Tecnologia 4G com chip M2M',
+                'descricao2' => 'Bloqueio remoto e alerta ignição',
+            ],
+            [
+                'texto' => 'Gestão de Frotas',
+                'url' => 'https://goldenrastreamento.com.br/solucoes',
+                'descricao1' => 'Controle de rotas e telemetria',
+                'descricao2' => 'Reduza custos da sua frota',
+            ],
+            [
+                'texto' => 'Fale no WhatsApp',
+                'url' => 'https://goldenrastreamento.com.br/contato',
+                'descricao1' => 'Atendimento comercial 24h',
+                'descricao2' => 'Tire dúvidas com especialista',
+            ],
+        ],
+
+        // Imagens reais de produtos e soluções comercializados pela Golden Rastreamento
+        'produtos_golden' => [
+            [
+                'nome' => 'Logotipo Golden Rastreamento',
+                'tipo' => 'BUSINESS_LOGO',
+                'arquivo' => 'img/logo-golden.png',
+                'proporcao' => '1:1',
+                'descricao' => 'Logotipo oficial da empresa para cabeçalho do anúncio (liberado)',
+            ],
+            [
+                'nome' => 'Rastreador J16 4G Anatel',
+                'tipo' => 'AD_IMAGE',
+                'arquivo' => 'img/home/rastreador-j16.jpg',
+                'proporcao' => '1.75:1',
+                'descricao' => 'Kit Rastreador Veicular J16 4G/2G com Chip M2M Multi-operadora',
+            ],
+            [
+                'nome' => 'Plataforma Web e App',
+                'tipo' => 'AD_IMAGE',
+                'arquivo' => 'img/home/plataforma-monitor.jpg',
+                'proporcao' => '1.75:1',
+                'descricao' => 'Sistema de rastreamento em tempo real no PC e celulares Android/iOS',
+            ],
+            [
+                'nome' => 'Gestão de Frotas',
+                'tipo' => 'AD_IMAGE',
+                'arquivo' => 'img/home/segmento-frota.jpg',
+                'proporcao' => '1.91:1',
+                'descricao' => 'Telemetria, controle de velocidade e segurança para caminhões e frotas',
+            ],
+            [
+                'nome' => 'Proteção Veicular 24h',
+                'tipo' => 'AD_IMAGE',
+                'arquivo' => 'img/home/segmento-particular.jpg',
+                'proporcao' => '1.91:1',
+                'descricao' => 'Segurança e bloqueio contra roubo e furto para carros e motos',
+            ],
         ],
 
         'estrategias' => [

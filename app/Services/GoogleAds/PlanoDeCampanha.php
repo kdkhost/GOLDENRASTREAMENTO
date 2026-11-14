@@ -60,6 +60,8 @@ final class PlanoDeCampanha
                 'descricoes' => [],
                 'caminhos' => [],
             ],
+            'sitelinks' => [],
+            'imagens_recomendadas' => [],
             'justificativa' => self::texto($bruto['justificativa'] ?? '', 2000),
         ];
 
@@ -94,6 +96,8 @@ final class PlanoDeCampanha
 
         [$plano['grupos'], $problemas, $avisos] = self::grupos($bruto['grupos'] ?? [], $problemas, $avisos);
         [$plano['anuncios'], $problemas, $avisos] = self::anuncios($bruto['anuncios'] ?? [], $problemas, $avisos);
+        [$plano['sitelinks'], $problemas, $avisos] = self::sitelinks($bruto['sitelinks'] ?? [], $plano['url'], $problemas, $avisos);
+        $plano['imagens_recomendadas'] = self::imagensRecomendadas();
 
         $forca = self::forca($plano);
 
@@ -283,6 +287,100 @@ final class PlanoDeCampanha
     }
 
     /**
+     * Sitelinks (links adicionais abaixo do anúncio) gerados pelo copiloto ou completados
+     * com os links oficiais de alta conversão da Golden Rastreamento.
+     *
+     * @return array{0: array<int, array{texto: string, url: string, descricao1: string, descricao2: string}>, 1: array<int, string>, 2: array<int, string>}
+     */
+    private static function sitelinks(mixed $brutos, string $urlDestino, array $problemas, array $avisos): array
+    {
+        $sitelinks = [];
+        $padroes = (array) config('google_ads.copiloto.sitelinks_padrao', []);
+
+        foreach (self::itens($brutos) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $texto = self::texto($item['texto'] ?? '', 25);
+            $url = self::urlDe($item['url'] ?? $urlDestino);
+
+            if ($texto === '' || $url === '') {
+                continue;
+            }
+
+            $desc1 = self::texto($item['descricao1'] ?? '', 35);
+            $desc2 = self::texto($item['descricao2'] ?? '', 35);
+
+            $sitelinks[] = [
+                'texto' => $texto,
+                'url' => $url,
+                'descricao1' => $desc1,
+                'descricao2' => $desc2,
+            ];
+
+            if (count($sitelinks) >= 4) {
+                break;
+            }
+        }
+
+        // Se o modelo trouxe menos de 2 sitelinks, completa com os sitelinks oficiais da casa
+        if (count($sitelinks) < 4) {
+            $existentes = array_map(static fn (array $s): string => mb_strtolower($s['texto']), $sitelinks);
+
+            foreach ($padroes as $padrao) {
+                if (count($sitelinks) >= 4) {
+                    break;
+                }
+
+                $textoPadrao = self::texto($padrao['texto'] ?? '', 25);
+
+                if ($textoPadrao !== '' && ! in_array(mb_strtolower($textoPadrao), $existentes, true)) {
+                    $sitelinks[] = [
+                        'texto' => $textoPadrao,
+                        'url' => self::urlDe($padrao['url'] ?? $urlDestino),
+                        'descricao1' => self::texto($padrao['descricao1'] ?? '', 35),
+                        'descricao2' => self::texto($padrao['descricao2'] ?? '', 35),
+                    ];
+                    $existentes[] = mb_strtolower($textoPadrao);
+                }
+            }
+        }
+
+        return [$sitelinks, $problemas, $avisos];
+    }
+
+    /**
+     * Recursos de imagem reais dos produtos e serviços comercializados pela Golden Rastreamento.
+     *
+     * @return array<int, array{nome: string, tipo: string, arquivo: string, proporcao: string, descricao: string, url: string, existe: bool}>
+     */
+    public static function imagensRecomendadas(): array
+    {
+        $produtos = (array) config('google_ads.copiloto.produtos_golden', []);
+        $resultado = [];
+
+        foreach ($produtos as $p) {
+            $arquivo = (string) ($p['arquivo'] ?? '');
+            $caminhoAbsoluto = public_path($arquivo);
+            $existe = is_file($caminhoAbsoluto);
+
+            $resultado[] = [
+                'nome' => (string) ($p['nome'] ?? ''),
+                'tipo' => (string) ($p['tipo'] ?? 'AD_IMAGE'),
+                'arquivo' => $arquivo,
+                'caminho_absoluto' => $caminhoAbsoluto,
+                'proporcao' => (string) ($p['proporcao'] ?? '1:1'),
+                'descricao' => (string) ($p['descricao'] ?? ''),
+                'url' => asset($arquivo),
+                'existe' => $existe,
+            ];
+        }
+
+        return $resultado;
+    }
+
+    /**
      * A régua da casa para a força do anúncio — uma estimativa, não o Índice de qualidade.
      *
      * O Google calcula o próprio índice com histórico de leilão, e nenhuma conta local chega
@@ -327,6 +425,10 @@ final class PlanoDeCampanha
             if ($media >= 15) {
                 $nota += 5;
             }
+        }
+
+        if (count($plano['sitelinks'] ?? []) >= 2) {
+            $nota += 5;
         }
 
         $nota = max(0, min(100, $nota));

@@ -102,7 +102,7 @@ final class GoogleAdsEditor
             'idiomas' => [],
             'negativas' => [],
             'grupos' => [],
-            'recursos' => ['imagens' => [], 'sitelinks' => [], 'frases' => [], 'empresa' => null],
+            'recursos' => ['imagens' => [], 'sitelinks' => [], 'frases' => [], 'empresa' => null, 'biblioteca' => []],
         ];
 
         $this->lerCriterios($conta, $campanhaId, $lida);
@@ -400,8 +400,9 @@ final class GoogleAdsEditor
      *
      * A imagem vai em base64 dentro do JSON — a API não tem upload separado. O recurso nasce
      * na conta (vale para outras campanhas) e o vínculo é o que faz a campanha usá-la.
+     * Guarda também uma cópia local de alta resolução em cache para nunca quebrar a visualização.
      *
-     * @return array{asset: string, vinculo: string, tipo: string}
+     * @return array{asset: string, vinculo: string, tipo: string, aviso?: string}
      */
     public function vincularImagem(GoogleAdsAccount $conta, array $campanha, string $caminhoAbsoluto, string $nome, string $tipo = 'AUTO'): array
     {
@@ -427,23 +428,52 @@ final class GoogleAdsEditor
             'imageAsset' => ['data' => base64_encode($conteudo)],
         ], 'imagem.criar');
 
+        $assetId = basename($asset);
+
+        // Salva cópia local em cache permanente para visualização sem falhas
+        $pastaCache = storage_path('app/public/google-ads/assets');
+        if (! is_dir($pastaCache)) {
+            @mkdir($pastaCache, 0755, true);
+        }
+        $extensao = strtolower(pathinfo($caminhoAbsoluto, PATHINFO_EXTENSION)) ?: ($eQuadrada ? 'png' : 'jpg');
+        @file_put_contents($pastaCache.'/'.$assetId.'.'.$extensao, $conteudo);
+
         try {
             $vinculo = $this->vincularAsset($conta, $campanha, $asset, $tipo, 'imagem.vincular');
+
+            return ['asset' => $asset, 'vinculo' => $vinculo, 'tipo' => $tipo];
         } catch (GoogleAdsFalhou $e) {
+            // Se AD_IMAGE falhar e a imagem for quadrada, tenta automaticamente como Logotipo da Empresa
             if ($tipo === 'AD_IMAGE' && $eQuadrada) {
                 try {
                     $vinculo = $this->vincularAsset($conta, $campanha, $asset, 'BUSINESS_LOGO', 'imagem.vincular.logo');
 
                     return ['asset' => $asset, 'vinculo' => $vinculo, 'tipo' => 'BUSINESS_LOGO'];
                 } catch (\Throwable) {
-                    throw $e;
+                    // segue para fallback
+                }
+            }
+
+            // Se for BUSINESS_LOGO que falhou na campanha, tenta vincular no nível da Conta inteira (CustomerAsset)
+            if ($tipo === 'BUSINESS_LOGO') {
+                try {
+                    $resCust = $this->chamar($conta, 'customers/'.$conta->customer_id.'/customerAssets:mutate', [
+                        'operations' => [['create' => [
+                            'asset' => $asset,
+                            'fieldType' => 'BUSINESS_LOGO',
+                        ]]],
+                    ], 'imagem.vincular.customer_logo');
+
+                    $vinculo = (string) data_get($resCust, 'results.0.resourceName', '');
+
+                    return ['asset' => $asset, 'vinculo' => $vinculo, 'tipo' => 'BUSINESS_LOGO'];
+                } catch (\Throwable) {
+                    // segue
                 }
             }
 
             throw $e;
         }
-
-        return ['asset' => $asset, 'vinculo' => $vinculo, 'tipo' => $tipo];
     }
 
     /**
@@ -746,11 +776,13 @@ final class GoogleAdsEditor
         foreach ($this->consultar($conta, $gaql, 'recursos.ler') as $linha) {
             $vinculo = (array) ($linha['campaignAsset'] ?? []);
             $asset = (array) ($linha['asset'] ?? []);
+            $assetId = (string) ($asset['id'] ?? '');
             $base = [
                 'vinculo' => (string) ($vinculo['resourceName'] ?? ''),
-                'asset_id' => (string) ($asset['id'] ?? ''),
+                'asset_id' => $assetId,
                 'status' => (string) ($vinculo['status'] ?? ''),
                 'campo' => (string) ($vinculo['fieldType'] ?? ''),
+                'nivel' => 'Campanha',
             ];
 
             switch ((string) ($vinculo['fieldType'] ?? '')) {
@@ -761,6 +793,7 @@ final class GoogleAdsEditor
                     $lida['recursos']['imagens'][] = $base + [
                         'nome' => (string) ($asset['name'] ?? ''),
                         'url' => (string) data_get($asset, 'imageAsset.fullSize.url', ''),
+                        'proxy_url' => route('admin.google-ads.asset.imagem', ['conta' => $conta->id, 'asset' => $assetId]),
                         'largura' => (int) data_get($asset, 'imageAsset.fullSize.widthPixels', 0),
                         'altura' => (int) data_get($asset, 'imageAsset.fullSize.heightPixels', 0),
                         'tipo_rotulo' => in_array($vinculo['fieldType'], ['BUSINESS_LOGO', 'LOGO', 'LANDSCAPE_LOGO'], true) ? 'Logotipo' : 'Imagem de anúncio',
@@ -785,6 +818,91 @@ final class GoogleAdsEditor
                     ];
                     break;
             }
+        }
+
+        // Lê também recursos vinculados aos grupos de anúncios da campanha (AdGroupAsset)
+        try {
+            $gaqlAg = "SELECT campaign.id, ad_group.id, ad_group_asset.resource_name, ad_group_asset.field_type, ad_group_asset.status, asset.id, asset.name, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels FROM ad_group_asset WHERE campaign.id = {$campanhaId} AND ad_group_asset.field_type IN ('AD_IMAGE', 'BUSINESS_LOGO', 'LOGO') AND ad_group_asset.status != 'REMOVED'";
+            foreach ($this->consultar($conta, $gaqlAg, 'recursos.adgroup.ler') as $linha) {
+                $vinculo = (array) ($linha['adGroupAsset'] ?? []);
+                $asset = (array) ($linha['asset'] ?? []);
+                $assetId = (string) ($asset['id'] ?? '');
+
+                $lida['recursos']['imagens'][] = [
+                    'vinculo' => (string) ($vinculo['resourceName'] ?? ''),
+                    'asset_id' => $assetId,
+                    'status' => (string) ($vinculo['status'] ?? ''),
+                    'campo' => (string) ($vinculo['fieldType'] ?? ''),
+                    'nivel' => 'Grupo de Anúncios',
+                    'nome' => (string) ($asset['name'] ?? ''),
+                    'url' => (string) data_get($asset, 'imageAsset.fullSize.url', ''),
+                    'proxy_url' => route('admin.google-ads.asset.imagem', ['conta' => $conta->id, 'asset' => $assetId]),
+                    'largura' => (int) data_get($asset, 'imageAsset.fullSize.widthPixels', 0),
+                    'altura' => (int) data_get($asset, 'imageAsset.fullSize.heightPixels', 0),
+                    'tipo_rotulo' => in_array($vinculo['fieldType'] ?? '', ['BUSINESS_LOGO', 'LOGO'], true) ? 'Logotipo (Grupo)' : 'Imagem (Grupo)',
+                ];
+            }
+        } catch (\Throwable) {
+            // Se a consulta de ad_group_asset falhar, segue com os recursos da campanha
+        }
+
+        // Lê também os recursos visuais de nível de conta (CustomerAsset - Logotipo/Imagens)
+        try {
+            $gaqlCust = "SELECT customer_asset.resource_name, customer_asset.field_type, customer_asset.status, asset.id, asset.name, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels FROM customer_asset WHERE customer_asset.field_type IN ('BUSINESS_LOGO', 'LOGO', 'AD_IMAGE') AND customer_asset.status != 'REMOVED'";
+            foreach ($this->consultar($conta, $gaqlCust, 'recursos.customer.ler') as $linha) {
+                $vinculo = (array) ($linha['customerAsset'] ?? []);
+                $asset = (array) ($linha['asset'] ?? []);
+                $assetId = (string) ($asset['id'] ?? '');
+
+                $jaExiste = false;
+                foreach ($lida['recursos']['imagens'] as $img) {
+                    if ($img['asset_id'] === $assetId) {
+                        $jaExiste = true;
+                        break;
+                    }
+                }
+
+                if (! $jaExiste && $assetId !== '') {
+                    $lida['recursos']['imagens'][] = [
+                        'vinculo' => (string) ($vinculo['resourceName'] ?? ''),
+                        'asset_id' => $assetId,
+                        'status' => (string) ($vinculo['status'] ?? ''),
+                        'campo' => (string) ($vinculo['fieldType'] ?? ''),
+                        'nivel' => 'Conta inteira',
+                        'nome' => (string) ($asset['name'] ?? ''),
+                        'url' => (string) data_get($asset, 'imageAsset.fullSize.url', ''),
+                        'proxy_url' => route('admin.google-ads.asset.imagem', ['conta' => $conta->id, 'asset' => $assetId]),
+                        'largura' => (int) data_get($asset, 'imageAsset.fullSize.widthPixels', 0),
+                        'altura' => (int) data_get($asset, 'imageAsset.fullSize.heightPixels', 0),
+                        'tipo_rotulo' => in_array($vinculo['fieldType'] ?? '', ['BUSINESS_LOGO', 'LOGO'], true) ? 'Logotipo (Conta)' : 'Imagem (Conta)',
+                    ];
+                }
+            }
+        } catch (\Throwable) {
+            // segue
+        }
+
+        // Lê a biblioteca de imagens da conta no Google Ads para permitir visualização e vínculo com 1 clique
+        try {
+            $gaqlLib = "SELECT asset.id, asset.name, asset.type, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels FROM asset WHERE asset.type = 'IMAGE' ORDER BY asset.id DESC LIMIT 30";
+            foreach ($this->consultar($conta, $gaqlLib, 'recursos.biblioteca.ler') as $linha) {
+                $asset = (array) ($linha['asset'] ?? []);
+                $assetId = (string) ($asset['id'] ?? '');
+
+                if ($assetId !== '') {
+                    $lida['recursos']['biblioteca'][] = [
+                        'asset_id' => $assetId,
+                        'resource' => (string) ($asset['resourceName'] ?? 'customers/'.$conta->customer_id.'/assets/'.$assetId),
+                        'nome' => (string) ($asset['name'] ?? 'Imagem #'.$assetId),
+                        'url' => (string) data_get($asset, 'imageAsset.fullSize.url', ''),
+                        'proxy_url' => route('admin.google-ads.asset.imagem', ['conta' => $conta->id, 'asset' => $assetId]),
+                        'largura' => (int) data_get($asset, 'imageAsset.fullSize.widthPixels', 0),
+                        'altura' => (int) data_get($asset, 'imageAsset.fullSize.heightPixels', 0),
+                    ];
+                }
+            }
+        } catch (\Throwable) {
+            // segue
         }
     }
 

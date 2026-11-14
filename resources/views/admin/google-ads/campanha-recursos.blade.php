@@ -36,16 +36,17 @@
 @section('content')
 @php
     $endereco = ['campanha' => $campanha['id'], 'conta' => $conta->id];
-    $recursos = $campanha['recursos'] ?? ['imagens' => [], 'sitelinks' => [], 'frases' => [], 'empresa' => null];
+    $recursos = $campanha['recursos'] ?? ['imagens' => [], 'sitelinks' => [], 'frases' => [], 'empresa' => null, 'biblioteca' => []];
     $imagens = $recursos['imagens'] ?? [];
     $sitelinks = $recursos['sitelinks'] ?? [];
     $frases = $recursos['frases'] ?? [];
     $empresa = $recursos['empresa'] ?? null;
+    $biblioteca = $recursos['biblioteca'] ?? [];
 @endphp
 
 <div class="row g-3">
     <div class="col-lg-8">
-        {{-- SEÇÃO 1: IMAGENS --}}
+        {{-- SEÇÃO 1: IMAGENS VINCULADAS --}}
         <x-admin.card title="Imagens vinculadas" icon="fa-image"
             descricao="Imagens e logotipos exibidos junto ao anúncio nas buscas móveis e computadores.">
             <div class="alert alert-info d-flex align-items-start gap-2 mb-3 py-2 px-3 small border-0 bg-info-subtle text-info-emphasis">
@@ -58,16 +59,26 @@
             @if ($imagens !== [])
                 <div class="row g-3 mb-4">
                     @foreach ($imagens as $imagem)
+                        @php
+                            $imgSrc = !empty($imagem['proxy_url']) ? $imagem['proxy_url'] : ($imagem['url'] ?: '');
+                        @endphp
                         <div class="col-12 col-sm-6">
                             <div class="recurso-item d-flex align-items-center justify-content-between gap-3 h-100">
                                 <div class="d-flex align-items-center gap-3 overflow-hidden">
-                                    @if ($imagem['url'] !== '')
-                                        <img src="{{ $imagem['url'] }}" alt="{{ $imagem['nome'] }}" class="recurso-img-thumb" loading="lazy">
-                                    @else
-                                        <div class="recurso-img-thumb d-flex align-items-center justify-content-center text-secondary">
-                                            <i class="fas fa-image"></i>
-                                        </div>
-                                    @endif
+                                    <div class="position-relative flex-shrink-0">
+                                        @if ($imgSrc !== '')
+                                            <img src="{{ $imgSrc }}" alt="{{ $imagem['nome'] }}" class="recurso-img-thumb" loading="lazy"
+                                                referrerpolicy="no-referrer"
+                                                onerror="this.style.display='none'; if(this.nextElementSibling){this.nextElementSibling.style.display='flex';}">
+                                            <div class="recurso-img-thumb align-items-center justify-content-center text-secondary" style="display: none;">
+                                                <i class="fas fa-image"></i>
+                                            </div>
+                                        @else
+                                            <div class="recurso-img-thumb d-flex align-items-center justify-content-center text-secondary">
+                                                <i class="fas fa-image"></i>
+                                            </div>
+                                        @endif
+                                    </div>
                                     <div class="overflow-hidden">
                                         <div class="fw-semibold text-truncate small" title="{{ $imagem['nome'] }}">{{ $imagem['nome'] ?: 'Imagem #'.$imagem['asset_id'] }}</div>
                                         <div class="text-secondary small">
@@ -75,9 +86,12 @@
                                                 {{ $imagem['largura'] }} × {{ $imagem['altura'] }} px
                                             @endif
                                         </div>
-                                        <div class="d-flex align-items-center gap-1 mt-1">
+                                        <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
                                             @if ($imagem['tipo_rotulo'] ?? '')
                                                 <span class="badge bg-primary-subtle text-primary small py-0 px-1">{{ $imagem['tipo_rotulo'] }}</span>
+                                            @endif
+                                            @if (!empty($imagem['nivel']))
+                                                <span class="badge bg-dark-subtle text-secondary small py-0 px-1">{{ $imagem['nivel'] }}</span>
                                             @endif
                                             @if ($imagem['status'])
                                                 <span class="badge bg-secondary-subtle text-secondary small py-0 px-1">{{ $imagem['status'] }}</span>
@@ -85,15 +99,17 @@
                                         </div>
                                     </div>
                                 </div>
-                                <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.remover', $endereco) }}"
-                                    data-confirmar="Desvincular esta imagem da campanha? O arquivo continuará salvo na sua biblioteca do Google Ads.">
-                                    @csrf
-                                    @method('DELETE')
-                                    <input type="hidden" name="vinculo" value="{{ $imagem['vinculo'] }}">
-                                    <button class="btn btn-outline-danger btn-sm" title="Desvincular">
-                                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                                    </button>
-                                </form>
+                                @if (!empty($imagem['vinculo']))
+                                    <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.remover', $endereco) }}"
+                                        data-confirmar="Desvincular esta imagem da campanha? O arquivo continuará salvo na sua biblioteca do Google Ads.">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="vinculo" value="{{ $imagem['vinculo'] }}">
+                                        <button class="btn btn-outline-danger btn-sm" title="Desvincular">
+                                            <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     @endforeach
@@ -138,6 +154,69 @@
                 </form>
             </div>
         </x-admin.card>
+
+        {{-- SEÇÃO 1.5: BIBLIOTECA DE IMAGENS DA CONTA NO GOOGLE ADS --}}
+        @if ($biblioteca !== [])
+            <x-admin.card title="Biblioteca de imagens salvas na conta" icon="fa-photo-film" class="mt-3"
+                descricao="Imagens já enviadas para sua conta do Google Ads. Vincule qualquer uma à campanha com um clique.">
+                <div class="row g-2">
+                    @foreach ($biblioteca as $assetBib)
+                        @php
+                            $bibSrc = !empty($assetBib['proxy_url']) ? $assetBib['proxy_url'] : ($assetBib['url'] ?: '');
+                            $eQuad = $assetBib['largura'] > 0 && $assetBib['altura'] > 0 && abs($assetBib['largura'] - $assetBib['altura']) / max($assetBib['largura'], $assetBib['altura']) <= 0.08;
+                        @endphp
+                        <div class="col-6 col-md-4 col-xl-3">
+                            <div class="recurso-item p-2 h-100 d-flex flex-column justify-content-between text-center">
+                                <div>
+                                    <div class="position-relative mb-2 mx-auto" style="width: 100%; height: 90px; background: #111; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                        @if ($bibSrc !== '')
+                                            <img src="{{ $bibSrc }}" alt="{{ $assetBib['nome'] }}" style="max-width: 100%; max-height: 100%; object-fit: contain;" loading="lazy"
+                                                referrerpolicy="no-referrer"
+                                                onerror="this.style.display='none'; if(this.nextElementSibling){this.nextElementSibling.style.display='flex';}">
+                                            <div class="align-items-center justify-content-center text-secondary h-100 w-100" style="display: none;">
+                                                <i class="fas fa-image"></i>
+                                            </div>
+                                        @else
+                                            <i class="fas fa-image text-secondary"></i>
+                                        @endif
+                                    </div>
+                                    <div class="small fw-semibold text-truncate mb-1" title="{{ $assetBib['nome'] }}">{{ $assetBib['nome'] }}</div>
+                                    <div class="text-secondary small mb-2" style="font-size: 0.75rem;">
+                                        @if ($assetBib['largura'])
+                                            {{ $assetBib['largura'] }} × {{ $assetBib['altura'] }} px
+                                            @if ($eQuad)
+                                                <span class="text-warning">· 1:1</span>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column gap-1">
+                                    @if ($eQuad)
+                                        <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.existente', $endereco) }}">
+                                            @csrf
+                                            <input type="hidden" name="asset_id" value="{{ $assetBib['asset_id'] }}">
+                                            <input type="hidden" name="tipo" value="BUSINESS_LOGO">
+                                            <button class="btn btn-outline-warning btn-sm w-100 py-0" style="font-size: 0.75rem;">
+                                                <i class="fas fa-tag me-1"></i> Logotipo
+                                            </button>
+                                        </form>
+                                    @else
+                                        <form method="POST" action="{{ route('admin.google-ads.campanhas.recursos.existente', $endereco) }}">
+                                            @csrf
+                                            <input type="hidden" name="asset_id" value="{{ $assetBib['asset_id'] }}">
+                                            <input type="hidden" name="tipo" value="AD_IMAGE">
+                                            <button class="btn btn-outline-primary btn-sm w-100 py-0" style="font-size: 0.75rem;">
+                                                <i class="fas fa-bullhorn me-1"></i> Anúncio
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </x-admin.card>
+        @endif
 
         {{-- SEÇÃO 2: SITELINKS --}}
         <x-admin.card title="Sitelinks (links adicionais)" icon="fa-link" class="mt-3"

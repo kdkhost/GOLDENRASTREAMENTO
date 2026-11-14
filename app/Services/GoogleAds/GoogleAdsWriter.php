@@ -42,6 +42,8 @@ final class GoogleAdsWriter
         $grupos = $this->criarGrupos($conta, $plano, $campanha);
         $anuncios = $this->criarAnuncios($conta, $plano, $grupos);
         [$palavras, $negativas] = $this->criarPalavras($conta, $plano, $grupos, $campanha);
+        $sitelinks = $this->criarSitelinks($conta, $campanha, (array) ($plano['sitelinks'] ?? []));
+        $recursosVisuais = $this->vincularRecursosIniciais($conta, $campanha, $plano);
 
         $resultado = [
             'campanha_id' => basename($campanha),
@@ -53,6 +55,8 @@ final class GoogleAdsWriter
             'anuncios' => $anuncios,
             'palavras_chave' => $palavras,
             'negativas' => $negativas,
+            'sitelinks' => $sitelinks,
+            'recursos_visuais' => $recursosVisuais,
             'status' => 'PAUSED',
             'status_rotulo' => 'Pausada — revise e ative pelo painel quando quiser veicular',
             'aplicado_em' => now()->toIso8601String(),
@@ -300,5 +304,184 @@ final class GoogleAdsWriter
         }
 
         return [count($operacoes), count($negativas)];
+    }
+
+    /**
+     * Cria e vincula os sitelinks do plano diretamente à campanha no Google Ads.
+     *
+     * @param  array<int, array{texto: string, url: string, descricao1?: string, descricao2?: string}>  $sitelinks
+     */
+    private function criarSitelinks(GoogleAdsAccount $conta, string $campanha, array $sitelinks): int
+    {
+        $criados = 0;
+        $customer = 'customers/'.$conta->customer_id;
+
+        foreach ($sitelinks as $dados) {
+            $texto = mb_substr(trim((string) ($dados['texto'] ?? '')), 0, 25);
+            $url = trim((string) ($dados['url'] ?? ''));
+
+            if ($texto === '' || $url === '') {
+                continue;
+            }
+
+            try {
+                $sitelink = ['linkText' => $texto];
+
+                foreach (['descricao1' => 'description1', 'descricao2' => 'description2'] as $campo => $chave) {
+                    $valor = trim((string) ($dados[$campo] ?? ''));
+
+                    if ($valor !== '') {
+                        $sitelink[$chave] = mb_substr($valor, 0, 35);
+                    }
+                }
+
+                $resposta = $this->chamar($conta, $customer.'/assets:mutate', [
+                    'operations' => [['create' => [
+                        'sitelinkAsset' => $sitelink,
+                        'finalUrls' => [$url],
+                    ]]],
+                ], 'plano.sitelink.criar');
+
+                $asset = (string) data_get($resposta, 'results.0.resourceName', '');
+
+                if ($asset !== '') {
+                    $this->chamar($conta, $customer.'/campaignAssets:mutate', [
+                        'operations' => [['create' => [
+                            'campaign' => $campanha,
+                            'asset' => $asset,
+                            'fieldType' => 'SITELINK',
+                        ]]],
+                    ], 'plano.sitelink.vincular');
+
+                    $criados++;
+                }
+            } catch (\Throwable $e) {
+                // Sitelink com URL rejeitada ou limitação não deve travar a criação da campanha
+                report($e);
+            }
+        }
+
+        return $criados;
+    }
+
+    /**
+     * Vincula o logotipo da empresa e os recursos visuais de produtos reais da Golden Rastreamento.
+     *
+     * @return array{empresa: bool, logo: bool, imagens: int}
+     */
+    private function vincularRecursosIniciais(GoogleAdsAccount $conta, string $campanha, array $plano): array
+    {
+        $resultado = ['empresa' => false, 'logo' => false, 'imagens' => 0];
+        $customer = 'customers/'.$conta->customer_id;
+
+        // 1. Nome da Empresa (BUSINESS_NAME)
+        try {
+            $nomeEmpresa = 'Golden Rastreamento';
+            $resposta = $this->chamar($conta, $customer.'/assets:mutate', [
+                'operations' => [['create' => [
+                    'name' => mb_substr('Nome: '.$nomeEmpresa, 0, 128),
+                    'textAsset' => ['text' => mb_substr($nomeEmpresa, 0, 25)],
+                ]]],
+            ], 'plano.empresa.criar');
+
+            $asset = (string) data_get($resposta, 'results.0.resourceName', '');
+
+            if ($asset !== '') {
+                $this->chamar($conta, $customer.'/campaignAssets:mutate', [
+                    'operations' => [['create' => [
+                        'campaign' => $campanha,
+                        'asset' => $asset,
+                        'fieldType' => 'BUSINESS_NAME',
+                    ]]],
+                ], 'plano.empresa.vincular');
+                $resultado['empresa'] = true;
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // 2. Logotipo da Empresa (BUSINESS_LOGO)
+        $logoPath = public_path('img/logo-golden.png');
+        if (is_file($logoPath)) {
+            try {
+                $conteudo = file_get_contents($logoPath);
+                if ($conteudo !== false && $conteudo !== '') {
+                    $resposta = $this->chamar($conta, $customer.'/assets:mutate', [
+                        'operations' => [['create' => [
+                            'name' => 'Logotipo Golden Rastreamento',
+                            'imageAsset' => ['data' => base64_encode($conteudo)],
+                        ]]],
+                    ], 'plano.logo.criar');
+
+                    $asset = (string) data_get($resposta, 'results.0.resourceName', '');
+
+                    if ($asset !== '') {
+                        $this->chamar($conta, $customer.'/campaignAssets:mutate', [
+                            'operations' => [['create' => [
+                                'campaign' => $campanha,
+                                'asset' => $asset,
+                                'fieldType' => 'BUSINESS_LOGO',
+                            ]]],
+                        ], 'plano.logo.vincular');
+                        $resultado['logo'] = true;
+
+                        // Salva cópia em cache local
+                        $assetId = basename($asset);
+                        $pastaCache = storage_path('app/public/google-ads/assets');
+                        if (! is_dir($pastaCache)) {
+                            @mkdir($pastaCache, 0755, true);
+                        }
+                        @file_put_contents($pastaCache.'/'.$assetId.'.png', $conteudo);
+                    }
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        // 3. Imagem de Produto Real (Rastreador J16 4G)
+        $j16Path = public_path('img/home/rastreador-j16.jpg');
+        if (is_file($j16Path)) {
+            try {
+                $conteudo = file_get_contents($j16Path);
+                if ($conteudo !== false && $conteudo !== '') {
+                    $resposta = $this->chamar($conta, $customer.'/assets:mutate', [
+                        'operations' => [['create' => [
+                            'name' => 'Rastreador J16 4G',
+                            'imageAsset' => ['data' => base64_encode($conteudo)],
+                        ]]],
+                    ], 'plano.imagem.criar');
+
+                    $asset = (string) data_get($resposta, 'results.0.resourceName', '');
+
+                    if ($asset !== '') {
+                        $assetId = basename($asset);
+                        $pastaCache = storage_path('app/public/google-ads/assets');
+                        if (! is_dir($pastaCache)) {
+                            @mkdir($pastaCache, 0755, true);
+                        }
+                        @file_put_contents($pastaCache.'/'.$assetId.'.jpg', $conteudo);
+
+                        // Tenta vincular como AD_IMAGE; se conta for recente (<60 dias), Google pode recusar AD_IMAGE
+                        try {
+                            $this->chamar($conta, $customer.'/campaignAssets:mutate', [
+                                'operations' => [['create' => [
+                                    'campaign' => $campanha,
+                                    'asset' => $asset,
+                                    'fieldType' => 'AD_IMAGE',
+                                ]]],
+                            ], 'plano.imagem.vincular');
+                            $resultado['imagens']++;
+                        } catch (\Throwable) {
+                            // Salvo na biblioteca da conta para quando a conta atingir 60 dias
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $resultado;
     }
 }
