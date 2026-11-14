@@ -9,6 +9,8 @@ class PermissionService
 {
     public const SETTING_KEY = 'rbac_matriz_permissoes';
 
+    public const MAX_SUPERADMINS = 2;
+
     /**
      * Perfis oficiais suportados pelo sistema.
      *
@@ -157,16 +159,34 @@ class PermissionService
     private ?array $matrizCache = null;
 
     /**
+     * Conta quantos Super Administradores existem no sistema (opcionalmente ignorando um usuário).
+     */
+    public static function totalSuperAdmins(?int $ignorarUserId = null): int
+    {
+        return User::where('role', 'superadmin')
+            ->when($ignorarUserId !== null, fn ($q) => $q->where('id', '!=', $ignorarUserId))
+            ->count();
+    }
+
+    /**
      * Retorna os rótulos simples de perfis para selects (ex: ['superadmin' => 'Super Administrador', ...]).
      *
      * @return array<string, string>
      */
-    public static function opcoesPerfis(?User $ator = null): array
+    public static function opcoesPerfis(?User $ator = null, ?User $alvo = null): array
     {
+        $totalOutrosSuper = self::totalSuperAdmins($alvo?->id);
+        $semSuperadminAinda = self::totalSuperAdmins() === 0;
+
         $lista = [];
         foreach (self::PERFIS as $chave => $meta) {
-            if ($chave === 'superadmin' && $ator !== null && ! $ator->isSuperAdmin()) {
-                continue;
+            if ($chave === 'superadmin' && $ator !== null) {
+                $atorPode = $ator->isSuperAdmin() || $semSuperadminAinda;
+                $vagaDisponivel = ($alvo !== null && $alvo->isSuperAdmin()) || $totalOutrosSuper < self::MAX_SUPERADMINS;
+
+                if (! $atorPode || ! $vagaDisponivel) {
+                    continue;
+                }
             }
             $lista[$chave] = $meta['nome'];
         }

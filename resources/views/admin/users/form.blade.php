@@ -79,9 +79,16 @@
                             <p class="form-hint mb-0">
                                 @if($editando)
                                     Deixe a nova senha em branco para manter a atual.
-                                    @if($euMesmo) Perfil e situação ficam travados para você não tirar o próprio acesso. @endif
+                                    @if(!empty($podePromoverProprioSuperadmin))
+                                        <span class="text-warning fw-semibold">Nenhum Super Administrador foi definido ainda — você pode alterar seu perfil para <strong>Super Administrador</strong> (máximo de {{ $maxSuperadmins ?? 2 }} no sistema).</span>
+                                    @elseif($euMesmo)
+                                        Perfil e situação ficam travados para você não tirar o próprio acesso.
+                                    @endif
                                 @else
                                     A senha precisa de pelo menos 8 caracteres; a pessoa pode trocá-la depois em Segurança do acesso.
+                                @endif
+                                @if(isset($totalSuperadmins, $maxSuperadmins))
+                                    <span class="d-block mt-1">Super Administradores ativos: <strong>{{ $totalSuperadmins }} / {{ $maxSuperadmins }}</strong>.</span>
                                 @endif
                             </p>
                         </x-admin.card>
@@ -265,4 +272,30 @@
         </div>
     </div>
 </form>
+
+@if($editando && ! $usuario->isSuperAdmin() && ($totalSuperadmins ?? 0) < ($maxSuperadmins ?? 2) && (($totalSuperadmins ?? 0) === 0 || auth()->user()->isSuperAdmin()))
+    <div class="card border-warning-subtle shadow-sm mt-3">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h6 class="fw-bold mb-1 text-warning">
+                    <i class="fas fa-crown me-1"></i> Promover para Super Administrador ({{ $totalSuperadmins ?? 0 }} / {{ $maxSuperadmins ?? 2 }})
+                </h6>
+                <p class="small text-secondary mb-0">
+                    @if(($totalSuperadmins ?? 0) === 0)
+                        Nenhum Super Administrador foi definido ainda no sistema. Promova esta conta com 1 clique.
+                    @else
+                        Resta 1 vaga para Super Administrador (máximo de {{ $maxSuperadmins ?? 2 }} contas no sistema).
+                    @endif
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.usuarios.promover-superadmin', $usuario) }}"
+                onsubmit="return confirm('Confirmar promoção de {{ $usuario->name }} para Super Administrador?');">
+                @csrf
+                <button type="submit" class="btn btn-warning btn-sm fw-bold">
+                    <i class="fas fa-crown me-1"></i> Tornar Super Administrador
+                </button>
+            </form>
+        </div>
+    </div>
+@endif
 @endsection

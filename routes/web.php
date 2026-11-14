@@ -640,6 +640,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::post('/', [UserController::class, 'store'])->name('store');
         Route::get('/{user}/editar', [UserController::class, 'edit'])->name('edit');
         Route::post('/{user}', [UserController::class, 'update'])->name('update');
+        Route::post('/{user}/promover-superadmin', [UserController::class, 'promoverSuperadmin'])->name('promover-superadmin');
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
 

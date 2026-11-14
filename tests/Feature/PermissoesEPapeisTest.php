@@ -157,4 +157,56 @@ class PermissoesEPapeisTest extends TestCase
         $titulosSistemaContador = collect($sistemaFilhos)->pluck('titulo')->all();
         $this->assertSame(['Auditoria'], $titulosSistemaContador);
     }
+
+    public function test_admin_consegue_definir_primeiro_superadmin_e_limite_maximo_de_2_e_respeitado(): void
+    {
+        // Remove o superadmin padrão do setUp para simular o cenário inicial sem superadmin
+        $this->superadmin->delete();
+        $this->assertSame(0, PermissionService::totalSuperAdmins());
+
+        // Admin comum consegue se promover a primeiro Super Administrador
+        $this->actingAs($this->admin)
+            ->post(route('admin.usuarios.update', $this->admin), [
+                'name' => $this->admin->name,
+                'email' => $this->admin->email,
+                'role' => 'superadmin',
+                'status' => 'ativo',
+            ])
+            ->assertRedirect(route('admin.usuarios.index'));
+
+        $this->assertSame('superadmin', $this->admin->fresh()->role);
+        $this->assertSame(1, PermissionService::totalSuperAdmins());
+
+        // Agora como superadmin, cria o 2º superadmin (limite = 2)
+        $this->actingAs($this->admin->fresh())
+            ->post(route('admin.usuarios.store'), [
+                'name' => 'Segundo Superadmin',
+                'email' => 'super2@golden.com.br',
+                'role' => 'superadmin',
+                'password' => 'SenhaSegura123!',
+            ])
+            ->assertRedirect(route('admin.usuarios.index'));
+
+        $this->assertSame(2, PermissionService::totalSuperAdmins());
+
+        // Tentar criar um 3º superadmin deve ser bloqueado com erro de validação
+        $this->actingAs($this->admin->fresh())
+            ->post(route('admin.usuarios.store'), [
+                'name' => 'Terceiro Superadmin',
+                'email' => 'super3@golden.com.br',
+                'role' => 'superadmin',
+                'password' => 'SenhaSegura123!',
+            ])
+            ->assertSessionHasErrors('role');
+
+        $this->assertSame(2, PermissionService::totalSuperAdmins());
+
+        // Também testa o botão de promoção direta em um 3º usuário (deve bloquear por limite)
+        $outro = User::factory()->create(['role' => 'admin', 'status' => 'ativo']);
+        $this->actingAs($this->admin->fresh())
+            ->post(route('admin.usuarios.promover-superadmin', $outro))
+            ->assertSessionHas('error');
+
+        $this->assertSame('admin', $outro->fresh()->role);
+    }
 }

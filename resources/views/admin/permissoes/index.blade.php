@@ -17,6 +17,22 @@
 @endsection
 
 @section('content')
+@if(($contagemPorPerfil['superadmin'] ?? 0) === 0 && ! auth()->user()->isSuperAdmin())
+    <div class="alert alert-warning border-warning d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 shadow-sm">
+        <div>
+            <h6 class="fw-bold mb-1"><i class="fas fa-crown me-1"></i> Nenhum Super Administrador definido ainda (0 / 2)</h6>
+            <p class="small mb-0">Para assumir o controle máximo do sistema e proteger esta conta contra alterações de terceiros, promova sua conta agora. O sistema permite no máximo <strong>2 Super Administradores</strong>.</p>
+        </div>
+        <form method="POST" action="{{ route('admin.usuarios.promover-superadmin', auth()->user()) }}"
+            onsubmit="return confirm('Deseja promover sua conta atual ({{ auth()->user()->name }}) para Super Administrador?');">
+            @csrf
+            <button type="submit" class="btn btn-dark btn-sm fw-bold">
+                <i class="fas fa-crown text-warning me-1"></i> Tornar-me Super Administrador
+            </button>
+        </form>
+    </div>
+@endif
+
 {{-- Visão Geral dos Perfis --}}
 <div class="row g-3 mb-4">
     @foreach($perfis as $chavePerfil => $meta)

@@ -73,10 +73,19 @@ class UserController extends Controller
     /** O que as duas telas (novo e editar) leem igual; a de editar acrescenta o histórico. */
     private function dadosDaFicha(User $usuario): array
     {
+        $alvo = $usuario->exists ? $usuario : null;
+        $totalSuper = PermissionService::totalSuperAdmins();
+
         return [
             'usuario' => $usuario,
-            'perfis' => PermissionService::opcoesPerfis(auth()->user()),
+            'perfis' => PermissionService::opcoesPerfis(auth()->user(), $alvo),
             'situacoes' => self::SITUACOES,
+            'podePromoverProprioSuperadmin' => $usuario->exists
+                && $usuario->id === auth()->id()
+                && ! $usuario->isSuperAdmin()
+                && $totalSuper === 0,
+            'totalSuperadmins' => $totalSuper,
+            'maxSuperadmins' => PermissionService::MAX_SUPERADMINS,
         ];
     }
 
@@ -106,9 +115,13 @@ class UserController extends Controller
             unset($data['password']);
         }
 
-        // Impede o admin de se rebaixar/desativar e ficar sem acesso
+        // Impede o admin de se rebaixar/desativar, mas permite promover-se ao primeiro Superadmin
         if ($user->id === auth()->id()) {
-            $data['role'] = $user->role;
+            $promovendoPrimeiroSuper = ($data['role'] ?? '') === 'superadmin'
+                && ! $user->isSuperAdmin()
+                && PermissionService::totalSuperAdmins() === 0;
+
+            $data['role'] = $promovendoPrimeiroSuper ? 'superadmin' : $user->role;
             $data['status'] = 'ativo';
         }
 
@@ -127,13 +140,20 @@ class UserController extends Controller
     /** Uma lista só: o que o select oferece é exatamente o que a validação aceita. */
     private function validar(Request $request, ?User $user = null): array
     {
+        if ($request->input('role') === 'superadmin'
+            && PermissionService::totalSuperAdmins($user?->id) >= PermissionService::MAX_SUPERADMINS) {
+            throw ValidationException::withMessages([
+                'role' => 'O sistema permite no máximo '.PermissionService::MAX_SUPERADMINS.' Super Administradores. Já existem '.PermissionService::MAX_SUPERADMINS.' contas com este perfil.',
+            ]);
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:160',
                 $user ? Rule::unique('users')->ignore($user->id) : 'unique:users,email',
             ],
             'telefone' => ['nullable', 'string', 'max:32'],
-            'role' => ['required', Rule::in(array_keys(PermissionService::opcoesPerfis($request->user())))],
+            'role' => ['required', Rule::in(array_keys(PermissionService::opcoesPerfis($request->user(), $user)))],
             'status' => [$user ? 'required' : 'nullable', Rule::in(array_keys(self::SITUACOES))],
             'password' => [$user ? 'nullable' : 'required', 'string', 'min:8'],
             'cargo' => ['nullable', 'string', 'max:80'],
@@ -154,6 +174,34 @@ class UserController extends Controller
         }
 
         return $data;
+    }
+
+    public function promoverSuperadmin(Request $request, User $user): RedirectResponse
+    {
+        $ator = $request->user();
+        $totalSuper = PermissionService::totalSuperAdmins();
+
+        // Permite promover se ainda não existir nenhum superadmin (bootstrap) ou se o ator já for superadmin
+        if ($totalSuper > 0 && ! $ator->isSuperAdmin()) {
+            abort(403, 'Apenas um Super Administrador pode promover outro usuário a Super Administrador.');
+        }
+
+        if ($user->isSuperAdmin()) {
+            return back()->with('info', 'Este usuário já é Super Administrador.');
+        }
+
+        if ($totalSuper >= PermissionService::MAX_SUPERADMINS) {
+            return back()->with('error', 'Limite atingido: o sistema permite no máximo '.PermissionService::MAX_SUPERADMINS.' Super Administradores.');
+        }
+
+        $user->update([
+            'role' => 'superadmin',
+            'status' => 'ativo',
+        ]);
+
+        Activity::log('usuario_promovido_superadmin', "Usuário {$user->name} promovido a Super Administrador.", $user);
+
+        return back()->with('success', "{$user->name} agora é Super Administrador!");
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
