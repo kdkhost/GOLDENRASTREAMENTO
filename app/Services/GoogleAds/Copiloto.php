@@ -2,6 +2,7 @@
 
 namespace App\Services\GoogleAds;
 
+use App\Models\GoogleAdsAccount;
 use App\Models\GoogleAdsCopiloto;
 use App\Services\Assistente\Chamada;
 use App\Services\Assistente\Excecoes\ChamadaFalhou;
@@ -99,6 +100,185 @@ final class Copiloto
         }
 
         return $this->analiseNormalizada($dados) + ['modelo' => $this->identificacao($resposta)];
+    }
+
+    /**
+     * Análise de IA Max e Otimização Avançada de uma campanha viva.
+     * Avalia ativos visuais, sitelinks, frases, termos negativos anti-desperdício, RSA e score de prontidão.
+     *
+     * @param  array<string, mixed>  $campanha  A estrutura da campanha devolvida pelo editor
+     * @param  array<string, mixed>|null  $metricas  Métricas opcionais de desempenho
+     * @return array{
+     *     score: int,
+     *     nivel: string,
+     *     copiloto: string,
+     *     diagnostico: string,
+     *     pilares: array<string, array{titulo: string, status: string, nota: int, max: int, detalhe: string}>,
+     *     negativas_sugeridas: array<int, string>,
+     *     recomendacoes: array<int, array{tipo: string, titulo: string, detalhe: string, impacto: string, acao: ?string, dados?: array<int, string>}>
+     * }
+     */
+    public function otimizarCampanha(GoogleAdsAccount $conta, array $campanha, ?array $metricas = null): array
+    {
+        $recursos = (array) ($campanha['recursos'] ?? []);
+        $imagens = (array) ($recursos['imagens'] ?? []);
+        $sitelinks = (array) ($recursos['sitelinks'] ?? []);
+        $frases = (array) ($recursos['frases'] ?? []);
+        $negativas = (array) ($campanha['negativas'] ?? []);
+        $grupos = (array) ($campanha['grupos'] ?? []);
+
+        $score = 0;
+        $pilares = [];
+
+        // 1. Recursos Visuais & Logotipo (20 pts)
+        $temLogoOuImagem = count($imagens) > 0;
+        $scoreImagens = $temLogoOuImagem ? 20 : 0;
+        $score += $scoreImagens;
+        $pilares['imagens'] = [
+            'titulo' => 'Recursos Visuais & Logotipo',
+            'status' => $temLogoOuImagem ? 'ok' : 'alerta',
+            'nota' => $scoreImagens,
+            'max' => 20,
+            'detalhe' => $temLogoOuImagem
+                ? count($imagens).' imagem(ns)/logotipo(s) vinculados à campanha.'
+                : 'Nenhuma imagem ou logotipo vinculado. O Google Ads dá maior destaque para anúncios com logotipo.',
+        ];
+
+        // 2. Sitelinks (20 pts)
+        $totalSitelinks = count($sitelinks);
+        $scoreSitelinks = $totalSitelinks >= 4 ? 20 : ($totalSitelinks >= 2 ? 12 : ($totalSitelinks > 0 ? 6 : 0));
+        $score += $scoreSitelinks;
+        $pilares['sitelinks'] = [
+            'titulo' => 'Sitelinks do Anúncio',
+            'status' => $totalSitelinks >= 4 ? 'ok' : ($totalSitelinks >= 2 ? 'atencao' : 'alerta'),
+            'nota' => $scoreSitelinks,
+            'max' => 20,
+            'detalhe' => $totalSitelinks >= 4
+                ? "{$totalSitelinks} sitelinks ativos (quantidade ideal atingida)."
+                : "Apenas {$totalSitelinks} sitelink(s). O Google recomenda pelo menos 4 sitelinks para preencher o bloco do anúncio.",
+        ];
+
+        // 3. Frases de Destaque (15 pts)
+        $totalFrases = count($frases);
+        $scoreFrases = $totalFrases >= 4 ? 15 : ($totalFrases >= 2 ? 8 : ($totalFrases > 0 ? 4 : 0));
+        $score += $scoreFrases;
+        $pilares['frases'] = [
+            'titulo' => 'Frases de Destaque (Callouts)',
+            'status' => $totalFrases >= 4 ? 'ok' : ($totalFrases >= 2 ? 'atencao' : 'alerta'),
+            'nota' => $scoreFrases,
+            'max' => 15,
+            'detalhe' => $totalFrases >= 4
+                ? "{$totalFrases} frases de destaque cadastradas."
+                : "Apenas {$totalFrases} frase(s). Frases de destaque aumentam o CTR ao destacar benefícios sem gastar caracteres de título.",
+        ];
+
+        // 4. Termos Negativos Anti-Desperdício (20 pts)
+        $termosBaseNegativas = [
+            'gratis', 'gratuito', 'download', 'apk', 'manual', 'mercado livre', 'olx', 'shopee',
+            'como fazer', 'hackear', 'esquema eletrico', 'pinout', 'trabalhe conosco', 'vagas',
+        ];
+        $textosNegativasAtuais = array_map(static fn ($n) => mb_strtolower(is_array($n) ? (string) ($n['texto'] ?? '') : (string) $n), $negativas);
+        $negativasSugeridas = [];
+        foreach ($termosBaseNegativas as $t) {
+            if (! in_array($t, $textosNegativasAtuais, true)) {
+                $negativasSugeridas[] = $t;
+            }
+        }
+        $totalNegativas = count($negativas);
+        $scoreNegativas = $totalNegativas >= 5 ? 20 : ($totalNegativas >= 2 ? 10 : 0);
+        $score += $scoreNegativas;
+        $pilares['negativas'] = [
+            'titulo' => 'Termos Negativos Anti-Desperdício',
+            'status' => $totalNegativas >= 5 ? 'ok' : 'alerta',
+            'nota' => $scoreNegativas,
+            'max' => 20,
+            'detalhe' => $totalNegativas >= 5
+                ? "{$totalNegativas} palavras negativas cadastradas bloqueando cliques não qualificados."
+                : "Apenas {$totalNegativas} palavra(s) negativa(s). Você pode estar pagando por cliques sem intenção de compra.",
+        ];
+
+        // 5. Anúncios Responsivos de Pesquisa (25 pts)
+        $temAnuncioBom = false;
+        $totalAnuncios = 0;
+        foreach ($grupos as $g) {
+            $anunciosGrupo = (array) ($g['anuncios'] ?? []);
+            foreach ($anunciosGrupo as $anuncio) {
+                $totalAnuncios++;
+                $titulos = (array) ($anuncio['titulos'] ?? []);
+                $descricoes = (array) ($anuncio['descricoes'] ?? []);
+                if (count($titulos) >= 5 && count($descricoes) >= 2) {
+                    $temAnuncioBom = true;
+                }
+            }
+        }
+        $scoreAnuncio = $temAnuncioBom ? 25 : ($totalAnuncios > 0 ? 12 : 0);
+        $score += $scoreAnuncio;
+        $pilares['anuncios'] = [
+            'titulo' => 'Qualidade dos Anúncios Responsivos (RSA)',
+            'status' => $temAnuncioBom ? 'ok' : ($totalAnuncios > 0 ? 'atencao' : 'alerta'),
+            'nota' => $scoreAnuncio,
+            'max' => 25,
+            'detalhe' => $temAnuncioBom
+                ? 'Anúncio responsivo com variedade de títulos e descrições para a IA do Google combinar.'
+                : 'Adicione mais variações de títulos (mínimo 5) e descrições (mínimo 2) para permitir combinações otimizadas.',
+        ];
+
+        // Recomendações
+        $recomendacoes = [];
+        if (! empty($negativasSugeridas)) {
+            $recomendacoes[] = [
+                'tipo' => 'negativas',
+                'titulo' => 'Adicionar termos negativos essenciais',
+                'detalhe' => 'Bloqueie buscas como "grátis", "download", "mercado livre", "manual" para evitar gasto inútil de orçamento.',
+                'impacto' => 'Alto — Reduz custo por clique e corta desperdício',
+                'acao' => 'adicionar_negativas',
+                'dados' => array_slice($negativasSugeridas, 0, 8),
+            ];
+        }
+        if ($totalSitelinks < 4) {
+            $recomendacoes[] = [
+                'tipo' => 'sitelinks',
+                'titulo' => 'Completar os 4 sitelinks da Golden',
+                'detalhe' => 'Vincule os sitelinks padrão: Planos e Preços, Rastreador J16 4G, Gestão de Frotas e WhatsApp.',
+                'impacto' => 'Médio — Aumenta a taxa de cliques (CTR) em até 20%',
+                'acao' => 'vincular_sitelinks',
+            ];
+        }
+        if (! $temLogoOuImagem) {
+            $recomendacoes[] = [
+                'tipo' => 'imagem',
+                'titulo' => 'Vincular logotipo da empresa e fotos dos produtos',
+                'detalhe' => 'Anúncios de busca com logotipo da Golden Rastreamento geram 15% mais confiança e cliques qualificados.',
+                'impacto' => 'Alto — Melhora a nota de relevância do Google',
+                'acao' => 'vincular_imagens',
+            ];
+        }
+
+        $nivel = match (true) {
+            $score >= 85 => 'Excelente',
+            $score >= 60 => 'Bom',
+            default => 'Atenção Necessária',
+        };
+
+        $ficha = GoogleAdsCopiloto::garanta();
+        $nomeCopiloto = $ficha->nome !== '' ? $ficha->nome : 'Max';
+
+        $diagnostico = "A campanha {$campanha['nome']} está com Score IA Max de {$score}/100 ({$nivel}). ";
+        if ($score >= 85) {
+            $diagnostico .= 'A estrutura de anúncios e recursos está sólida para os algoritmos de lances inteligentes e IA do Google Ads.';
+        } else {
+            $diagnostico .= 'Aplicando as recomendações de termos negativos e recursos visuais abaixo, sua campanha ganhará mais relevância e reduzirá o custo por clique.';
+        }
+
+        return [
+            'score' => $score,
+            'nivel' => $nivel,
+            'copiloto' => $nomeCopiloto,
+            'diagnostico' => $diagnostico,
+            'pilares' => $pilares,
+            'negativas_sugeridas' => $negativasSugeridas,
+            'recomendacoes' => $recomendacoes,
+        ];
     }
 
     /**

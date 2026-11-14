@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -26,14 +27,21 @@ class OrderController extends Controller
             ->paginate(itens_por_pagina())
             ->withQueryString();
 
+        $dadosKpi = Cache::remember('admin_orders_kpis', 30, function (): array {
+            return [
+                'kpis' => [
+                    'total' => Order::count(),
+                    'pendentes' => Order::where('status', 'pendente')->count(),
+                    'entregues' => Order::where('status', 'entregue')->count(),
+                ],
+                'faturamento' => (int) Order::whereNotIn('status', ['cancelado', 'pendente'])->sum('total_cents'),
+            ];
+        });
+
         return view('admin.orders.index', [
             'pedidos' => $pedidos,
-            'kpis' => [
-                'total' => Order::count(),
-                'pendentes' => Order::where('status', 'pendente')->count(),
-                'entregues' => Order::where('status', 'entregue')->count(),
-            ],
-            'faturamento' => Order::whereNotIn('status', ['cancelado', 'pendente'])->sum('total_cents'),
+            'kpis' => $dadosKpi['kpis'],
+            'faturamento' => $dadosKpi['faturamento'],
             'statuses' => Order::STATUS,
         ]);
     }
@@ -43,7 +51,7 @@ class OrderController extends Controller
         return view('admin.orders.show', [
             'pedido' => $pedido->load(['items.product', 'customer', 'user', 'histories.user']),
             'statuses' => Order::STATUS,
-            'clientes' => Customer::orderBy('nome')->get(),
+            'clientes' => Customer::orderBy('nome')->limit(200)->get(['id', 'nome', 'telefone']),
         ]);
     }
 

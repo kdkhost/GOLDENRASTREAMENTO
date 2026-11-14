@@ -8,6 +8,7 @@ use App\Models\GoogleAdsCopiloto;
 use App\Models\GoogleAdsPlano;
 use App\Models\GoogleAdsRelatorio;
 use App\Models\User;
+use App\Services\GoogleAds\Copiloto;
 use App\Services\GoogleAds\GoogleAdsEditor;
 use App\Services\GoogleAds\GoogleAdsService;
 use App\Services\GoogleAds\PlanoDeCampanha;
@@ -1210,5 +1211,56 @@ class CopilotoDoGoogleAdsTest extends TestCase
             $this->assertFileExists($caminho, "O arquivo de imagem '{$img['arquivo']}' deve existir em public/.");
             $this->assertTrue($img['existe']);
         }
+    }
+
+    public function test_copiloto_otimizar_campanha_calcula_score_pilares_e_sugere_negativas(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $campanha = [
+            'id' => '24456385340',
+            'nome' => 'Rastreador Veicular Golden',
+            'status' => 'ENABLED',
+            'status_rotulo' => 'Ativa',
+            'orcamento' => ['diario_centavos' => 5000],
+            'recursos' => [
+                'imagens' => [['id' => '1', 'nome' => 'Logo']],
+                'sitelinks' => [
+                    ['texto' => 'Planos', 'url' => 'https://example.com/planos'],
+                    ['texto' => 'Contato', 'url' => 'https://example.com/contato'],
+                ],
+                'frases' => [],
+            ],
+            'negativas' => [
+                ['texto' => 'gratis'],
+            ],
+            'grupos' => [
+                [
+                    'id' => '101',
+                    'nome' => 'Grupo 1',
+                    'anuncios' => [
+                        [
+                            'titulos' => ['T1', 'T2', 'T3', 'T4', 'T5'],
+                            'descricoes' => ['D1', 'D2'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $copiloto = app(Copiloto::class);
+        $res = $copiloto->otimizarCampanha($conta, $campanha);
+
+        $this->assertIsArray($res);
+        $this->assertArrayHasKey('score', $res);
+        $this->assertGreaterThan(0, $res['score']);
+        $this->assertLessThanOrEqual(100, $res['score']);
+        $this->assertArrayHasKey('pilares', $res);
+        $this->assertCount(5, $res['pilares']);
+        $this->assertContains('download', $res['negativas_sugeridas']);
+        $this->assertNotContains('gratis', $res['negativas_sugeridas'], 'gratis já estava nas negativas e não deve ser sugerido');
     }
 }

@@ -7,6 +7,7 @@ use App\Jobs\SyncGoogleAdsMetrics;
 use App\Models\Activity;
 use App\Models\GoogleAdsAccount;
 use App\Models\GoogleAdsPlano;
+use App\Services\GoogleAds\Copiloto;
 use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
 use App\Services\GoogleAds\GoogleAdsEditor;
 use App\Services\GoogleAds\GoogleAdsService;
@@ -41,7 +42,7 @@ class GoogleAdsCampanhaController extends Controller
 {
     public function __construct(private GoogleAdsService $servico, private GoogleAdsEditor $editor) {}
 
-    public function show(Request $request, string $campanha): View|RedirectResponse
+    public function show(Request $request, string $campanha, Copiloto $copiloto): View|RedirectResponse
     {
         $aberta = $this->abrir($request, $campanha);
 
@@ -50,12 +51,49 @@ class GoogleAdsCampanhaController extends Controller
         }
 
         [$conta, $lida] = $aberta;
+        $otimizacao = $copiloto->otimizarCampanha($conta, $lida);
 
         return view('admin.google-ads.campanha', [
             'conta' => $conta,
             'campanha' => $lida,
             'plano' => $request->integer('plano') ?: null,
+            'otimizacao' => $otimizacao,
         ]);
+    }
+
+    public function aplicarNegativasOtimizadas(Request $request, string $campanha, Copiloto $copiloto): RedirectResponse
+    {
+        $aberta = $this->abrir($request, $campanha);
+
+        if ($aberta instanceof RedirectResponse) {
+            return $aberta;
+        }
+
+        [$conta, $lida] = $aberta;
+        $otimizacao = $copiloto->otimizarCampanha($conta, $lida);
+        $sugeridas = (array) ($otimizacao['negativas_sugeridas'] ?? []);
+
+        if (empty($sugeridas)) {
+            return back()->with('info', 'Todas as palavras negativas recomendadas já estão cadastradas nesta campanha!');
+        }
+
+        $atuais = array_map(static fn ($n) => mb_strtolower(is_array($n) ? (string) ($n['texto'] ?? '') : (string) $n), (array) ($lida['negativas'] ?? []));
+        $novasNegativas = array_values(array_unique(array_filter(array_merge($atuais, $sugeridas))));
+
+        try {
+            $this->editor->salvarCampanha($conta, $lida, ['negativas' => $novasNegativas]);
+        } catch (Throwable $e) {
+            return $this->erro($e, 'adicionar termos negativos recomendados pela IA');
+        }
+
+        Activity::log(
+            'google_ads_negativas_otimizadas',
+            count($sugeridas).' termos negativos recomendados pela IA Max foram adicionados à campanha '.$lida['nome'].'.',
+            $conta,
+            ['campaign_id' => $lida['id'], 'negativas' => $sugeridas]
+        );
+
+        return back()->with('success', count($sugeridas).' palavras-chave negativas essenciais foram adicionadas à campanha no Google Ads!');
     }
 
     public function mudarStatus(Request $request, string $campanha): RedirectResponse

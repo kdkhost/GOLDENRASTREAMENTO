@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Whmcs\Cliente as Financeiro;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -27,14 +28,18 @@ class CustomerController extends Controller
             ->paginate(itens_por_pagina())
             ->withQueryString();
 
-        return view('admin.customers.index', [
-            'clientes' => $clientes,
-            'kpis' => [
+        $kpis = Cache::remember('crm_clientes_kpis', 30, function (): array {
+            return [
                 'ativos' => Customer::where('status', 'ativo')->count(),
                 'prospectos' => Customer::where('status', 'prospecto')->count(),
                 'base' => Customer::count(),
                 'comPedidos' => Customer::has('orders')->count(),
-            ],
+            ];
+        });
+
+        return view('admin.customers.index', [
+            'clientes' => $clientes,
+            'kpis' => $kpis,
             'responsaveis' => $this->responsaveis(),
         ]);
     }
@@ -138,12 +143,14 @@ class CustomerController extends Controller
 
     private function responsaveis(): array
     {
-        return User::query()
-            ->whereIn('role', ['admin', 'vendedor'])
-            ->where('status', 'ativo')
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
+        return Cache::remember('crm_responsaveis_lista', 60, function (): array {
+            return User::query()
+                ->whereIn('role', ['admin', 'vendedor'])
+                ->where('status', 'ativo')
+                ->orderBy('name')
+                ->pluck('name', 'id')
+                ->all();
+        });
     }
 
     public function store(Request $request): RedirectResponse

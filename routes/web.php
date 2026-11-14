@@ -363,6 +363,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
                 Route::post('/recursos/sitelink', [GoogleAdsCampanhaController::class, 'vincularSitelink'])->name('recursos.sitelink');
                 Route::post('/recursos/frase', [GoogleAdsCampanhaController::class, 'vincularFrase'])->name('recursos.frase');
                 Route::delete('/recursos', [GoogleAdsCampanhaController::class, 'desvincularRecurso'])->name('recursos.remover');
+                Route::post('/otimizar/negativas', [GoogleAdsCampanhaController::class, 'aplicarNegativasOtimizadas'])->name('otimizar.negativas');
             });
         });
 

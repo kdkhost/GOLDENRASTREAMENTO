@@ -79,6 +79,100 @@
             </div>
         </div>
 
+        {{-- Otimização da Campanha com IA Max --}}
+        @if(isset($otimizacao))
+            @php
+                $score = (int) ($otimizacao['score'] ?? 0);
+                $corScore = $score >= 85 ? 'success' : ($score >= 60 ? 'warning' : 'danger');
+                $corBarra = $score >= 85 ? '#10b981' : ($score >= 60 ? '#f59e0b' : '#ef4444');
+            @endphp
+            <div class="card shadow-sm mb-3 border-{{ $corScore }} border-opacity-25" style="border-left: 4px solid {{ $corBarra }};">
+                <div class="card-header bg-transparent py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-wand-magic-sparkles text-gold fs-5" aria-hidden="true"></i>
+                            <h5 class="mb-0 fw-bold">Otimização com IA Max ({{ $otimizacao['copiloto'] ?? 'Max' }})</h5>
+                            <span class="badge bg-{{ $corScore }} bg-opacity-10 text-{{ $corScore }} border border-{{ $corScore }} border-opacity-25">
+                                {{ $otimizacao['nivel'] }}
+                            </span>
+                        </div>
+                        <div class="small text-secondary mt-1">Nota de otimização calculada contra os pilares do Google Ads (RSA, imagens, sitelinks e negativas).</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fs-4 fw-bold text-{{ $corScore }}">{{ $score }}<span class="fs-6 text-secondary">/100</span></div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {{-- Barra de progresso --}}
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ $score }}%; background-color: {{ $corBarra }};" aria-valuenow="{{ $score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    {{-- Diagnóstico --}}
+                    <p class="small text-secondary mb-3">{{ $otimizacao['diagnostico'] }}</p>
+
+                    {{-- 5 Pilares do Google Ads --}}
+                    <div class="row g-2 mb-3">
+                        @foreach($otimizacao['pilares'] as $pilar)
+                            @php
+                                $iconeStatus = match($pilar['status']) {
+                                    'ok' => 'fa-circle-check text-success',
+                                    'atencao' => 'fa-circle-exclamation text-warning',
+                                    default => 'fa-circle-xmark text-danger',
+                                };
+                            @endphp
+                            <div class="col-12 col-md-6">
+                                <div class="p-2 rounded bg-light border h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="fw-semibold small"><i class="fas {{ $iconeStatus }} me-1" aria-hidden="true"></i> {{ $pilar['titulo'] }}</span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $pilar['nota'] }}/{{ $pilar['max'] }}</span>
+                                    </div>
+                                    <div class="small text-secondary">{{ $pilar['detalhe'] }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Recomendações Acionáveis --}}
+                    @if(!empty($otimizacao['recomendacoes']))
+                        <div class="border-top pt-3">
+                            <h6 class="fw-bold small mb-2 text-dark"><i class="fas fa-lightbulb text-warning me-1" aria-hidden="true"></i> Recomendações imediatas para melhorar o desempenho:</h6>
+                            <div class="vstack gap-2">
+                                @foreach($otimizacao['recomendacoes'] as $rec)
+                                    <div class="p-2 rounded border d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                        <div>
+                                            <div class="fw-semibold small text-dark">{{ $rec['titulo'] }}</div>
+                                            <div class="small text-secondary">{{ $rec['detalhe'] }}</div>
+                                            <div class="small text-success fw-medium mt-1"><i class="fas fa-chart-line me-1" aria-hidden="true"></i> Impacto: {{ $rec['impacto'] }}</div>
+                                        </div>
+                                        <div>
+                                            @if(($rec['acao'] ?? '') === 'adicionar_negativas' && !empty($otimizacao['negativas_sugeridas']))
+                                                <form method="POST" action="{{ route('admin.google-ads.campanhas.otimizar.negativas', $endereco) }}" data-sem-ajax
+                                                    data-confirmar="Adicionar {{ count($otimizacao['negativas_sugeridas']) }} palavras negativas anti-desperdício à campanha no Google Ads?">
+                                                    @csrf
+                                                    <button class="btn btn-sm btn-golden">
+                                                        <i class="fas fa-shield-halved me-1" aria-hidden="true"></i> Aplicar {{ count($otimizacao['negativas_sugeridas']) }} negativas agora
+                                                    </button>
+                                                </form>
+                                            @elseif(($rec['acao'] ?? '') === 'vincular_sitelinks')
+                                                <a href="{{ route('admin.google-ads.campanhas.recursos', $endereco) }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-link me-1" aria-hidden="true"></i> Vincular sitelinks
+                                                </a>
+                                            @elseif(($rec['acao'] ?? '') === 'vincular_imagens')
+                                                <a href="{{ route('admin.google-ads.campanhas.recursos', $endereco) }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-images me-1" aria-hidden="true"></i> Vincular logotipo
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
         <x-admin.card title="Grupos de anúncios" icon="fa-layer-group" class="mb-3"
             descricao="Cada grupo tem as suas palavras-chave e o anúncio responsivo que o Google combina na busca.">
             @if ($ehAdmin)

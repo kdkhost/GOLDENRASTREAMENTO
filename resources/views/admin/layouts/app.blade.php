@@ -122,6 +122,7 @@
 <script src="{{ asset('js/golden-upload.js') }}?v={{ filemtime(public_path('js/golden-upload.js')) }}"></script>
 <script src="{{ asset('js/golden-ajuda.js') }}?v={{ filemtime(public_path('js/golden-ajuda.js')) }}"></script>
 <script src="{{ asset('js/admin-notificacoes.js') }}?v={{ filemtime(public_path('js/admin-notificacoes.js')) }}"></script>
+<script src="{{ asset('js/admin-live-search.js') }}?v={{ filemtime(public_path('js/admin-live-search.js')) }}"></script>
 @yield('scripts')
 @stack('scripts')
 </body>
