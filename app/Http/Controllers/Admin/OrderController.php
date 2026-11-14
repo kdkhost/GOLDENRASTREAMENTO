@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Services\Correios\CorreiosService;
 use App\Support\Envio;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -118,5 +120,93 @@ class OrderController extends Controller
         Activity::log('pedido_documentos', "Pedido {$pedido->numero}: ".count($enviados).' documento(s) anexado(s).', $pedido);
 
         return back()->with('success', 'Documentos atualizados.');
+    }
+
+    /**
+     * Salva a transportadora e o código de rastreio do pedido (Correios, Mercado Envios, etc.).
+     * Permite mudar o status para 'enviado' e disparar e-mail de rastreamento com link direto.
+     */
+    public function salvarRastreio(Request $request, Order $pedido, CorreiosService $correios): RedirectResponse
+    {
+        $transportadorasValidas = implode(',', array_keys(Order::TRANSPORTADORAS));
+
+        $data = $request->validate([
+            'transportadora' => ['nullable', 'string', 'in:'.$transportadorasValidas],
+            'codigo_rastreio' => ['nullable', 'string', 'max:60'],
+            'marcar_enviado' => ['nullable', 'boolean'],
+            'notificar_cliente' => ['nullable', 'boolean'],
+        ]);
+
+        $codigo = strtoupper(trim((string) ($data['codigo_rastreio'] ?? '')));
+        $transportadora = $data['transportadora'] ?? null;
+
+        $pedido->update([
+            'transportadora' => $transportadora,
+            'codigo_rastreio' => $codigo ?: null,
+        ]);
+
+        if ($request->boolean('marcar_enviado') && in_array($pedido->status, ['pendente', 'pago'], true)) {
+            $pedido->registrarStatus('enviado', 'Objeto despachado via '.($pedido->transportadoraLabel()).($codigo ? ' (código '.$codigo.')' : ''), $request->user()->id);
+        }
+
+        $notificado = false;
+        if ($request->boolean('notificar_cliente') && $codigo !== '') {
+            $notificado = $correios->notificarCliente($pedido);
+        }
+
+        Activity::log('pedido_rastreio', "Pedido {$pedido->numero}: rastreio ".($codigo ?: 'removido')." ({$pedido->transportadoraLabel()}).", $pedido);
+
+        $msg = 'Dados de despacho e rastreamento atualizados com sucesso.';
+        if ($notificado) {
+            $msg .= ' E-mail com código de rastreamento enviado ao cliente.';
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    /**
+     * Dispara (ou reenvia) o e-mail de notificação de rastreamento ao cliente.
+     */
+    public function notificarRastreio(Order $pedido, CorreiosService $correios): RedirectResponse
+    {
+        if (! $pedido->codigo_rastreio) {
+            return back()->with('error', 'Cadastre o código de rastreamento antes de notificar o cliente.');
+        }
+
+        if (! $pedido->email) {
+            return back()->with('error', 'O pedido não possui e-mail de cliente cadastrado.');
+        }
+
+        $ok = $correios->notificarCliente($pedido);
+
+        if ($ok) {
+            return back()->with('success', 'E-mail de rastreamento enviado com sucesso para '.$pedido->email);
+        }
+
+        return back()->with('error', 'Não foi possível enviar o e-mail de rastreamento.');
+    }
+
+    /**
+     * Consulta em tempo real o código de rastreio nos Correios e retorna JSON para o painel.
+     */
+    public function consultarRastreio(Order $pedido, CorreiosService $correios): JsonResponse
+    {
+        $codigo = $pedido->codigo_rastreio;
+        if (! $codigo) {
+            return response()->json([
+                'sucesso' => false,
+                'mensagem' => 'Pedido sem código de rastreamento cadastrado.',
+            ], 422);
+        }
+
+        $dados = $correios->rastrear($codigo);
+
+        return response()->json([
+            'sucesso' => true,
+            'pedido' => $pedido->numero,
+            'transportadora' => $pedido->transportadoraLabel(),
+            'codigo' => $codigo,
+            'rastreio' => $dados,
+        ]);
     }
 }

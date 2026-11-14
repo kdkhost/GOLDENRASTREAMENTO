@@ -38,6 +38,21 @@
                 </ul>
                 @endif
 
+                @if($pedido->possuiRastreio())
+                <div style="background:#fffbeb;border:2px dashed #d4a017;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+                        <div>
+                            <span style="font-size:0.75rem;text-transform:uppercase;color:#785c13;font-weight:700">Rastreamento da Encomenda</span>
+                            <div style="font-size:1.3rem;font-weight:800;color:#12161a;letter-spacing:1px;font-family:monospace">{{ $pedido->codigo_rastreio }}</div>
+                            <small style="color:#6b7280">Transportadora: {{ $pedido->transportadoraLabel() }}</small>
+                        </div>
+                        <a href="{{ route('site.rastreio.show', $pedido->codigo_rastreio) }}" class="btn btn-golden btn-sm" style="display:inline-flex;align-items:center;gap:0.4rem">
+                            <i class="fa-solid fa-truck-fast"></i> Rastrear em Tempo Real
+                        </a>
+                    </div>
+                </div>
+                @endif
+
                 <h2 class="order-h">Entrega e pagamento</h2>
                 <table class="order-info">
                     <tr><th>Modalidade</th><td>{{ $pedido->entregaLabel() }}</td></tr>

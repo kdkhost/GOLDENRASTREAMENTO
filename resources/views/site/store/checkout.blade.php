@@ -113,6 +113,12 @@
                             @error('uf')<span class="form-err">{{ $message }}</span>@enderror
                         </div>
                     </div>
+
+                    <div id="freteOpcoesContainer" class="field" style="display:none;margin-top:14px">
+                        <label class="field-title"><i class="fa-solid fa-truck-fast" style="color:var(--gold);margin-right:4px"></i> Modalidade de Envio Correios / Mercado Envios</label>
+                        <div id="freteOpcoesLista" class="radio-row" style="margin-top:6px"></div>
+                        <input type="hidden" name="opcao_frete" id="coOpcaoFrete" value="{{ old('opcao_frete') }}">
+                    </div>
                 </div>
                 <p class="retira-note" @if($mostrarEndereco) hidden @endif><i class="fa-solid fa-store"></i> Retirada em {{ $golden['endereco'] }} — {{ $golden['cidade_uf'] }}. Combinamos o horário pelo WhatsApp.</p>
             </fieldset>
@@ -228,6 +234,8 @@ document.addEventListener('DOMContentLoaded',function(){
     var retirou=valor==='retira';
     if(endereco)endereco.hidden=retirou;
     if(retira)retira.hidden=!retirou;
+    var containerFrete=document.getElementById('freteOpcoesContainer');
+    if(containerFrete)containerFrete.style.display=retirou?'none':(containerFrete.dataset.visivel==='1'?'':'none');
     var frete=retirou?0:freteBase;
     if(freteEl)freteEl.textContent=frete>0?brl(frete):'Grátis';
     if(totalEl)totalEl.textContent=brl(subtotal+frete);
@@ -241,12 +249,71 @@ document.addEventListener('DOMContentLoaded',function(){
   form.querySelectorAll('input[name="entrega"]').forEach(function(i){i.addEventListener('change',function(){aplicarEntrega(this.value);});});
   aplicarEntrega((form.querySelector('input[name="entrega"]:checked')||{value:'entrega'}).value);
 
-  // ViaCEP: preenchimento do endereço a partir do CEP (requisição externa, não ao banco).
+  function carregarFreteCorreios(d){
+    if(d.length!==8)return;
+    fetch("{{ route('site.loja.frete.calcular') }}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ cep: d })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(!res.sucesso||!res.opcoes||res.opcoes.length===0) return;
+      var container=document.getElementById('freteOpcoesContainer');
+      var lista=document.getElementById('freteOpcoesLista');
+      var inputOpcao=document.getElementById('coOpcaoFrete');
+      if(!container||!lista) return;
+
+      lista.innerHTML='';
+      container.dataset.visivel='1';
+      var entregaTipo=(form.querySelector('input[name="entrega"]:checked')||{value:'entrega'}).value;
+      if(entregaTipo!=='retira') container.style.display='';
+
+      var jaSelecionado=inputOpcao?inputOpcao.value:'';
+      var opcaoAtiva=res.opcoes.find(function(o){ return o.id===jaSelecionado; }) || res.opcoes[0];
+
+      res.opcoes.forEach(function(op){
+        var label=document.createElement('label');
+        label.className='radio card-radio';
+        label.style.minWidth='180px';
+        var radio=document.createElement('input');
+        radio.type='radio';
+        radio.name='_radio_frete_sel';
+        radio.value=op.id;
+        if(op.id===opcaoAtiva.id){
+          radio.checked=true;
+          if(inputOpcao) inputOpcao.value=op.id;
+          freteBase=op.valor_cents;
+          aplicarEntrega(entregaTipo);
+        }
+        radio.addEventListener('change',function(){
+          if(inputOpcao) inputOpcao.value=op.id;
+          freteBase=op.valor_cents;
+          aplicarEntrega('entrega');
+        });
+
+        var span=document.createElement('span');
+        var prazo=op.prazo_dias ? (' (' + op.prazo_dias + ' ' + (op.prazo_dias>1?'dias úteis':'dia útil') + ')') : '';
+        span.innerHTML='<strong>'+op.nome+'</strong>'+prazo+'<br><b style="color:var(--gold)">'+op.valor_formatado+'</b>';
+        label.appendChild(radio);
+        label.appendChild(span);
+        lista.appendChild(label);
+      });
+    })
+    .catch(function(){});
+  }
+
+  // ViaCEP: preenchimento do endereço a partir do CEP + Cálculo Correios.
   var cep=document.getElementById('coCep');
   if(cep){
     cep.addEventListener('blur',function(){
       var d=(cep.value||'').replace(/\D/g,'');
       if(d.length!==8)return;
+      carregarFreteCorreios(d);
       fetch('https://viacep.com.br/ws/'+d+'/json/').then(function(r){return r.json();}).then(function(j){
         if(j.erro)return;
         var set=function(n,v){var e=form.querySelector('[name="'+n+'"]');if(e&&!e.value&&v)e.value=v;};
@@ -258,6 +325,11 @@ document.addEventListener('DOMContentLoaded',function(){
         if(hint)hint.innerHTML='<i class="fa-solid fa-circle-check"></i> '+(j.localidade||'')+'/'+(j.uf||'');
       }).catch(function(){});
     });
+
+    var inicialCep=(cep.value||'').replace(/\D/g,'');
+    if(inicialCep.length===8){
+      carregarFreteCorreios(inicialCep);
+    }
   }
 
   // Máscaras leves: telefone, CEP e documento, sem biblioteca.

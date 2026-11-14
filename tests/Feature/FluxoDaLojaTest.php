@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\Carrinho;
+use Database\Seeders\OrdersSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
@@ -278,6 +279,7 @@ class FluxoDaLojaTest extends TestCase
         // 'aguardando_pagamento' tem 20 caracteres e o MySQL truncava em 16: o
         // pedido morria no meio do fluxo. O SQLite aceita qualquer tamanho, então
         // é no banco real (MySQL em produção) que este teste vira barreira.
+        $this->seed(OrdersSeeder::class);
         $pedido = Order::firstOrFail();
 
         foreach (array_keys(Order::STATUS) as $status) {

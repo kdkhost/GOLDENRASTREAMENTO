@@ -12,9 +12,11 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\StockMovement;
+use App\Services\Correios\CorreiosService;
 use App\Services\Rastreio;
 use App\Support\Carrinho;
 use App\Support\Notifica;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +32,10 @@ use Illuminate\View\View;
  */
 class StoreController extends Controller
 {
-    public function __construct(private readonly Rastreio $rastreio) {}
+    public function __construct(
+        private readonly Rastreio $rastreio,
+        private readonly CorreiosService $correios,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -148,6 +153,29 @@ class StoreController extends Controller
     }
 
     /**
+     * Calcula o frete em tempo real para o CEP informado (Correios SEDEX/PAC, Mercado Envios, Retirada).
+     */
+    public function calcularFrete(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'cep' => ['required', 'string', 'max:12'],
+        ]);
+
+        $carrinho = Carrinho::daSessao();
+        $linhas = $carrinho->linhas();
+        $subtotal = array_sum(array_column($linhas, 'subtotal'));
+
+        $opcoes = $this->correios->calcularFrete($data['cep'], $subtotal);
+
+        return response()->json([
+            'sucesso' => true,
+            'cep' => preg_replace('/(\d{5})(\d{3})/', '$1-$2', preg_replace('/\D/', '', $data['cep'])),
+            'subtotal' => $subtotal,
+            'opcoes' => $opcoes,
+        ]);
+    }
+
+    /**
      * Grava o pedido. Preços e estoque são relidos do banco aqui: o que entra na
      * transação é o valor real da venda, nunca o que estava em cache na vitrine.
      */
@@ -160,6 +188,7 @@ class StoreController extends Controller
             'tipo_pessoa' => ['required', 'in:fisica,juridica'],
             'documento' => ['required', 'string', 'max:20'],
             'entrega' => ['required', 'in:entrega,retira'],
+            'opcao_frete' => ['nullable', 'string', 'max:40'],
             'cep' => ['nullable', 'string', 'max:12'],
             'endereco' => ['required', 'string', 'max:160'],
             'bairro' => ['required', 'string', 'max:96'],
@@ -243,7 +272,29 @@ class StoreController extends Controller
                 $subtotal += $unit * $linha['quantidade'];
             }
 
-            $frete = Carrinho::fretePara($subtotal, $data['entrega']);
+            $frete = 0;
+            $transportadora = null;
+
+            if ($data['entrega'] === 'retira') {
+                $frete = 0;
+                $transportadora = 'retira';
+            } else {
+                $opcaoFrete = $data['opcao_frete'] ?? null;
+                $opcaoEscolhida = null;
+
+                if (! empty($opcaoFrete) && ! empty($data['cep'])) {
+                    $opcoes = $this->correios->calcularFrete((string) $data['cep'], $subtotal);
+                    $opcaoEscolhida = collect($opcoes)->first(fn ($item) => is_array($item) && ($item['id'] ?? null) === $opcaoFrete);
+                }
+
+                if (is_array($opcaoEscolhida) && isset($opcaoEscolhida['valor_cents'])) {
+                    $frete = (int) $opcaoEscolhida['valor_cents'];
+                    $transportadora = (string) ($opcaoEscolhida['id'] ?? 'correios');
+                } else {
+                    $frete = Carrinho::fretePara($subtotal, $data['entrega']);
+                    $transportadora = 'correios';
+                }
+            }
 
             $pedido = Order::create([
                 'nome' => $data['nome'],
@@ -252,6 +303,7 @@ class StoreController extends Controller
                 'tipo_pessoa' => $data['tipo_pessoa'],
                 'documento' => $documento,
                 'entrega' => $data['entrega'],
+                'transportadora' => $transportadora,
                 'endereco' => $data['endereco'],
                 'bairro' => $data['bairro'],
                 'complemento' => $data['complemento'] ?? null,

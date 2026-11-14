@@ -321,6 +321,18 @@ class SettingController extends Controller
             'loja_frete_gratis_acima' => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'loja_pix_chave' => ['nullable', 'string', 'max:120'],
             'loja_email_equipe' => ['nullable', 'email', 'max:160'],
+            // Correios & Logística
+            'correios_cep_origem' => ['nullable', 'string', 'max:12'],
+            'correios_codigo_administrativo' => ['nullable', 'string', 'max:60'],
+            'correios_cartao_postagem' => ['nullable', 'string', 'max:60'],
+            'correios_usuario' => ['nullable', 'string', 'max:80'],
+            'correios_senha' => ['nullable', 'string', 'max:120'],
+            'correios_prazo_adicional' => ['nullable', 'integer', 'min:0', 'max:30'],
+            'correios_taxa_manuseio' => ['nullable', 'numeric', 'min:0', 'max:999'],
+            'correios_instrucoes_coleta' => ['nullable', 'string', 'max:1000'],
+            // Mercado Livre
+            'mercado_livre_link_loja' => ['nullable', 'string', 'max:255'],
+            'mercado_livre_instrucoes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         Setting::set('loja_livre', $request->boolean('loja_livre') ? '1' : '0');
@@ -330,8 +342,28 @@ class SettingController extends Controller
         Setting::set('loja_pix_chave', trim($data['loja_pix_chave'] ?? ''));
         Setting::set('loja_email_equipe', strtolower(trim($data['loja_email_equipe'] ?? '')));
 
-        Activity::log('loja_regras', 'Regras comerciais da loja atualizadas.');
+        // Correios
+        Setting::set('correios_possui_contrato', $request->boolean('correios_possui_contrato') ? '1' : '0');
+        Setting::set('correios_sedex_ativo', $request->boolean('correios_sedex_ativo') ? '1' : '0');
+        Setting::set('correios_pac_ativo', $request->boolean('correios_pac_ativo') ? '1' : '0');
+        Setting::set('correios_cep_origem', trim($data['correios_cep_origem'] ?? ''));
+        Setting::set('correios_codigo_administrativo', trim($data['correios_codigo_administrativo'] ?? ''));
+        Setting::set('correios_cartao_postagem', trim($data['correios_cartao_postagem'] ?? ''));
+        Setting::set('correios_usuario', trim($data['correios_usuario'] ?? ''));
+        if (! empty($data['correios_senha'])) {
+            Setting::set('correios_senha', trim($data['correios_senha']));
+        }
+        Setting::set('correios_prazo_adicional', (int) ($data['correios_prazo_adicional'] ?? 1));
+        Setting::set('correios_taxa_manuseio_cents', (int) round(((float) ($data['correios_taxa_manuseio'] ?? 0)) * 100));
+        Setting::set('correios_instrucoes_coleta', trim($data['correios_instrucoes_coleta'] ?? ''));
 
-        return back()->with('success', 'Regras da loja salvas.');
+        // Mercado Livre
+        Setting::set('mercado_livre_envio_ativo', $request->boolean('mercado_livre_envio_ativo') ? '1' : '0');
+        Setting::set('mercado_livre_link_loja', trim($data['mercado_livre_link_loja'] ?? ''));
+        Setting::set('mercado_livre_instrucoes', trim($data['mercado_livre_instrucoes'] ?? ''));
+
+        Activity::log('loja_regras', 'Regras comerciais e logística da loja atualizadas.');
+
+        return back()->with('success', 'Regras da loja e logística salvas com sucesso.');
     }
 }

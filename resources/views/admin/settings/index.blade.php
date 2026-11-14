@@ -6,6 +6,12 @@
     $lojaAtiva = ($settings['loja_ativa'] ?? '1') === '1';
     $livre = ($settings['loja_livre'] ?? '0') === '1';
     $retirada = ($settings['loja_retirada'] ?? '0') === '1';
+    $correiosAtivo = ($settings['correios_ativo'] ?? '1') === '1';
+    $correiosContrato = ($settings['correios_possui_contrato'] ?? '0') === '1';
+    $correiosColeta = ($settings['correios_coleta_empresa'] ?? '0') === '1';
+    $correiosSedex = ($settings['correios_sedex_ativo'] ?? '1') === '1';
+    $correiosPac = ($settings['correios_pac_ativo'] ?? '1') === '1';
+    $mercadoLivreAtivo = ($settings['mercado_livre_envio_ativo'] ?? '0') === '1';
     $boxAtivo = ($settings['whatsapp_box_ativo'] ?? '1') === '1';
     $paraExibir = fn ($cents) => ((int) $cents) > 0 ? number_format(((int) $cents) / 100, 2, '.', '') : '';
     $numeroPadrao = $settings['contato_whatsapp'] ?? config('golden.whatsapp');
@@ -171,7 +177,7 @@
         {{-- 3. Loja: ligar/desligar e as regras comerciais, cada um no seu formulário. --}}
         <div class="tab-pane fade" id="aba-loja" data-aba-painel="loja" role="tabpanel" aria-labelledby="aba-loja-botao" tabindex="0">
             <div class="row g-3">
-                <div class="col-xl-5">
+                <div class="col-xl-4">
                     <x-admin.card title="Loja virtual" icon="fa-store" ajuda="loja_ligar" :descricao="$lojaAtiva ? 'Ativa — as páginas /loja estão no ar e no menu do site.' : 'Desativada — /loja sai do ar e some do menu.'">
                         <x-slot:actions>
                             <x-admin.status :rotulo="$lojaAtiva ? 'ativa' : 'desativada'" :tom="tom_por_flag($lojaAtiva)" />
@@ -185,22 +191,105 @@
                         </form>
                         <p class="form-hint mt-3 mb-0">Desligar tira a loja do site na hora; os pedidos já feitos continuam no painel.</p>
                     </x-admin.card>
-                </div>
-                <div class="col-xl-7">
-                    <x-admin.card title="Regras da loja" icon="fa-truck-fast" ajuda="regras_da_loja" descricao="Frete, retirada, Pix e o e-mail que recebe cada venda.">
-                        <form method="POST" action="{{ route('admin.settings.loja-regras') }}" class="row g-3" data-atualiza=".app-content">
-                            @csrf
-                            <x-admin.switch name="loja_livre" label="Frete combinado (não cobra valor fixo)" :checked="$livre" />
-                            <x-admin.switch name="loja_retirada" label="Permitir retirada na loja" :checked="$retirada" />
-                            <x-admin.field name="loja_frete" type="number" label="Frete fixo (R$)" :value="$paraExibir($settings['loja_frete_cents'] ?? 0)" col="col-6" step="0.01" min="0" max="99999" placeholder="0,00" :travado="$livre" />
-                            <x-admin.field name="loja_frete_gratis_acima" type="number" label="Frete grátis acima de (R$)" :value="$paraExibir($settings['loja_frete_gratis_acima_cents'] ?? 0)" col="col-6" step="0.01" min="0" max="99999" placeholder="ex.: 997,00" :travado="$livre" />
-                            <x-admin.field name="loja_pix_chave" label="Chave Pix exibida no checkout" :value="$settings['loja_pix_chave'] ?? ''" maxlength="120" :opcional="true" placeholder="CPF, CNPJ, e-mail ou aleatória" />
-                            <x-admin.field name="loja_email_equipe" type="email" label="E-mail da equipe" :value="$settings['loja_email_equipe'] ?? ''" maxlength="160" :opcional="true" hint="Recebe o alerta de cada venda nova." placeholder="vendas@seudominio.com.br" />
-                            <div class="col-12">
-                                <button class="btn btn-golden"><i class="fas fa-save me-1"></i> Salvar regras da loja</button>
-                            </div>
-                        </form>
+
+                    <x-admin.card title="Atalhos e Links Rápidos" icon="fa-link" class="mt-3">
+                        <ul class="list-unstyled mb-0 small">
+                            <li class="mb-2">
+                                <a href="{{ route('site.rastreio.index') }}" target="_blank" rel="noopener" class="text-decoration-none">
+                                    <i class="fas fa-barcode text-gold me-1"></i> Página de Rastreamento Público
+                                </a>
+                            </li>
+                            <li class="mb-2">
+                                <a href="{{ route('admin.pedidos.index') }}" class="text-decoration-none">
+                                    <i class="fas fa-box-archive text-gold me-1"></i> Gestão de Pedidos e Despacho
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('site.loja.index') }}" target="_blank" rel="noopener" class="text-decoration-none">
+                                    <i class="fas fa-cart-shopping text-gold me-1"></i> Vitrine da Loja Virtual
+                                </a>
+                            </li>
+                        </ul>
                     </x-admin.card>
+                </div>
+
+                <div class="col-xl-8">
+                    <form method="POST" action="{{ route('admin.settings.loja-regras') }}" class="row g-3" data-atualiza=".app-content">
+                        @csrf
+                        <div class="col-12">
+                            <x-admin.card title="Regras Comerciais & Pagamento" icon="fa-sliders" descricao="Frete base, retirada e dados de Pix.">
+                                <div class="row g-3">
+                                    <x-admin.switch name="loja_livre" label="Frete combinado / a combinar (não cobra valor fixo)" :checked="$livre" />
+                                    <x-admin.switch name="loja_retirada" label="Permitir retirada na empresa Golden Rastreamento" :checked="$retirada" />
+                                    <x-admin.field name="loja_frete" type="number" label="Frete fixo padrão (R$)" :value="$paraExibir($settings['loja_frete_cents'] ?? 0)" col="col-md-6" step="0.01" min="0" max="99999" placeholder="0,00" :travado="$livre" />
+                                    <x-admin.field name="loja_frete_gratis_acima" type="number" label="Frete grátis acima de (R$)" :value="$paraExibir($settings['loja_frete_gratis_acima_cents'] ?? 0)" col="col-md-6" step="0.01" min="0" max="99999" placeholder="ex.: 997,00" :travado="$livre" />
+                                    <x-admin.field name="loja_pix_chave" label="Chave Pix exibida no checkout" :value="$settings['loja_pix_chave'] ?? ''" maxlength="120" :opcional="true" col="col-md-6" placeholder="CPF, CNPJ, e-mail ou aleatória" />
+                                    <x-admin.field name="loja_email_equipe" type="email" label="E-mail da equipe para alertas" :value="$settings['loja_email_equipe'] ?? ''" maxlength="160" :opcional="true" col="col-md-6" hint="Recebe alerta de cada venda nova." placeholder="vendas@goldenrastreamento.com.br" />
+                                </div>
+                            </x-admin.card>
+                        </div>
+
+                        <div class="col-12">
+                            <x-admin.card title="Logística Correios (Com e Sem Contrato & Coleta)" icon="fa-truck-fast"
+                                descricao="Cálculo oficial de frete balcão ou com contrato corporativo, coleta na empresa e rastreamento em tempo real.">
+                                <div class="row g-3">
+                                    <x-admin.switch name="correios_ativo" label="Ativar cálculo dinâmico de frete Correios no checkout e carrinho" :checked="$correiosAtivo" />
+                                    
+                                    <div class="col-md-6">
+                                        <x-admin.switch name="correios_possui_contrato" label="Empresa possui contrato com os Correios (tarifas reduzidas)" :checked="$correiosContrato" />
+                                        <div class="form-hint">Aplica desconto contratual nas tarifas e habilita credenciais CWS/SIGEP.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <x-admin.switch name="correios_coleta_empresa" label="Coleta na empresa (carteiro/veículo retira na Golden)" :checked="$correiosColeta" />
+                                        <div class="form-hint">Indica no painel e nos pedidos que as encomendas aguardam coleta na sede da Golden.</div>
+                                    </div>
+
+                                    <x-admin.field name="correios_cep_origem" label="CEP de Origem / Expedição" :value="$settings['correios_cep_origem'] ?? '35500-000'" col="col-md-4" placeholder="35500-000" hint="CEP de saída das mercadorias" />
+                                    <x-admin.field name="correios_prazo_adicional" type="number" label="Prazo adicional (dias úteis)" :value="$settings['correios_prazo_adicional'] ?? 1" col="col-md-4" min="0" max="30" hint="Tempo de preparação/testes" />
+                                    <x-admin.field name="correios_taxa_manuseio" type="number" step="0.01" label="Taxa manuseio / embalagem (R$)" :value="$settings['correios_taxa_manuseio'] ?? '0.00'" col="col-md-4" min="0" max="999" placeholder="0.00" hint="Adicionado ao frete dos Correios" />
+
+                                    <div class="col-12 pt-2 border-top">
+                                        <h6 class="small fw-bold text-uppercase text-secondary mb-2"><i class="fas fa-boxes-packing me-1"></i> Modalidades dos Correios Habilitadas</h6>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <x-admin.switch name="correios_sedex_ativo" label="SEDEX (Envio Expresso / Rápido)" :checked="$correiosSedex" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <x-admin.switch name="correios_pac_ativo" label="PAC (Envio Econômico)" :checked="$correiosPac" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 pt-2 border-top">
+                                        <h6 class="small fw-bold text-uppercase text-secondary mb-1"><i class="fas fa-file-contract me-1"></i> Credenciais do Contrato Correios (Opcional / CWS)</h6>
+                                        <p class="form-hint mb-3">Preencha caso possua contrato formal com os Correios para autenticação na API CWS / SIGEP Web.</p>
+                                        <div class="row g-3">
+                                            <x-admin.field name="correios_codigo_administrativo" label="Código Administrativo" :value="$settings['correios_codigo_administrativo'] ?? ''" col="col-md-6" :opcional="true" placeholder="Ex.: 08000000" />
+                                            <x-admin.field name="correios_cartao_postagem" label="Cartão de Postagem" :value="$settings['correios_cartao_postagem'] ?? ''" col="col-md-6" :opcional="true" placeholder="Ex.: 0057018901" />
+                                            <x-admin.field name="correios_usuario" label="Usuário CWS / SIGEP" :value="$settings['correios_usuario'] ?? ''" col="col-md-6" :opcional="true" placeholder="Ex.: goldenrastreamento" />
+                                            <x-admin.field name="correios_senha" type="password" label="Senha / Token CWS" :value="$settings['correios_senha'] ?? ''" col="col-md-6" :opcional="true" placeholder="••••••••" />
+                                            <x-admin.field name="correios_instrucoes_coleta" type="textarea" label="Instruções de Coleta na Empresa" :value="$settings['correios_instrucoes_coleta'] ?? ''" rows="2" col="col-12" :opcional="true" hint="Ex.: Coleta diária às 15h na sede da Golden Rastreamento. Contato da expedição: (37) 99999-9999." />
+                                        </div>
+                                    </div>
+                                </div>
+                            </x-admin.card>
+                        </div>
+
+                        <div class="col-12">
+                            <x-admin.card title="Mercado Livre / Mercado Envios" icon="fa-bag-shopping"
+                                descricao="Opção alternativa de envio caso o administrador opte por intermediar a logística via Mercado Livre.">
+                                <div class="row g-3">
+                                    <x-admin.switch name="mercado_livre_envio_ativo" label="Habilitar opção de envio pelo Mercado Livre (Mercado Envios)" :checked="$mercadoLivreAtivo" />
+                                    <x-admin.field name="mercado_livre_link_loja" label="Link da Loja / Anúncio Oficial no Mercado Livre" :value="$settings['mercado_livre_link_loja'] ?? ''" col="col-12" :opcional="true" placeholder="https://www.mercadolivre.com.br/loja/golden-rastreamento" />
+                                    <x-admin.field name="mercado_livre_instrucoes" type="textarea" label="Instruções e orientações do Mercado Envios" :value="$settings['mercado_livre_instrucoes'] ?? ''" rows="2" col="col-12" :opcional="true" placeholder="Ex.: O envio é gerenciado pela plataforma do Mercado Livre com código de rastreamento Mercado Envios." />
+                                </div>
+                            </x-admin.card>
+                        </div>
+
+                        <div class="col-12">
+                            <button class="btn btn-golden"><i class="fas fa-save me-1"></i> Salvar todas as regras e configurações de logística</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

@@ -51,6 +51,7 @@ use App\Http\Controllers\Site\AssistenteController as SiteAssistenteController;
 use App\Http\Controllers\Site\FunnelController;
 use App\Http\Controllers\Site\LeadController as SiteLeadController;
 use App\Http\Controllers\Site\PageController;
+use App\Http\Controllers\Site\RastreamentoController;
 use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
 use App\Http\Controllers\Site\StoreController;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +70,11 @@ Route::get('/faq', [PageController::class, 'faq'])->name('site.faq');
 Route::get('/videos', [PageController::class, 'videos'])->name('site.videos');
 Route::get('/contato', [PageController::class, 'contato'])->name('site.contato');
 Route::get('/privacidade', [PageController::class, 'privacidade'])->name('site.privacidade');
+
+// Rastreamento público de encomendas (Correios / Mercado Livre / Golden)
+Route::get('/rastreamento', [RastreamentoController::class, 'index'])->name('site.rastreio.index');
+Route::get('/rastreamento/{codigo}', [RastreamentoController::class, 'index'])->name('site.rastreio.show');
+Route::get('/rastrear/{codigo}', fn (string $codigo) => redirect()->route('site.rastreio.show', ['codigo' => $codigo]));
 
 // Funil de vendas pago: não entra no menu, no rodapé nem na busca — só chega quem tem o link.
 Route::get('/c/{slug}', [FunnelController::class, 'show'])->name('site.funil');
@@ -124,6 +130,8 @@ Route::middleware('loja')->group(function () {
 
     // Pedido: formulário, gravação e acompanhamento por número + token.
     Route::get('/loja/checkout', [StoreController::class, 'checkout'])->name('site.loja.checkout');
+    Route::post('/loja/frete/calcular', [StoreController::class, 'calcularFrete'])
+        ->middleware('throttle:30,1')->name('site.loja.frete.calcular');
     Route::post('/loja/pedido', [StoreController::class, 'registrar'])
         ->middleware('throttle:8,1')->name('site.loja.pedido.registrar');
     Route::get('/loja/pedido/{numero}/{token}', [StoreController::class, 'pedido'])
@@ -487,6 +495,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{pedido}', [OrderController::class, 'show'])->name('show');
         Route::post('/{pedido}/status', [OrderController::class, 'atualizarStatus'])->name('status');
+        Route::post('/{pedido}/rastreio', [OrderController::class, 'salvarRastreio'])->name('rastreio');
+        Route::post('/{pedido}/rastreio/notificar', [OrderController::class, 'notificarRastreio'])->name('rastreio.notificar');
+        Route::get('/{pedido}/rastreio/consultar', [OrderController::class, 'consultarRastreio'])->name('rastreio.consultar');
         Route::post('/{pedido}/documentos', [OrderController::class, 'documentos'])->name('documentos');
         Route::delete('/{pedido}', [OrderController::class, 'destroy'])->name('destroy')->middleware('role:admin');
     });

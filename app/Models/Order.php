@@ -38,12 +38,22 @@ class Order extends Model
         'retira' => 'Retirada na loja',
     ];
 
+    public const TRANSPORTADORAS = [
+        'correios_sedex' => 'Correios (SEDEX)',
+        'correios_pac' => 'Correios (PAC)',
+        'correios' => 'Correios',
+        'mercado_livre' => 'Mercado Envios (Mercado Livre)',
+        'propria' => 'Transportadora Própria / Logística Golden',
+        'retira' => 'Retirada na Empresa',
+    ];
+
     protected $fillable = [
         'numero', 'customer_id', 'lead_id', 'user_id', 'nome', 'email', 'telefone',
         'tipo_pessoa', 'documento', 'entrega', 'endereco', 'bairro', 'complemento',
         'cidade', 'uf', 'cep', 'subtotal_cents', 'frete_cents', 'desconto_cents',
         'total_cents', 'pagamento', 'status', 'notas', 'consent_given', 'documentos', 'ip_hash',
         'visitor_id', 'pago_em', 'enviado_em',
+        'codigo_rastreio', 'transportadora', 'rastreio_notificado_em', 'rastreio_historico',
     ];
 
     protected $casts = [
@@ -55,6 +65,7 @@ class Order extends Model
         'documentos' => 'array',
         'pago_em' => 'datetime',
         'enviado_em' => 'datetime',
+        'rastreio_notificado_em' => 'datetime',
     ];
 
     /** O token nunca sai do modelo: só a rota pública montada pelo controlador. */
@@ -213,5 +224,24 @@ class Order extends Model
         ]);
 
         return implode(' — ', $partes);
+    }
+
+    public function transportadoraLabel(): string
+    {
+        return self::TRANSPORTADORAS[$this->transportadora] ?? self::TRANSPORTADORAS['correios'];
+    }
+
+    public function possuiRastreio(): bool
+    {
+        return filled($this->codigo_rastreio);
+    }
+
+    public function rastreioUrl(): string
+    {
+        if (! $this->possuiRastreio()) {
+            return $this->registroUrl();
+        }
+
+        return route('site.rastreio.show', ['codigo' => $this->codigo_rastreio]);
     }
 }

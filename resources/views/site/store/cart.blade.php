@@ -50,10 +50,22 @@
         <aside class="cart-summary">
             <h2>Resumo</h2>
             <div class="sum-line"><span>Subtotal ({{ array_sum(array_column($linhas, 'quantidade')) }} itens)</span><b>{{ brl($subtotal) }}</b></div>
-            <div class="sum-line"><span>Frete</span><b>{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
+            <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
             @if($freteGratisEm > 0)
             <p class="sum-hint"><i class="fa-solid fa-gift" style="color:var(--gold)"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
             @endif
+
+            <div class="cart-frete-box" style="margin:16px 0;padding:12px;background:#f8fafc;border-radius:12px;border:1px solid rgba(0,0,0,.08)">
+                <label for="cartCep" style="display:block;font-size:.84rem;font-weight:600;margin-bottom:6px;color:var(--ink)">
+                    <i class="fa-solid fa-truck" style="color:var(--gold);margin-right:4px"></i> Simular frete Correios
+                </label>
+                <div style="display:flex;gap:6px">
+                    <input type="text" id="cartCep" placeholder="00000-000" maxlength="9" style="flex:1;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem">
+                    <button type="button" id="btnCalcCartFrete" class="btn btn-ghost btn-sm" style="padding:6px 12px;white-space:nowrap">Calcular</button>
+                </div>
+                <div id="cartFreteResultados" style="margin-top:10px;font-size:.82rem;display:none"></div>
+            </div>
+
             <a href="{{ route('site.loja.checkout') }}" class="btn btn-gold" data-farol="checkout" style="width:100%;margin-top:14px">Finalizar pedido →</a>
             <p class="fine">Pagamento na etapa seguinte: Pix, cartão ou boleto. Retirada na loja quando disponível.</p>
         </aside>
@@ -94,4 +106,68 @@
   .cart-del{grid-column:3;grid-row:2}
 }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const inputCep = document.getElementById('cartCep');
+    const btnCalc = document.getElementById('btnCalcCartFrete');
+    const boxResultados = document.getElementById('cartFreteResultados');
+
+    if (!inputCep || !btnCalc || !boxResultados) return;
+
+    inputCep.addEventListener('input', function () {
+        let v = inputCep.value.replace(/\D/g, '').slice(0, 8);
+        inputCep.value = v.replace(/^(\d{5})(\d)/, '$1-$2');
+    });
+
+    btnCalc.addEventListener('click', function () {
+        const rawCep = inputCep.value.replace(/\D/g, '');
+        if (rawCep.length !== 8) {
+            boxResultados.style.display = 'block';
+            boxResultados.innerHTML = '<span style="color:#dc2626">Informe um CEP válido com 8 dígitos.</span>';
+            return;
+        }
+
+        btnCalc.disabled = true;
+        btnCalc.textContent = 'Calculando...';
+        boxResultados.style.display = 'block';
+        boxResultados.innerHTML = '<span style="color:#64748b"><i class="fa-solid fa-spinner fa-spin"></i> Consultando Correios...</span>';
+
+        fetch("{{ route('site.loja.frete.calcular') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ cep: rawCep })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btnCalc.disabled = false;
+            btnCalc.textContent = 'Calcular';
+
+            if (!data.sucesso || !data.opcoes || data.opcoes.length === 0) {
+                boxResultados.innerHTML = '<span style="color:#dc2626">Não foi possível calcular o frete para este CEP.</span>';
+                return;
+            }
+
+            let html = '<ul style="list-style:none;padding:0;margin:4px 0 0;display:flex;flex-direction:column;gap:6px">';
+            data.opcoes.forEach(op => {
+                const prazo = op.prazo_dias ? (op.prazo_dias + ' ' + (op.prazo_dias > 1 ? 'dias úteis' : 'dia útil')) : '';
+                html += '<li style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:#fff;border:1px solid #e2e8f0;border-radius:6px">';
+                html += '<div><strong>' + op.nome + '</strong>' + (prazo ? '<br><small style="color:#64748b">' + prazo + '</small>' : '') + '</div>';
+                html += '<strong style="color:var(--gold);white-space:nowrap">' + op.valor_formatado + '</strong>';
+                html += '</li>';
+            });
+            html += '</ul>';
+            boxResultados.innerHTML = html;
+        })
+        .catch(() => {
+            btnCalc.disabled = false;
+            btnCalc.textContent = 'Calcular';
+            boxResultados.innerHTML = '<span style="color:#dc2626">Erro ao conectar ao serviço de frete.</span>';
+        });
+    });
+});
+</script>
 @endpush
