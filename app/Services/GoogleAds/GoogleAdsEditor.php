@@ -907,6 +907,94 @@ final class GoogleAdsEditor
     }
 
     /**
+     * Lista campanhas de pesquisa da conta com seus respectivos grupos de anúncios para publicação direta de RSA.
+     *
+     * @return array<int, array{id:string, nome:string, status:string, status_rotulo:string, grupos:array<int, array{id:string, resource:string, nome:string, status:string}>}>
+     */
+    public function listarCampanhasEGrupos(GoogleAdsAccount $conta): array
+    {
+        $this->prepararEscrita($conta);
+
+        $campanhas = [];
+
+        foreach ($this->consultar($conta, "SELECT campaign.id, campaign.name, campaign.status FROM campaign WHERE campaign.status != 'REMOVED' ORDER BY campaign.id DESC", 'criativo.campanhas.ler') as $linha) {
+            $campanha = (array) ($linha['campaign'] ?? []);
+            $id = (string) ($campanha['id'] ?? '');
+            if ($id === '') {
+                continue;
+            }
+            $status = (string) ($campanha['status'] ?? 'UNKNOWN');
+            $campanhas[$id] = [
+                'id' => $id,
+                'nome' => (string) ($campanha['name'] ?? 'Campanha #'.$id),
+                'status' => $status,
+                'status_rotulo' => $this->rotulo($status),
+                'grupos' => [],
+            ];
+        }
+
+        if ($campanhas === []) {
+            return [];
+        }
+
+        foreach ($this->consultar($conta, "SELECT campaign.id, ad_group.id, ad_group.resource_name, ad_group.name, ad_group.status FROM ad_group WHERE ad_group.status != 'REMOVED' ORDER BY ad_group.id", 'criativo.grupos.ler') as $linha) {
+            $campanhaId = (string) data_get($linha, 'campaign.id', '');
+            if (! isset($campanhas[$campanhaId])) {
+                continue;
+            }
+            $grupo = (array) ($linha['adGroup'] ?? []);
+            $grupoId = (string) ($grupo['id'] ?? '');
+            $resource = (string) ($grupo['resourceName'] ?? '');
+            if ($grupoId === '' || $resource === '') {
+                continue;
+            }
+            $campanhas[$campanhaId]['grupos'][] = [
+                'id' => $grupoId,
+                'resource' => $resource,
+                'nome' => (string) ($grupo['name'] ?? 'Grupo #'.$grupoId),
+                'status' => (string) ($grupo['status'] ?? 'UNKNOWN'),
+            ];
+        }
+
+        return array_values(array_filter(
+            $campanhas,
+            static fn (array $campanha): bool => $campanha['grupos'] !== []
+        ));
+    }
+
+    /**
+     * Publica um novo anúncio responsivo de pesquisa (RSA) diretamente em um grupo de anúncios existente.
+     *
+     * @param  array{url: string, titulos: array<int, string>, descricoes: array<int, string>, caminhos?: array<int, string>}  $anuncio
+     */
+    public function publicarAnuncioEmGrupo(GoogleAdsAccount $conta, string $grupoResource, array $anuncio, bool $pausado = true): string
+    {
+        $this->prepararEscrita($conta);
+        $customer = 'customers/'.$conta->customer_id;
+
+        $resposta = $this->chamar($conta, $customer.'/adGroupAds:mutate', [
+            'operations' => [['create' => [
+                'adGroup' => $grupoResource,
+                'status' => $pausado ? 'PAUSED' : 'ENABLED',
+                'ad' => self::anuncioResponsivo(
+                    (string) $anuncio['url'],
+                    (array) $anuncio['titulos'],
+                    (array) $anuncio['descricoes'],
+                    (array) ($anuncio['caminhos'] ?? [])
+                ),
+            ]]],
+        ], 'criativo.anuncio.publicar');
+
+        $resource = (string) data_get($resposta, 'results.0.resourceName', '');
+
+        if ($resource === '') {
+            throw new GoogleAdsFalhou('O Google aceitou o envio mas não retornou o identificador do anúncio.');
+        }
+
+        return $resource;
+    }
+
+    /**
      * Uma consulta GAQL por REST. O resultado vem em `results`, com os campos em camelCase
      * e os números grandes como texto; sem `pageSize`, que a V26 recusa.
      *

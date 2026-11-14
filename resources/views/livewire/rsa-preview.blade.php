@@ -148,6 +148,105 @@
                     Exibição na busca: <code>{{ $dominio }}{{ $caminho !== '' ? '/'.$caminho : '' }}</code>
                 </div>
             </x-admin.card>
+
+            <x-admin.card title="Publicar no Google Ads" icon="fa-rocket" class="mt-3"
+                descricao="Envie este anúncio diretamente para um grupo de anúncios da sua conta conectada.">
+                <x-slot:actions>
+                    @if ($contasDisponiveis !== [])
+                        <button type="button" class="btn btn-sm btn-outline-secondary" wire:click="recarregarDestinos"
+                            wire:loading.attr="disabled" wire:target="recarregarDestinos">
+                            <i class="fas fa-rotate me-1" aria-hidden="true"></i> Atualizar listas
+                        </button>
+                    @endif
+                </x-slot:actions>
+
+                @if ($contasDisponiveis === [])
+                    <div class="alert alert-warning mb-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <span class="small">Nenhuma conta ativa do Google Ads conectada no momento.</span>
+                        <a href="{{ route('admin.google-ads.index') }}" class="btn btn-sm btn-outline-dark">
+                            Conectar conta
+                        </a>
+                    </div>
+                @else
+                    @if ($erroDestinos !== '')
+                        <div class="alert alert-warning small mb-3">{{ $erroDestinos }}</div>
+                    @endif
+
+                    @if ($erroPublicacao !== '')
+                        <div class="alert alert-danger small mb-3">{{ $erroPublicacao }}</div>
+                    @endif
+
+                    @if ($sucessoPublicacao !== '')
+                        <div class="alert alert-success small mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <span><i class="fas fa-circle-check me-1" aria-hidden="true"></i> {{ $sucessoPublicacao }}</span>
+                            @if ($publicadoCampanhaUrl !== '')
+                                <a href="{{ $publicadoCampanhaUrl }}" class="btn btn-sm btn-success">
+                                    Ver campanha <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+                                </a>
+                            @endif
+                        </div>
+                    @endif
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="rsa-conta">Conta Google Ads</label>
+                            <select id="rsa-conta" class="form-select" wire:model.live="contaId">
+                                @foreach ($contasDisponiveis as $contaItem)
+                                    <option value="{{ $contaItem['id'] }}">{{ $contaItem['nome'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="rsa-status-pub">Status inicial</label>
+                            <select id="rsa-status-pub" class="form-select" wire:model="statusPublicacao">
+                                <option value="PAUSED">Pausado (recomendado para revisar)</option>
+                                <option value="ENABLED">Ativo imediatamente</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="rsa-campanha">Campanha</label>
+                            <select id="rsa-campanha" class="form-select" wire:model.live="campanhaId" @disabled($campanhasDisponiveis === [])>
+                                @forelse ($campanhasDisponiveis as $campanhaItem)
+                                    <option value="{{ $campanhaItem['id'] }}">
+                                        {{ $campanhaItem['nome'] }} ({{ $campanhaItem['status_rotulo'] }})
+                                    </option>
+                                @empty
+                                    <option value="">Nenhuma campanha com grupos encontrada</option>
+                                @endforelse
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="rsa-grupo">Grupo de anúncios</label>
+                            <select id="rsa-grupo" class="form-select" wire:model="grupoResource" @disabled($gruposDisponiveis === [])>
+                                @forelse ($gruposDisponiveis as $grupoItem)
+                                    <option value="{{ $grupoItem['resource'] }}">{{ $grupoItem['nome'] }}</option>
+                                @empty
+                                    <option value="">Selecione uma campanha primeiro</option>
+                                @endforelse
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 pt-2 border-top">
+                        <span class="form-hint mb-0">
+                            Cria um novo anúncio responsivo (RSA) no grupo escolhido sem alterar os anúncios atuais.
+                        </span>
+                        <button type="button" class="btn btn-golden" wire:click="publicarNoGoogleAds"
+                            wire:loading.attr="disabled" wire:target="publicarNoGoogleAds"
+                            @disabled($faltam !== [] || $grupoResource === '')>
+                            <span wire:loading.remove wire:target="publicarNoGoogleAds">
+                                <i class="fas fa-paper-plane me-1" aria-hidden="true"></i> Publicar no Google Ads
+                            </span>
+                            <span wire:loading wire:target="publicarNoGoogleAds">
+                                <i class="fas fa-spinner fa-spin me-1" aria-hidden="true"></i> Publicando…
+                            </span>
+                        </button>
+                    </div>
+                @endif
+            </x-admin.card>
         </div>
 
         <div class="col-lg-5">

@@ -2,20 +2,20 @@
 
 namespace App\Livewire;
 
+use App\Models\Activity;
+use App\Models\GoogleAdsAccount;
+use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
+use App\Services\GoogleAds\GoogleAdsEditor;
 use Illuminate\View\View;
 use Livewire\Component;
+use Throwable;
 
 /**
- * O editor e o mock do anúncio responsivo (RSA) do Google Ads.
+ * Estúdio e publicador de anúncio responsivo (RSA) do Google Ads.
  *
- * O Google não tem API que devolve uma prévia do anúncio: quem escreve o criativo decide no
- * escuro e só vê o resultado depois de aprovado. Esta tela fecha esse buraco com o que o
- * mercado faz — um mock em HTML do que a busca desenha, com as três combinações de título e
- * descrição que o próprio Google sorteia entre as opções aceitas.
- *
- * As travas não são preferências daqui: quinze títulos de até 30 caracteres, quatro descrições
- * de até 90, duas rotas de display de até 15. Entraram em `config('google_ads.rsa')`, e o
- * contador e o preview leem da mesma lista — se o Google mudar um número, muda um lugar.
+ * Além de validar limites de caracteres em tempo real e desenhar a prévia fiel da busca para
+ * desktop e celular, permite publicar o anúncio diretamente em um grupo de anúncios de qualquer
+ * campanha ativa/pausada da conta conectada no Google Ads.
  */
 class RsaPreview extends Component
 {
@@ -40,10 +40,88 @@ class RsaPreview extends Component
     /** Semente para rotacionar as combinações exibidas na prévia. */
     public int $semente = 0;
 
+    /** Destino real de publicação no Google Ads. */
+    public ?int $contaId = null;
+
+    public string $campanhaId = '';
+
+    public string $grupoResource = '';
+
+    public string $statusPublicacao = 'PAUSED';
+
+    /** @var array<int, array{id:int, nome:string}> */
+    public array $contasDisponiveis = [];
+
+    /** @var array<int, array{id:string, nome:string, status:string, status_rotulo:string, grupos:array<int, array{id:string, resource:string, nome:string, status:string}>}> */
+    public array $campanhasDisponiveis = [];
+
+    public string $erroDestinos = '';
+
+    public string $erroPublicacao = '';
+
+    public string $sucessoPublicacao = '';
+
+    public string $publicadoCampanhaUrl = '';
+
+    public function mount(): void
+    {
+        $usuario = auth()->user();
+
+        if ($usuario === null) {
+            return;
+        }
+
+        $contas = GoogleAdsAccount::visiveisPara($usuario)
+            ->comCampanhas()
+            ->where('status', GoogleAdsAccount::ATIVO)
+            ->orderByDesc('id')
+            ->get();
+
+        $this->contasDisponiveis = $contas->map(fn (GoogleAdsAccount $conta): array => [
+            'id' => $conta->id,
+            'nome' => $conta->nomeTela().' ('.$conta->numeroConta().')',
+        ])->values()->all();
+
+        if ($this->contasDisponiveis !== []) {
+            $this->contaId = $this->contasDisponiveis[0]['id'];
+            $this->carregarCampanhas();
+        }
+    }
+
+    public function updatedContaId(): void
+    {
+        $this->campanhaId = '';
+        $this->grupoResource = '';
+        $this->erroPublicacao = '';
+        $this->sucessoPublicacao = '';
+        $this->carregarCampanhas();
+    }
+
+    public function updatedCampanhaId(): void
+    {
+        $this->grupoResource = '';
+        $this->erroPublicacao = '';
+        $this->sucessoPublicacao = '';
+
+        $campanha = collect($this->campanhasDisponiveis)->firstWhere('id', $this->campanhaId);
+        if (is_array($campanha) && ! empty($campanha['grupos'])) {
+            $this->grupoResource = (string) $campanha['grupos'][0]['resource'];
+        }
+    }
+
+    public function recarregarDestinos(): void
+    {
+        $this->erroPublicacao = '';
+        $this->sucessoPublicacao = '';
+        $this->carregarCampanhas();
+    }
+
     public function render(): View
     {
         $limites = config('google_ads.rsa');
         $faltam = $this->faltas($limites);
+        $campanhaSelecionada = collect($this->campanhasDisponiveis)->firstWhere('id', $this->campanhaId);
+        $gruposDisponiveis = is_array($campanhaSelecionada) ? ($campanhaSelecionada['grupos'] ?? []) : [];
 
         return view('livewire.rsa-preview', [
             'limites' => $limites,
@@ -62,6 +140,7 @@ class RsaPreview extends Component
             'forca' => $this->forcaDoAnuncio($limites, $faltam),
             'textoExportacao' => $this->textoExportacao(),
             'modelos' => $this->modelosDisponiveis(),
+            'gruposDisponiveis' => $gruposDisponiveis,
         ]);
     }
 
@@ -133,6 +212,8 @@ class RsaPreview extends Component
         $this->rota2 = $modelo['rota2'];
         $this->semente = 0;
         $this->descricao_aberta = false;
+        $this->erroPublicacao = '';
+        $this->sucessoPublicacao = '';
     }
 
     public function limparRascunho(): void
@@ -144,6 +225,129 @@ class RsaPreview extends Component
         $this->rota2 = '';
         $this->semente = 0;
         $this->descricao_aberta = false;
+        $this->erroPublicacao = '';
+        $this->sucessoPublicacao = '';
+    }
+
+    /**
+     * Publica o anúncio responsivo diretamente no grupo de anúncios selecionado no Google Ads.
+     */
+    public function publicarNoGoogleAds(GoogleAdsEditor $editor): void
+    {
+        $this->erroPublicacao = '';
+        $this->sucessoPublicacao = '';
+        $this->publicadoCampanhaUrl = '';
+
+        $limites = config('google_ads.rsa');
+        $faltam = $this->faltas($limites);
+
+        if ($faltam !== []) {
+            $this->erroPublicacao = 'Corrija os requisitos pendentes do anúncio antes de publicar: '.implode(' ', $faltam);
+
+            return;
+        }
+
+        $urlFinal = trim($this->url_final);
+        if ($urlFinal === '' || filter_var($urlFinal, FILTER_VALIDATE_URL) === false || ! str_starts_with(strtolower($urlFinal), 'http')) {
+            $this->erroPublicacao = 'Informe uma URL final válida começando com https:// ou http://.';
+
+            return;
+        }
+
+        $usuario = auth()->user();
+        if ($usuario === null || $this->contaId === null) {
+            $this->erroPublicacao = 'Conecte e selecione uma conta ativa do Google Ads para publicar.';
+
+            return;
+        }
+
+        $conta = GoogleAdsAccount::visiveisPara($usuario)
+            ->comCampanhas()
+            ->where('status', GoogleAdsAccount::ATIVO)
+            ->find($this->contaId);
+
+        if ($conta === null) {
+            $this->erroPublicacao = 'A conta do Google Ads selecionada não está mais disponível ou ativa.';
+
+            return;
+        }
+
+        if ($this->campanhaId === '' || $this->grupoResource === '') {
+            $this->erroPublicacao = 'Selecione a campanha e o grupo de anúncios de destino.';
+
+            return;
+        }
+
+        $titulos = $this->opcionaveis($this->titulos);
+        $descricoes = $this->opcionaveis($this->descricoes);
+        $caminhos = array_values(array_filter([
+            mb_substr(trim($this->rota1, ' /'), 0, (int) $limites['caracteres_rota']),
+            mb_substr(trim($this->rota2, ' /'), 0, (int) $limites['caracteres_rota']),
+        ], static fn (string $r): bool => $r !== ''));
+
+        $pausado = $this->statusPublicacao !== 'ENABLED';
+
+        try {
+            $resourceCriado = $editor->publicarAnuncioEmGrupo($conta, $this->grupoResource, [
+                'url' => $urlFinal,
+                'titulos' => $titulos,
+                'descricoes' => $descricoes,
+                'caminhos' => $caminhos,
+            ], $pausado);
+
+            Activity::log(
+                'google_ads_anuncio_publicado',
+                'Anúncio responsivo publicado via Estúdio RSA na campanha #'.$this->campanhaId.' ('.($pausado ? 'Pausado' : 'Ativo').').',
+                $conta,
+                [
+                    'campaign_id' => $this->campanhaId,
+                    'ad_group_resource' => $this->grupoResource,
+                    'ad_group_ad_resource' => $resourceCriado,
+                    'status' => $pausado ? 'PAUSED' : 'ENABLED',
+                ]
+            );
+
+            $this->sucessoPublicacao = 'Anúncio publicado com sucesso no Google Ads como '.($pausado ? 'Pausado' : 'Ativo').'!';
+            $this->publicadoCampanhaUrl = route('admin.google-ads.campanhas.show', [
+                'campanha' => $this->campanhaId,
+                'conta' => $conta->id,
+            ]);
+        } catch (GoogleAdsFalhou $erro) {
+            $this->erroPublicacao = $erro->getMessage();
+        } catch (Throwable $erro) {
+            $this->erroPublicacao = 'Não foi possível publicar o anúncio no Google Ads: '.$erro->getMessage();
+        }
+    }
+
+    private function carregarCampanhas(): void
+    {
+        $this->erroDestinos = '';
+        $this->campanhasDisponiveis = [];
+
+        $usuario = auth()->user();
+        if ($usuario === null || $this->contaId === null) {
+            return;
+        }
+
+        $conta = GoogleAdsAccount::visiveisPara($usuario)
+            ->comCampanhas()
+            ->where('status', GoogleAdsAccount::ATIVO)
+            ->find($this->contaId);
+
+        if ($conta === null) {
+            return;
+        }
+
+        try {
+            $this->campanhasDisponiveis = app(GoogleAdsEditor::class)->listarCampanhasEGrupos($conta);
+
+            if ($this->campanhasDisponiveis !== []) {
+                $this->campanhaId = (string) $this->campanhasDisponiveis[0]['id'];
+                $this->grupoResource = (string) ($this->campanhasDisponiveis[0]['grupos'][0]['resource'] ?? '');
+            }
+        } catch (Throwable $erro) {
+            $this->erroDestinos = 'Não foi possível listar campanhas e grupos desta conta agora: '.$erro->getMessage();
+        }
     }
 
     /**
@@ -182,7 +386,6 @@ class RsaPreview extends Component
                 'titulo' => $principal,
                 'titulo_extra' => $extra,
                 'descricao' => $descricao,
-                // O celular corta a descrição em volta dos 70-90 caracteres na prévia compacta.
                 'cortada' => mb_substr($descricao, 0, 70),
             ];
         }

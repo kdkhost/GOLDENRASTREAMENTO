@@ -542,6 +542,70 @@ class ConexaoGoogleAdsTest extends TestCase
             ->assertSet('descricoes', ['']);
     }
 
+    public function test_o_estudio_rsa_publica_anuncio_real_em_grupo_do_google_ads(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+            'status' => GoogleAdsAccount::ATIVO,
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/googleAds:search' => Http::sequence()
+                ->push([
+                    'results' => [[
+                        'campaign' => [
+                            'id' => '24456385340',
+                            'name' => 'Golden Rastreamento',
+                            'status' => 'ENABLED',
+                        ],
+                    ]],
+                ])
+                ->push([
+                    'results' => [[
+                        'campaign' => ['id' => '24456385340'],
+                        'adGroup' => [
+                            'id' => '999888777',
+                            'resourceName' => 'customers/1234567890/adGroups/999888777',
+                            'name' => 'Grupo Veicular',
+                            'status' => 'ENABLED',
+                        ],
+                    ]],
+                ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/adGroupAds:mutate' => Http::response([
+                'results' => [[
+                    'resourceName' => 'customers/1234567890/adGroupAds/999888777~555444333',
+                ]],
+            ]),
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $tela = Livewire::test(RsaPreview::class)
+            ->assertSet('contaId', $conta->id)
+            ->assertSet('campanhaId', '24456385340')
+            ->assertSet('grupoResource', 'customers/1234567890/adGroups/999888777')
+            ->call('aplicarModelo', 'veicular')
+            ->call('publicarNoGoogleAds')
+            ->assertSee('Anúncio publicado com sucesso no Google Ads');
+
+        Http::assertSent(function ($request): bool {
+            if (! str_contains($request->url(), 'adGroupAds:mutate')) {
+                return false;
+            }
+
+            $op = $request->data()['operations'][0]['create'] ?? [];
+
+            return ($op['adGroup'] ?? '') === 'customers/1234567890/adGroups/999888777'
+                && ($op['status'] ?? '') === 'PAUSED'
+                && count($op['ad']['responsiveSearchAd']['headlines'] ?? []) === 8;
+        });
+    }
+
     public function test_a_tela_de_recursos_da_campanha_renderiza_com_sucesso(): void
     {
         $conta = GoogleAdsAccount::factory()->create([
