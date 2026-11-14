@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AlertaEmpresaMail;
 use App\Models\Activity;
 use App\Models\Notificacao;
 use App\Models\NotificacaoPreferencia;
 use App\Models\Setting;
+use App\Support\Notifica;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
@@ -138,16 +141,18 @@ class NotificacaoController extends Controller
             'tipos' => $tipos,
             'retencao' => Notificacao::diasDeRetencao(),
             'expiracao' => max(1, (int) Setting::get('notificacoes_expiracao_dias', config('notificacoes.expiracao_dias_padrao', 15))),
+            'email_ativo' => Setting::get('notificacoes_email_ativo', '1') === '1',
+            'email_destinatarios' => Setting::get('notificacoes_email_destinatarios', Setting::get('loja_email_equipe', '')),
+            'celular_ativo' => Setting::get('notificacoes_celular_ativo', '1') === '1',
+            'telegram_token' => Setting::get('notificacoes_telegram_token', ''),
+            'telegram_chat_id' => Setting::get('notificacoes_telegram_chat_id', ''),
+            'webhook_celular' => Setting::get('notificacoes_webhook_celular', ''),
         ]);
     }
 
     /**
      * O que a pessoa desligou do próprio sino, e — para o administrador — por quanto tempo as
-     * notificações ficam guardadas.
-     *
-     * A linha de preferência só existe para o tipo desligado (o padrão é receber), então marcar
-     * apaga a linha e desmarcar a cria. Os dois números são globais: eles valem para a poda de
-     * todo mundo, e por isso só o administrador os envia.
+     * notificações ficam guardadas e os canais de E-mail e Celular (Telegram/Webhook).
      */
     public function salvarPreferencias(Request $request): RedirectResponse
     {
@@ -156,9 +161,16 @@ class NotificacaoController extends Controller
             'tipos.*' => ['string'],
             'retencao' => ['nullable', 'integer', 'between:1,365'],
             'expiracao' => ['nullable', 'integer', 'between:1,365'],
+            'email_ativo' => ['nullable', 'boolean'],
+            'email_destinatarios' => ['nullable', 'string', 'max:500'],
+            'celular_ativo' => ['nullable', 'boolean'],
+            'telegram_token' => ['nullable', 'string', 'max:255'],
+            'telegram_chat_id' => ['nullable', 'string', 'max:255'],
+            'webhook_celular' => ['nullable', 'url', 'max:500'],
         ], [
             'retencao.between' => 'A retenção fica entre 1 e 365 dias.',
             'expiracao.between' => 'O prazo de uma notificação não lida fica entre 1 e 365 dias.',
+            'webhook_celular.url' => 'O endereço do webhook móvel deve ser uma URL válida (ex: https://...).',
         ]);
 
         $catalogo = array_keys(Notificacao::catalogo());
@@ -167,6 +179,7 @@ class NotificacaoController extends Controller
         foreach ($catalogo as $tipo) {
             if (in_array($tipo, $marcados, true)) {
                 NotificacaoPreferencia::where('user_id', $request->user()->id)->where('tipo', $tipo)->delete();
+
                 continue;
             }
 
@@ -176,13 +189,102 @@ class NotificacaoController extends Controller
             );
         }
 
-        if ($request->user()->isAdmin() && isset($dados['retencao'], $dados['expiracao'])) {
-            Setting::set('notificacoes_retencao_dias', (int) $dados['retencao']);
-            Setting::set('notificacoes_expiracao_dias', (int) $dados['expiracao']);
+        if ($request->user()->isAdmin()) {
+            if (isset($dados['retencao'], $dados['expiracao'])) {
+                Setting::set('notificacoes_retencao_dias', (int) $dados['retencao']);
+                Setting::set('notificacoes_expiracao_dias', (int) $dados['expiracao']);
+            }
 
-            Activity::log('notificacoes_preferencias', 'Prazos da central de notificações atualizados.');
+            Setting::set('notificacoes_email_ativo', $request->boolean('email_ativo') ? '1' : '0');
+            Setting::set('notificacoes_email_destinatarios', trim((string) ($dados['email_destinatarios'] ?? '')));
+            Setting::set('notificacoes_celular_ativo', $request->boolean('celular_ativo') ? '1' : '0');
+            Setting::set('notificacoes_telegram_token', trim((string) ($dados['telegram_token'] ?? '')));
+            Setting::set('notificacoes_telegram_chat_id', trim((string) ($dados['telegram_chat_id'] ?? '')));
+            Setting::set('notificacoes_webhook_celular', trim((string) ($dados['webhook_celular'] ?? '')));
+
+            Activity::log('notificacoes_preferencias', 'Canais de notificação (E-mail e Celular) e prazos atualizados.');
         }
 
-        return back()->with('success', 'Preferências salvas. O sino passa a mostrar só o que você escolheu.');
+        return back()->with('success', 'Preferências de notificação e canais de celular/e-mail salvos com sucesso.');
+    }
+
+    /**
+     * Dispara um teste instantâneo de notificação no celular (Telegram ou Webhook).
+     */
+    public function testarCelular(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $token = trim((string) Setting::get('notificacoes_telegram_token', ''));
+        $chatId = trim((string) Setting::get('notificacoes_telegram_chat_id', ''));
+        $webhook = trim((string) Setting::get('notificacoes_webhook_celular', ''));
+
+        if ($token === '' && $chatId === '' && $webhook === '') {
+            return back()->with('error', 'Preencha o Token e Chat ID do Telegram ou um Webhook antes de disparar o teste para o celular.');
+        }
+
+        $enviou = false;
+        if ($token !== '' && $chatId !== '') {
+            $enviou = Notifica::enviarTelegram(
+                $token,
+                $chatId,
+                'lead_novo',
+                '⚡ Teste de Notificação no Celular',
+                'Parabéns! Sua integração de alertas diretos no smartphone está 100% ativa e pronta para avisar sobre vendas, leads, coletas e entregas.',
+                route('admin.notificacoes.index'),
+                ['origem' => 'Painel Administrativo', 'status' => 'Conexão Bem-Sucedida']
+            );
+        }
+
+        if ($webhook !== '') {
+            $enviouWebhook = Notifica::enviarWebhookCelular(
+                $webhook,
+                'teste',
+                '⚡ Teste de Notificação no Celular',
+                'Alerta de teste enviado com sucesso pela Golden Rastreamento.',
+                route('admin.notificacoes.index'),
+                ['app' => 'Golden Rastreamento', 'tipo' => 'teste_webhook']
+            );
+            $enviou = $enviou || $enviouWebhook;
+        }
+
+        if ($enviou) {
+            return back()->with('success', 'Notificação de teste enviada para o celular com sucesso! Verifique seu aplicativo.');
+        }
+
+        return back()->with('error', 'Não foi possível entregar a notificação de teste no celular. Verifique o Token e Chat ID informados.');
+    }
+
+    /**
+     * Dispara um e-mail de teste para os destinatários cadastrados.
+     */
+    public function testarEmail(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $destinatarios = Notifica::destinatariosDeEmail();
+        if (empty($destinatarios)) {
+            return back()->with('error', 'Nenhum e-mail de destino configurado para receber alertas.');
+        }
+
+        try {
+            Mail::to($destinatarios)->send(
+                new AlertaEmpresaMail(
+                    'lead_novo',
+                    '⚡ Teste de Alerta por E-mail',
+                    'Este é um e-mail de teste confirmando que a Golden Rastreamento está pronta para notificar o administrador sobre tudo o que acontece na empresa.',
+                    route('admin.notificacoes.index'),
+                    [
+                        'sistema' => 'Central de Notificações Golden',
+                        'data_envio' => now()->format('d/m/Y H:i:s'),
+                        'destinatarios' => implode(', ', $destinatarios),
+                    ]
+                )
+            );
+
+            return back()->with('success', 'E-mail de teste enviado com sucesso para: '.implode(', ', $destinatarios));
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Falha ao enviar e-mail de teste: '.$e->getMessage());
+        }
     }
 }

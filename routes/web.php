@@ -298,6 +298,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::get('/', [NotificacaoController::class, 'index'])->name('index');
         Route::get('/preferencias', [NotificacaoController::class, 'preferencias'])->name('preferencias');
         Route::post('/preferencias', [NotificacaoController::class, 'salvarPreferencias'])->name('preferencias.salvar');
+        Route::post('/testar-celular', [NotificacaoController::class, 'testarCelular'])->name('testar.celular');
+        Route::post('/testar-email', [NotificacaoController::class, 'testarEmail'])->name('testar.email');
         // Antes do {notificacao}: "sino" é um segmento só e cairia no parâmetro do id.
         Route::get('/sino', [NotificacaoController::class, 'sino'])->middleware('throttle:60,1')->name('sino');
         Route::post('/lidas', [NotificacaoController::class, 'lidas'])->name('lidas');
@@ -499,6 +501,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::post('/{pedido}/status', [OrderController::class, 'atualizarStatus'])->name('status');
         Route::post('/{pedido}/rastreio', [OrderController::class, 'salvarRastreio'])->name('rastreio');
         Route::post('/{pedido}/rastreio/notificar', [OrderController::class, 'notificarRastreio'])->name('rastreio.notificar');
+        Route::post('/{pedido}/rastreio/coleta', [OrderController::class, 'solicitarColeta'])->name('rastreio.coleta');
         Route::get('/{pedido}/rastreio/consultar', [OrderController::class, 'consultarRastreio'])->name('rastreio.consultar');
         Route::post('/{pedido}/documentos', [OrderController::class, 'documentos'])->name('documentos');
         Route::delete('/{pedido}', [OrderController::class, 'destroy'])->name('destroy')->middleware('role:admin');

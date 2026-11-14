@@ -2,14 +2,18 @@
 
 namespace Tests\Feature;
 
-use App\Models\Activity;
+use App\Mail\AlertaEmpresaMail;
 use App\Models\CronTarefa;
 use App\Models\Notificacao;
 use App\Models\NotificacaoPreferencia;
+use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\Notifica;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
@@ -278,5 +282,112 @@ class CentralDeNotificacoesTest extends TestCase
         $html = $this->actingAs($this->admin)->get(route('admin.dashboard'))->getContent();
 
         $this->assertStringContainsString('data-sino-contador>99+</span>', $html);
+    }
+
+    public function test_disparo_envia_email_para_destinatarios_configurados(): void
+    {
+        Mail::fake();
+
+        Setting::set('notificacoes_email_ativo', '1');
+        Setting::set('notificacoes_email_destinatarios', 'diretoria@goldenrastreamento.com.br, admin@golden.com.br');
+
+        Notifica::disparar('lead_novo', 'Lead Teste Email', 'Mensagem de teste.', '1', ['cliente' => 'João']);
+
+        Mail::assertQueued(AlertaEmpresaMail::class, function ($mail) {
+            return $mail->hasTo('diretoria@goldenrastreamento.com.br')
+                && $mail->hasTo('admin@golden.com.br')
+                && $mail->tipo === 'lead_novo';
+        });
+    }
+
+    public function test_disparo_envia_alerta_direto_no_celular_via_telegram(): void
+    {
+        Http::fake([
+            'https://api.telegram.org/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        Setting::set('notificacoes_celular_ativo', '1');
+        Setting::set('notificacoes_telegram_token', '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11');
+        Setting::set('notificacoes_telegram_chat_id', '987654321');
+
+        Notifica::disparar('coleta_solicitada', 'Coleta Agendada Pedido 100', 'Coleta na Golden', '1', [
+            'pedido' => 'PED-100',
+            'transportadora' => 'Correios SEDEX',
+        ]);
+
+        Http::assertSent(function (Request $request) {
+            return str_contains($request->url(), 'api.telegram.org')
+                && $request['chat_id'] === '987654321'
+                && str_contains($request['text'], 'GOLDEN RASTREAMENTO')
+                && str_contains($request['text'], 'Coleta Agendada Pedido 100');
+        });
+    }
+
+    public function test_disparo_envia_alerta_celular_via_webhook(): void
+    {
+        Http::fake([
+            'https://webhook.exemplo.com/*' => Http::response(['success' => true], 200),
+        ]);
+
+        Setting::set('notificacoes_celular_ativo', '1');
+        Setting::set('notificacoes_webhook_celular', 'https://webhook.exemplo.com/notificacoes');
+
+        Notifica::disparar('entrega_atualizada', 'Objeto em Trânsito', 'Saiu para entrega', '1');
+
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://webhook.exemplo.com/notificacoes'
+                && $request['tipo'] === 'entrega_atualizada'
+                && $request['titulo'] === 'Objeto em Trânsito';
+        });
+    }
+
+    public function test_admin_dispara_teste_de_notificacao_no_celular(): void
+    {
+        Http::fake([
+            'https://api.telegram.org/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        Setting::set('notificacoes_telegram_token', 'token_teste');
+        Setting::set('notificacoes_telegram_chat_id', '12345');
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.notificacoes.testar.celular'));
+
+        $response->assertRedirect()->assertSessionHas('success');
+    }
+
+    public function test_admin_solicita_coleta_de_pedido_e_gera_notificacao(): void
+    {
+        $pedido = Order::create([
+            'nome' => 'Cliente Coleta',
+            'email' => 'coleta@exemplo.com.br',
+            'telefone' => '31999998888',
+            'tipo_pessoa' => 'fisica',
+            'documento' => '12345678901',
+            'entrega' => 'entrega',
+            'endereco' => 'Rua Principal, 100',
+            'bairro' => 'Centro',
+            'cidade' => 'Três Pontas',
+            'uf' => 'MG',
+            'cep' => '37185016',
+            'subtotal_cents' => 10000,
+            'frete_cents' => 2000,
+            'desconto_cents' => 0,
+            'total_cents' => 12000,
+            'pagamento' => 'pix',
+            'status' => 'pago',
+            'transportadora' => 'correios_sedex',
+            'consent_given' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.pedidos.rastreio.coleta', $pedido));
+
+        $response->assertRedirect()->assertSessionHas('success');
+
+        $this->assertDatabaseHas('notificacoes', [
+            'tipo' => 'coleta_solicitada',
+            'user_id' => $this->admin->id,
+        ]);
     }
 }

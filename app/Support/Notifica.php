@@ -2,11 +2,17 @@
 
 namespace App\Support;
 
+use App\Mail\AlertaEmpresaMail;
 use App\Models\Notificacao;
 use App\Models\NotificacaoPreferencia;
 use App\Models\Setting;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -94,7 +100,225 @@ class Notifica
             }
         }
 
+        // Dispara para canais externos (E-mail e Celular / Telegram / Webhook)
+        if ($chave === null || $criadas > 0) {
+            static::notificarCanaisExternos(
+                $tipo,
+                $titulo,
+                $texto,
+                $item['rota'] ?? null,
+                $rotaParam,
+                $dados
+            );
+        }
+
         return $criadas;
+    }
+
+    /**
+     * Envia a notificação para canais externos: E-mail do administrador e Notificação Direta no Celular.
+     */
+    public static function notificarCanaisExternos(
+        string $tipo,
+        string $titulo,
+        ?string $texto = null,
+        ?string $rota = null,
+        ?string $rotaParam = null,
+        array $dados = []
+    ): void {
+        try {
+            $url = null;
+            if ($rota && Route::has($rota)) {
+                $url = $rotaParam !== null ? route($rota, $rotaParam) : route($rota);
+            }
+
+            // 1. Canal E-mail da Empresa
+            static::enviarEmailAlerta($tipo, $titulo, $texto, $url, $dados);
+
+            // 2. Canal Celular (Telegram Bot / Webhook Móvel / WhatsApp)
+            static::enviarNotificacaoCelular($tipo, $titulo, $texto, $url, $dados);
+        } catch (\Throwable $e) {
+            Log::warning('Falha ao despachar canais externos de notificação.', ['erro' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Dispara e-mail de alerta para os destinatários cadastrados.
+     */
+    public static function enviarEmailAlerta(
+        string $tipo,
+        string $titulo,
+        ?string $texto,
+        ?string $url,
+        array $dados
+    ): void {
+        if (Setting::get('notificacoes_email_ativo', '1') !== '1') {
+            return;
+        }
+
+        // Se for venda (pedido_novo), StoreController::avisar() já envia o PedidoNovoEquipe dedicado
+        if ($tipo === 'pedido_novo') {
+            return;
+        }
+
+        $destinatarios = static::destinatariosDeEmail();
+        if (empty($destinatarios)) {
+            return;
+        }
+
+        try {
+            Mail::to($destinatarios)->queue(
+                new AlertaEmpresaMail($tipo, $titulo, $texto, $url, $dados)
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Erro ao enfileirar e-mail de alerta.', ['erro' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Resolve a lista de e-mails para notificações da empresa.
+     *
+     * @return array<int, string>
+     */
+    public static function destinatariosDeEmail(): array
+    {
+        $raw = Setting::get('notificacoes_email_destinatarios', '');
+        if (empty($raw)) {
+            $raw = Setting::get('loja_email_equipe', '') ?: Setting::get('contato_email', '');
+        }
+
+        if (empty($raw)) {
+            $emails = User::where('role', 'admin')->where('status', 'ativo')->pluck('email')->all();
+
+            return array_values(array_filter($emails));
+        }
+
+        $emails = array_map('trim', explode(',', (string) $raw));
+
+        return array_values(array_filter($emails, fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL)));
+    }
+
+    /**
+     * Envia notificação instantânea para o celular do administrador.
+     * Suporta:
+     * - Telegram Bot (notificação push nativa com som e vibração no smartphone)
+     * - Webhook Móvel (WhatsApp / Gateway / N8N / Zapier)
+     */
+    public static function enviarNotificacaoCelular(
+        string $tipo,
+        string $titulo,
+        ?string $texto,
+        ?string $url,
+        array $dados
+    ): void {
+        if (Setting::get('notificacoes_celular_ativo', '1') !== '1') {
+            return;
+        }
+
+        // 1. Envio para Telegram (Push no smartphone)
+        $telegramToken = trim((string) Setting::get('notificacoes_telegram_token', ''));
+        $telegramChatId = trim((string) Setting::get('notificacoes_telegram_chat_id', ''));
+
+        if ($telegramToken !== '' && $telegramChatId !== '') {
+            static::enviarTelegram($telegramToken, $telegramChatId, $tipo, $titulo, $texto, $url, $dados);
+        }
+
+        // 2. Envio para Webhook Móvel / WhatsApp
+        $webhookUrl = trim((string) Setting::get('notificacoes_webhook_celular', ''));
+        if ($webhookUrl !== '' && filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
+            static::enviarWebhookCelular($webhookUrl, $tipo, $titulo, $texto, $url, $dados);
+        }
+    }
+
+    /**
+     * Envia mensagem formatada com alerta direto para o Telegram no celular.
+     */
+    public static function enviarTelegram(
+        string $token,
+        string $chatId,
+        string $tipo,
+        string $titulo,
+        ?string $texto,
+        ?string $url,
+        array $dados
+    ): bool {
+        $icone = match ($tipo) {
+            'lead_novo' => '🎯',
+            'pedido_novo' => '💰',
+            'depoimento_novo' => '⭐',
+            'coleta_solicitada' => '🚚',
+            'entrega_atualizada' => '📦',
+            'chamado_aberto', 'chamado_respondido' => '🎫',
+            'acesso_suspeito' => '🛡️',
+            default => '🔔',
+        };
+
+        $mensagem = "<b>{$icone} GOLDEN RASTREAMENTO</b>\n\n";
+        $mensagem .= '<b>'.htmlspecialchars($titulo)."</b>\n";
+        if ($texto) {
+            $mensagem .= htmlspecialchars($texto)."\n\n";
+        }
+
+        if (! empty($dados)) {
+            foreach ($dados as $k => $v) {
+                if (is_scalar($v) && $v !== '' && ! in_array($k, ['lead_id', 'pedido_id', 'depoimento_id'], true)) {
+                    $label = ucwords(str_replace('_', ' ', (string) $k));
+                    $mensagem .= "• <b>{$label}:</b> ".htmlspecialchars((string) $v)."\n";
+                }
+            }
+            $mensagem .= "\n";
+        }
+
+        if ($url) {
+            $mensagem .= "🔗 <a href=\"{$url}\">Abrir no Painel</a>\n";
+        }
+
+        $mensagem .= '⏱ <i>'.now()->format('d/m/Y H:i:s').'</i>';
+
+        try {
+            $res = Http::timeout(5)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => $mensagem,
+                'parse_mode' => 'HTML',
+                'disable_web_page_preview' => false,
+            ]);
+
+            return $res->successful();
+        } catch (\Throwable $e) {
+            Log::warning('Erro ao enviar alerta para o Telegram.', ['erro' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Envia payload JSON para webhook móvel (WhatsApp, Gateway ou Discord).
+     */
+    public static function enviarWebhookCelular(
+        string $webhookUrl,
+        string $tipo,
+        string $titulo,
+        ?string $texto,
+        ?string $url,
+        array $dados
+    ): bool {
+        try {
+            $res = Http::timeout(5)->post($webhookUrl, [
+                'app' => 'Golden Rastreamento',
+                'tipo' => $tipo,
+                'titulo' => $titulo,
+                'texto' => $texto,
+                'url' => $url,
+                'dados' => $dados,
+                'data_hora' => now()->toIso8601String(),
+            ]);
+
+            return $res->successful();
+        } catch (\Throwable $e) {
+            Log::warning('Erro ao enviar webhook móvel.', ['erro' => $e->getMessage()]);
+
+            return false;
+        }
     }
 
     /**
@@ -121,7 +345,7 @@ class Notifica
      * Até quando um aviso deste tipo aguenta sem ser lido. O painel manda (a chave geral fica no
      * banco); o catálogo define a exceção por tipo; o config é o plano de fundo de instalação.
      */
-    private static function expiracaoDoTipo(string $tipo, array $item): ?\Carbon\CarbonInterface
+    private static function expiracaoDoTipo(string $tipo, array $item): ?CarbonInterface
     {
         $dias = (int) ($item['expiracao_dias']
             ?? Setting::get('notificacoes_expiracao_dias', config('notificacoes.expiracao_dias_padrao', 15)));

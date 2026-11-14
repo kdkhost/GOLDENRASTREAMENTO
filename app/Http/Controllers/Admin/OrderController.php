@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Services\Correios\CorreiosService;
 use App\Support\Envio;
+use App\Support\Notifica;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -154,6 +155,24 @@ class OrderController extends Controller
             $notificado = $correios->notificarCliente($pedido);
         }
 
+        if ($codigo !== '') {
+            Notifica::disparar(
+                'entrega_atualizada',
+                "Pedido {$pedido->numero} despachado · {$pedido->nome}",
+                "Objeto {$codigo} despachado via {$pedido->transportadoraLabel()}. Destino: {$pedido->cidade}/{$pedido->uf}.",
+                (string) $pedido->id,
+                [
+                    'pedido_numero' => $pedido->numero,
+                    'cliente' => $pedido->nome,
+                    'codigo_rastreio' => $codigo,
+                    'transportadora' => $pedido->transportadoraLabel(),
+                    'status' => 'Objeto despachado',
+                    'destino' => "{$pedido->cidade}/{$pedido->uf}",
+                ],
+                "entrega:{$pedido->id}:despachado"
+            );
+        }
+
         Activity::log('pedido_rastreio', "Pedido {$pedido->numero}: rastreio ".($codigo ?: 'removido')." ({$pedido->transportadoraLabel()}).", $pedido);
 
         $msg = 'Dados de despacho e rastreamento atualizados com sucesso.';
@@ -162,6 +181,38 @@ class OrderController extends Controller
         }
 
         return back()->with('success', $msg);
+    }
+
+    /**
+     * Registra a solicitação de coleta na sede da Golden e notifica o administrador por e-mail e celular.
+     */
+    public function solicitarColeta(Order $pedido): RedirectResponse
+    {
+        $pedido->registrarStatus(
+            $pedido->status,
+            'Coleta de encomenda solicitada na sede da Golden Rastreamento para expedição via '.$pedido->transportadoraLabel().'.',
+            auth()->id()
+        );
+
+        Notifica::disparar(
+            'coleta_solicitada',
+            "Nova coleta solicitada · Pedido {$pedido->numero}",
+            "Coleta de encomenda agendada na sede da Golden para o pedido {$pedido->numero} ({$pedido->nome}). Transportadora: {$pedido->transportadoraLabel()}.",
+            (string) $pedido->id,
+            [
+                'pedido_numero' => $pedido->numero,
+                'cliente' => $pedido->nome,
+                'transportadora' => $pedido->transportadoraLabel(),
+                'local_coleta' => 'Golden Rastreamento (Matriz) - Três Pontas/MG',
+                'cidade_destino' => "{$pedido->cidade}/{$pedido->uf}",
+                'total' => brl((int) $pedido->total_cents),
+            ],
+            "coleta:{$pedido->id}:".now()->format('YmdHi')
+        );
+
+        Activity::log('coleta_solicitada', "Coleta solicitada para o pedido {$pedido->numero}.", $pedido);
+
+        return back()->with('success', 'Coleta de encomenda solicitada com sucesso! O administrador e a expedição foram notificados.');
     }
 
     /**
@@ -200,6 +251,26 @@ class OrderController extends Controller
         }
 
         $dados = $correios->rastrear($codigo);
+
+        $ultimoEvento = $dados['eventos'][0] ?? null;
+        if ($ultimoEvento) {
+            $chave = "rastreio:{$pedido->id}:".md5(($ultimoEvento['titulo'] ?? '').($ultimoEvento['data_hora'] ?? ''));
+            Notifica::disparar(
+                'entrega_atualizada',
+                "Entrega passo a passo · Pedido {$pedido->numero} (".($ultimoEvento['titulo'] ?? 'Atualizado').')',
+                "Objeto {$codigo}: ".($ultimoEvento['descricao'] ?? '').' em '.($ultimoEvento['local'] ?? 'Trânsito').'.',
+                (string) $pedido->id,
+                [
+                    'pedido_numero' => $pedido->numero,
+                    'codigo_rastreio' => $codigo,
+                    'etapa' => $ultimoEvento['titulo'] ?? 'Atualização',
+                    'descricao' => $ultimoEvento['descricao'] ?? '',
+                    'local' => $ultimoEvento['local'] ?? 'Trânsito',
+                    'data_hora' => $ultimoEvento['data_hora'] ?? now()->format('d/m/Y H:i'),
+                ],
+                $chave
+            );
+        }
 
         return response()->json([
             'sucesso' => true,

@@ -134,15 +134,26 @@
                     @endif
                 </div>
 
-                <div class="col-12 d-flex gap-2">
+                <div class="col-12 d-flex flex-wrap gap-2">
                     <button class="btn btn-golden btn-sm"><i class="fas fa-save me-1"></i> Salvar despacho</button>
                     @if($pedido->possuiRastreio())
                         <a href="{{ $pedido->rastreioUrl() }}" target="_blank" rel="noopener" class="btn btn-outline-info btn-sm">
                             <i class="fas fa-up-right-from-square me-1"></i> Rastreio no site
                         </a>
                     @endif
+                    @if($pedido->entrega !== 'retira')
+                        <button type="submit" form="formSolicitarColeta" class="btn btn-outline-warning btn-sm" title="Solicitar coleta da encomenda na sede da Golden e notificar o administrador">
+                            <i class="fas fa-truck-ramp-box me-1"></i> Solicitar coleta na empresa
+                        </button>
+                    @endif
                 </div>
             </form>
+
+            @if($pedido->entrega !== 'retira')
+                <form id="formSolicitarColeta" method="POST" action="{{ route('admin.pedidos.rastreio.coleta', $pedido) }}" class="d-none">
+                    @csrf
+                </form>
+            @endif
 
             @if($pedido->possuiRastreio())
                 <div class="border-top mt-3 pt-3">

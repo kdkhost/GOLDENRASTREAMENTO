@@ -139,6 +139,20 @@ return [
         // A porta sendo testada por fora. Vai só para o administrador: é o aviso que se resolve
         // mudando uma política na tela de Configurações, e vendedor não tem o que fazer com ele
         // além de trocar a própria senha — o que a tela dele já diz por conta própria.
+        'coleta_solicitada' => [
+            'rotulo' => 'Nova coleta solicitada',
+            'icone' => 'fa-truck-ramp-box',
+            'tom' => 'amber',
+            'audiencia' => 'equipe',
+            'rota' => 'admin.pedidos.show',
+        ],
+        'entrega_atualizada' => [
+            'rotulo' => 'Atualização de entrega (rastreio)',
+            'icone' => 'fa-truck-fast',
+            'tom' => 'teal',
+            'audiencia' => 'equipe',
+            'rota' => 'admin.pedidos.show',
+        ],
         'acesso_suspeito' => [
             'rotulo' => 'Tentativa de acesso bloqueada',
             'icone' => 'fa-user-lock',

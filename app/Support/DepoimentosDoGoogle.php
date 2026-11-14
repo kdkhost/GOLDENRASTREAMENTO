@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Testimonial;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -271,8 +272,23 @@ class DepoimentosDoGoogle
                 continue;
             }
 
-            Testimonial::create($dados + ['externo_id' => $avaliacao['externo_id'], 'aprovado' => true]);
+            $dep = Testimonial::create($dados + ['externo_id' => $avaliacao['externo_id'], 'aprovado' => true]);
             $resumo['novos']++;
+
+            Notifica::disparar(
+                'depoimento_novo',
+                'Novo depoimento no Google: '.$avaliacao['nome'].' ('.$avaliacao['nota'].'★)',
+                'Depoimento de '.$avaliacao['nome'].' no Google: "'.Str::limit($avaliacao['texto'], 120).'"',
+                (string) $dep->id,
+                [
+                    'depoimento_id' => $dep->id,
+                    'autor' => $avaliacao['nome'],
+                    'nota' => $avaliacao['nota'].' estrelas',
+                    'texto' => $avaliacao['texto'],
+                    'fonte' => 'Google Meu Negócio',
+                ],
+                'depoimento_novo:'.$dep->id
+            );
         }
 
         return $resumo;

@@ -79,10 +79,29 @@
         contador.textContent = total > 99 ? '99+' : String(total);
         contador.classList.toggle('d-none', total === 0);
 
-        if (total > totalAnterior && window.GoldenAvisos) {
-            window.GoldenAvisos.info(total === 1
-                ? 'Você tem 1 notificação nova.'
-                : 'Você tem ' + total + ' notificações novas.');
+        if (total > totalAnterior) {
+            if (window.GoldenAvisos) {
+                window.GoldenAvisos.info(total === 1
+                    ? 'Você tem 1 notificação nova.'
+                    : 'Você tem ' + total + ' notificações novas.');
+            }
+
+            if (window.Notification && Notification.permission === 'granted' && dados.itens && dados.itens.length > 0) {
+                var primeiro = dados.itens[0];
+                try {
+                    var n = new Notification(primeiro.titulo || 'Golden Rastreamento', {
+                        body: primeiro.texto || 'Você recebeu uma nova notificação no painel.',
+                        icon: '/favicon.ico',
+                        tag: 'golden-notif-' + (primeiro.id || Date.now())
+                    });
+                    n.onclick = function () {
+                        window.focus();
+                        if (primeiro.ficha) {
+                            window.location.href = primeiro.ficha;
+                        }
+                    };
+                } catch (e) {}
+            }
         }
 
         totalAnterior = total;
