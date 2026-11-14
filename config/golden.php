@@ -881,6 +881,7 @@ return [
             ['titulo' => 'Pedidos', 'rota' => 'admin.pedidos.index', 'prefixo' => 'admin.pedidos.', 'icone' => 'fa-receipt', 'bolha' => 'pedidos_abertos', 'tom' => 'blue'],
             ['titulo' => 'Produtos e estoque', 'rota' => 'admin.catalogo.produtos.index', 'prefixo' => 'admin.catalogo.produtos.', 'icone' => 'fa-boxes-stacked', 'admin' => true],
             ['titulo' => 'Categorias', 'rota' => 'admin.catalogo.categorias.index', 'prefixo' => 'admin.catalogo.categorias.', 'icone' => 'fa-tags', 'admin' => true],
+            ['titulo' => 'Cupons de desconto', 'rota' => 'admin.catalogo.cupons.index', 'prefixo' => 'admin.catalogo.cupons.', 'icone' => 'fa-ticket', 'admin' => true],
             ['titulo' => 'Fornecedores', 'rota' => 'admin.catalogo.fornecedores.index', 'prefixo' => 'admin.catalogo.fornecedores.', 'icone' => 'fa-truck', 'admin' => true],
             ['titulo' => 'Loja no site', 'rota' => 'site.loja.index', 'prefixo' => 'site.loja.', 'icone' => 'fa-store', 'externo' => true, 'desligada' => 'loja_ativa'],
         ]],

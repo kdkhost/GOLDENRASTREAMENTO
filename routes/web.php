@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ConhecimentoController;
 use App\Http\Controllers\Admin\ContractController;
 use App\Http\Controllers\Admin\ConversaController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CronController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -130,6 +131,10 @@ Route::middleware('loja')->group(function () {
         ->middleware('throttle:40,1')->name('site.loja.carrinho.atualizar');
     Route::post('/loja/carrinho/remover', [StoreController::class, 'remover'])
         ->middleware('throttle:40,1')->name('site.loja.carrinho.remover');
+    Route::post('/loja/cupom', [StoreController::class, 'aplicarCupom'])
+        ->middleware('throttle:20,1')->name('site.loja.cupom.aplicar');
+    Route::post('/loja/cupom/remover', [StoreController::class, 'removerCupom'])
+        ->middleware('throttle:20,1')->name('site.loja.cupom.remover');
 
     // Pedido: formulário, gravação e acompanhamento por número + token.
     Route::get('/loja/checkout', [StoreController::class, 'checkout'])->name('site.loja.checkout');
@@ -492,6 +497,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
             Route::get('/{fornecedor}/editar', [SupplierController::class, 'edit'])->name('edit');
             Route::post('/{fornecedor}', [SupplierController::class, 'update'])->name('update');
             Route::delete('/{fornecedor}', [SupplierController::class, 'destroy'])->name('destroy');
+        });
+        Route::prefix('cupons')->name('cupons.')->group(function () {
+            Route::get('/', [CouponController::class, 'index'])->name('index');
+            Route::get('/novo', [CouponController::class, 'create'])->name('create');
+            Route::post('/', [CouponController::class, 'store'])->name('store');
+            Route::get('/{cupom}/editar', [CouponController::class, 'edit'])->name('edit');
+            Route::post('/{cupom}', [CouponController::class, 'update'])->name('update');
+            Route::post('/{cupom}/alternar', [CouponController::class, 'toggle'])->name('toggle');
+            Route::delete('/{cupom}', [CouponController::class, 'destroy'])->name('destroy');
         });
     });
 

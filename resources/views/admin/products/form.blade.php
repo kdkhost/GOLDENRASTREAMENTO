@@ -27,11 +27,13 @@
 
             <x-admin.card title="Preços (em reais)" icon="fa-tag" class="mt-3">
                 <div class="row g-3">
-                    <x-admin.field name="preco" type="number" label="Preço à vista" :value="$produto->preco_cents ? $produto->preco_cents / 100 : null" col="col-4" step="0.01" min="0" :required="true" />
+                    <x-admin.field name="preco" type="number" label="Preço à vista" :value="$produto->preco_cents ? $produto->preco_cents / 100 : null" col="col-4" step="0.01" min="0" :opcional="true" placeholder="0,00" />
                     <x-admin.field name="preco_promocional" type="number" label="Preço promocional" :value="$produto->preco_promocional_cents ? $produto->preco_promocional_cents / 100 : null" col="col-4" step="0.01" min="0" :opcional="true" />
                     <x-admin.field name="mensalidade" type="number" label="Mensalidade" :value="$produto->mensalidade_cents ? $produto->mensalidade_cents / 100 : null" col="col-4" step="0.01" min="0" :opcional="true" />
                 </div>
-                <p class="form-text mb-0">Deixe promocional e mensalidade em branco quando não se aplicarem. O promocional é o que risca o preço na loja.</p>
+                <div class="mt-3 pt-2 border-top">
+                    <x-admin.switch name="sob_consulta" label="Preço sob consulta (ocultar valores)" :checked="old('sob_consulta', $editando && (int) $produto->preco_cents === 0 && !(int) $produto->mensalidade_cents)" hint="Deixe Preço à vista em branco para planos apenas mensais, ou ative esta opção para exibir 'Consulte' na loja." />
+                </div>
             </x-admin.card>
         </div>
 
@@ -55,17 +57,37 @@
             </x-admin.card>
 
             <x-admin.card title="Mídia do Produto" icon="fa-photo-film" class="mt-3">
+                @php
+                    $imagemAtual = old('imagem', $produto->imagem ?: ($editando ? \App\Models\Product::imagemPadraoPorSlug($produto->slug, $produto->category?->slug) : null));
+                    $galeriaAtual = old('galeria', $produto->galeria ?? []);
+                    $previewFotos = array_values(array_unique(array_filter(array_merge([$imagemAtual], is_array($galeriaAtual) ? $galeriaAtual : []))));
+                @endphp
+                @if($editando && count($previewFotos) > 0)
+                    <div class="mb-3">
+                        <div class="small fw-semibold text-secondary mb-2">Imagens atuais ({{ count($previewFotos) }})</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($previewFotos as $idx => $foto)
+                                <a href="{{ produto_foto_url($foto) }}" target="_blank" rel="noopener" class="position-relative d-block rounded border overflow-hidden" style="width:68px;height:68px;background:#f8fafc" title="{{ $idx === 0 ? 'Foto principal' : 'Galeria #'.($idx + 1) }}">
+                                    <img src="{{ produto_foto_url($foto) }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+                                    @if($idx === 0)
+                                        <span class="badge bg-dark text-warning position-absolute bottom-0 start-0 end-0 rounded-0" style="font-size:.6rem;padding:2px">Capa</span>
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
                 @include('partials.upload', [
                     'campo' => 'produto_imagem',
                     'name' => 'imagem',
-                    'valor' => old('imagem', $produto->imagem),
+                    'valor' => $imagemAtual,
                     'titulo' => 'Foto Principal (Capa)',
                 ])
                 <div class="mt-3">
                     @include('partials.upload', [
                         'campo' => 'produto_galeria',
                         'name' => 'galeria',
-                        'valor' => old('galeria', $produto->galeria ?? []),
+                        'valor' => $galeriaAtual,
                         'multiplo' => true,
                         'titulo' => 'Fotos adicionais (Galeria)',
                         'dica' => 'Adicione fotos de outros ângulos, detalhes e embalagem.',

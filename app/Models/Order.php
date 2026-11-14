@@ -51,7 +51,7 @@ class Order extends Model
         'numero', 'customer_id', 'lead_id', 'user_id', 'nome', 'email', 'telefone',
         'tipo_pessoa', 'documento', 'entrega', 'endereco', 'bairro', 'complemento',
         'cidade', 'uf', 'cep', 'subtotal_cents', 'frete_cents', 'desconto_cents',
-        'total_cents', 'pagamento', 'status', 'notas', 'consent_given', 'documentos', 'ip_hash',
+        'coupon_id', 'cupom_codigo', 'total_cents', 'pagamento', 'status', 'notas', 'consent_given', 'documentos', 'ip_hash',
         'visitor_id', 'pago_em', 'enviado_em',
         'codigo_rastreio', 'transportadora', 'rastreio_notificado_em', 'rastreio_historico',
     ];

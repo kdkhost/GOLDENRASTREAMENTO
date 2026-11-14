@@ -76,7 +76,9 @@
                     <div class="order-line"><span>Subtotal</span><b>{{ brl($pedido->subtotal_cents) }}</b></div>
                     <div class="order-line"><span>Frete</span><b>{{ $pedido->frete_cents > 0 ? brl($pedido->frete_cents) : 'Grátis' }}</b></div>
                     @if($pedido->desconto_cents > 0)
-                    <div class="order-line"><span>Desconto</span><b>– {{ brl($pedido->desconto_cents) }}</b></div>
+                    <div class="order-line"><span>Desconto @if($pedido->cupom_codigo)<small>({{ $pedido->cupom_codigo }})</small>@endif</span><b>– {{ brl($pedido->desconto_cents) }}</b></div>
+                    @elseif($pedido->cupom_codigo)
+                    <div class="order-line"><span>Cupom ({{ $pedido->cupom_codigo }})</span><b>Frete grátis</b></div>
                     @endif
                     <div class="order-line total"><span>Total</span><b>{{ brl($pedido->total_cents) }}</b></div>
                 </div>

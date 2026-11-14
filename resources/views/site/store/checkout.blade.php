@@ -176,10 +176,34 @@
             </ul>
             <div class="sum-line"><span>Subtotal</span><b>{{ brl($subtotal) }}</b></div>
             <div class="sum-line"><span>Frete</span><b id="sumFrete">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
+            @if(!empty($cupom))
+            <div class="sum-line" style="color:#4ade80">
+                <span>Cupom {{ $cupom->codigo }}</span>
+                <b>{{ ($descontoCents ?? 0) > 0 ? '− '.brl($descontoCents) : 'Frete grátis' }}</b>
+            </div>
+            @endif
             @if($freteGratisEm > 0)
             <p class="sum-hint"><i class="fa-solid fa-gift"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
             @endif
-            <div class="sum-line total"><span>Total</span><b id="sumTotal">{{ brl($subtotal + $frete) }}</b></div>
+            <div class="sum-line total"><span>Total</span><b id="sumTotal">{{ brl(max(0, $subtotal - ($descontoCents ?? 0)) + $frete) }}</b></div>
+
+            <div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)">
+                @if(!empty($cupom))
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.82rem;color:#4ade80">
+                        <span><i class="fa-solid fa-ticket"></i> {{ $cupom->codigo }} ({{ $cupom->rotuloDesconto() }})</span>
+                        <form method="POST" action="{{ route('site.loja.cupom.remover') }}" style="margin:0">
+                            @csrf
+                            <button type="submit" style="border:0;background:none;color:#fca5a5;font-size:.78rem;cursor:pointer;padding:0">Remover</button>
+                        </form>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('site.loja.cupom.aplicar') }}" style="display:flex;gap:6px">
+                        @csrf
+                        <input type="text" name="codigo" placeholder="Cupom de desconto" maxlength="40" style="flex:1;min-width:0;padding:7px 10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;border-radius:8px;font-size:.82rem;text-transform:uppercase" required>
+                        <button type="submit" style="padding:7px 12px;border:0;border-radius:8px;background:var(--gold);color:#141619;font-weight:700;font-size:.8rem;cursor:pointer">Aplicar</button>
+                    </form>
+                @endif
+            </div>
             <a href="{{ route('site.loja.carrinho') }}" class="sum-edit">Editar carrinho</a>
         </aside>
     </div>
@@ -226,6 +250,8 @@ document.addEventListener('DOMContentLoaded',function(){
   var form=document.getElementById('checkoutForm');if(!form)return;
   var freteBase=parseInt(form.dataset.frete,10)||0;
   var subtotal=({{ (int) $subtotal }});
+  var descontoCents=({{ (int) ($descontoCents ?? 0) }});
+  var freteGratisCupom={{ !empty($freteGratisCupom) ? 'true' : 'false' }};
   var freteEl=document.getElementById('sumFrete'),totalEl=document.getElementById('sumTotal');
   var endereco=form.querySelector('.endereco'),retira=form.querySelector('.retira-note');
   function brl(c){return 'R$ '+(c/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -236,9 +262,9 @@ document.addEventListener('DOMContentLoaded',function(){
     if(retira)retira.hidden=!retirou;
     var containerFrete=document.getElementById('freteOpcoesContainer');
     if(containerFrete)containerFrete.style.display=retirou?'none':(containerFrete.dataset.visivel==='1'?'':'none');
-    var frete=retirou?0:freteBase;
+    var frete=(retirou||freteGratisCupom)?0:freteBase;
     if(freteEl)freteEl.textContent=frete>0?brl(frete):'Grátis';
-    if(totalEl)totalEl.textContent=brl(subtotal+frete);
+    if(totalEl)totalEl.textContent=brl(Math.max(0,subtotal-descontoCents)+frete);
     form.querySelectorAll('.card-radio[data-pag-entrega]').forEach(function(l){
       var v=l.dataset.pagEntrega;
       l.style.display=(v==='qualquer'||v===valor)?'':'none';

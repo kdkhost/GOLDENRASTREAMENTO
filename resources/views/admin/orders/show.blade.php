@@ -42,7 +42,9 @@
                     <dt>Frete</dt><dd>{{ $pedido->frete_cents > 0 ? brl($pedido->frete_cents) : 'Grátis' }}</dd>
                 @endif
                 @if($pedido->desconto_cents)
-                    <dt>Desconto</dt><dd>- {{ brl($pedido->desconto_cents) }}</dd>
+                    <dt>Desconto @if($pedido->cupom_codigo)<span class="badge bg-success-subtle text-success ms-1">{{ $pedido->cupom_codigo }}</span>@endif</dt><dd>- {{ brl($pedido->desconto_cents) }}</dd>
+                @elseif($pedido->cupom_codigo)
+                    <dt>Cupom</dt><dd><span class="badge bg-success-subtle text-success">{{ $pedido->cupom_codigo }} (Frete grátis)</span></dd>
                 @endif
                 <dt>Total</dt><dd class="text-gold">{{ brl($pedido->total_cents) }}</dd>
             </dl>

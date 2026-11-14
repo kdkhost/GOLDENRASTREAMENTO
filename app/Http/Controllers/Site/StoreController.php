@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\PedidoNovoEquipe;
 use App\Mail\PedidoRecebido;
 use App\Models\Activity;
+use App\Models\Coupon;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -75,13 +76,48 @@ class StoreController extends Controller
         $carrinho = Carrinho::daSessao();
         $linhas = $carrinho->linhas();
         $subtotal = array_sum(array_column($linhas, 'subtotal'));
+        $desc = $carrinho->resumoDesconto($subtotal);
+        $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal);
 
         return view('site.store.cart', [
             'linhas' => $linhas,
             'subtotal' => $subtotal,
-            'frete' => Carrinho::fretePara($subtotal),
-            'freteGratisEm' => Carrinho::faltaParaFreteGratis($subtotal),
+            'frete' => $frete,
+            'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
+            'cupom' => $desc['cupom'],
+            'descontoCents' => $desc['desconto_cents'],
+            'freteGratisCupom' => $desc['frete_gratis'],
         ]);
+    }
+
+    public function aplicarCupom(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'codigo' => ['required', 'string', 'max:40'],
+        ]);
+
+        $carrinho = Carrinho::daSessao();
+        if ($carrinho->vazio()) {
+            return back()->with('error', 'Adicione pelo menos um item ao carrinho antes de aplicar um cupom.');
+        }
+
+        $res = $carrinho->aplicarCupom($data['codigo']);
+
+        if (! $res['ok']) {
+            return back()->withInput()->with('error', $res['erro']);
+        }
+
+        /** @var Coupon $cupom */
+        $cupom = $res['cupom'];
+
+        return back()->with('success', "Cupom {$cupom->codigo} aplicado ({$cupom->rotuloDesconto()})!");
+    }
+
+    public function removerCupom(): RedirectResponse
+    {
+        Carrinho::daSessao()->removerCupom();
+
+        return back()->with('success', 'Cupom removido do carrinho.');
     }
 
     public function adicionar(Request $request): RedirectResponse
@@ -269,13 +305,14 @@ class StoreController extends Controller
             throw ValidationException::withMessages(['pagamento' => 'Pagamento na retirada exige a modalidade "Retirada na loja".']);
         }
 
-        $itensDaSessao = Carrinho::daSessao()->linhas();
+        $carrinho = Carrinho::daSessao();
+        $itensDaSessao = $carrinho->linhas();
 
         if ($itensDaSessao === []) {
             return redirect()->route('site.loja.index')->with('error', 'Seu carrinho está vazio.');
         }
 
-        $pedido = DB::transaction(function () use ($request, $data, $documento, $itensDaSessao) {
+        $pedido = DB::transaction(function () use ($request, $data, $documento, $carrinho, $itensDaSessao) {
             $produtos = Product::whereIn('id', array_column($itensDaSessao, 'id'))
                 ->where('ativo', true)
                 ->get()
@@ -326,6 +363,29 @@ class StoreController extends Controller
                 }
             }
 
+            $cupomCodigo = $carrinho->cupomCodigo();
+            $cupom = null;
+            $descontoCents = 0;
+
+            if ($cupomCodigo !== null) {
+                $cupom = Coupon::where('codigo', $cupomCodigo)->lockForUpdate()->first();
+                if ($cupom === null) {
+                    $carrinho->removerCupom();
+                    throw ValidationException::withMessages(['cupom' => 'O cupom aplicado não está mais disponível.']);
+                }
+
+                $validacaoCupom = $cupom->validarParaCompra($subtotal, $data['email'], $documento);
+                if (! $validacaoCupom['ok']) {
+                    throw ValidationException::withMessages(['cupom' => $validacaoCupom['erro']]);
+                }
+
+                $calcCupom = $cupom->calcularDesconto($subtotal);
+                $descontoCents = $calcCupom['desconto_cents'];
+                if ($calcCupom['frete_gratis']) {
+                    $frete = 0;
+                }
+            }
+
             $pedido = Order::create([
                 'nome' => $data['nome'],
                 'email' => $data['email'],
@@ -342,8 +402,10 @@ class StoreController extends Controller
                 'cep' => preg_replace('/\D/', '', (string) $data['cep']) ?: null,
                 'subtotal_cents' => $subtotal,
                 'frete_cents' => $frete,
-                'desconto_cents' => 0,
-                'total_cents' => $subtotal + $frete,
+                'desconto_cents' => $descontoCents,
+                'coupon_id' => $cupom?->id,
+                'cupom_codigo' => $cupom?->codigo,
+                'total_cents' => max(0, $subtotal - $descontoCents) + $frete,
                 'pagamento' => $data['pagamento'],
                 'status' => 'pendente',
                 'notas' => $data['notas'] ?? null,
@@ -352,6 +414,10 @@ class StoreController extends Controller
                 'visitor_id' => $request->cookie(config('golden.rastreio.cookie')),
                 'ip_hash' => $request->ip() ? hash('sha256', $request->ip().config('app.key')) : null,
             ]);
+
+            if ($cupom !== null) {
+                $cupom->increment('usos');
+            }
 
             foreach ($aprovados as $linha) {
                 $produto = $linha['produto'];
@@ -517,12 +583,18 @@ class StoreController extends Controller
     /** @return array<string, mixed> */
     private function dadosDoCheckout(array $linhas, int $subtotal): array
     {
+        $desc = Carrinho::daSessao()->resumoDesconto($subtotal);
+        $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal, 'entrega');
+
         return [
             'linhas' => $linhas,
             'subtotal' => $subtotal,
-            'frete' => Carrinho::fretePara($subtotal, 'entrega'),
-            'freteGratisEm' => Carrinho::faltaParaFreteGratis($subtotal),
+            'frete' => $frete,
+            'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
             'pixChave' => Setting::get('loja_pix_chave', ''),
+            'cupom' => $desc['cupom'],
+            'descontoCents' => $desc['desconto_cents'],
+            'freteGratisCupom' => $desc['frete_gratis'],
         ];
     }
 }

@@ -51,9 +51,40 @@
             <h2>Resumo</h2>
             <div class="sum-line"><span>Subtotal ({{ array_sum(array_column($linhas, 'quantidade')) }} itens)</span><b>{{ brl($subtotal) }}</b></div>
             <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
+            @if(!empty($cupom))
+            <div class="sum-line" style="color:var(--teal)">
+                <span>Cupom <b>{{ $cupom->codigo }}</b> ({{ $cupom->rotuloDesconto() }})</span>
+                <b>{{ ($descontoCents ?? 0) > 0 ? '− '.brl($descontoCents) : 'Frete grátis' }}</b>
+            </div>
+            @endif
+            <div class="sum-line" style="font-size:1.06rem;border-bottom:0;padding-top:10px">
+                <strong>Total estimado</strong>
+                <strong style="color:var(--gold-2)">{{ brl(max(0, $subtotal - ($descontoCents ?? 0)) + $frete) }}</strong>
+            </div>
             @if($freteGratisEm > 0)
             <p class="sum-hint"><i class="fa-solid fa-gift" style="color:var(--gold)"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
             @endif
+
+            <div class="cart-cupom-box" style="margin:14px 0 0;padding:12px;background:#f8fafc;border-radius:12px;border:1px solid rgba(0,0,0,.08)">
+                <label for="cartCupomCodigo" style="display:block;font-size:.84rem;font-weight:600;margin-bottom:6px;color:var(--ink)">
+                    <i class="fa-solid fa-ticket" style="color:var(--gold);margin-right:4px"></i> Cupom de desconto
+                </label>
+                @if(!empty($cupom))
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid rgba(31,158,134,.35);border-radius:8px;padding:7px 10px">
+                        <span style="font-size:.85rem;color:var(--teal);font-weight:600"><i class="fa-solid fa-circle-check"></i> {{ $cupom->codigo }} aplicado</span>
+                        <form method="POST" action="{{ route('site.loja.cupom.remover') }}" style="margin:0">
+                            @csrf
+                            <button type="submit" style="border:0;background:none;color:#d06a5f;font-size:.8rem;font-weight:600;cursor:pointer">Remover</button>
+                        </form>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('site.loja.cupom.aplicar') }}" style="display:flex;gap:6px">
+                        @csrf
+                        <input type="text" id="cartCupomCodigo" name="codigo" placeholder="Ex.: GOLDEN10" maxlength="40" style="flex:1;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;text-transform:uppercase" required>
+                        <button type="submit" class="btn btn-ghost btn-sm" style="padding:6px 12px;white-space:nowrap">Aplicar</button>
+                    </form>
+                @endif
+            </div>
 
             <div class="cart-frete-box" style="margin:16px 0;padding:12px;background:#f8fafc;border-radius:12px;border:1px solid rgba(0,0,0,.08)">
                 <label for="cartCep" style="display:block;font-size:.84rem;font-weight:600;margin-bottom:6px;color:var(--ink)">

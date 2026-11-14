@@ -148,9 +148,10 @@ class ProductController extends Controller
             'sku' => ['nullable', 'string', 'max:64'],
             'resumo' => ['nullable', 'string', 'max:255'],
             'descricao' => ['nullable', 'string'],
-            'preco' => ['required', 'numeric', 'min:0'],
+            'preco' => ['nullable', 'numeric', 'min:0'],
             'preco_promocional' => ['nullable', 'numeric', 'min:0'],
             'mensalidade' => ['nullable', 'numeric', 'min:0'],
+            'sob_consulta' => ['nullable', 'boolean'],
             'estoque' => ['nullable', 'integer', 'min:0'],
             'estoque_minimo' => ['nullable', 'integer', 'min:0'],
             'ordem' => ['nullable', 'integer', 'min:0'],
@@ -186,15 +187,17 @@ class ProductController extends Controller
             }
         }
 
+        $sobConsulta = $request->boolean('sob_consulta');
+
         return [
             'nome' => $data['nome'],
             'category_id' => $data['category_id'] ?? null,
             'sku' => $data['sku'] ?? null,
             'resumo' => $data['resumo'] ?? null,
             'descricao' => $data['descricao'] ?? null,
-            'preco_cents' => $this->paraCentavos($data['preco']),
-            'preco_promocional_cents' => isset($data['preco_promocional']) && $data['preco_promocional'] > 0 ? $this->paraCentavos($data['preco_promocional']) : null,
-            'mensalidade_cents' => isset($data['mensalidade']) && $data['mensalidade'] > 0 ? $this->paraCentavos($data['mensalidade']) : null,
+            'preco_cents' => $sobConsulta ? 0 : (isset($data['preco']) && $data['preco'] !== '' ? $this->paraCentavos($data['preco']) : 0),
+            'preco_promocional_cents' => ! $sobConsulta && isset($data['preco_promocional']) && $data['preco_promocional'] > 0 ? $this->paraCentavos($data['preco_promocional']) : null,
+            'mensalidade_cents' => ! $sobConsulta && isset($data['mensalidade']) && $data['mensalidade'] > 0 ? $this->paraCentavos($data['mensalidade']) : null,
             'estoque' => $data['estoque'] ?? 0,
             'estoque_minimo' => $data['estoque_minimo'] ?? 0,
             'ordem' => $data['ordem'] ?? 0,
