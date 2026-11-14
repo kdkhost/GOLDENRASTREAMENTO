@@ -26,7 +26,7 @@
         <div class="pdp-grid">
             {{-- Coluna Esquerda: Galeria Sticky --}}
             <div class="pdp-gallery-col">
-                <div class="pdp-media">
+                <div class="pdp-media {{ !empty($todasFotos[0]) ? 'has-zoom' : '' }}" id="pdpMediaBox">
                     @if(!empty($produto['promocao']))
                         <span class="pdp-badge-offer">
                             <i class="fa-solid fa-tag"></i>
@@ -37,11 +37,14 @@
                     @endif
 
                     @if(count($todasFotos) > 1)
-                        <span class="pdp-count-badge"><i class="fa-solid fa-camera"></i> {{ count($todasFotos) }} fotos</span>
+                        <span class="pdp-count-badge" id="pdpCounterBadge"><i class="fa-solid fa-camera"></i> <span id="pdpCurrentNum">1</span> / {{ count($todasFotos) }}</span>
+                        <button type="button" class="pdp-nav-btn prev" id="pdpPrevBtn" aria-label="Foto anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button type="button" class="pdp-nav-btn next" id="pdpNextBtn" aria-label="Próxima foto"><i class="fa-solid fa-chevron-right"></i></button>
                     @endif
 
                     @if(!empty($todasFotos[0]))
-                        <img id="prodMainImg" src="{{ produto_foto_url($todasFotos[0]) }}" alt="{{ $produto['nome'] }}">
+                        <img id="prodMainImg" src="{{ produto_foto_url($todasFotos[0]) }}" alt="{{ $produto['nome'] }}" data-index="0">
+                        <span class="pdp-zoom-hint"><i class="fa-solid fa-magnifying-glass-plus"></i> Passe o mouse ou clique para ampliar</span>
                     @else
                         <div class="pdp-placeholder-box">
                             <span class="badge-cat">{{ $produto['categoria'] ?? 'Golden Rastreamento' }}</span>
@@ -55,7 +58,7 @@
                 @if(count($todasFotos) > 1)
                     <div class="prod-thumbs-strip" aria-label="Galeria de fotos do produto">
                         @foreach($todasFotos as $idx => $foto)
-                            <button type="button" class="prod-thumb-btn {{ $idx === 0 ? 'active' : '' }}" data-src="{{ produto_foto_url($foto) }}" aria-label="Visualizar foto {{ $idx + 1 }}">
+                            <button type="button" class="prod-thumb-btn {{ $idx === 0 ? 'active' : '' }}" data-src="{{ produto_foto_url($foto) }}" data-index="{{ $idx }}" aria-label="Visualizar foto {{ $idx + 1 }}">
                                 <img src="{{ produto_foto_url($foto) }}" alt="Foto {{ $idx + 1 }}">
                             </button>
                         @endforeach
@@ -319,6 +322,34 @@
     </div>
 </section>
 @endif
+
+@if(!empty($todasFotos))
+<div id="pdpLightbox" class="pdp-lightbox" role="dialog" aria-modal="true" aria-label="Visualização ampliada de {{ $produto['nome'] }}" hidden>
+    <button type="button" class="pdp-lb-close" id="pdpLbClose" aria-label="Fechar ampliação">&times;</button>
+    @if(count($todasFotos) > 1)
+        <button type="button" class="pdp-lb-nav prev" id="pdpLbPrev" aria-label="Foto anterior"><i class="fa-solid fa-chevron-left"></i></button>
+        <button type="button" class="pdp-lb-nav next" id="pdpLbNext" aria-label="Próxima foto"><i class="fa-solid fa-chevron-right"></i></button>
+    @endif
+    <div class="pdp-lb-stage">
+        <img id="pdpLbImg" src="{{ produto_foto_url($todasFotos[0]) }}" alt="{{ $produto['nome'] }}">
+        <div class="pdp-lb-caption">
+            <span>{{ $produto['nome'] }}</span>
+            @if(count($todasFotos) > 1)
+                <span id="pdpLbCounter">1 / {{ count($todasFotos) }}</span>
+            @endif
+        </div>
+    </div>
+    @if(count($todasFotos) > 1)
+        <div class="pdp-lb-thumbs">
+            @foreach($todasFotos as $idx => $foto)
+                <button type="button" class="pdp-lb-thumb {{ $idx === 0 ? 'active' : '' }}" data-index="{{ $idx }}" aria-label="Ampliar foto {{ $idx + 1 }}">
+                    <img src="{{ produto_foto_url($foto) }}" alt="Miniatura {{ $idx + 1 }}">
+                </button>
+            @endforeach
+        </div>
+    @endif
+</div>
+@endif
 @endsection
 
 @push('scripts')
@@ -333,8 +364,32 @@
 .pdp-grid{display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr);gap:44px;align-items:start}
 .pdp-gallery-col{position:sticky;top:96px}
 .pdp-media{position:relative;aspect-ratio:4/3;min-height:360px;border-radius:26px;background:#f3f4f6;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(15,23,42,.06);box-shadow:0 16px 38px rgba(15,23,42,.08)}
-.pdp-media img{width:100%;height:100%;object-fit:cover;transition:opacity .2s ease-in-out,transform .4s ease}
-.pdp-media:hover img{transform:scale(1.02)}
+.pdp-media.has-zoom{cursor:zoom-in}
+.pdp-media img{width:100%;height:100%;object-fit:cover;transition:opacity .2s ease-in-out,transform .18s ease-out;will-change:transform}
+.pdp-media.is-zooming img{transition:opacity .2s ease-in-out}
+.pdp-zoom-hint{position:absolute;bottom:14px;left:14px;z-index:2;background:rgba(17,24,39,.7);color:#fff;font-size:.73rem;font-weight:500;padding:5px 11px;border-radius:9999px;backdrop-filter:blur(4px);display:inline-flex;align-items:center;gap:6px;pointer-events:none;transition:opacity .2s}
+.pdp-media.is-zooming .pdp-zoom-hint{opacity:0}
+.pdp-nav-btn{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.9);color:#111827;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.15);transition:background .15s,transform .15s}
+.pdp-nav-btn:hover{background:#fff;transform:translateY(-50%) scale(1.08)}
+.pdp-nav-btn.prev{left:12px}
+.pdp-nav-btn.next{right:12px}
+
+.pdp-lightbox{position:fixed;inset:0;z-index:9999;background:rgba(11,15,20,.93);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.pdp-lightbox[hidden]{display:none}
+.pdp-lb-close{position:fixed;top:18px;right:24px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:1.8rem;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .15s}
+.pdp-lb-close:hover{background:rgba(255,255,255,.22)}
+.pdp-lb-nav{position:fixed;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:1.1rem;cursor:pointer;display:grid;place-items:center;transition:background .15s}
+.pdp-lb-nav:hover{background:rgba(255,255,255,.22)}
+.pdp-lb-nav.prev{left:20px}
+.pdp-lb-nav.next{right:20px}
+.pdp-lb-stage{display:flex;flex-direction:column;align-items:center;max-width:90vw}
+.pdp-lb-stage img{max-width:88vw;max-height:74vh;border-radius:16px;object-fit:contain;box-shadow:0 24px 60px rgba(0,0,0,.5);cursor:zoom-in;transition:transform .25s ease}
+.pdp-lb-stage img.zoomed{transform:scale(1.65);cursor:zoom-out}
+.pdp-lb-caption{margin-top:12px;color:#e5e7eb;font-size:.9rem;display:flex;align-items:center;gap:14px}
+.pdp-lb-thumbs{display:flex;gap:10px;margin-top:16px;max-width:90vw;overflow-x:auto;padding:4px}
+.pdp-lb-thumb{width:60px;height:60px;border-radius:12px;border:2px solid transparent;padding:0;overflow:hidden;background:#1f2937;cursor:pointer;opacity:.65;transition:opacity .15s,border-color .15s}
+.pdp-lb-thumb.active,.pdp-lb-thumb:hover{opacity:1;border-color:var(--gold)}
+.pdp-lb-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .pdp-badge-offer,.pdp-badge-feat{position:absolute;top:16px;left:16px;z-index:3;display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:9999px;font-size:.76rem;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.12)}
 .pdp-badge-offer{background:var(--teal);color:#fff}
 .pdp-badge-feat{background:var(--gold);color:#141619}
@@ -471,22 +526,107 @@ document.addEventListener('DOMContentLoaded',function(){
     if(form.querySelector('.qplus')) form.querySelector('.qplus').addEventListener('click',function(){inp.value=Math.min(teto,(parseInt(inp.value,10)||1)+1);recalc();});
   }
 
-  // 2. Galeria de fotos: clique/hover nas miniaturas
+  // 2. Galeria de fotos, Zoom no hover e Lightbox ao clicar
+  var mediaBox=document.getElementById('pdpMediaBox');
   var mainImg=document.getElementById('prodMainImg');
-  var thumbs=document.querySelectorAll('.prod-thumb-btn');
-  if(mainImg && thumbs.length>0){
-    thumbs.forEach(function(btn){
-      function ativar(){
-        thumbs.forEach(function(b){b.classList.remove('active');});
-        btn.classList.add('active');
-        mainImg.style.opacity='0.4';
-        setTimeout(function(){
-          mainImg.src=btn.dataset.src;
-          mainImg.style.opacity='1';
-        },100);
-      }
-      btn.addEventListener('click',ativar);
-      btn.addEventListener('mouseenter',ativar);
+  var thumbs=Array.from(document.querySelectorAll('.prod-thumb-btn'));
+  var curNumEl=document.getElementById('pdpCurrentNum');
+  var prevBtn=document.getElementById('pdpPrevBtn');
+  var nextBtn=document.getElementById('pdpNextBtn');
+
+  var lb=document.getElementById('pdpLightbox');
+  var lbImg=document.getElementById('pdpLbImg');
+  var lbClose=document.getElementById('pdpLbClose');
+  var lbPrev=document.getElementById('pdpLbPrev');
+  var lbNext=document.getElementById('pdpLbNext');
+  var lbCounter=document.getElementById('pdpLbCounter');
+  var lbThumbs=Array.from(document.querySelectorAll('.pdp-lb-thumb'));
+
+  var galleryUrls = thumbs.length > 0
+    ? thumbs.map(function(b){ return b.dataset.src; })
+    : (mainImg ? [mainImg.src] : []);
+  var curIdx = 0;
+
+  function setGalleryIndex(idx){
+    if(!galleryUrls.length) return;
+    curIdx = (idx + galleryUrls.length) % galleryUrls.length;
+    var nextSrc = galleryUrls[curIdx];
+    if(mainImg){
+      mainImg.style.opacity='0.5';
+      setTimeout(function(){
+        mainImg.src=nextSrc;
+        mainImg.dataset.index=String(curIdx);
+        mainImg.style.opacity='1';
+      }, 90);
+    }
+    if(curNumEl) curNumEl.textContent=String(curIdx+1);
+    thumbs.forEach(function(b,i){ b.classList.toggle('active', i===curIdx); });
+    if(lbImg){
+      lbImg.src=nextSrc;
+      lbImg.classList.remove('zoomed');
+    }
+    if(lbCounter) lbCounter.textContent=(curIdx+1)+' / '+galleryUrls.length;
+    lbThumbs.forEach(function(b,i){ b.classList.toggle('active', i===curIdx); });
+  }
+
+  thumbs.forEach(function(btn, idx){
+    btn.addEventListener('click', function(){ setGalleryIndex(idx); });
+    btn.addEventListener('mouseenter', function(){ setGalleryIndex(idx); });
+  });
+  if(prevBtn){
+    prevBtn.addEventListener('click', function(e){ e.stopPropagation(); setGalleryIndex(curIdx - 1); });
+  }
+  if(nextBtn){
+    nextBtn.addEventListener('click', function(e){ e.stopPropagation(); setGalleryIndex(curIdx + 1); });
+  }
+
+  // Zoom interativo seguindo o mouse na imagem principal
+  if(mediaBox && mainImg){
+    mediaBox.addEventListener('mousemove', function(e){
+      if(e.target.closest('.pdp-nav-btn')) return;
+      var rect=mediaBox.getBoundingClientRect();
+      var x=((e.clientX - rect.left) / rect.width) * 100;
+      var y=((e.clientY - rect.top) / rect.height) * 100;
+      mediaBox.classList.add('is-zooming');
+      mainImg.style.transformOrigin=x.toFixed(1)+'% '+y.toFixed(1)+'%';
+      mainImg.style.transform='scale(1.85)';
+    });
+    mediaBox.addEventListener('mouseleave', function(){
+      mediaBox.classList.remove('is-zooming');
+      mainImg.style.transformOrigin='center center';
+      mainImg.style.transform='scale(1)';
+    });
+    mediaBox.addEventListener('click', function(e){
+      if(e.target.closest('.pdp-nav-btn') || !lb) return;
+      lb.hidden=false;
+      document.body.style.overflow='hidden';
+      setGalleryIndex(curIdx);
+    });
+  }
+
+  // Lightbox controls
+  function closeLb(){
+    if(!lb) return;
+    lb.hidden=true;
+    document.body.style.overflow='';
+    if(lbImg) lbImg.classList.remove('zoomed');
+  }
+  if(lbClose) lbClose.addEventListener('click', closeLb);
+  if(lbPrev) lbPrev.addEventListener('click', function(){ setGalleryIndex(curIdx - 1); });
+  if(lbNext) lbNext.addEventListener('click', function(){ setGalleryIndex(curIdx + 1); });
+  if(lbImg) lbImg.addEventListener('click', function(){ lbImg.classList.toggle('zoomed'); });
+  lbThumbs.forEach(function(b, idx){
+    b.addEventListener('click', function(){ setGalleryIndex(idx); });
+  });
+  if(lb){
+    lb.addEventListener('click', function(e){
+      if(e.target === lb) closeLb();
+    });
+    document.addEventListener('keydown', function(e){
+      if(lb.hidden) return;
+      if(e.key === 'Escape') closeLb();
+      if(e.key === 'ArrowLeft') setGalleryIndex(curIdx - 1);
+      if(e.key === 'ArrowRight') setGalleryIndex(curIdx + 1);
     });
   }
 
