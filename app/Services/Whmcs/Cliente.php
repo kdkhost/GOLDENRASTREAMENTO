@@ -2,6 +2,7 @@
 
 namespace App\Services\Whmcs;
 
+use App\Models\Customer;
 use App\Support\ChavesDeIntegracao;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
@@ -90,6 +91,108 @@ class Cliente
         $id = $resposta['clientid'] ?? $resposta['userid'] ?? null;
 
         return is_numeric($id) ? (int) $id : null;
+    }
+
+    /**
+     * Espelha o cadastro do cliente no WHMCS para manter sincronismo bidirecional perfeito.
+     *
+     * Se o cliente já possuir whmcs_id ou for encontrado pelo e-mail na API do WHMCS,
+     * seus dados são atualizados via UpdateClient. Se ainda não existir no WHMCS, é
+     * cadastrado via AddClient e o clientid gerado é salvo na coluna whmcs_id da ficha.
+     *
+     * Em qualquer eventualidade (WHMCS fora do ar, rede instável, credenciais faltantes),
+     * a falha é tratada de forma fail-soft: registra o alerta no log e retorna null sem
+     * jamais interromper o fluxo da venda, checkout ou CRM.
+     */
+    public function espelharCliente(Customer $cliente): ?int
+    {
+        if (! $this->configurado()) {
+            return null;
+        }
+
+        $email = trim((string) ($cliente->email ?: $cliente->email_portal));
+        if ($email === '') {
+            return null;
+        }
+
+        $whmcsId = $cliente->whmcs_id;
+
+        // Se ainda não tem ID salvo, consulta a existência no WHMCS pelo e-mail
+        if (! $whmcsId) {
+            $whmcsId = $this->idDoCliente($email);
+            if ($whmcsId) {
+                $cliente->updateQuietly(['whmcs_id' => $whmcsId]);
+            }
+        }
+
+        $nome = trim((string) $cliente->nome);
+        $partes = preg_split('/\s+/', $nome, 2) ?: [];
+        $firstname = (string) ($partes[0] ?? 'Cliente');
+        $lastname = (string) ($partes[1] ?? ($partes[0] ?? 'Golden'));
+
+        $telefoneLimpo = preg_replace('/\D/', '', (string) $cliente->telefone);
+        $documentoLimpo = preg_replace('/\D/', '', (string) $cliente->documento);
+        $campoDocId = $this->campoPersonalizado('documento');
+
+        // Se o cliente já existe no WHMCS, atualiza seus dados
+        if ($whmcsId) {
+            $dados = [
+                'nome' => $nome,
+                'endereco' => (string) $cliente->endereco,
+                'cidade' => (string) $cliente->cidade,
+                'uf' => (string) $cliente->uf,
+                'cep' => (string) $cliente->cep,
+                'telefone' => (string) $cliente->telefone,
+                'tipo' => (string) $cliente->tipo,
+            ];
+
+            $this->atualizarDados($whmcsId, $dados);
+
+            if ($campoDocId > 0 && $documentoLimpo !== '') {
+                $this->chamar('UpdateClient', [
+                    'clientid' => $whmcsId,
+                    'customfields' => base64_encode(serialize([$campoDocId => $documentoLimpo])),
+                ]);
+            }
+
+            return $whmcsId;
+        }
+
+        // Criar novo cliente no WHMCS
+        $payload = [
+            'firstname' => $firstname,
+            'lastname' => $lastname,
+            'email' => $email,
+            'phonenumber' => $telefoneLimpo ?: '31999999999',
+            'address1' => (string) ($cliente->endereco ?: 'Endereço não informado'),
+            'city' => (string) ($cliente->cidade ?: 'Sete Lagoas'),
+            'state' => (string) ($cliente->uf ?: 'MG'),
+            'postcode' => preg_replace('/\D/', '', (string) ($cliente->cep ?: '35700000')),
+            'country' => 'BR',
+            'status' => 'Active',
+            'currency' => 1,
+            'noemail' => true,
+        ];
+
+        if ($cliente->tipo === 'juridica' && $nome !== '') {
+            $payload['companyname'] = $nome;
+        }
+
+        if ($campoDocId > 0 && $documentoLimpo !== '') {
+            $payload['customfields'] = base64_encode(serialize([$campoDocId => $documentoLimpo]));
+        }
+
+        $res = $this->chamar('AddClient', $payload);
+
+        if ($res && ! empty($res['clientid'])) {
+            $novoId = (int) $res['clientid'];
+            $cliente->updateQuietly(['whmcs_id' => $novoId]);
+            Log::info('Cliente espelhado com sucesso no WHMCS.', ['cliente_id' => $cliente->id, 'whmcs_id' => $novoId]);
+
+            return $novoId;
+        }
+
+        return null;
     }
 
     /**

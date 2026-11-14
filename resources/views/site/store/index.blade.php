@@ -28,10 +28,26 @@
         @else
         <div class="grid-3">
             @foreach($produtos as $p)
-            <article class="card prod-card">
-                <div class="prod-thumb">
-                    @if($p['imagem'])
-                        <img src="{{ asset('storage/' . $p['imagem']) }}" alt="{{ $p['nome'] }}">
+            @php
+                $fotos = !empty($p['imagens']) ? $p['imagens'] : (!empty($p['imagem']) ? [$p['imagem']] : []);
+                $totalFotos = count($fotos);
+            @endphp
+            <article class="card prod-card" data-card-prod>
+                <div class="prod-thumb" data-prod-thumb>
+                    @if($totalFotos > 0)
+                        <div class="prod-slides" data-slides>
+                            @foreach($fotos as $idx => $foto)
+                                <img src="{{ asset('storage/' . $foto) }}" alt="{{ $p['nome'] }}" class="prod-slide-img {{ $idx === 0 ? 'active' : '' }}" data-slide-index="{{ $idx }}" loading="lazy">
+                            @endforeach
+                        </div>
+                        @if($totalFotos > 1)
+                            <div class="prod-dots" data-dots>
+                                @foreach($fotos as $idx => $foto)
+                                    <button type="button" class="prod-dot {{ $idx === 0 ? 'active' : '' }}" data-dot="{{ $idx }}" aria-label="Foto {{ $idx + 1 }} de {{ $p['nome'] }}"></button>
+                                @endforeach
+                            </div>
+                            <span class="prod-count-badge" title="Este produto possui {{ $totalFotos }} fotos"><i class="fa-solid fa-camera"></i> {{ $totalFotos }}</span>
+                        @endif
                     @else
                         <i class="fa-solid fa-satellite-dish"></i>
                     @endif
@@ -84,11 +100,17 @@
 @push('scripts')
 <style>
 .prod-card{display:flex;flex-direction:column}
-.prod-thumb{position:relative;height:160px;border-radius:14px;background:linear-gradient(160deg,#1b2127,#0d1114);display:grid;place-items:center;overflow:hidden;margin-bottom:12px}
-.prod-thumb img{width:100%;height:100%;object-fit:cover}
+.prod-thumb{position:relative;height:210px;border-radius:14px;background:linear-gradient(160deg,#1b2127,#0d1114);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)}
+.prod-slides{width:100%;height:100%;position:relative;display:flex;align-items:center;justify-content:center}
+.prod-slide-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:8px;opacity:0;transition:opacity .25s ease-in-out;pointer-events:none}
+.prod-slide-img.active{opacity:1;pointer-events:auto}
 .prod-thumb i{font-size:3rem;color:var(--gold);opacity:.8}
-.prod-badge{position:absolute;top:10px;left:10px;background:var(--teal);color:#fff;font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:20px}
+.prod-badge{position:absolute;top:10px;left:10px;background:var(--teal);color:#fff;font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:20px;z-index:3}
 .prod-badge.feat{left:auto;right:10px;background:var(--gold);color:#1a1a1a}
+.prod-count-badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:14px;backdrop-filter:blur(4px);z-index:2;display:flex;align-items:center;gap:4px}
+.prod-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;padding:3px 7px;background:rgba(0,0,0,.5);border-radius:12px;backdrop-filter:blur(4px);z-index:3}
+.prod-dot{width:7px;height:7px;border-radius:50%;border:0;background:rgba(255,255,255,.45);padding:0;cursor:pointer;transition:background .2s,transform .2s}
+.prod-dot.active{background:var(--gold);transform:scale(1.3)}
 .prod-price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:6px}
 .prod-price b{font-size:1.3rem;color:var(--gold)}
 .prod-price s{color:var(--muted);font-size:.9rem}
@@ -103,4 +125,49 @@
 .prod-actions form{flex:1 1 120px;min-width:0}
 .prod-actions .btn{width:100%}
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('[data-card-prod]').forEach(function (card) {
+    var thumb = card.querySelector('[data-prod-thumb]');
+    if (!thumb) return;
+    var imgs = thumb.querySelectorAll('.prod-slide-img');
+    var dots = thumb.querySelectorAll('.prod-dot');
+    if (imgs.length <= 1) return;
+
+    var cur = 0;
+    function setIndex(idx) {
+      if (idx < 0 || idx >= imgs.length) return;
+      cur = idx;
+      imgs.forEach(function (img, i) { img.classList.toggle('active', i === cur); });
+      dots.forEach(function (dot, i) { dot.classList.toggle('active', i === cur); });
+    }
+
+    dots.forEach(function (dot) {
+      dot.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIndex(parseInt(this.dataset.dot, 10));
+      });
+      dot.addEventListener('mouseenter', function () {
+        setIndex(parseInt(this.dataset.dot, 10));
+      });
+    });
+
+    // Ao passar o mouse pelo card, alterna sutilmente entre as fotos
+    thumb.addEventListener('mousemove', function (e) {
+      var rect = thumb.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var ratio = x / rect.width;
+      var targetIdx = Math.min(imgs.length - 1, Math.max(0, Math.floor(ratio * imgs.length)));
+      if (targetIdx !== cur) {
+        setIndex(targetIdx);
+      }
+    });
+
+    card.addEventListener('mouseleave', function () {
+      setIndex(0);
+    });
+  });
+});
+</script>
 @endpush

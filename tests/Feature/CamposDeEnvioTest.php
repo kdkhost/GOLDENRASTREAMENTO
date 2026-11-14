@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use Database\Seeders\OrdersSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -27,6 +28,7 @@ class CamposDeEnvioTest extends TestCase
         parent::setUp();
 
         $this->seed();
+        $this->seed(OrdersSeeder::class);
         Setting::esquecerMemoria();
         Cache::flush();
         Storage::fake('public');
@@ -282,7 +284,7 @@ class CamposDeEnvioTest extends TestCase
 
             $fonte = (string) file_get_contents($arquivo->getPathname());
 
-            if (! str_contains($fonte, "partials.upload")) {
+            if (! str_contains($fonte, 'partials.upload')) {
                 continue;
             }
 
@@ -306,6 +308,6 @@ class CamposDeEnvioTest extends TestCase
             }
         }
 
-        $this->assertSame(11, $encontrados, 'Os campos de arrastar-e-soltar do painel mudaram de quantidade.');
+        $this->assertSame(13, $encontrados, 'Os campos de arrastar-e-soltar do painel mudaram de quantidade.');
     }
 }

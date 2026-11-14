@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Whmcs\Cliente;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
@@ -271,6 +272,12 @@ class Customer extends Model implements AuthenticatableContract
         ]);
         $c->save();
         $lead->update(['customer_id' => $c->id]);
+
+        try {
+            app(Cliente::class)->espelharCliente($c);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return $c;
     }

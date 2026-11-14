@@ -3,12 +3,17 @@
 namespace Tests\Feature;
 
 use App\Mail\PedidoEnviadoRastreio;
+use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Correios\CorreiosService;
+use App\Services\Whmcs\Cliente;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -208,5 +213,99 @@ class CorreiosLogisticaERastreioTest extends TestCase
                 'codigo',
                 'rastreio' => ['codigo', 'transportadora', 'status', 'eventos'],
             ]);
+    }
+
+    public function test_endpoint_calcula_frete_especifico_para_produto_individual(): void
+    {
+        Setting::set('correios_ativo', '1');
+        Setting::set('correios_sedex_ativo', '1');
+        Setting::set('correios_pac_ativo', '1');
+
+        $produto = Product::where('ativo', true)->firstOrFail();
+
+        $response = $this->postJson(route('site.loja.frete.calcular'), [
+            'cep' => '01310-100',
+            'produto_id' => $produto->id,
+            'quantidade' => 2,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('sucesso', true)
+            ->assertJsonPath('subtotal', $produto->preco() * 2)
+            ->assertJsonStructure([
+                'sucesso',
+                'cep',
+                'subtotal',
+                'opcoes' => [
+                    '*' => ['id', 'nome', 'valor_cents', 'valor_formatado', 'prazo_dias', 'tipo'],
+                ],
+            ]);
+    }
+
+    public function test_espelhamento_whmcs_fail_soft_quando_desconfigurado(): void
+    {
+        config(['whmcs.url' => '', 'whmcs.identifier' => '', 'whmcs.secret' => '']);
+
+        $cliente = Customer::create([
+            'nome' => 'Cliente Teste Sem WHMCS',
+            'email' => 'sem.whmcs@exemplo.com.br',
+            'telefone' => '31988887777',
+            'tipo' => 'fisica',
+            'documento' => '11122233344',
+            'status' => 'ativo',
+        ]);
+
+        $servicoWhmcs = app(Cliente::class);
+        $resultado = $servicoWhmcs->espelharCliente($cliente);
+
+        $this->assertNull($resultado);
+    }
+
+    public function test_espelhamento_whmcs_cadastra_cliente_via_api_quando_configurado(): void
+    {
+        config([
+            'whmcs.url' => 'https://financeiro.goldenrastreamento.com.br',
+            'whmcs.identifier' => 'api_user',
+            'whmcs.secret' => 'api_secret_123',
+        ]);
+
+        Http::fake([
+            '*/includes/api.php' => function (Request $request) {
+                $dados = $request->data();
+
+                if (($dados['action'] ?? '') === 'GetClientsDetails') {
+                    // Simula que ainda não existe no WHMCS
+                    return Http::response(['result' => 'error', 'message' => 'Client Not Found'], 200);
+                }
+
+                if (($dados['action'] ?? '') === 'AddClient') {
+                    return Http::response([
+                        'result' => 'success',
+                        'clientid' => 9876,
+                    ], 200);
+                }
+
+                return Http::response(['result' => 'success'], 200);
+            },
+        ]);
+
+        $cliente = Customer::create([
+            'nome' => 'Carlos Alberto Silveira',
+            'email' => 'carlos.silveira@exemplo.com.br',
+            'telefone' => '31999991234',
+            'tipo' => 'fisica',
+            'documento' => '99887766554',
+            'endereco' => 'Rua Minas Gerais, 500',
+            'cidade' => 'Sete Lagoas',
+            'uf' => 'MG',
+            'cep' => '35700000',
+            'status' => 'ativo',
+        ]);
+
+        $servicoWhmcs = app(Cliente::class);
+        $whmcsId = $servicoWhmcs->espelharCliente($cliente);
+
+        $this->assertEquals(9876, $whmcsId);
+        $this->assertEquals(9876, $cliente->fresh()->whmcs_id);
     }
 }

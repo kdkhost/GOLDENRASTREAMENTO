@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Interaction;
 use App\Models\User;
+use App\Services\Whmcs\Cliente;
 use App\Services\Whmcs\Cliente as Financeiro;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -159,6 +160,12 @@ class CustomerController extends Controller
         $c = Customer::create($data);
         Activity::log('cliente_criado', "Cliente {$c->nome} cadastrado.", $c);
 
+        try {
+            app(Cliente::class)->espelharCliente($c);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return redirect()->route('admin.clientes.show', $c)->with('success', 'Cliente cadastrado.');
     }
 
@@ -166,6 +173,12 @@ class CustomerController extends Controller
     {
         $cliente->update($this->validateData($request));
         Activity::log('cliente_atualizado', "Cliente {$cliente->nome} atualizado.", $cliente);
+
+        try {
+            app(Cliente::class)->espelharCliente($cliente);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return redirect()->route('admin.clientes.show', $cliente)->with('success', 'Cliente atualizado.');
     }

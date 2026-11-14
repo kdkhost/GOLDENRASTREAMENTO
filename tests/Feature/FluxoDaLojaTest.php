@@ -280,6 +280,7 @@ class FluxoDaLojaTest extends TestCase
         // pedido morria no meio do fluxo. O SQLite aceita qualquer tamanho, então
         // é no banco real (MySQL em produção) que este teste vira barreira.
         $this->seed(OrdersSeeder::class);
+        $this->seed(OrdersSeeder::class);
         $pedido = Order::firstOrFail();
 
         foreach (array_keys(Order::STATUS) as $status) {

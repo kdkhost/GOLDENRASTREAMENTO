@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Models\StockMovement;
 use App\Services\Correios\CorreiosService;
 use App\Services\Rastreio;
+use App\Services\Whmcs\Cliente;
 use App\Support\Carrinho;
 use App\Support\Notifica;
 use Illuminate\Http\JsonResponse;
@@ -159,11 +160,23 @@ class StoreController extends Controller
     {
         $data = $request->validate([
             'cep' => ['required', 'string', 'max:12'],
+            'produto_id' => ['nullable', 'integer'],
+            'quantidade' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $carrinho = Carrinho::daSessao();
-        $linhas = $carrinho->linhas();
-        $subtotal = array_sum(array_column($linhas, 'subtotal'));
+        $subtotal = 0;
+        if (! empty($data['produto_id'])) {
+            $prod = Product::find($data['produto_id']);
+            if ($prod) {
+                $subtotal = $prod->preco() * max(1, (int) ($data['quantidade'] ?? 1));
+            }
+        }
+
+        if ($subtotal <= 0) {
+            $carrinho = Carrinho::daSessao();
+            $linhas = $carrinho->linhas();
+            $subtotal = array_sum(array_column($linhas, 'subtotal'));
+        }
 
         $opcoes = $this->correios->calcularFrete($data['cep'], $subtotal);
 
@@ -376,6 +389,24 @@ class StoreController extends Controller
             ?? Customer::where('email', $data['email'])->first();
 
         if ($cliente !== null) {
+            $atualizacoes = array_filter([
+                'telefone' => $cliente->telefone ?: ($data['telefone'] ?? null),
+                'endereco' => $cliente->endereco ?: ($data['endereco'] ?? null),
+                'cidade' => $cliente->cidade ?: ($data['cidade'] ?? null),
+                'uf' => $cliente->uf ?: (isset($data['uf']) ? strtoupper($data['uf']) : null),
+                'cep' => $cliente->cep ?: ($data['cep'] ?? null),
+            ]);
+
+            if ($atualizacoes !== []) {
+                $cliente->updateQuietly($atualizacoes);
+            }
+
+            try {
+                app(Cliente::class)->espelharCliente($cliente);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
             return $cliente;
         }
 
@@ -392,6 +423,12 @@ class StoreController extends Controller
             'status' => 'prospecto',
         ]);
         $novo->save();
+
+        try {
+            app(Cliente::class)->espelharCliente($novo);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return $novo;
     }

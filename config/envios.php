@@ -24,6 +24,17 @@ return [
         'proporcao' => '1:1',
     ],
 
+    'produto_galeria' => [
+        'tipo' => 'imagem',
+        'pasta' => 'produtos',
+        'titulo' => 'Fotos adicionais (Galeria)',
+        'chamada' => 'Arraste mais fotos para a galeria ou clique para escolher',
+        'formatos' => ['jpg', 'jpeg', 'png', 'webp'],
+        'max_mb' => 4,
+        'dimensao' => '1200 × 1200 px',
+        'proporcao' => '1:1',
+    ],
+
     'produto_video' => [
         'tipo' => 'video',
         'pasta' => 'produtos/video',

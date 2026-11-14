@@ -54,12 +54,23 @@
                 </div>
             </x-admin.card>
 
-            <x-admin.card title="Mídia" icon="fa-photo-film" class="mt-3">
+            <x-admin.card title="Mídia do Produto" icon="fa-photo-film" class="mt-3">
                 @include('partials.upload', [
                     'campo' => 'produto_imagem',
                     'name' => 'imagem',
                     'valor' => old('imagem', $produto->imagem),
+                    'titulo' => 'Foto Principal (Capa)',
                 ])
+                <div class="mt-3">
+                    @include('partials.upload', [
+                        'campo' => 'produto_galeria',
+                        'name' => 'galeria',
+                        'valor' => old('galeria', $produto->galeria ?? []),
+                        'multiplo' => true,
+                        'titulo' => 'Fotos adicionais (Galeria)',
+                        'dica' => 'Adicione fotos de outros ângulos, detalhes e embalagem.',
+                    ])
+                </div>
                 <div class="mt-3">
                     @include('partials.upload', [
                         'campo' => 'produto_video',

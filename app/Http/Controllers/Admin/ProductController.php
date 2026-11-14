@@ -38,7 +38,7 @@ class ProductController extends Controller
     {
         return Product::with('category')
             ->when($request->filled('busca'), function ($q) use ($request) {
-                $t = '%' . $request->busca . '%';
+                $t = '%'.$request->busca.'%';
                 $q->where(fn ($w) => $w->where('nome', 'like', $t)->orWhere('sku', 'like', $t));
             })
             ->when($request->filled('categoria'), fn ($q) => $q->where('category_id', $request->categoria))
@@ -109,6 +109,9 @@ class ProductController extends Controller
         $nome = $produto->nome;
         Envio::remover($produto->imagem, 'produto_imagem');
         Envio::remover($produto->video, 'produto_video');
+        foreach ((array) ($produto->galeria ?? []) as $foto) {
+            Envio::remover($foto, 'produto_galeria');
+        }
         $produto->delete();
         Activity::log('produto_excluido', "Produto {$nome} excluído.");
 
@@ -155,6 +158,8 @@ class ProductController extends Controller
             'ativo' => ['nullable', 'boolean'],
             'controle_estoque' => ['nullable', 'boolean'],
             'imagem' => ['nullable', 'string', 'max:255'],
+            'galeria' => ['nullable', 'array', 'max:12'],
+            'galeria.*' => ['string', 'max:255'],
             'video' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -171,6 +176,16 @@ class ProductController extends Controller
             $data[$campo] = $caminho;
         }
 
+        // Validação dos caminhos das fotos da galeria
+        $galeria = array_values(array_unique(array_filter((array) ($data['galeria'] ?? []))));
+        foreach ($galeria as $foto) {
+            if (! is_string($foto) || (! Envio::caminhoConfere($foto, 'produto_galeria') && ! Envio::caminhoConfere($foto, 'produto_imagem'))) {
+                throw ValidationException::withMessages([
+                    'galeria' => 'Uma das fotos da galeria não foi carregada por aqui. Solte-a novamente no campo.',
+                ]);
+            }
+        }
+
         return [
             'nome' => $data['nome'],
             'category_id' => $data['category_id'] ?? null,
@@ -184,6 +199,7 @@ class ProductController extends Controller
             'estoque_minimo' => $data['estoque_minimo'] ?? 0,
             'ordem' => $data['ordem'] ?? 0,
             'imagem' => $data['imagem'],
+            'galeria' => $galeria ?: null,
             'video' => $data['video'],
             'destaque' => $request->boolean('destaque'),
             'ativo' => $request->boolean('ativo', true),
@@ -200,6 +216,12 @@ class ProductController extends Controller
             if ($anterior && $anterior !== $data[$campo]) {
                 Envio::remover($anterior, $envio);
             }
+        }
+
+        $fotosAnteriores = (array) ($produto->galeria ?? []);
+        $fotosNovas = (array) ($data['galeria'] ?? []);
+        foreach (array_diff($fotosAnteriores, $fotosNovas) as $removida) {
+            Envio::remover($removida, 'produto_galeria');
         }
     }
 

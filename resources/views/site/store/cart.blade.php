@@ -79,7 +79,7 @@
 .cart-list{list-style:none;margin:22px 0 0;padding:0}
 .cart-line{display:grid;grid-template-columns:72px 1fr auto auto auto;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid rgba(0,0,0,.08)}
 .cart-thumb{width:72px;height:72px;border-radius:12px;background:linear-gradient(160deg,#1b2127,#0d1114);display:grid;place-items:center;overflow:hidden}
-.cart-thumb img{width:100%;height:100%;object-fit:cover}
+.cart-thumb img{width:100%;height:100%;object-fit:contain;padding:4px}
 .cart-thumb i{color:var(--gold);font-size:1.5rem}
 .cart-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .cart-info a{color:var(--ink);text-decoration:none;font-size:1rem}

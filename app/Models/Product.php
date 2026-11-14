@@ -17,7 +17,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'nome', 'slug', 'sku', 'resumo', 'descricao',
         'preco_cents', 'preco_promocional_cents', 'mensalidade_cents',
-        'estoque', 'estoque_minimo', 'imagem', 'video', 'destaque', 'ativo', 'controle_estoque', 'ordem',
+        'estoque', 'estoque_minimo', 'imagem', 'galeria', 'video', 'destaque', 'ativo', 'controle_estoque', 'ordem',
     ];
 
     protected $casts = [
@@ -29,6 +29,7 @@ class Product extends Model
         'mensalidade_cents' => 'integer',
         'estoque' => 'integer',
         'estoque_minimo' => 'integer',
+        'galeria' => 'array',
     ];
 
     public function category(): BelongsTo
@@ -59,6 +60,26 @@ class Product extends Model
     public function disponivel(): bool
     {
         return $this->ativo && (! $this->controle_estoque || $this->estoque > 0);
+    }
+
+    /**
+     * Retorna a lista unificada de fotos do produto (foto principal + fotos adicionais da galeria).
+     *
+     * @return array<int, string>
+     */
+    public function todasImagens(): array
+    {
+        $imagens = [];
+        if (! empty($this->imagem)) {
+            $imagens[] = (string) $this->imagem;
+        }
+        foreach ((array) ($this->galeria ?? []) as $foto) {
+            if (! empty($foto) && is_string($foto) && ! in_array($foto, $imagens, true)) {
+                $imagens[] = $foto;
+            }
+        }
+
+        return $imagens;
     }
 
     /**
@@ -142,6 +163,8 @@ class Product extends Model
                     'promocao' => $p->temPromocao(),
                     'mensalidade' => $p->mensalidade_cents,
                     'imagem' => $p->imagem,
+                    'galeria' => (array) ($p->galeria ?? []),
+                    'imagens' => $p->todasImagens(),
                     'video' => $p->video,
                     'destaque' => (bool) $p->destaque,
                     'estoque' => (int) $p->estoque,
