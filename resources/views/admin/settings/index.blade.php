@@ -230,7 +230,7 @@
                         </div>
 
                         <div class="col-12">
-                            <x-admin.card title="Logística Correios (Com e Sem Contrato & Coleta)" icon="fa-truck-fast"
+                            <x-admin.card title="Logística Correios (Com e Sem Contrato & Coleta)" icon="fa-truck-fast" ajuda="correios_logistica"
                                 descricao="Cálculo oficial de frete balcão ou com contrato corporativo, coleta na empresa e rastreamento em tempo real.">
                                 <div class="row g-3">
                                     <x-admin.switch name="correios_ativo" label="Ativar cálculo dinâmico de frete Correios no checkout e carrinho" :checked="$correiosAtivo" />
@@ -276,7 +276,7 @@
                         </div>
 
                         <div class="col-12">
-                            <x-admin.card title="Mercado Livre / Mercado Envios" icon="fa-bag-shopping"
+                            <x-admin.card title="Mercado Livre / Mercado Envios" icon="fa-bag-shopping" ajuda="mercado_livre_card"
                                 descricao="Opção alternativa de envio caso o administrador opte por intermediar a logística via Mercado Livre.">
                                 <div class="row g-3">
                                     <x-admin.switch name="mercado_livre_envio_ativo" label="Habilitar opção de envio pelo Mercado Livre (Mercado Envios)" :checked="$mercadoLivreAtivo" />

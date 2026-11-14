@@ -174,6 +174,278 @@ return [
             ],
         ],
 
+        'loja_livre' => [
+            'titulo' => 'Frete combinado / a combinar',
+            'onde' => 'Quando ligado, a loja não cobra valor fixo de frete e indica que o custo será combinado diretamente com a equipe de atendimento.',
+            'passos' => [
+                ['icone' => 'fa-comments', 'titulo' => 'Atendimento personalizado', 'texto' => 'Ideal para pedidos de frotas ou grandes volumes onde a cotação varia conforme a transportadora.'],
+                ['icone' => 'fa-lock', 'titulo' => 'Trava os campos fixos', 'texto' => 'Ao ligar o frete combinado, os campos de Frete fixo e Frete grátis ficam desabilitados automaticamente.'],
+            ],
+        ],
+
+        'loja_retirada' => [
+            'titulo' => 'Permitir retirada na empresa',
+            'onde' => 'Habilita a opção para o cliente retirar os produtos presencialmente na sede da Golden Rastreamento com custo zero de frete.',
+            'passos' => [
+                ['icone' => 'fa-store', 'titulo' => 'Retirada presencial imediata', 'texto' => 'O cliente visualiza o endereço da matriz no checkout e pode buscar o rastreador já configurado e testado.'],
+                ['icone' => 'fa-handshake', 'titulo' => 'Zero custo de frete', 'texto' => 'A opção de retirada sempre aparece como R$ 0,00 (Grátis) na simulação e no carrinho.'],
+            ],
+        ],
+
+        'loja_frete' => [
+            'titulo' => 'Frete fixo padrão (R$)',
+            'onde' => 'Valor fixo cobrado por envio quando o frete dinâmico dos Correios estiver desativado ou como taxa base da loja.',
+            'passos' => [
+                ['icone' => 'fa-tag', 'titulo' => 'Defina o valor base', 'texto' => 'Digite o valor em reais (ex: 29,90) cobrado para pedidos que não utilizam cálculo dinâmico.'],
+                ['icone' => 'fa-cart-shopping', 'titulo' => 'Aplicação no carrinho', 'texto' => 'Este valor é adicionado ao subtotal do carrinho até que o cliente atinja a faixa de frete grátis.'],
+            ],
+        ],
+
+        'loja_frete_gratis_acima' => [
+            'titulo' => 'Frete grátis acima de (R$)',
+            'onde' => 'Valor mínimo de compras no pedido para isenção total do frete.',
+            'passos' => [
+                ['icone' => 'fa-gift', 'titulo' => 'Incentivo de compra', 'texto' => 'Defina um valor (ex: 997,00). Compras que atinjam ou superem este total recebem frete grátis automaticamente.'],
+                ['icone' => 'fa-calculator', 'titulo' => 'Barra de progresso no carrinho', 'texto' => 'O cliente vê em tempo real quanto falta para atingir a entrega gratuita.'],
+            ],
+        ],
+
+        'correios_logistica' => [
+            'titulo' => 'Logística dos Correios (Com e Sem Contrato & Coleta)',
+            'onde' => 'Central de logística para cálculo automático de SEDEX/PAC, despacho com ou sem contrato corporativo, e coleta na sede da Golden.',
+            'passos' => [
+                ['icone' => 'fa-truck-fast', 'titulo' => 'Ligue o cálculo dinâmico', 'texto' => 'Ative o interruptor para que o site consulte as tarifas oficiais dos Correios para o CEP do comprador.'],
+                ['icone' => 'fa-file-contract', 'titulo' => 'Informe se possui contrato', 'texto' => 'Com contrato ativo, a loja aplica descontos corporativos nas tarifas e você pode cadastrar as credenciais CWS.'],
+                ['icone' => 'fa-truck-ramp-box', 'titulo' => 'Solicitação de coleta', 'texto' => 'Permite que a expedição solicite coleta direta na sede da empresa com 1 clique no pedido.'],
+                ['icone' => 'fa-envelope-circle-check', 'titulo' => 'Notificações automáticas', 'texto' => 'O cliente recebe o código e acompanha o rastreio em tempo real dentro do site da Golden.'],
+            ],
+        ],
+
+        'correios_ativo' => [
+            'titulo' => 'Ativar cálculo dinâmico Correios',
+            'onde' => 'Calcula frete e prazos em tempo real no carrinho, no checkout e na página de produto.',
+            'passos' => [
+                ['icone' => 'fa-toggle-on', 'titulo' => 'Ligue para cálculo ao vivo', 'texto' => 'O cliente informa o CEP e o sistema calcula SEDEX e PAC instantaneamente.'],
+                ['icone' => 'fa-location-dot', 'titulo' => 'Origem configurada', 'texto' => 'O cálculo usa o CEP de Origem da expedição da Golden Rastreamento.'],
+            ],
+        ],
+
+        'correios_possui_contrato' => [
+            'titulo' => 'Empresa possui contrato com os Correios',
+            'onde' => 'Aplica tarifas corporativas com desconto e habilita a integração com os serviços CWS / SIGEP Web.',
+            'passos' => [
+                ['icone' => 'fa-percent', 'titulo' => 'Tarifas reduzidas', 'texto' => 'Empresas com contrato Correios Fácil ou CWS contam com descontos de até 25% nas postagens.'],
+                ['icone' => 'fa-key', 'titulo' => 'Credenciais CWS', 'texto' => 'Preencha o Código Administrativo, Cartão de Postagem e Token CWS para faturamento corporativo.'],
+            ],
+        ],
+
+        'correios_coleta_empresa' => [
+            'titulo' => 'Coleta na empresa (Golden Rastreamento)',
+            'onde' => 'Define que a transportadora/Correios retiram as encomendas diretamente na sede da Golden.',
+            'passos' => [
+                ['icone' => 'fa-truck-ramp-box', 'titulo' => 'Botão no painel', 'texto' => 'Habilita o botão "Solicitar Coleta na Empresa" na tela de detalhes de cada pedido aprovado.'],
+                ['icone' => 'fa-bell', 'titulo' => 'Avisos multicanal', 'texto' => 'Dispara e-mail e notificação no celular para o administrador e expedição organizarem os pacotes.'],
+            ],
+        ],
+
+        'correios_cep_origem' => [
+            'titulo' => 'CEP de Origem / Expedição',
+            'onde' => 'O CEP da sede ou centro de distribuição da Golden Rastreamento de onde partem as encomendas.',
+            'passos' => [
+                ['icone' => 'fa-map-pin', 'titulo' => 'Informe o CEP completo', 'texto' => 'Digite o CEP com 8 dígitos (ex: 37190-000) da matriz em Três Pontas/MG.'],
+                ['icone' => 'fa-route', 'titulo' => 'Ponto de partida do frete', 'texto' => 'A distância e os prazos são calculados a partir deste endereço.'],
+            ],
+        ],
+
+        'correios_prazo_adicional' => [
+            'titulo' => 'Prazo adicional (dias úteis)',
+            'onde' => 'Dias adicionais somados à estimativa dos Correios para cobrir tempo de montagem, testes de bancada e expedição.',
+            'passos' => [
+                ['icone' => 'fa-screwdriver-wrench', 'titulo' => 'Preparação do rastreador', 'texto' => 'Rastreadores veiculares exigem inserção do chip M2M, testes de sinal e homologação antes do envio.'],
+                ['icone' => 'fa-calendar-check', 'titulo' => 'Transparência ao cliente', 'texto' => 'Adicionar 1 ou 2 dias evita cobranças de prazos irreais por parte do comprador.'],
+            ],
+        ],
+
+        'correios_taxa_manuseio' => [
+            'titulo' => 'Taxa de manuseio / embalagem (R$)',
+            'onde' => 'Valor fixo adicionado ao cálculo do frete para amortizar caixas, lacres invioláveis e embalagens.',
+            'passos' => [
+                ['icone' => 'fa-box', 'titulo' => 'Custo de embalagem', 'texto' => 'Informe centavos ou reais caso queira somar o custo de embalagem ao frete pago pelo cliente.'],
+                ['icone' => 'fa-ban', 'titulo' => 'Deixe 0.00 para não cobrar', 'texto' => 'Com 0.00, o cliente paga somente a tarifa líquida da transportadora.'],
+            ],
+        ],
+
+        'correios_sedex_ativo' => [
+            'titulo' => 'Habilitar modalidade SEDEX',
+            'onde' => 'Exibe a opção de envio expresso prioritário dos Correios no carrinho e checkout.',
+            'passos' => [
+                ['icone' => 'fa-bolt', 'titulo' => 'Entrega expressa', 'texto' => 'Garante entregas em 1 a 3 dias úteis para a maioria das cidades brasileiras.'],
+                ['icone' => 'fa-check', 'titulo' => 'Prioridade de expedição', 'texto' => 'Pedidos com SEDEX recebem prioridade na bancada de testes e envio.'],
+            ],
+        ],
+
+        'correios_pac_ativo' => [
+            'titulo' => 'Habilitar modalidade PAC',
+            'onde' => 'Exibe a opção de envio econômico dos Correios para todo o território nacional.',
+            'passos' => [
+                ['icone' => 'fa-coins', 'titulo' => 'Custo acessível', 'texto' => 'Tarifa menor voltada para clientes que priorizam economia em relação ao prazo.'],
+                ['icone' => 'fa-location-crosshairs', 'titulo' => 'Rastreamento completo', 'texto' => 'Mesmo econômico, o PAC oferece acompanhamento de cada movimentação passo a passo.'],
+            ],
+        ],
+
+        'correios_codigo_administrativo' => [
+            'titulo' => 'Código Administrativo Correios',
+            'onde' => 'Código de 8 dígitos atribuído ao seu contrato corporativo dos Correios.',
+            'passos' => [
+                ['icone' => 'fa-file-invoice', 'titulo' => 'Consulte no contrato', 'texto' => 'Encontrado no documento de ativação do contrato comercial Correios Empresas.'],
+                ['icone' => 'fa-id-card', 'titulo' => 'Identificação do cliente', 'texto' => 'Identifica sua conta jurídica junto aos servidores dos Correios.'],
+            ],
+        ],
+
+        'correios_cartao_postagem' => [
+            'titulo' => 'Cartão de Postagem Correios',
+            'onde' => 'Número de 10 dígitos do cartão de postagem que valida o faturamento a faturar.',
+            'passos' => [
+                ['icone' => 'fa-credit-card', 'titulo' => 'Localize no portal CWS', 'texto' => 'Disponível no menu Meus Contratos > Cartões de Postagem no portal dos Correios.'],
+                ['icone' => 'fa-barcode', 'titulo' => 'Validação das etiquetas', 'texto' => 'Necessário para emissão e chancela de etiquetas de postagem.'],
+            ],
+        ],
+
+        'correios_usuario' => [
+            'titulo' => 'Usuário CWS / SIGEP Web',
+            'onde' => 'Nome de usuário para autenticação na API dos Correios.',
+            'passos' => [
+                ['icone' => 'fa-user-lock', 'titulo' => 'Acesse o portal CWS', 'texto' => 'cws.correios.com.br — utilize o ID Correios da empresa para gerar o acesso.'],
+                ['icone' => 'fa-keyboard', 'titulo' => 'Digite o login de API', 'texto' => 'Cole exatamente o usuário autorizado para emissão de chaves.'],
+            ],
+        ],
+
+        'correios_senha' => [
+            'titulo' => 'Senha / Token de Acesso CWS',
+            'onde' => 'Chave de segurança ou token de API para autenticação eletrônica.',
+            'passos' => [
+                ['icone' => 'fa-key', 'titulo' => 'Gere o token no portal', 'texto' => 'Em Gestão de Acesso a APIs no portal CWS, crie uma chave de API para o sistema.'],
+                ['icone' => 'fa-shield-halved', 'titulo' => 'Armazenamento seguro', 'texto' => 'O token é protegido no banco de dados e nunca exposto a terceiros.'],
+            ],
+        ],
+
+        'correios_instrucoes_coleta' => [
+            'titulo' => 'Instruções de Coleta na Empresa',
+            'onde' => 'Orientações práticas de logística para os funcionários e para o carteiro/motorista na sede da Golden.',
+            'passos' => [
+                ['icone' => 'fa-clock', 'titulo' => 'Horário e local', 'texto' => 'Ex: "Coletas diárias das 14h às 16h na portaria da matriz (Rua Exemplo, 123)".'],
+                ['icone' => 'fa-phone', 'titulo' => 'Telefone da expedição', 'texto' => 'Inclua o ramal ou WhatsApp do encarregado de conferir e entregar os pacotes.'],
+            ],
+        ],
+
+        'mercado_livre_card' => [
+            'titulo' => 'Integração Mercado Livre / Mercado Envios',
+            'onde' => 'Canal alternativo de logística para quem deseja comercializar ou expedir através da rede do Mercado Livre.',
+            'passos' => [
+                ['icone' => 'fa-bag-shopping', 'titulo' => 'Mercado Envios', 'texto' => 'Permite disponibilizar pontos de coleta e entrega intermediada pelo Mercado Livre.'],
+                ['icone' => 'fa-link', 'titulo' => 'Link da loja oficial', 'texto' => 'Conduz clientes interessados diretamente aos anúncios homologados da Golden.'],
+            ],
+        ],
+
+        'mercado_livre_envio_ativo' => [
+            'titulo' => 'Habilitar envio pelo Mercado Livre',
+            'onde' => 'Mostra aos compradores a modalidade Mercado Envios com garantia e entrega rápida.',
+            'passos' => [
+                ['icone' => 'fa-toggle-on', 'titulo' => 'Ative o canal', 'texto' => 'Exibe a opção no simulador e orienta sobre o fluxo de envio pelo Mercado Livre.'],
+            ],
+        ],
+
+        'mercado_livre_link_loja' => [
+            'titulo' => 'Link da Loja no Mercado Livre',
+            'onde' => 'Endereço da página oficial de produtos da Golden no Mercado Livre.',
+            'passos' => [
+                ['icone' => 'fa-arrow-up-right-from-square', 'titulo' => 'Copie o link público', 'texto' => 'Ex: https://www.mercadolivre.com.br/loja/golden-rastreamento'],
+            ],
+        ],
+
+        'mercado_livre_instrucoes' => [
+            'titulo' => 'Instruções do Mercado Envios',
+            'onde' => 'Texto explicativo sobre como o comprador recebe o código de rastreio e prazo pelo Mercado Livre.',
+            'passos' => [
+                ['icone' => 'fa-circle-info', 'titulo' => 'Orientações ao cliente', 'texto' => 'Ex: "Envio gerenciado com código e garantia do Mercado Livre via pontos de coleta".'],
+            ],
+        ],
+
+        'celular_ativo' => [
+            'titulo' => 'Alertas Instantâneos no Celular',
+            'onde' => 'Ativa o despacho de avisos em tempo real com som e vibração para o smartphone do administrador.',
+            'passos' => [
+                ['icone' => 'fa-bell', 'titulo' => 'Receba tudo na hora', 'texto' => 'Novos leads, vendas aprovadas, novos depoimentos, pedidos de coleta e entregas passo a passo.'],
+                ['icone' => 'fa-mobile-screen', 'titulo' => 'Escolha o canal', 'texto' => 'Configure abaixo seu Telegram Bot gratuito ou Webhook de WhatsApp para receber as mensagens.'],
+            ],
+        ],
+
+        'telegram_token' => [
+            'titulo' => 'Token do Bot do Telegram',
+            'onde' => 'Chave de autorização do seu bot no Telegram para envio de alertas push gratuitos.',
+            'passos' => [
+                ['icone' => 'fa-robot', 'titulo' => 'Abra o @BotFather no Telegram', 'texto' => 'Pesquise por @BotFather no app do Telegram e envie a mensagem /newbot.'],
+                ['icone' => 'fa-pen', 'titulo' => 'Dê um nome e username', 'texto' => 'Exemplo: Nome "Golden Alertas" e username "golden_alertas_bot".'],
+                ['icone' => 'fa-key', 'titulo' => 'Copie o Token gerado', 'texto' => 'O BotFather fornecerá um token no formato 123456789:ABCdefGhIJK... Cole neste campo.'],
+                ['icone' => 'fa-play', 'titulo' => 'Dê /start no seu bot', 'texto' => 'Abra uma conversa com o bot criado e clique em Iniciar (Start).'],
+            ],
+            'nota' => 'O Telegram é 100% gratuito, não tem limite de mensagens e vibra no celular imediatamente em cada evento.',
+        ],
+
+        'telegram_chat_id' => [
+            'titulo' => 'Chat ID do Telegram',
+            'onde' => 'Identificador numérico do seu usuário pessoal ou de um grupo no Telegram.',
+            'passos' => [
+                ['icone' => 'fa-id-badge', 'titulo' => 'Consulte no @userinfobot', 'texto' => 'No Telegram, envie qualquer mensagem para o @userinfobot. Ele responderá seu ID (ex: 987654321).'],
+                ['icone' => 'fa-users', 'titulo' => 'Para alertar grupo da equipe', 'texto' => 'Adicione o bot ao grupo da empresa e informe o ID do grupo (número negativo, ex: -100123456789).'],
+                ['icone' => 'fa-vial', 'titulo' => 'Teste com 1 clique', 'texto' => 'Após salvar, use o botão "Testar Alerta no Celular" para validar.'],
+            ],
+        ],
+
+        'webhook_celular' => [
+            'titulo' => 'Webhook Móvel / WhatsApp API',
+            'onde' => 'Endpoint HTTP para integrar com gateways de WhatsApp (Evolution API, Z-API), N8N, Make ou Discord.',
+            'passos' => [
+                ['icone' => 'fa-network-wired', 'titulo' => 'Crie o webhook na sua API', 'texto' => 'Configure a URL de destino no seu servidor de mensagens ou fluxo de automação.'],
+                ['icone' => 'fa-code', 'titulo' => 'Payload JSON completo', 'texto' => 'O sistema envia evento, título, texto detalhado, dados do cliente e link do painel.'],
+            ],
+        ],
+
+        'email_ativo' => [
+            'titulo' => 'Alertas por E-mail da Empresa',
+            'onde' => 'Ativa o envio de e-mails transacionais instantâneos para a equipe e diretoria a cada acontecimento.',
+            'passos' => [
+                ['icone' => 'fa-envelope-open-text', 'titulo' => 'E-mails padronizados', 'texto' => 'Dispara e-mails ricos no layout preto e dourado da Golden com todos os detalhes da ocorrência.'],
+            ],
+        ],
+
+        'email_destinatarios' => [
+            'titulo' => 'Destinatários de Alertas por E-mail',
+            'onde' => 'Lista de e-mails que receberão as notificações de leads, pedidos, coletas, depoimentos e entregas.',
+            'passos' => [
+                ['icone' => 'fa-at', 'titulo' => 'Informe os e-mails separados por vírgula', 'texto' => 'Ex: diretoria@goldenrastreamento.com.br, expedicao@goldenrastreamento.com.br.'],
+                ['icone' => 'fa-inbox', 'titulo' => 'Caixas de equipe', 'texto' => 'Prefira e-mails de departamento (vendas@, suporte@) para que toda a equipe acompanhe.'],
+                ['icone' => 'fa-paper-plane', 'titulo' => 'Teste de envio', 'texto' => 'Use o botão "Testar Alerta por E-mail" para conferir a formatação na sua caixa de entrada.'],
+            ],
+        ],
+
+        'retencao' => [
+            'titulo' => 'Guardar notificações lidas por (dias)',
+            'onde' => 'Prazo de expiração para limpeza automática das notificações já visualizadas no painel.',
+            'passos' => [
+                ['icone' => 'fa-broom', 'titulo' => 'Limpeza de banco', 'texto' => 'Notificações lidas após este período são podadas periodicamente para não acumular espaço no banco.'],
+                ['icone' => 'fa-calendar', 'titulo' => 'Recomendação', 'texto' => 'Manter entre 30 e 90 dias garante histórico recente sem pesar no painel.'],
+            ],
+        ],
+
+        'expiracao' => [
+            'titulo' => 'Apagar não lidas depois de (dias)',
+            'onde' => 'Prazo máximo de vida para alertas antigos que nunca foram abertos pelo usuário.',
+            'passos' => [
+                ['icone' => 'fa-clock-rotate-left', 'titulo' => 'Poda de notificações abandonadas', 'texto' => 'Evita que notificações esquecidas fiquem acumulando no contador do sino.'],
+            ],
+        ],
+
         /* ---------------------------------------------------------------- WhatsApp */
 
         'whatsapp_box' => [

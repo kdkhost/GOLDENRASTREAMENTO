@@ -23,7 +23,7 @@
                 @foreach($linhas as $l)
                 <li class="cart-line">
                     <a class="cart-thumb" href="{{ route('site.loja.produto', $l['slug']) }}">
-                        @if($l['imagem'])<img src="{{ asset('storage/' . $l['imagem']) }}" alt="{{ $l['nome'] }}">@else<i class="fa-solid fa-satellite-dish"></i>@endif
+                        @if($l['imagem'])<img src="{{ produto_foto_url($l['imagem']) }}" alt="{{ $l['nome'] }}">@else<i class="fa-solid fa-satellite-dish"></i>@endif
                     </a>
                     <div class="cart-info">
                         <a href="{{ route('site.loja.produto', $l['slug']) }}"><b>{{ $l['nome'] }}</b></a>

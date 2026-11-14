@@ -17,17 +17,22 @@
                         <span class="prod-count-badge"><i class="fa-solid fa-camera"></i> {{ count($todasFotos) }} fotos</span>
                     @endif
                     @if(!empty($todasFotos[0]))
-                        <img id="prodMainImg" src="{{ asset('storage/' . $todasFotos[0]) }}" alt="{{ $produto['nome'] }}">
+                        <img id="prodMainImg" src="{{ produto_foto_url($todasFotos[0]) }}" alt="{{ $produto['nome'] }}">
                     @else
-                        <i class="fa-solid fa-satellite-dish"></i>
+                        <div class="prod-placeholder-box">
+                            <span class="badge-cat">{{ $produto['categoria'] ?? 'Golden Rastreamento' }}</span>
+                            <i class="fa-solid fa-satellite-dish"></i>
+                            <strong>{{ $produto['nome'] }}</strong>
+                            <small>Tecnologia e Gestão Veicular</small>
+                        </div>
                     @endif
                 </div>
 
                 @if(count($todasFotos) > 1)
                 <div class="prod-thumbs-strip" aria-label="Galeria de fotos do produto">
                     @foreach($todasFotos as $idx => $foto)
-                    <button type="button" class="prod-thumb-btn {{ $idx === 0 ? 'active' : '' }}" data-src="{{ asset('storage/' . $foto) }}" aria-label="Visualizar foto {{ $idx + 1 }}">
-                        <img src="{{ asset('storage/' . $foto) }}" alt="Foto {{ $idx + 1 }}">
+                    <button type="button" class="prod-thumb-btn {{ $idx === 0 ? 'active' : '' }}" data-src="{{ produto_foto_url($foto) }}" aria-label="Visualizar foto {{ $idx + 1 }}">
+                        <img src="{{ produto_foto_url($foto) }}" alt="Foto {{ $idx + 1 }}">
                     </button>
                     @endforeach
                 </div>
@@ -77,7 +82,11 @@
                 </div>
 
                 @if($produto['disponivel'])
-                <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}" class="buy-form" data-unit="{{ $produto['preco'] }}" data-farol="sacola" data-detalhe="{{ $produto['slug'] }}">
+                @php
+                    $precoBase = $produto['preco'] > 0 ? $produto['preco'] : ($produto['mensalidade'] ?? 0);
+                    $ehMensal = ($produto['preco'] == 0 && ($produto['mensalidade'] ?? 0) > 0);
+                @endphp
+                <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}" class="buy-form" data-unit="{{ $precoBase }}" data-monthly="{{ $ehMensal ? '1' : '0' }}" data-farol="sacola" data-detalhe="{{ $produto['slug'] }}">
                     @csrf
                     <input type="hidden" name="produto" value="{{ $produto['id'] }}">
                     <div class="quantity-row">
@@ -87,11 +96,15 @@
                             <input type="number" name="quantidade" min="1" max="{{ $produto['controle_estoque'] ? max(1, $produto['estoque']) : 999 }}" value="1" required>
                             <button type="button" class="qplus" aria-label="Aumentar">+</button>
                         </div>
-                        <strong class="line-total">{{ brl($produto['preco']) }}</strong>
+                        <strong class="line-total">{{ brl($precoBase) }}{{ $ehMensal ? '/mês' : '' }}</strong>
                     </div>
                     <div class="buy-actions">
-                        <button type="submit" name="ir" value="carrinho" class="btn btn-outline">Adicionar ao carrinho</button>
-                        <button type="submit" name="ir" value="checkout" class="btn btn-gold" data-track="generate_lead" data-cta="buy" data-farol="checkout">Comprar agora →</button>
+                        <button type="submit" name="ir" value="carrinho" class="btn btn-carrinho">
+                            <i class="fa-solid fa-cart-plus"></i> Adicionar ao carrinho
+                        </button>
+                        <button type="submit" name="ir" value="checkout" class="btn btn-gold btn-comprar" data-track="generate_lead" data-cta="buy" data-farol="checkout">
+                            <i class="fa-solid fa-bolt"></i> Comprar agora →
+                        </button>
                     </div>
                 </form>
                 @else
@@ -134,7 +147,7 @@
         <div class="grid-3">
             @foreach($relacionados as $r)
             <a href="{{ route('site.loja.produto', $r['slug']) }}" class="card prod-card" style="text-decoration:none;color:inherit">
-                <div class="prod-thumb">@if($r['imagem'])<img src="{{ asset('storage/' . $r['imagem']) }}" alt="{{ $r['nome'] }}">@else<i class="fa-solid fa-satellite-dish"></i>@endif</div>
+                <div class="prod-thumb">@if($r['imagem'])<img src="{{ produto_foto_url($r['imagem']) }}" alt="{{ $r['nome'] }}">@else<i class="fa-solid fa-satellite-dish"></i>@endif</div>
                 <h3 style="font-size:1rem">{{ $r['nome'] }}</h3>
                 <div class="prod-price"><b>{{ brl($r['preco']) }}</b></div>
             </a>
@@ -173,7 +186,15 @@
 .qty button{width:38px;height:38px;border:0;background:transparent;font-size:1.2rem;cursor:pointer;color:var(--ink)}
 .qty input{width:56px;text-align:center;border:0;font-size:1rem}
 .line-total{margin-left:auto;color:var(--gold);font-size:1.15rem}
-.buy-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.buy-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.btn-carrinho{background:#12161a;color:#ffffff;border:1.5px solid #12161a;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;padding:12px 24px;border-radius:999px;cursor:pointer;transition:.2s all}
+.btn-carrinho:hover{background:#232930;color:var(--gold);border-color:#232930;transform:translateY(-2px)}
+.btn-comprar{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;padding:12px 24px;border-radius:999px}
+.prod-placeholder-box{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:#fff;gap:10px}
+.prod-placeholder-box i{font-size:3.8rem;color:var(--gold);opacity:.9}
+.prod-placeholder-box strong{font-size:1.1rem;color:#fff;max-width:240px}
+.prod-placeholder-box small{color:var(--muted);font-size:.82rem}
+.prod-placeholder-box .badge-cat{font-size:.72rem;background:rgba(224,163,62,.15);color:var(--gold);border:1px solid rgba(224,163,62,.3);padding:3px 10px;border-radius:12px;font-weight:600;text-transform:uppercase}
 
 .prod-frete-card{margin-top:22px;padding:16px 18px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.03)}
 .prod-frete-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -204,6 +225,7 @@ document.addEventListener('DOMContentLoaded',function(){
   // 1. Quantidade e Subtotal
   var form=document.querySelector('.buy-form');
   var unit=form ? (parseInt(form.dataset.unit,10)||0) : 0;
+  var isMonthly=form ? (form.dataset.monthly === '1') : false;
   var inp=form ? form.querySelector('input[name="quantidade"]') : null;
   var total=form ? form.querySelector('.line-total') : null;
   var teto=inp ? (parseInt(inp.max,10)||999) : 999;
@@ -211,7 +233,7 @@ document.addEventListener('DOMContentLoaded',function(){
   function recalc(){
     if(!inp||!total)return;
     var q=Math.min(teto,Math.max(1,parseInt(inp.value,10)||1));
-    total.textContent=fmt(unit*q);
+    total.textContent=fmt(unit*q) + (isMonthly ? '/mês' : '');
   }
   if(inp){
     inp.addEventListener('input',recalc);
@@ -264,63 +286,52 @@ document.addEventListener('DOMContentLoaded',function(){
       resBox.style.display='none';
       resBox.innerHTML='';
 
-      // Consulta ViaCEP em paralelo para feedback da cidade/UF
-      fetch('https://viacep.com.br/ws/'+raw+'/json/')
-        .then(function(r){return r.json();})
-        .then(function(loc){
-          var locTxt = loc && !loc.erro && loc.localidade ? (' para '+loc.localidade+'/'+loc.uf) : '';
-          var qty = inp ? (parseInt(inp.value, 10)||1) : 1;
+      var qty = inp ? (parseInt(inp.value, 10)||1) : 1;
 
-          fetch("{{ route('site.loja.frete.calcular') }}", {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-TOKEN': '{{ csrf_token() }}',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-              cep: raw,
-              produto_id: {{ (int) $produto['id'] }},
-              quantidade: qty
-            })
-          })
-          .then(function(r){return r.json();})
-          .then(function(res){
-            btnFrete.disabled=false;
-            btnFrete.textContent='Calcular';
-
-            if(!res.sucesso || !res.opcoes || res.opcoes.length===0){
-              statusBox.innerHTML='<span style="color:#dc2626">Não foi possível calcular o frete para este CEP.</span>';
-              return;
-            }
-
-            statusBox.innerHTML='<span style="color:var(--teal)"><i class="fa-solid fa-circle-check"></i> Opções disponíveis'+locTxt+':</span>';
-            resBox.style.display='flex';
-            resBox.innerHTML='';
-
-            res.opcoes.forEach(function(op){
-              var item=document.createElement('div');
-              item.className='prod-frete-item';
-              var prazo=op.prazo_dias ? (' · '+op.prazo_dias+' '+(op.prazo_dias>1?'dias úteis':'dia útil')) : '';
-              var icone = op.tipo==='mercado_livre' ? 'fa-handshake' : (op.tipo==='retirada' ? 'fa-store' : 'fa-truck');
-
-              item.innerHTML='<div><strong><i class="fa-solid '+icone+'" style="color:var(--gold);margin-right:4px"></i> '+op.nome+'</strong>'+
-                '<small>'+(op.descricao || '')+prazo+'</small></div>'+
-                '<b>'+(op.valor_cents === 0 ? 'GRÁTIS' : op.valor_formatado)+'</b>';
-              resBox.appendChild(item);
-            });
-          })
-          .catch(function(){
-            btnFrete.disabled=false;
-            btnFrete.textContent='Calcular';
-            statusBox.innerHTML='<span style="color:#dc2626">Erro ao conectar com o serviço de frete.</span>';
-          });
+      fetch("{{ route('site.loja.frete.calcular') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          cep: raw,
+          produto_id: {{ (int) $produto['id'] }},
+          quantidade: qty
         })
-        .catch(function(){
-          btnFrete.disabled=false;
-          btnFrete.textContent='Calcular';
-          statusBox.innerHTML='<span style="color:#dc2626">Erro ao consultar CEP.</span>';
+      })
+      .then(function(r){return r.json();})
+      .then(function(res){
+        btnFrete.disabled=false;
+        btnFrete.textContent='Calcular';
+
+        if(!res.sucesso || !res.opcoes || res.opcoes.length===0){
+          statusBox.innerHTML='<span style="color:#dc2626">Não foi possível calcular o frete para este CEP.</span>';
+          return;
+        }
+
+        statusBox.innerHTML='<span style="color:var(--teal)"><i class="fa-solid fa-circle-check"></i> Opções disponíveis para o CEP '+res.cep+':</span>';
+        resBox.style.display='flex';
+        resBox.innerHTML='';
+
+        res.opcoes.forEach(function(op){
+          var item=document.createElement('div');
+          item.className='prod-frete-item';
+          var prazo=op.prazo_dias ? (' · '+op.prazo_dias+' '+(op.prazo_dias>1?'dias úteis':'dia útil')) : (op.prazo_texto ? ' · '+op.prazo_texto : '');
+          var icone = op.tipo==='mercado_livre' ? 'fa-handshake' : (op.tipo==='retirada' ? 'fa-store' : (op.tipo==='digital' ? 'fa-bolt' : 'fa-truck'));
+
+          item.innerHTML='<div><strong><i class="fa-solid '+icone+'" style="color:var(--gold);margin-right:4px"></i> '+op.nome+'</strong>'+
+            '<small>'+(op.descricao || '')+prazo+'</small></div>'+
+            '<b>'+(op.valor_cents === 0 ? 'GRÁTIS' : op.valor_formatado)+'</b>';
+          resBox.appendChild(item);
         });
+      })
+      .catch(function(){
+        btnFrete.disabled=false;
+        btnFrete.textContent='Calcular';
+        statusBox.innerHTML='<span style="color:#dc2626">Erro ao conectar com o serviço de frete.</span>';
+      });
     }
 
     btnFrete.addEventListener('click',simularFrete);

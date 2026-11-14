@@ -165,6 +165,7 @@ class StoreController extends Controller
         ]);
 
         $subtotal = 0;
+        $prod = null;
         if (! empty($data['produto_id'])) {
             $prod = Product::find($data['produto_id']);
             if ($prod) {
@@ -179,6 +180,22 @@ class StoreController extends Controller
         }
 
         $opcoes = $this->correios->calcularFrete($data['cep'], $subtotal);
+
+        // Se for plano ou serviço com ativação digital
+        if ($prod && ($prod->category?->slug === 'planos' || ($prod->preco_cents === 0 && $prod->mensalidade_cents > 0))) {
+            array_unshift($opcoes, [
+                'id' => 'digital',
+                'codigo' => 'digital',
+                'nome' => 'Ativação Digital Imediata (Sem frete)',
+                'valor_cents' => 0,
+                'valor_formatado' => 'Grátis',
+                'prazo_dias' => 0,
+                'prazo_texto' => 'Imediato',
+                'gratis' => true,
+                'descricao' => 'Liberação remota de acesso à plataforma web e aplicativo Golden.',
+                'tipo' => 'digital',
+            ]);
+        }
 
         return response()->json([
             'sucesso' => true,

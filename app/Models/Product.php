@@ -79,7 +79,27 @@ class Product extends Model
             }
         }
 
+        if (empty($imagens)) {
+            $padrao = static::imagemPadraoPorSlug($this->slug, $this->category?->slug);
+            if ($padrao) {
+                $imagens[] = $padrao;
+            }
+        }
+
         return $imagens;
+    }
+
+    public static function imagemPadraoPorSlug(string $slug, ?string $categoriaSlug = null): ?string
+    {
+        return match ($slug) {
+            'plano-frota' => 'img/home/segmento-frota.jpg',
+            'rastreador-j16-4g' => 'img/home/rastreador-j16.jpg',
+            'rastreador-moto-j16' => 'img/home/rastreador-j6.jpg',
+            'botao-de-panico', 'rele-de-bloqueio', 'kit-chicote' => 'img/home/rastreador-j16.jpg',
+            default => str_starts_with($slug, 'chip-m2m')
+                ? 'img/home/plataforma-monitor.jpg'
+                : ($categoriaSlug === 'planos' ? 'img/home/segmento-frota.jpg' : 'img/home/rastreador-j16.jpg'),
+        };
     }
 
     /**
@@ -162,7 +182,7 @@ class Product extends Model
                     'preco' => $p->preco(),
                     'promocao' => $p->temPromocao(),
                     'mensalidade' => $p->mensalidade_cents,
-                    'imagem' => $p->imagem,
+                    'imagem' => $p->imagem ?: static::imagemPadraoPorSlug($p->slug, $p->category?->slug),
                     'galeria' => (array) ($p->galeria ?? []),
                     'imagens' => $p->todasImagens(),
                     'video' => $p->video,

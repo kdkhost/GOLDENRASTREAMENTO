@@ -173,6 +173,7 @@ class LevezaDasPaginasTest extends TestCase
     public function test_o_rastreio_custa_pouco_por_pagina(): void
     {
         foreach (['/', '/planos', '/loja'] as $url) {
+            $this->flushSession();
             $consultas = $this->consultasDeRastreio('GET', $url);
             $this->assertNotEmpty($consultas, "{$url} não registrou a visita.");
             $this->assertLessThanOrEqual(

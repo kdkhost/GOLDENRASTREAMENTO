@@ -34,15 +34,8 @@
                 @can('admin')
                     <div class="col-12"><div class="zone-title mt-3"><i class="fas fa-mobile-screen me-1 text-golden"></i> Alertas Direto no Celular (Telegram / WhatsApp / Push)</div></div>
 
-                    <div class="col-12">
-                        <div class="form-check form-switch pt-1">
-                            <input class="form-check-input" type="checkbox" role="switch" id="celular_ativo" name="celular_ativo" value="1" @checked($celular_ativo)>
-                            <label class="form-check-label fw-semibold" for="celular_ativo">
-                                Ativar envio de alertas instantâneos direto no celular do administrador
-                            </label>
-                            <span class="form-hint d-block">Receba notificações em tempo real com som e vibração no smartphone sempre que houver novo lead, venda, depoimento, coleta ou entrega.</span>
-                        </div>
-                    </div>
+                    <x-admin.switch name="celular_ativo" label="Ativar envio de alertas instantâneos direto no celular do administrador" :checked="$celular_ativo"
+                        hint="Receba notificações em tempo real com som e vibração no smartphone sempre que houver novo lead, venda, depoimento, coleta ou entrega." />
 
                     <x-admin.field name="telegram_token" type="text" label="Token do Bot do Telegram" :value="$telegram_token" col="col-md-7"
                         placeholder="Ex: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" hint="Crie gratuitamente no @BotFather no Telegram em menos de 1 minuto." />
@@ -55,15 +48,8 @@
 
                     <div class="col-12"><div class="zone-title mt-3"><i class="fas fa-envelope me-1 text-golden"></i> Alertas por E-mail</div></div>
 
-                    <div class="col-12">
-                        <div class="form-check form-switch pt-1">
-                            <input class="form-check-input" type="checkbox" role="switch" id="email_ativo" name="email_ativo" value="1" @checked($email_ativo)>
-                            <label class="form-check-label fw-semibold" for="email_ativo">
-                                Enviar alertas para a caixa de e-mail da empresa
-                            </label>
-                            <span class="form-hint d-block">Dispara e-mails transacionais instantâneos detalhando os acontecimentos da empresa.</span>
-                        </div>
-                    </div>
+                    <x-admin.switch name="email_ativo" label="Enviar alertas para a caixa de e-mail da empresa" :checked="$email_ativo"
+                        hint="Dispara e-mails transacionais instantâneos detalhando os acontecimentos da empresa." />
 
                     <x-admin.field name="email_destinatarios" type="text" label="Destinatários de e-mail (separados por vírgula)" :value="$email_destinatarios" col="col-12"
                         placeholder="admin@golden.com.br, comercial@goldenrastreamento.com.br" hint="Se vazio, utiliza o e-mail da equipe da loja ou o do administrador cadastrado." />

@@ -3,16 +3,17 @@
 use App\Models\Setting;
 use App\Support\ConteudoSite;
 
-if (!function_exists('brl')) {
+if (! function_exists('brl')) {
     /** Formata centavos como moeda brasileira. */
     function brl(int|float|null $cents): string
     {
         $cents = (int) ($cents ?? 0);
-        return 'R$ ' . number_format($cents / 100, 2, ',', '.');
+
+        return 'R$ '.number_format($cents / 100, 2, ',', '.');
     }
 }
 
-if (!function_exists('wa_url')) {
+if (! function_exists('wa_url')) {
     /**
      * Link wa.me no padrão do sistema: número vindo do painel (só dígitos) e mensagem
      * pré-preenchida, para todo CTA de WhatsApp chegar ao atendimento já contextualizado.
@@ -24,13 +25,13 @@ if (!function_exists('wa_url')) {
             '',
             (string) ($numero ?: Setting::get('contato_whatsapp', config('golden.whatsapp')))
         );
-        $url = 'https://wa.me/' . $numero;
+        $url = 'https://wa.me/'.$numero;
 
-        return ($msg === null || trim($msg) === '') ? $url : $url . '?text=' . urlencode($msg);
+        return ($msg === null || trim($msg) === '') ? $url : $url.'?text='.urlencode($msg);
     }
 }
 
-if (!function_exists('loja_ativa')) {
+if (! function_exists('loja_ativa')) {
     /** A loja virtual pode ser desligada a qualquer momento pelo painel. */
     function loja_ativa(): bool
     {
@@ -38,15 +39,16 @@ if (!function_exists('loja_ativa')) {
     }
 }
 
-if (!function_exists('slugify_pt')) {
+if (! function_exists('slugify_pt')) {
     function slugify_pt(string $text): string
     {
-        $converted = \Str::slug($text, '-');
-        return $converted !== '' ? $converted : \Str::random(8);
+        $converted = Str::slug($text, '-');
+
+        return $converted !== '' ? $converted : Str::random(8);
     }
 }
 
-if (!function_exists('site_img')) {
+if (! function_exists('site_img')) {
     /**
      * URL pública de uma imagem do site, pelo slot registrado em
      * config('golden.imagens'). Vale o que o painel enviou; sem envio, a foto
@@ -59,7 +61,7 @@ if (!function_exists('site_img')) {
     }
 }
 
-if (!function_exists('site_img_alt')) {
+if (! function_exists('site_img_alt')) {
     /** Descrição alternativa do <img>, também editável no painel. */
     function site_img_alt(string $slot): string
     {
@@ -67,7 +69,7 @@ if (!function_exists('site_img_alt')) {
     }
 }
 
-if (!function_exists('site_img_enviada')) {
+if (! function_exists('site_img_enviada')) {
     /** Este slot já tem o arquivo enviado pelo painel (e não a foto do pacote)? */
     function site_img_enviada(string $slot): bool
     {
@@ -75,7 +77,7 @@ if (!function_exists('site_img_enviada')) {
     }
 }
 
-if (!function_exists('site_pagina')) {
+if (! function_exists('site_pagina')) {
     /**
      * Texto de abertura de uma página fixa ('titulo', 'subtitulo', 'eyebrow',
      * 'rotulo'), lido do que o painel editou e com o padrão do pacote por baixo.
@@ -86,7 +88,7 @@ if (!function_exists('site_pagina')) {
     }
 }
 
-if (!function_exists('itens_por_pagina')) {
+if (! function_exists('itens_por_pagina')) {
     /** Regra única de paginação das listagens do painel. */
     function itens_por_pagina(): int
     {
@@ -94,7 +96,7 @@ if (!function_exists('itens_por_pagina')) {
     }
 }
 
-if (!function_exists('tom_por_status')) {
+if (! function_exists('tom_por_status')) {
     /**
      * Tom (classe .tone-*) de um status do painel, lido de
      * config('golden.tons_status')[$grupo]. O grupo é o domínio ('funil', 'cliente',
@@ -109,10 +111,26 @@ if (!function_exists('tom_por_status')) {
     }
 }
 
-if (!function_exists('tom_por_flag')) {
+if (! function_exists('tom_por_flag')) {
     /** Todo sim/não do painel usa o mesmo par de tons: verde aceso, neutro apagado. */
     function tom_por_flag(bool $valor): string
     {
         return $valor ? 'green' : 'neutral';
+    }
+}
+
+if (! function_exists('produto_foto_url')) {
+    /** Resolve a URL pública de uma foto de produto (arquivo em storage ou do pacote em public/img). */
+    function produto_foto_url(?string $foto): ?string
+    {
+        if (empty($foto)) {
+            return null;
+        }
+
+        if (str_starts_with($foto, 'http://') || str_starts_with($foto, 'https://') || str_starts_with($foto, 'img/')) {
+            return asset($foto);
+        }
+
+        return asset('storage/'.$foto);
     }
 }

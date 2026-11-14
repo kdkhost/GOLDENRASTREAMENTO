@@ -37,7 +37,7 @@
                     @if($totalFotos > 0)
                         <div class="prod-slides" data-slides>
                             @foreach($fotos as $idx => $foto)
-                                <img src="{{ asset('storage/' . $foto) }}" alt="{{ $p['nome'] }}" class="prod-slide-img {{ $idx === 0 ? 'active' : '' }}" data-slide-index="{{ $idx }}" loading="lazy">
+                                <img src="{{ produto_foto_url($foto) }}" alt="{{ $p['nome'] }}" class="prod-slide-img {{ $idx === 0 ? 'active' : '' }}" data-slide-index="{{ $idx }}" loading="lazy">
                             @endforeach
                         </div>
                         @if($totalFotos > 1)
