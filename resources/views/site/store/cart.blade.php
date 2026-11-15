@@ -336,7 +336,12 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ quantidades: quantidades })
         })
         .then(res => res.json())
-        .then(aplicarEstadoCarrinho)
+        .then(function (data) {
+            aplicarEstadoCarrinho(data);
+            if (data && data.sucesso && typeof window.goldenSiteToast === 'function') {
+                window.goldenSiteToast(data.mensagem || 'Carrinho atualizado.', { type: 'success', duration: 2400 });
+            }
+        })
         .catch(() => {});
     }
 

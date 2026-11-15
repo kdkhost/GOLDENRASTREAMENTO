@@ -208,6 +208,43 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 @if($bolha)
 <script src="{{ asset('js/golden-assistente.js') }}?v={{ filemtime(public_path('js/golden-assistente.js')) }}"></script>
 @endif
+<div id="goldenSiteToastContainer" aria-live="polite" style="position:fixed;right:18px;bottom:86px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:min(360px,calc(100vw - 36px));pointer-events:none"></div>
+<script>
+window.goldenSiteToast = function (mensagem, opts) {
+    opts = opts || {};
+    var box = document.getElementById('goldenSiteToastContainer');
+    if (!box) return;
+    var isErr = opts.type === 'error';
+    var toast = document.createElement('div');
+    toast.setAttribute('role', 'status');
+    toast.style.cssText = 'pointer-events:auto;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:#0f172a;color:#f8fafc;border:1px solid ' + (isErr ? 'rgba(220,38,38,.55)' : 'rgba(212,175,55,.45)') + ';box-shadow:0 12px 30px rgba(0,0,0,.28);font-size:.88rem;line-height:1.35;transform:translateY(10px);opacity:0;transition:all .22s ease';
+    var icon = document.createElement('i');
+    icon.className = isErr ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
+    icon.style.cssText = 'font-size:1.05rem;flex-shrink:0;color:' + (isErr ? '#f87171' : '#d4af37');
+    var txt = document.createElement('span');
+    txt.style.flex = '1';
+    txt.textContent = mensagem;
+    toast.appendChild(icon);
+    toast.appendChild(txt);
+    if (opts.actionText && opts.actionUrl) {
+        var a = document.createElement('a');
+        a.href = opts.actionUrl;
+        a.textContent = opts.actionText;
+        a.style.cssText = 'color:#d4af37;font-weight:700;text-decoration:none;white-space:nowrap;margin-left:6px;font-size:.84rem';
+        toast.appendChild(a);
+    }
+    box.appendChild(toast);
+    requestAnimationFrame(function () {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+    });
+    setTimeout(function () {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(function () { toast.remove(); }, 240);
+    }, opts.duration || 4000);
+};
+</script>
 @stack('scripts')
 </body>
 </html>

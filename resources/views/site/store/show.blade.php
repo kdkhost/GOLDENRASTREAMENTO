@@ -553,7 +553,12 @@ document.addEventListener('DOMContentLoaded',function(){
         btnAddCart.disabled = false;
         if (!res.ok || !res.data.sucesso) {
           btnAddCart.innerHTML = textoOriginal;
-          alert((res.data && res.data.mensagem) || 'Não foi possível adicionar ao carrinho.');
+          var erroMsg = (res.data && res.data.mensagem) || 'Não foi possível adicionar ao carrinho.';
+          if (typeof window.goldenSiteToast === 'function') {
+            window.goldenSiteToast(erroMsg, { type: 'error' });
+          } else {
+            alert(erroMsg);
+          }
           return;
         }
         document.querySelectorAll('[data-cart-count]').forEach(function (el) {
@@ -561,11 +566,21 @@ document.addEventListener('DOMContentLoaded',function(){
           el.hidden = res.data.carrinho_itens <= 0;
         });
         btnAddCart.innerHTML = '<i class="fa-solid fa-check"></i> Adicionado ao carrinho!';
+        if (typeof window.goldenSiteToast === 'function') {
+          window.goldenSiteToast(res.data.mensagem || 'Produto adicionado ao carrinho!', {
+            type: 'success',
+            actionText: 'Ver carrinho →',
+            actionUrl: '{{ route('site.loja.carrinho') }}'
+          });
+        }
         setTimeout(function () { btnAddCart.innerHTML = textoOriginal; }, 2400);
       })
       .catch(function () {
         btnAddCart.disabled = false;
         btnAddCart.innerHTML = textoOriginal;
+        if (typeof window.goldenSiteToast === 'function') {
+          window.goldenSiteToast('Erro de conexão ao adicionar ao carrinho. Tente novamente.', { type: 'error' });
+        }
       });
     });
   }
