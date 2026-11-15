@@ -62,7 +62,7 @@
             justify-content: center;
             position: relative;
             overflow-x: hidden;
-            padding: clamp(20px, 4vw, 40px) 16px;
+            padding: clamp(10px, 2vh, 24px) 16px;
             min-height: 100vh;
             min-height: 100dvh;
         }
@@ -111,12 +111,12 @@
             position: relative;
             z-index: 2;
             width: 100%;
-            max-width: 660px;
+            max-width: 700px;
             background: var(--bg-panel);
             border: 1px solid var(--border-panel);
             border-top: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: var(--radius-card);
-            padding: clamp(32px, 5.5vw, 52px) clamp(22px, 5vw, 44px);
+            padding: clamp(18px, 2.8vh, 32px) clamp(18px, 4vw, 38px);
             text-align: center;
             box-shadow:
                 0 30px 80px -15px rgba(0, 0, 0, 0.9),
@@ -132,9 +132,9 @@
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: clamp(24px, 4vw, 36px);
-            padding-bottom: 16px;
+            gap: 10px;
+            margin-bottom: clamp(14px, 2.2vh, 22px);
+            padding-bottom: clamp(10px, 1.4vh, 14px);
             border-bottom: 1px solid var(--border-subtle);
         }
 
@@ -199,18 +199,28 @@
             100% { transform: scale(0.9); opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
+        /* Bloco compacto com ícone e código HTTP lado a lado */
+        .err-hero {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: clamp(14px, 2.8vw, 24px);
+            margin-bottom: clamp(10px, 1.8vh, 18px);
+        }
+
         /* Ícone central em anel dourado duplo */
         .err-icon-stage {
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: clamp(16px, 3vw, 24px);
+            margin-bottom: 0;
         }
 
         .err-icon-halo {
             position: absolute;
-            inset: -14px;
+            inset: -10px;
             border-radius: 50%;
             border: 1px dashed rgba(245, 179, 1, 0.35);
             animation: rotate-radar 22s linear infinite;
@@ -222,15 +232,15 @@
         }
 
         .err-icon-circle {
-            width: clamp(64px, 12vw, 76px);
-            height: clamp(64px, 12vw, 76px);
+            width: clamp(50px, 7vh, 64px);
+            height: clamp(50px, 7vh, 64px);
             border-radius: 50%;
             background: linear-gradient(135deg, rgba(245, 179, 1, 0.16) 0%, rgba(216, 150, 0, 0.08) 100%);
             border: 1.5px solid var(--gold);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: clamp(1.8rem, 4vw, 2.2rem);
+            font-size: clamp(1.35rem, 2.5vh, 1.8rem);
             color: var(--gold-light);
             box-shadow: 0 0 25px rgba(245, 179, 1, 0.35);
             animation: pulse-ring 3s infinite ease-in-out;
@@ -247,16 +257,16 @@
             position: relative;
             display: inline-flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
-            margin-bottom: clamp(12px, 2.5vw, 18px);
+            margin-bottom: 0;
         }
 
         .err-code-number {
             font-family: var(--font-display);
-            font-size: clamp(4.2rem, 12vw, 6.4rem);
+            font-size: clamp(3.1rem, 8vh, 4.8rem);
             font-weight: 900;
-            line-height: 0.95;
+            line-height: 0.92;
             letter-spacing: -0.04em;
             background: linear-gradient(145deg, #ffffff 15%, var(--gold-light) 50%, var(--gold) 85%, var(--gold-deep) 100%);
             -webkit-background-clip: text;
@@ -266,15 +276,15 @@
         }
 
         .err-code-category {
-            margin-top: 8px;
-            font-size: 0.74rem;
+            margin-top: 6px;
+            font-size: 0.7rem;
             font-weight: 700;
             letter-spacing: 0.14em;
             text-transform: uppercase;
             color: var(--gold);
             background: rgba(245, 179, 1, 0.1);
             border: 1px solid rgba(245, 179, 1, 0.28);
-            padding: 4px 14px;
+            padding: 3px 12px;
             border-radius: 9999px;
             display: inline-block;
         }
@@ -282,54 +292,54 @@
         /* Textos explicativos */
         .err-title {
             font-family: var(--font-display);
-            font-size: clamp(1.4rem, 3.8vw, 1.95rem);
+            font-size: clamp(1.2rem, 2.6vh, 1.65rem);
             font-weight: 800;
             color: var(--text-white);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             letter-spacing: -0.02em;
-            line-height: 1.25;
+            line-height: 1.2;
         }
 
         .err-subtitle {
-            font-size: clamp(0.96rem, 2.4vw, 1.12rem);
+            font-size: clamp(0.9rem, 1.8vh, 1.04rem);
             font-weight: 600;
             color: var(--gold-light);
-            margin-bottom: 14px;
-            line-height: 1.45;
+            margin-bottom: 8px;
+            line-height: 1.4;
         }
 
         .err-message {
-            font-size: clamp(0.88rem, 2vw, 0.98rem);
+            font-size: clamp(0.84rem, 1.6vh, 0.94rem);
             color: var(--text-slate);
-            line-height: 1.65;
-            margin: 0 auto clamp(24px, 4vw, 32px);
-            max-width: 520px;
+            line-height: 1.5;
+            margin: 0 auto clamp(14px, 2.2vh, 22px);
+            max-width: 540px;
         }
 
         /* Grupo de botões de ação */
         .err-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
             justify-content: center;
             align-items: center;
-            margin-bottom: clamp(24px, 4vw, 32px);
+            margin-bottom: clamp(14px, 2.2vh, 22px);
         }
 
         .err-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 9px;
-            padding: 13px 26px;
-            font-size: 0.94rem;
+            gap: 8px;
+            padding: clamp(10px, 1.4vh, 12px) clamp(18px, 2.5vw, 24px);
+            font-size: 0.9rem;
             font-weight: 700;
             border-radius: var(--radius-btn);
             text-decoration: none;
             transition: var(--transition);
             cursor: pointer;
             border: none;
-            min-height: 48px;
+            min-height: 42px;
         }
 
         .err-btn-gold {
@@ -376,17 +386,17 @@
         /* Barra de atalhos rápidos ("Para onde deseja ir?") */
         .err-shortcuts {
             border-top: 1px solid var(--border-subtle);
-            padding-top: 20px;
-            margin-bottom: 24px;
+            padding-top: clamp(12px, 1.8vh, 16px);
+            margin-bottom: clamp(12px, 1.8vh, 18px);
         }
 
         .err-shortcuts-title {
-            font-size: 0.78rem;
+            font-size: 0.74rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: var(--text-dim);
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 9px;
         }
 
         .err-shortcuts-grid {
@@ -472,10 +482,10 @@
 
         /* Rodapé de integridade e segurança */
         .err-footer {
-            margin-top: 22px;
-            padding-top: 16px;
+            margin-top: clamp(10px, 1.6vh, 16px);
+            padding-top: clamp(10px, 1.5vh, 14px);
             border-top: 1px solid var(--border-subtle);
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-dim);
             display: flex;
             justify-content: space-between;
@@ -506,11 +516,15 @@
             color: var(--gold);
         }
 
-        /* Responsividade para telas móveis */
+        /* Responsividade para telas móveis e alturas reduzidas */
         @media (max-width: 640px) {
             .err-card {
-                padding: 28px 18px;
+                padding: 18px 16px;
                 border-radius: 20px;
+            }
+
+            .err-code-wrap {
+                align-items: center;
             }
 
             .err-header {
@@ -532,14 +546,41 @@
             }
 
             .err-chip {
-                font-size: 0.78rem;
-                padding: 6px 12px;
+                font-size: 0.76rem;
+                padding: 5px 10px;
             }
 
             .err-footer {
                 justify-content: center;
                 text-align: center;
                 flex-direction: column;
+            }
+        }
+
+        @media (max-height: 700px) {
+            body {
+                padding: 8px 14px;
+            }
+            .err-card {
+                padding: 16px 24px;
+            }
+            .err-header {
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+            }
+            .err-hero {
+                margin-bottom: 8px;
+            }
+            .err-message, .err-actions {
+                margin-bottom: 12px;
+            }
+            .err-shortcuts {
+                padding-top: 10px;
+                margin-bottom: 10px;
+            }
+            .err-footer {
+                margin-top: 8px;
+                padding-top: 8px;
             }
         }
     </style>
@@ -567,39 +608,41 @@
             </div>
         </header>
 
-        {{-- Palco do Ícone com Anel Radar --}}
-        @if(!empty($dados['icon']))
-            @php
-                $iconeRaw = trim($dados['icon']);
-                if (!str_contains($iconeRaw, 'fa-solid') && !str_contains($iconeRaw, 'fa-regular') && !str_contains($iconeRaw, 'fa-brands') && !str_contains($iconeRaw, 'fas') && !str_contains($iconeRaw, 'far') && !str_contains($iconeRaw, 'fab')) {
-                    $iconeRaw = 'fa-solid ' . (str_starts_with($iconeRaw, 'fa-') ? $iconeRaw : 'fa-' . $iconeRaw);
-                }
-            @endphp
-            <div class="err-icon-stage">
-                <div class="err-icon-halo"></div>
-                <div class="err-icon-circle">
-                    <i class="{{ $iconeRaw }}"></i>
+        {{-- Palco compacto: Ícone + Código HTTP lado a lado --}}
+        <div class="err-hero">
+            @if(!empty($dados['icon']))
+                @php
+                    $iconeRaw = trim($dados['icon']);
+                    if (!str_contains($iconeRaw, 'fa-solid') && !str_contains($iconeRaw, 'fa-regular') && !str_contains($iconeRaw, 'fa-brands') && !str_contains($iconeRaw, 'fas') && !str_contains($iconeRaw, 'far') && !str_contains($iconeRaw, 'fab')) {
+                        $iconeRaw = 'fa-solid ' . (str_starts_with($iconeRaw, 'fa-') ? $iconeRaw : 'fa-' . $iconeRaw);
+                    }
+                @endphp
+                <div class="err-icon-stage">
+                    <div class="err-icon-halo"></div>
+                    <div class="err-icon-circle">
+                        <i class="{{ $iconeRaw }}"></i>
+                    </div>
                 </div>
-            </div>
-        @endif
+            @endif
 
-        {{-- Número do Código HTTP em Tipografia Dourada --}}
-        <div class="err-code-wrap">
-            <span class="err-code-number">{{ $dados['code'] ?? 'Erro' }}</span>
-            @php
-                $catMap = [
-                    400 => 'Requisição Incorreta',
-                    401 => 'Autenticação Restrita',
-                    403 => 'Acesso Protegido',
-                    404 => 'Coordenada Não Encontrada',
-                    419 => 'Validade de Sessão',
-                    429 => 'Proteção Contra Sobrecarga',
-                    500 => 'Instabilidade no Servidor',
-                    503 => 'Manutenção Preventiva',
-                ];
-                $categoriaLabel = $catMap[$dados['code'] ?? 0] ?? 'Alerta do Sistema';
-            @endphp
-            <span class="err-code-category">{{ $categoriaLabel }}</span>
+            {{-- Número do Código HTTP em Tipografia Dourada --}}
+            <div class="err-code-wrap">
+                <span class="err-code-number">{{ $dados['code'] ?? 'Erro' }}</span>
+                @php
+                    $catMap = [
+                        400 => 'Requisição Incorreta',
+                        401 => 'Autenticação Restrita',
+                        403 => 'Acesso Protegido',
+                        404 => 'Coordenada Não Encontrada',
+                        419 => 'Validade de Sessão',
+                        429 => 'Proteção Contra Sobrecarga',
+                        500 => 'Instabilidade no Servidor',
+                        503 => 'Manutenção Preventiva',
+                    ];
+                    $categoriaLabel = $catMap[$dados['code'] ?? 0] ?? 'Alerta do Sistema';
+                @endphp
+                <span class="err-code-category">{{ $categoriaLabel }}</span>
+            </div>
         </div>
 
         {{-- Mensagens Dinâmicas --}}

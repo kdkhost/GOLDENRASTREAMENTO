@@ -32,6 +32,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Removido fallback que gerava eventos falsos no rastreio de encomendas (`/rastreamento`) para códigos externos ou não localizados; adicionada integração oficial com a API SRO CWS dos Correios e retorno honesto quando não há eventos reais.
 - Atualizado o comando agendado `golden:rastreamentos:atualizar` (`AtualizarRastreamentosCommand`) para utilizar o `RastreioEncomendaService` e ler os campos reais de movimentação (`status`, `detalhe`, `data`, `hora`).
 - Corrigida a chave de cache do token CWS dos Correios em `CorreiosService::consultarSroCws()` para incluir o token de acesso e não armazenar resposta vazia em cache quando a autenticação falhar.
+- Ajustado o layout das páginas de erro (`resources/views/errors/layout.blade.php`) para se adaptar proporcionalmente à altura da janela (`vh`/`dvh`) com ícone e código HTTP lado a lado, evitando a necessidade de rolagem vertical para visualizar o conteúdo completo.
 
 ## [2.64.0] - 2026-11-12
 
