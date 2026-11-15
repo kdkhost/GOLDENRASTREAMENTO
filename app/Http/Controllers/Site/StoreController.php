@@ -92,7 +92,7 @@ class StoreController extends Controller
         ]);
     }
 
-    public function aplicarCupom(Request $request): RedirectResponse
+    public function aplicarCupom(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'codigo' => ['required', 'string', 'max:40'],
@@ -100,24 +100,43 @@ class StoreController extends Controller
 
         $carrinho = Carrinho::daSessao();
         if ($carrinho->vazio()) {
-            return back()->with('error', 'Adicione pelo menos um item ao carrinho antes de aplicar um cupom.');
+            $msg = 'Adicione pelo menos um item ao carrinho antes de aplicar um cupom.';
+            if ($request->expectsJson()) {
+                return response()->json(['sucesso' => false, 'mensagem' => $msg], 422);
+            }
+
+            return back()->with('error', $msg);
         }
 
         $res = $carrinho->aplicarCupom($data['codigo']);
 
         if (! $res['ok']) {
+            if ($request->expectsJson()) {
+                return response()->json(['sucesso' => false, 'mensagem' => $res['erro']], 422);
+            }
+
             return back()->withInput()->with('error', $res['erro']);
         }
 
         /** @var Coupon $cupom */
         $cupom = $res['cupom'];
+        $msg = "Cupom {$cupom->codigo} aplicado ({$cupom->rotuloDesconto()})!";
 
-        return back()->with('success', "Cupom {$cupom->codigo} aplicado ({$cupom->rotuloDesconto()})!");
+        if ($request->expectsJson()) {
+            return $this->resumoCarrinhoJson($carrinho, $msg);
+        }
+
+        return back()->with('success', $msg);
     }
 
-    public function removerCupom(): RedirectResponse
+    public function removerCupom(Request $request): RedirectResponse|JsonResponse
     {
-        Carrinho::daSessao()->removerCupom();
+        $carrinho = Carrinho::daSessao();
+        $carrinho->removerCupom();
+
+        if ($request->expectsJson()) {
+            return $this->resumoCarrinhoJson($carrinho, 'Cupom removido do carrinho.');
+        }
 
         return back()->with('success', 'Cupom removido do carrinho.');
     }
@@ -169,7 +188,7 @@ class StoreController extends Controller
         return redirect()->to($destino)->with('success', "{$produto['nome']} adicionado ao carrinho.");
     }
 
-    public function atualizar(Request $request): RedirectResponse
+    public function atualizar(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'quantidades' => ['required', 'array'],
@@ -182,16 +201,57 @@ class StoreController extends Controller
             $carrinho->ajustar((int) $id, (int) $quantidade);
         }
 
+        if ($request->expectsJson()) {
+            return $this->resumoCarrinhoJson($carrinho, 'Carrinho atualizado.');
+        }
+
         return back()->with('success', 'Carrinho atualizado.');
     }
 
-    public function remover(Request $request): RedirectResponse
+    public function remover(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate(['produto' => ['required', 'integer']]);
 
-        Carrinho::daSessao()->remover((int) $data['produto']);
+        $carrinho = Carrinho::daSessao();
+        $carrinho->remover((int) $data['produto']);
+
+        if ($request->expectsJson()) {
+            return $this->resumoCarrinhoJson($carrinho, 'Item removido do carrinho.');
+        }
 
         return back()->with('success', 'Item removido do carrinho.');
+    }
+
+    private function resumoCarrinhoJson(Carrinho $carrinho, string $mensagem = ''): JsonResponse
+    {
+        $linhas = $carrinho->linhas();
+        $subtotal = array_sum(array_column($linhas, 'subtotal'));
+        $desc = $carrinho->resumoDesconto($subtotal);
+        $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal);
+        $freteGratisEm = $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal);
+        $total = max(0, $subtotal - ($desc['desconto_cents'] ?? 0)) + $frete;
+
+        return response()->json([
+            'sucesso' => true,
+            'mensagem' => $mensagem,
+            'vazio' => $linhas === [],
+            'itens_count' => count($linhas),
+            'total_unidades' => array_sum(array_column($linhas, 'quantidade')),
+            'linhas' => array_map(fn (array $l): array => [
+                'id' => (int) $l['id'],
+                'quantidade' => (int) $l['quantidade'],
+                'subtotal_formatado' => brl($l['subtotal']),
+            ], $linhas),
+            'subtotal_formatado' => brl($subtotal),
+            'frete_formatado' => $frete > 0 ? brl($frete) : 'Grátis',
+            'frete_gratis_faltam_formatado' => $freteGratisEm > 0 ? brl($freteGratisEm) : null,
+            'cupom' => $desc['cupom'] ? [
+                'codigo' => $desc['cupom']->codigo,
+                'rotulo' => $desc['cupom']->rotuloDesconto(),
+                'desconto_formatado' => ($desc['desconto_cents'] ?? 0) > 0 ? '− '.brl($desc['desconto_cents']) : 'Frete grátis',
+            ] : null,
+            'total_formatado' => brl($total),
+        ]);
     }
 
     public function checkout(): View|RedirectResponse

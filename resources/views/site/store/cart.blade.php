@@ -7,21 +7,22 @@
 <section class="sec-light">
     <div class="wrap">
         <span class="eyebrow">Carrinho</span>
-        <h1 style="font-size:1.9rem;margin:.2rem 0">{{ count($linhas) }} {{ count($linhas) === 1 ? 'item' : 'itens' }} na sua sacola.</h1>
+        <h1 id="cartHeadingCount" style="font-size:1.9rem;margin:.2rem 0">{{ count($linhas) }} {{ count($linhas) === 1 ? 'item' : 'itens' }} na sua sacola.</h1>
         <p class="lead-sub">Ajuste as quantidades quando quiser — nada é cobrado antes de você escolher a entrega e o pagamento.</p>
 
-        @if($linhas === [])
-        <div class="cart-empty">
+        <div id="cartEmptyState" class="cart-empty" @if($linhas !== []) hidden @endif>
             <i class="fa-solid fa-basket-shopping"></i>
             <p>Seu carrinho está vazio.</p>
             <a href="{{ route('site.loja.index') }}" class="btn btn-gold">Ver a loja</a>
         </div>
-        @else
-        <form method="POST" action="{{ route('site.loja.carrinho.atualizar') }}" class="cart-form">
+
+        @if($linhas !== [])
+        <div id="cartContentWrap">
+        <form method="POST" action="{{ route('site.loja.carrinho.atualizar') }}" class="cart-form" id="cartForm">
             @csrf
             <ul class="cart-list">
                 @foreach($linhas as $l)
-                <li class="cart-line">
+                <li class="cart-line" data-cart-line="{{ $l['id'] }}">
                     <a class="cart-thumb" href="{{ route('site.loja.produto', $l['slug']) }}">
                         @if($l['imagem'])<img src="{{ produto_foto_url($l['imagem']) }}" alt="{{ $l['nome'] }}">@else<i class="fa-solid fa-satellite-dish"></i>@endif
                     </a>
@@ -31,12 +32,12 @@
                         <span class="cart-unit">{{ brl($l['preco']) }} cada</span>
                     </div>
                     <div class="qty">
-                        <button type="submit" name="quantidades[{{ $l['id'] }}]" value="{{ $l['quantidade'] - 1 }}" aria-label="Diminuir quantidade de {{ $l['nome'] }}">−</button>
-                        <input type="number" name="quantidades[{{ $l['id'] }}]" min="0" max="{{ $l['controle_estoque'] ? $l['estoque'] : 999 }}" value="{{ $l['quantidade'] }}" aria-label="Quantidade de {{ $l['nome'] }}">
-                        <button type="submit" name="quantidades[{{ $l['id'] }}]" value="{{ $l['quantidade'] + 1 }}" aria-label="Aumentar quantidade de {{ $l['nome'] }}">+</button>
+                        <button type="button" data-cart-action="dec" data-product-id="{{ $l['id'] }}" aria-label="Diminuir quantidade de {{ $l['nome'] }}">−</button>
+                        <input type="number" name="quantidades[{{ $l['id'] }}]" data-cart-qty="{{ $l['id'] }}" min="0" max="{{ $l['controle_estoque'] ? $l['estoque'] : 999 }}" value="{{ $l['quantidade'] }}" aria-label="Quantidade de {{ $l['nome'] }}">
+                        <button type="button" data-cart-action="inc" data-product-id="{{ $l['id'] }}" aria-label="Aumentar quantidade de {{ $l['nome'] }}">+</button>
                     </div>
-                    <b class="cart-total">{{ brl($l['subtotal']) }}</b>
-                    <button class="cart-del" type="submit" name="quantidades[{{ $l['id'] }}]" value="0" aria-label="Remover {{ $l['nome'] }}"><i class="fa-solid fa-trash-can"></i></button>
+                    <b class="cart-total" data-cart-line-total="{{ $l['id'] }}">{{ brl($l['subtotal']) }}</b>
+                    <button class="cart-del" type="button" data-cart-action="remove" data-product-id="{{ $l['id'] }}" aria-label="Remover {{ $l['nome'] }}"><i class="fa-solid fa-trash-can"></i></button>
                 </li>
                 @endforeach
             </ul>
@@ -49,41 +50,38 @@
 
         <aside class="cart-summary">
             <h2>Resumo</h2>
-            <div class="sum-line"><span>Subtotal ({{ array_sum(array_column($linhas, 'quantidade')) }} itens)</span><b>{{ brl($subtotal) }}</b></div>
+            <div class="sum-line"><span id="cartSummaryUnitsLabel">Subtotal ({{ array_sum(array_column($linhas, 'quantidade')) }} itens)</span><b id="cartSubtotalDisplay">{{ brl($subtotal) }}</b></div>
             <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
-            @if(!empty($cupom))
-            <div class="sum-line" style="color:var(--teal)">
-                <span>Cupom <b>{{ $cupom->codigo }}</b> ({{ $cupom->rotuloDesconto() }})</span>
-                <b>{{ ($descontoCents ?? 0) > 0 ? '− '.brl($descontoCents) : 'Frete grátis' }}</b>
+            <div class="sum-line" id="cartCupomSummaryRow" style="color:var(--teal)" @if(empty($cupom)) hidden @endif>
+                <span id="cartCupomSummaryLabel">@if(!empty($cupom))Cupom <b>{{ $cupom->codigo }}</b> ({{ $cupom->rotuloDesconto() }})@endif</span>
+                <b id="cartCupomSummaryVal">@if(!empty($cupom)){{ ($descontoCents ?? 0) > 0 ? '− '.brl($descontoCents) : 'Frete grátis' }}@endif</b>
             </div>
-            @endif
             <div class="sum-line" style="font-size:1.06rem;border-bottom:0;padding-top:10px">
                 <strong>Total estimado</strong>
-                <strong style="color:var(--gold-2)">{{ brl(max(0, $subtotal - ($descontoCents ?? 0)) + $frete) }}</strong>
+                <strong id="cartTotalDisplay" style="color:var(--gold-2)">{{ brl(max(0, $subtotal - ($descontoCents ?? 0)) + $frete) }}</strong>
             </div>
-            @if($freteGratisEm > 0)
-            <p class="sum-hint"><i class="fa-solid fa-gift" style="color:var(--gold)"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
-            @endif
+            <p class="sum-hint" id="cartFreteGratisHint" @if($freteGratisEm <= 0) hidden @endif>
+                <i class="fa-solid fa-gift" style="color:var(--gold)"></i>
+                <span>Faltam <span id="cartFreteGratisVal">{{ brl($freteGratisEm) }}</span> para o frete grátis.</span>
+            </p>
 
             <div class="cart-cupom-box" style="margin:14px 0 0;padding:12px;background:#f8fafc;border-radius:12px;border:1px solid rgba(0,0,0,.08)">
                 <label for="cartCupomCodigo" style="display:block;font-size:.84rem;font-weight:600;margin-bottom:6px;color:var(--ink)">
                     <i class="fa-solid fa-ticket" style="color:var(--gold);margin-right:4px"></i> Cupom de desconto
                 </label>
-                @if(!empty($cupom))
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid rgba(31,158,134,.35);border-radius:8px;padding:7px 10px">
-                        <span style="font-size:.85rem;color:var(--teal);font-weight:600"><i class="fa-solid fa-circle-check"></i> {{ $cupom->codigo }} aplicado</span>
-                        <form method="POST" action="{{ route('site.loja.cupom.remover') }}" style="margin:0">
-                            @csrf
-                            <button type="submit" style="border:0;background:none;color:#d06a5f;font-size:.8rem;font-weight:600;cursor:pointer">Remover</button>
-                        </form>
-                    </div>
-                @else
-                    <form method="POST" action="{{ route('site.loja.cupom.aplicar') }}" style="display:flex;gap:6px">
+                <div id="cartCupomFeedback" style="font-size:.8rem;margin-bottom:6px;display:none"></div>
+                <div id="cartCupomAppliedBox" @if(empty($cupom)) style="display:none" @else style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid rgba(31,158,134,.35);border-radius:8px;padding:7px 10px" @endif>
+                    <span style="font-size:.85rem;color:var(--teal);font-weight:600"><i class="fa-solid fa-circle-check"></i> <span id="cartCupomAppliedCode">{{ $cupom->codigo ?? '' }}</span> aplicado</span>
+                    <form method="POST" action="{{ route('site.loja.cupom.remover') }}" id="formCartCupomRemover" style="margin:0">
                         @csrf
-                        <input type="text" id="cartCupomCodigo" name="codigo" placeholder="Ex.: GOLDEN10" maxlength="40" style="flex:1;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;text-transform:uppercase" required>
-                        <button type="submit" class="btn btn-ghost btn-sm" style="padding:6px 12px;white-space:nowrap">Aplicar</button>
+                        <button type="submit" style="border:0;background:none;color:#d06a5f;font-size:.8rem;font-weight:600;cursor:pointer">Remover</button>
                     </form>
-                @endif
+                </div>
+                <form method="POST" action="{{ route('site.loja.cupom.aplicar') }}" id="formCartCupomAplicar" @if(!empty($cupom)) style="display:none" @else style="display:flex;gap:6px" @endif>
+                    @csrf
+                    <input type="text" id="cartCupomCodigo" name="codigo" placeholder="Ex.: GOLDEN10" maxlength="40" style="flex:1;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;text-transform:uppercase" required>
+                    <button type="submit" class="btn btn-ghost btn-sm" style="padding:6px 12px;white-space:nowrap">Aplicar</button>
+                </form>
             </div>
 
             <div class="cart-frete-box" style="margin:16px 0;padding:12px;background:#f8fafc;border-radius:12px;border:1px solid rgba(0,0,0,.08)">
@@ -100,6 +98,7 @@
             <a href="{{ route('site.loja.checkout') }}" class="btn btn-gold" data-farol="checkout" style="width:100%;margin-top:14px">Finalizar pedido →</a>
             <p class="fine">Pagamento na etapa seguinte: Pix, cartão ou boleto. Retirada na loja quando disponível.</p>
         </aside>
+        </div>
         @endif
     </div>
 </section>
@@ -219,6 +218,224 @@ document.addEventListener('DOMContentLoaded', function () {
         ultimoCepCart = inputCep.value.replace(/\D/g, '');
         consultarFreteCart();
     });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const cartForm = document.getElementById('cartForm');
+    if (!cartForm) return;
+
+    const csrfToken = '{{ csrf_token() }}';
+    const wrap = document.getElementById('cartContentWrap');
+    const emptyState = document.getElementById('cartEmptyState');
+    const headingCount = document.getElementById('cartHeadingCount');
+    const unitsLabel = document.getElementById('cartSummaryUnitsLabel');
+    const subtotalEl = document.getElementById('cartSubtotalDisplay');
+    const freteEl = document.getElementById('cartFreteDisplay');
+    const totalEl = document.getElementById('cartTotalDisplay');
+    const freteGratisHint = document.getElementById('cartFreteGratisHint');
+    const freteGratisVal = document.getElementById('cartFreteGratisVal');
+
+    const cupomSummaryRow = document.getElementById('cartCupomSummaryRow');
+    const cupomSummaryLabel = document.getElementById('cartCupomSummaryLabel');
+    const cupomSummaryVal = document.getElementById('cartCupomSummaryVal');
+    const cupomAppliedBox = document.getElementById('cartCupomAppliedBox');
+    const cupomAppliedCode = document.getElementById('cartCupomAppliedCode');
+    const formCupomAplicar = document.getElementById('formCartCupomAplicar');
+    const formCupomRemover = document.getElementById('formCartCupomRemover');
+    const cupomFeedback = document.getElementById('cartCupomFeedback');
+
+    function atualizarBadgesCabecalho(totalUnidades) {
+        document.querySelectorAll('[data-cart-count]').forEach(function (badge) {
+            badge.textContent = String(totalUnidades);
+            if (totalUnidades > 0) {
+                badge.removeAttribute('hidden');
+            } else {
+                badge.setAttribute('hidden', '');
+            }
+        });
+    }
+
+    function aplicarEstadoCarrinho(data) {
+        if (!data || !data.sucesso) return;
+
+        atualizarBadgesCabecalho(data.total_unidades || 0);
+
+        if (headingCount) {
+            const n = data.itens_count || 0;
+            headingCount.textContent = n + ' ' + (n === 1 ? 'item' : 'itens') + ' na sua sacola.';
+        }
+
+        if (data.vazio) {
+            if (wrap) wrap.style.display = 'none';
+            if (emptyState) emptyState.removeAttribute('hidden');
+            return;
+        }
+
+        const linhasMap = new Map((data.linhas || []).map(l => [String(l.id), l]));
+
+        cartForm.querySelectorAll('[data-cart-line]').forEach(function (li) {
+            const id = li.getAttribute('data-cart-line');
+            const linha = linhasMap.get(id);
+            if (!linha) {
+                li.remove();
+                return;
+            }
+            const qtyInput = li.querySelector('[data-cart-qty]');
+            const lineTotal = li.querySelector('[data-cart-line-total]');
+            if (qtyInput) qtyInput.value = linha.quantidade;
+            if (lineTotal) lineTotal.textContent = linha.subtotal_formatado;
+        });
+
+        if (unitsLabel) {
+            const u = data.total_unidades || 0;
+            unitsLabel.textContent = 'Subtotal (' + u + ' ' + (u === 1 ? 'item' : 'itens') + ')';
+        }
+        if (subtotalEl) subtotalEl.textContent = data.subtotal_formatado;
+        if (freteEl) freteEl.textContent = data.frete_formatado;
+        if (totalEl) totalEl.textContent = data.total_formatado;
+
+        if (freteGratisHint && freteGratisVal) {
+            if (data.frete_gratis_faltam_formatado) {
+                freteGratisVal.textContent = data.frete_gratis_faltam_formatado;
+                freteGratisHint.removeAttribute('hidden');
+            } else {
+                freteGratisHint.setAttribute('hidden', '');
+            }
+        }
+
+        if (data.cupom) {
+            if (cupomSummaryLabel) cupomSummaryLabel.innerHTML = 'Cupom <b>' + data.cupom.codigo + '</b> (' + data.cupom.rotulo + ')';
+            if (cupomSummaryVal) cupomSummaryVal.textContent = data.cupom.desconto_formatado;
+            if (cupomSummaryRow) cupomSummaryRow.removeAttribute('hidden');
+            if (cupomAppliedCode) cupomAppliedCode.textContent = data.cupom.codigo;
+            if (cupomAppliedBox) cupomAppliedBox.style.display = 'flex';
+            if (formCupomAplicar) formCupomAplicar.style.display = 'none';
+        } else {
+            if (cupomSummaryRow) cupomSummaryRow.setAttribute('hidden', '');
+            if (cupomAppliedBox) cupomAppliedBox.style.display = 'none';
+            if (formCupomAplicar) formCupomAplicar.style.display = 'flex';
+        }
+    }
+
+    let pendingTimer = null;
+
+    function enviarQuantidades() {
+        const quantidades = {};
+        cartForm.querySelectorAll('[data-cart-qty]').forEach(function (input) {
+            const id = input.getAttribute('data-cart-qty');
+            quantidades[id] = Math.max(0, parseInt(input.value || '0', 10) || 0);
+        });
+
+        fetch(cartForm.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ quantidades: quantidades })
+        })
+        .then(res => res.json())
+        .then(aplicarEstadoCarrinho)
+        .catch(() => {});
+    }
+
+    cartForm.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-cart-action]');
+        if (!btn) return;
+
+        e.preventDefault();
+        const action = btn.getAttribute('data-cart-action');
+        const id = btn.getAttribute('data-product-id');
+        const input = cartForm.querySelector('[data-cart-qty="' + id + '"]');
+        if (!input) return;
+
+        const current = parseInt(input.value || '0', 10) || 0;
+        const max = parseInt(input.getAttribute('max') || '999', 10) || 999;
+
+        if (action === 'dec') {
+            input.value = Math.max(0, current - 1);
+        } else if (action === 'inc') {
+            input.value = Math.min(max, current + 1);
+        } else if (action === 'remove') {
+            input.value = 0;
+        }
+
+        clearTimeout(pendingTimer);
+        enviarQuantidades();
+    });
+
+    cartForm.addEventListener('change', function (e) {
+        if (e.target.matches('[data-cart-qty]')) {
+            clearTimeout(pendingTimer);
+            pendingTimer = setTimeout(enviarQuantidades, 150);
+        }
+    });
+
+    cartForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        enviarQuantidades();
+    });
+
+    if (formCupomAplicar) {
+        formCupomAplicar.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const codigoInput = document.getElementById('cartCupomCodigo');
+            const codigo = codigoInput ? codigoInput.value.trim() : '';
+            if (!codigo) return;
+
+            if (cupomFeedback) cupomFeedback.style.display = 'none';
+
+            fetch(formCupomAplicar.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ codigo: codigo })
+            })
+            .then(async res => ({ ok: res.ok, body: await res.json() }))
+            .then(({ ok, body }) => {
+                if (!ok || !body.sucesso) {
+                    if (cupomFeedback) {
+                        cupomFeedback.style.display = 'block';
+                        cupomFeedback.style.color = '#dc2626';
+                        cupomFeedback.textContent = (body && body.mensagem) ? body.mensagem : 'Cupom inválido.';
+                    }
+                    return;
+                }
+                if (codigoInput) codigoInput.value = '';
+                if (cupomFeedback) {
+                    cupomFeedback.style.display = 'block';
+                    cupomFeedback.style.color = 'var(--teal)';
+                    cupomFeedback.textContent = body.mensagem || 'Cupom aplicado!';
+                }
+                aplicarEstadoCarrinho(body);
+            })
+            .catch(() => {});
+        });
+    }
+
+    if (formCupomRemover) {
+        formCupomRemover.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (cupomFeedback) cupomFeedback.style.display = 'none';
+
+            fetch(formCupomRemover.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+            .then(res => res.json())
+            .then(aplicarEstadoCarrinho)
+            .catch(() => {});
+        });
+    }
 });
 </script>
 @endpush
