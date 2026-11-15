@@ -11,62 +11,6 @@
     </a>
 @endsection
 
-@section('styles')
-<style>
-    .bloco-dnd-item {
-        background: var(--golden-card, #ffffff);
-        border: 1px solid var(--golden-line, #e2ddd1);
-        border-radius: 12px;
-        padding: 12px 14px;
-        margin-bottom: 10px;
-        cursor: grab;
-        transition: border-color .16s ease, box-shadow .16s ease, opacity .16s ease;
-    }
-    .bloco-dnd-item:hover {
-        border-color: rgba(224, 163, 62, 0.75);
-        box-shadow: 0 4px 12px rgba(18, 22, 26, 0.06);
-    }
-    .bloco-dnd-item.is-dragging {
-        opacity: 0.45;
-        border-style: dashed;
-    }
-    .bloco-dnd-item.is-drop-target {
-        border-color: #e0a33e;
-        box-shadow: 0 0 0 2px rgba(224, 163, 62, 0.25);
-    }
-    .bloco-dnd-item.is-hidden-block {
-        opacity: 0.62;
-    }
-    .drag-handle {
-        color: #9ca3af;
-        cursor: grab;
-        padding: 4px 6px;
-    }
-    .a4-preview-stage {
-        background: #22262b;
-        border-radius: 14px;
-        padding: 16px;
-        overflow: auto;
-        min-height: 700px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-    }
-    .a4-iframe-wrap {
-        transform-origin: top center;
-        transition: transform .18s ease;
-    }
-    .a4-iframe {
-        width: 210mm;
-        height: 297mm;
-        border: 0;
-        border-radius: 4px;
-        background: #ffffff;
-        box-shadow: 0 18px 46px rgba(0, 0, 0, .42);
-    }
-</style>
-@endsection
-
 @section('content')
 <div class="abas" data-abas="faturas-modelo">
     <div class="abas-barra mb-3">
@@ -228,7 +172,7 @@
                 <div class="col-12 col-xl-7">
                     <x-admin.card title="Plugin Golden para WHMCS (.zip Instalável)" icon="fa-download"
                         descricao="Expõe todos os gateways locais, PIX Copia e Cola, linha digitável e webhooks automáticos do seu WHMCS para a fila anti-spam." class="mb-3">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 rounded border mb-3" style="background: rgba(224,163,62,.08);">
+                        <div class="callout mb-3">
                             <div>
                                 <div class="d-flex align-items-center gap-2 mb-1">
                                     <strong>Status no WHMCS conectado:</strong>
@@ -421,7 +365,7 @@
                     <div class="d-flex align-items-start gap-2 flex-grow-1">
                         <span class="drag-handle" title="Arraste para reordenar"><i class="fas fa-grip-vertical"></i></span>
                         <div>
-                            <div class="fw-semibold small">${index + 1}. ${bloco.nome}</div>
+                            <div class="fw-semibold small text-body">${index + 1}. ${bloco.nome}</div>
                             <div class="text-secondary" style="font-size:11px;">${bloco.descricao || ''}</div>
                         </div>
                     </div>
@@ -442,7 +386,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="row g-2 mt-2 pt-2 border-top align-items-center">
+                <div class="row g-2 mt-2 pt-2 border-top border-secondary-subtle align-items-center">
                     <div class="col-3">
                         <label class="form-label mb-0 text-secondary" style="font-size:10px;">Fundo</label>
                         <input type="color" class="form-control form-control-color w-100" style="height:26px;" data-prop="fundo" value="${bloco.fundo}">

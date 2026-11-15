@@ -7,12 +7,7 @@
 </head>
 <body style="margin:0;padding:24px;background:#f4f1e9;font-family:Inter,Arial,sans-serif;color:#1b2127">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.05)">
-        <tr>
-            <td style="background:#12161a;padding:22px 24px">
-                <span style="color:#e0a33e;font-weight:800;font-size:20px;letter-spacing:.06em">GOLDEN</span>
-                <span style="color:#cfd6dd;font-size:12px;display:block;margin-top:2px">Rastreamento Veicular & Gestão</span>
-            </td>
-        </tr>
+        @include('mail.partials.cabecalho', ['subtitulo' => 'Rastreamento Veicular & Gestão'])
         <tr>
             <td style="padding:28px 24px">
                 <div style="display:inline-block;background:#eef6ff;border:1px solid #bfdbfe;color:#1d4ed8;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:12px">
@@ -53,11 +48,9 @@
                 </div>
             </td>
         </tr>
-        <tr>
-            <td style="padding:18px 24px;background:#faf7f0;font-size:12px;color:#6b7280;line-height:1.5;border-top:1px solid #f3ede2">
-                Dúvidas sobre sua entrega? Responda a este e-mail ou fale diretamente no WhatsApp da Golden: <strong>{{ \App\Models\Setting::get('contato_whatsapp', config('golden.whatsapp')) }}</strong>.
-            </td>
-        </tr>
+        @include('mail.partials.rodape', [
+            'aviso' => 'Dúvidas sobre sua entrega? Responda a este e-mail ou fale diretamente no WhatsApp da Golden: <strong>'.e(\App\Models\Setting::get('contato_whatsapp', config('golden.whatsapp'))).'</strong>.',
+        ])
     </table>
 </body>
 </html>

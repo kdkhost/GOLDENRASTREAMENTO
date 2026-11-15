@@ -8,30 +8,6 @@
     </a>
 @endsection
 
-@section('styles')
-<style>
-    .preview-shell-layout {
-        background: repeating-conic-gradient(rgba(128,128,128,.08) 0% 25%, transparent 0% 50%) 50% / 18px 18px;
-        border: 1px solid var(--golden-line, #e2ddd1);
-        border-radius: 12px;
-        padding: 14px;
-        display: flex;
-        justify-content: center;
-    }
-    .preview-frame-layout {
-        width: 100%;
-        height: 670px;
-        border: 1px solid rgba(18, 22, 26, .14);
-        border-radius: 10px;
-        transition: width .22s ease;
-    }
-    .preview-frame-layout.is-mobile {
-        width: 375px;
-        max-width: 100%;
-    }
-</style>
-@endsection
-
 @section('content')
 <div class="row g-3">
     <div class="col-12 col-xl-6">

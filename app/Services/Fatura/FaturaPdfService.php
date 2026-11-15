@@ -44,13 +44,15 @@ class FaturaPdfService
      */
     public function configuracaoPadrao(): array
     {
+        $empresa = golden_empresa();
+
         return [
             'estilo' => [
-                'emitente_nome' => (string) config('golden.marca.nome', 'Golden Rastreamento'),
-                'emitente_documento' => '00.000.000/0001-00',
-                'emitente_endereco' => 'Av. Paulista, 1000 · Bela Vista, São Paulo/SP · CEP 01310-100',
-                'emitente_contato' => (string) Setting::get('contato_whatsapp', config('golden.whatsapp', '')).' · '.(string) config('mail.from.address', 'financeiro@goldenrastreamento.com.br'),
-                'logo_url' => '',
+                'emitente_nome' => $empresa['nome'],
+                'emitente_documento' => $empresa['documento'],
+                'emitente_endereco' => $empresa['endereco_completo'],
+                'emitente_contato' => $empresa['contato_completo'],
+                'logo_url' => $empresa['logo_url'],
                 'cor_primaria' => '#12161a',
                 'cor_destaque' => '#e0a33e',
                 'cor_fundo_bloco' => '#faf8f2',
@@ -63,7 +65,7 @@ class FaturaPdfService
                 'raio_borda_px' => 6,
                 'gateway_padrao_modulo' => '',
                 'pix_chave_fallback' => '',
-                'rodape_texto' => 'Documento emitido eletronicamente pela plataforma Golden Rastreamento. Pagamentos compensados liberam o acesso automaticamente.',
+                'rodape_texto' => 'Documento emitido eletronicamente pela plataforma '.$empresa['nome'].'. Pagamentos compensados liberam o acesso automaticamente.',
             ],
             'blocos' => [
                 [
@@ -193,7 +195,9 @@ class FaturaPdfService
             return $padrao;
         }
 
-        $estilo = array_merge($padrao['estilo'], is_array($decodificado['estilo'] ?? null) ? $decodificado['estilo'] : []);
+        $estiloSalvo = is_array($decodificado['estilo'] ?? null) ? $decodificado['estilo'] : [];
+        $estilo = array_merge($padrao['estilo'], $estiloSalvo);
+        $estilo = $this->preencherIdentidadeEmpresaSePlaceholder($estilo, $padrao['estilo']);
         $salvosPorId = collect(is_array($decodificado['blocos'] ?? null) ? $decodificado['blocos'] : [])
             ->filter(fn (mixed $item): bool => is_array($item) && ! empty($item['id']))
             ->keyBy('id');
@@ -227,6 +231,49 @@ class FaturaPdfService
             'estilo' => $estilo,
             'blocos' => $blocos,
         ];
+    }
+
+    /**
+     * Preenche campos de identidade do emitente quando ainda estiverem vazios
+     * ou usando valores placeholder legados antes de configurar a empresa no painel.
+     *
+     * @param  array<string, mixed>  $estilo
+     * @param  array<string, mixed>  $estiloEmpresaPadrao
+     * @return array<string, mixed>
+     */
+    private function preencherIdentidadeEmpresaSePlaceholder(array $estilo, array $estiloEmpresaPadrao): array
+    {
+        $placeholders = [
+            'emitente_nome' => ['Golden Rastreamento', 'GOLDEN'],
+            'emitente_documento' => ['00.000.000/0001-00', '00.000.000/0000-00', 'Não informado'],
+            'emitente_endereco' => ['Av. Paulista, 1000'],
+            'emitente_contato' => ['disparos@goldenrastreamento.com.br', 'financeiro@goldenrastreamento.com.br', '55119997101403'],
+        ];
+
+        foreach ($placeholders as $campo => $marcadores) {
+            $atual = trim((string) ($estilo[$campo] ?? ''));
+            $padrao = trim((string) ($estiloEmpresaPadrao[$campo] ?? ''));
+
+            if ($padrao === '') {
+                continue;
+            }
+
+            if ($atual === '') {
+                $estilo[$campo] = $padrao;
+
+                continue;
+            }
+
+            foreach ($marcadores as $marcador) {
+                if (strcasecmp($atual, $marcador) === 0 || str_contains($atual, $marcador)) {
+                    $estilo[$campo] = $padrao;
+
+                    break;
+                }
+            }
+        }
+
+        return $estilo;
     }
 
     /**
@@ -544,6 +591,7 @@ class FaturaPdfService
             'estilo' => $config['estilo'],
             'blocos' => collect($config['blocos'])->where('visivel', true)->sortBy('ordem')->values()->all(),
             'fatura' => $fatura,
+            'empresa' => golden_empresa(),
             'pixConteudo' => $pixConteudo,
             'qrSvg' => $qrSvg,
             'qrPortalSvg' => $qrPortalSvg,
@@ -565,6 +613,11 @@ class FaturaPdfService
         $estilo = $config['estilo'];
         $fatura = $this->normalizarFatura($faturaBruta ?? $this->faturaExemplo());
         $blocos = collect($config['blocos'])->where('visivel', true)->sortBy('ordem')->values()->all();
+
+        $empresa = golden_empresa();
+        $blocoCabecalho = collect($blocos)->firstWhere('id', 'cabecalho_empresa');
+        $headerFundoHex = is_array($blocoCabecalho) ? (string) ($blocoCabecalho['fundo'] ?? '#14171a') : '#14171a';
+        $logoXObject = $this->prepararLogoPdfXObject((string) ($empresa['logo_caminho'] ?? ''), $headerFundoHex);
 
         $marginLeft = (float) $estilo['margem_lateral_mm'] * self::PT_PER_MM;
         $marginTop = (float) $estilo['margem_topo_mm'] * self::PT_PER_MM;
@@ -597,8 +650,8 @@ class FaturaPdfService
                     $novaPagina();
                 }
 
-                $stream .= $this->desenharBlocoPdf($linha[0], $estilo, $fatura, $marginLeft, $cursorY, $colWidth, $alturaLinha);
-                $stream .= $this->desenharBlocoPdf($linha[1], $estilo, $fatura, $marginLeft + $colWidth + $gutterPt, $cursorY, $colWidth, $alturaLinha);
+                $stream .= $this->desenharBlocoPdf($linha[0], $estilo, $fatura, $marginLeft, $cursorY, $colWidth, $alturaLinha, $logoXObject);
+                $stream .= $this->desenharBlocoPdf($linha[1], $estilo, $fatura, $marginLeft + $colWidth + $gutterPt, $cursorY, $colWidth, $alturaLinha, $logoXObject);
                 $cursorY -= ($alturaLinha + 10.0);
             } else {
                 $bloco = $linha[0];
@@ -608,7 +661,7 @@ class FaturaPdfService
                     $novaPagina();
                 }
 
-                $stream .= $this->desenharBlocoPdf($bloco, $estilo, $fatura, $marginLeft, $cursorY, $usableWidth, $alturaBloco);
+                $stream .= $this->desenharBlocoPdf($bloco, $estilo, $fatura, $marginLeft, $cursorY, $usableWidth, $alturaBloco, $logoXObject);
                 $cursorY -= ($alturaBloco + 10.0);
             }
         }
@@ -616,10 +669,17 @@ class FaturaPdfService
         // Rodapé institucional discreto em toda última página
         $rodapeY = max(18.0, $marginBottom - 12.0);
         $rodapePuro = golden_texto_puro((string) ($estilo['rodape_texto'] ?? ''));
-        $stream .= $this->pdfTexto($marginLeft, $rodapeY, 7.5, '#6B7280', $rodapePuro, false);
+        $partesRodape = array_filter([
+            $rodapePuro,
+            (string) ($estilo['emitente_nome'] ?? ''),
+            (string) ($estilo['emitente_documento'] ?? ''),
+            (string) ($estilo['emitente_contato'] ?? ''),
+        ], static fn (string $v): bool => trim($v) !== '');
+        $linhaRodape = mb_strimwidth(implode(' · ', array_unique($partesRodape)), 0, 125, '...');
+        $stream .= $this->pdfTexto($marginLeft, $rodapeY, 7.2, '#6B7280', $linhaRodape, false);
         $paginasStreams[] = $stream;
 
-        return $this->empacotarDocumentoPdf14($paginasStreams);
+        return $this->empacotarDocumentoPdf14($paginasStreams, $logoXObject);
     }
 
     /**
@@ -666,7 +726,7 @@ class FaturaPdfService
         };
 
         return match ($bloco['id']) {
-            'cabecalho_empresa' => 76.0 + $padExtra,
+            'cabecalho_empresa' => 84.0 + $padExtra,
             'dados_cliente' => 104.0 + $padExtra,
             'resumo_cobranca' => 104.0 + $padExtra,
             'itens_fatura' => 54.0 + (max(1, count($fatura['itens'])) * 19.0) + $padExtra,
@@ -678,6 +738,9 @@ class FaturaPdfService
         };
     }
 
+    /**
+     * @param  array<string, mixed>|null  $logoXObject
+     */
     private function desenharBlocoPdf(
         array $bloco,
         array $estilo,
@@ -685,7 +748,8 @@ class FaturaPdfService
         float $x,
         float $topY,
         float $width,
-        float $height
+        float $height,
+        ?array $logoXObject = null
     ): string {
         $bottomY = $topY - $height;
         $fundo = (string) ($bloco['fundo'] ?? '#ffffff');
@@ -706,12 +770,37 @@ class FaturaPdfService
         switch ($bloco['id']) {
             case 'cabecalho_empresa':
                 $out .= $this->pdfRetangulo($x, $topY - 3.5, $width, 3.5, $destaque, null, 0);
-                $out .= $this->pdfTexto($x + $pad, $curY - 3.0, 14.0, $destaque, (string) $estilo['emitente_nome'], true);
-                $out .= $this->pdfTexto($x + $pad, $curY - 18.0, 8.2, $textoCor, 'Documento: '.(string) ($estilo['emitente_documento'] ?? ''), false);
-                $out .= $this->pdfTexto($x + $pad, $curY - 30.0, 8.2, $textoCor, (string) ($estilo['emitente_endereco'] ?? ''), false);
-                $out .= $this->pdfTexto($x + $pad, $curY - 42.0, 8.0, $textoCor, (string) ($estilo['emitente_contato'] ?? ''), false);
+
+                $textoInicioX = $x + $pad;
+                if (is_array($logoXObject) && ($logoXObject['width'] ?? 0) > 0 && ($logoXObject['height'] ?? 0) > 0) {
+                    $maxLogoW = min(84.0, $width * 0.22);
+                    $maxLogoH = 38.0;
+                    $scale = min($maxLogoW / (float) $logoXObject['width'], $maxLogoH / (float) $logoXObject['height']);
+                    $drawW = round((float) $logoXObject['width'] * $scale, 2);
+                    $drawH = round((float) $logoXObject['height'] * $scale, 2);
+                    $imgX = $x + $pad;
+                    $imgY = ($topY - $pad) - $drawH - 2.0;
+                    $out .= sprintf("q %.2F 0 0 %.2F %.2F %.2F cm /Im1 Do Q\n", $drawW, $drawH, $imgX, $imgY);
+                    $textoInicioX = $imgX + $drawW + 10.0;
+                }
 
                 $colDirX = $x + $width - 172.0;
+                $maxCharsEsq = max(32, (int) floor(($colDirX - $textoInicioX - 10.0) / 4.2));
+                $docEmitente = trim((string) ($estilo['emitente_documento'] ?? ''));
+                $endEmitente = mb_strimwidth(trim((string) ($estilo['emitente_endereco'] ?? '')), 0, $maxCharsEsq, '...');
+                $contEmitente = mb_strimwidth(trim((string) ($estilo['emitente_contato'] ?? '')), 0, $maxCharsEsq, '...');
+
+                $out .= $this->pdfTexto($textoInicioX, $curY - 3.0, 14.0, $destaque, (string) $estilo['emitente_nome'], true);
+                if ($docEmitente !== '') {
+                    $out .= $this->pdfTexto($textoInicioX, $curY - 18.0, 8.2, $textoCor, 'CNPJ/Doc: '.$docEmitente, false);
+                }
+                if ($endEmitente !== '') {
+                    $out .= $this->pdfTexto($textoInicioX, $curY - 30.0, 8.0, $textoCor, $endEmitente, false);
+                }
+                if ($contEmitente !== '') {
+                    $out .= $this->pdfTexto($textoInicioX, $curY - 42.0, 7.8, $textoCor, $contEmitente, false);
+                }
+
                 $out .= $this->pdfTexto($colDirX, $curY - 3.0, 13.0, '#ffffff', 'FATURA #'.$fatura['numero'], true);
                 $out .= $this->pdfTexto($colDirX, $curY - 18.0, 9.0, $destaque, 'Status: '.$fatura['status_rotulo'], true);
                 $out .= $this->pdfTexto($colDirX, $curY - 31.0, 8.5, '#e5e7eb', 'Vencimento: '.$fatura['vencimento'], false);
@@ -803,10 +892,19 @@ class FaturaPdfService
                 break;
 
             case 'assinatura_rodape':
+                $docRodape = trim((string) ($estilo['emitente_documento'] ?? ''));
+                $emissorLinha = 'Emissor: '.$estilo['emitente_nome'].($docRodape !== '' ? ' · CNPJ/Doc: '.$docRodape : '');
+                $dadosEmpresaLinha = implode(' · ', array_filter([
+                    trim((string) ($estilo['emitente_endereco'] ?? '')),
+                    trim((string) ($estilo['emitente_contato'] ?? '')),
+                ], static fn (string $v): bool => $v !== ''));
+
                 $out .= $this->pdfTexto($x + $pad, $curY, 8.5, $destaque, 'AUTENTICAÇÃO & PORTAL DO CLIENTE', true);
-                $out .= $this->pdfTexto($x + $pad, $curY - 16.0, 8.0, $textoCor, 'Emissor: '.$estilo['emitente_nome'], true);
-                $out .= $this->pdfTexto($x + $pad, $curY - 29.0, 7.8, $textoCor, 'Emitido em '.now()->format('d/m/Y H:i').' · Hash #'.strtoupper(substr(md5((string) $fatura['numero']), 0, 10)), false);
-                $out .= $this->pdfTexto($x + $pad, $curY - 42.0, 7.6, $textoCor, 'Acesse /minha-conta/faturas para segunda via.', false);
+                $out .= $this->pdfTexto($x + $pad, $curY - 14.0, 8.0, $textoCor, mb_strimwidth($emissorLinha, 0, 95, '...'), true);
+                if ($dadosEmpresaLinha !== '') {
+                    $out .= $this->pdfTexto($x + $pad, $curY - 27.0, 7.6, $textoCor, mb_strimwidth($dadosEmpresaLinha, 0, 100, '...'), false);
+                }
+                $out .= $this->pdfTexto($x + $pad, $curY - 40.0, 7.5, $textoCor, 'Emitido em '.now()->format('d/m/Y H:i').' · Hash #'.strtoupper(substr(md5((string) $fatura['numero']), 0, 10)).' · /minha-conta/faturas', false);
                 break;
         }
 
@@ -900,7 +998,104 @@ class FaturaPdfService
         return $resultado;
     }
 
-    private function empacotarDocumentoPdf14(array $paginasStreams): string
+    /**
+     * Converte a logo da empresa em um Image XObject RGB compatível com PDF 1.4,
+     * achatando eventuais transparências sobre a cor de fundo do cabeçalho.
+     *
+     * @return array{width:int,height:int,data:string,filter:string}|null
+     */
+    private function prepararLogoPdfXObject(string $caminhoArquivo, string $fundoHex): ?array
+    {
+        if ($caminhoArquivo === '' || ! is_file($caminhoArquivo) || ! is_readable($caminhoArquivo)) {
+            return null;
+        }
+
+        if (! function_exists('imagecreatefromstring') || ! function_exists('imagecreatetruecolor')) {
+            return null;
+        }
+
+        $bytes = @file_get_contents($caminhoArquivo);
+        if (! is_string($bytes) || $bytes === '') {
+            return null;
+        }
+
+        if (str_ends_with(strtolower($caminhoArquivo), '.svg') || str_contains(strtolower(substr($bytes, 0, 256)), '<svg')) {
+            return null;
+        }
+
+        try {
+            $src = @imagecreatefromstring($bytes);
+            if (! $src) {
+                return null;
+            }
+
+            $origW = imagesx($src);
+            $origH = imagesy($src);
+            if ($origW <= 0 || $origH <= 0) {
+                imagedestroy($src);
+
+                return null;
+            }
+
+            $maxDim = 180;
+            $scale = min(1.0, $maxDim / max($origW, $origH));
+            $dstW = max(1, (int) round($origW * $scale));
+            $dstH = max(1, (int) round($origH * $scale));
+
+            $dst = imagecreatetruecolor($dstW, $dstH);
+            if (! $dst) {
+                imagedestroy($src);
+
+                return null;
+            }
+
+            $limpo = ltrim(trim($fundoHex), '#');
+            if (strlen($limpo) === 3) {
+                $limpo = $limpo[0].$limpo[0].$limpo[1].$limpo[1].$limpo[2].$limpo[2];
+            }
+            $hexValido = strlen($limpo) === 6 && ctype_xdigit($limpo);
+            $bgR = $hexValido ? (int) hexdec(substr($limpo, 0, 2)) : 20;
+            $bgG = $hexValido ? (int) hexdec(substr($limpo, 2, 2)) : 23;
+            $bgB = $hexValido ? (int) hexdec(substr($limpo, 4, 2)) : 26;
+
+            $bgColor = imagecolorallocate($dst, $bgR, $bgG, $bgB);
+            imagefill($dst, 0, 0, $bgColor);
+            imagealphablending($dst, true);
+            imagecopyresampled($dst, $src, 0, 0, 0, 0, $dstW, $dstH, $origW, $origH);
+            imagedestroy($src);
+
+            $rgb = '';
+            for ($y = 0; $y < $dstH; $y++) {
+                for ($x = 0; $x < $dstW; $x++) {
+                    $colorIndex = imagecolorat($dst, $x, $y);
+                    $rgb .= chr(($colorIndex >> 16) & 0xFF)
+                        .chr(($colorIndex >> 8) & 0xFF)
+                        .chr($colorIndex & 0xFF);
+                }
+            }
+            imagedestroy($dst);
+
+            $comprimido = function_exists('gzcompress') ? @gzcompress($rgb, 6) : false;
+            $usaFlate = is_string($comprimido) && $comprimido !== '';
+
+            return [
+                'width' => $dstW,
+                'height' => $dstH,
+                'data' => $usaFlate ? $comprimido : $rgb,
+                'filter' => $usaFlate ? '/FlateDecode' : '',
+            ];
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Empacota streams em um documento PDF 1.4 válido com xref e trailer.
+     *
+     * @param  array<int, string>  $paginasStreams
+     * @param  array{width:int,height:int,data:string,filter:string}|null  $logoXObject
+     */
+    private function empacotarDocumentoPdf14(array $paginasStreams, ?array $logoXObject = null): string
     {
         $objetos = [];
 
@@ -912,6 +1107,22 @@ class FaturaPdfService
 
         $kidsRefs = [];
         $proxId = 5;
+        $xObjectResource = '';
+
+        if (is_array($logoXObject) && ! empty($logoXObject['data'])) {
+            $imageId = $proxId++;
+            $filtroDict = ! empty($logoXObject['filter']) ? ' /Filter '.$logoXObject['filter'] : '';
+            $imgData = (string) $logoXObject['data'];
+            $objetos[$imageId] = sprintf(
+                "<< /Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace /DeviceRGB /BitsPerComponent 8%s /Length %d >>\nstream\n%s\nendstream",
+                (int) $logoXObject['width'],
+                (int) $logoXObject['height'],
+                $filtroDict,
+                strlen($imgData),
+                $imgData
+            );
+            $xObjectResource = " /XObject << /Im1 {$imageId} 0 R >>";
+        }
 
         foreach ($paginasStreams as $stream) {
             $contentId = $proxId++;
@@ -919,9 +1130,10 @@ class FaturaPdfService
 
             $objetos[$contentId] = '<< /Length '.strlen($stream)." >>\nstream\n{$stream}\nendstream";
             $objetos[$pageId] = sprintf(
-                '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %.2F %.2F] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents %d 0 R >>',
+                '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %.2F %.2F] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>%s >> /Contents %d 0 R >>',
                 self::A4_WIDTH_PT,
                 self::A4_HEIGHT_PT,
+                $xObjectResource,
                 $contentId
             );
             $kidsRefs[] = "{$pageId} 0 R";

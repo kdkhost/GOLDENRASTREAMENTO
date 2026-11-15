@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\SegundaViaFatura;
 use App\Mail\TemplateCustomizadoMail;
 use App\Models\Customer;
 use App\Models\EmailFila;
@@ -9,6 +10,7 @@ use App\Models\EmailTemplate;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Fatura\FaturaPdfService;
+use App\Services\Mail\EmailTemplateService;
 use App\Services\Mail\FilaDeEmailService;
 use App\Services\Whmcs\WhmcsPluginService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -360,5 +362,98 @@ class TemplatesEmailEFaturasPdfTest extends TestCase
         $this->actingAs($cliente, 'cliente')
             ->get(route('portal.faturas.pdf', 999))
             ->assertNotFound();
+    }
+
+    public function test_fatura_pdf_e_emails_exibem_logo_e_dados_da_empresa_e_studios_seguem_tema_dark_light(): void
+    {
+        Setting::set('site_nome', 'Golden Frota & Segurança Ltda');
+        Setting::set('empresa_cnpj', '12.345.678/0001-90');
+        Setting::set('empresa_endereco', 'Av. Brasil, 2500');
+        Setting::set('empresa_cidade', 'Curitiba/PR');
+        Setting::set('empresa_cep', '80010-000');
+        Setting::set('contato_telefone', '(41) 3333-4444');
+        Setting::set('contato_whatsapp', '(41) 99999-8888');
+        Setting::set('contato_email', 'faturamento@goldenfrota.com.br');
+
+        // 1. Fatura cirúrgica HTML e PDF nativo contêm logo e dados configurados no painel
+        $faturaService = app(FaturaPdfService::class);
+        $htmlFatura = $faturaService->renderizarHtmlCirurgico();
+        $this->assertStringContainsString('<img', $htmlFatura);
+        $this->assertStringContainsString('Golden Frota &amp; Segurança Ltda', $htmlFatura);
+        $this->assertStringContainsString('12.345.678/0001-90', $htmlFatura);
+        $this->assertStringContainsString('Av. Brasil, 2500', $htmlFatura);
+        $this->assertStringContainsString('Curitiba/PR', $htmlFatura);
+        $this->assertStringContainsString('80010-000', $htmlFatura);
+        $this->assertStringContainsString('(41) 3333-4444', $htmlFatura);
+        $this->assertStringContainsString('faturamento@goldenfrota.com.br', $htmlFatura);
+
+        $pdfBinario = $faturaService->gerarPdfBinario();
+        $this->assertStringStartsWith('%PDF-1.4', $pdfBinario);
+        $this->assertStringContainsString('12.345.678/0001-90', $pdfBinario);
+        $this->assertStringContainsString('Golden Frota', $pdfBinario);
+        if (is_file(public_path('img/logo-golden.png')) && function_exists('imagecreatefromstring')) {
+            $this->assertStringContainsString('/Subtype /Image', $pdfBinario);
+            $this->assertStringContainsString('/XObject << /Im1', $pdfBinario);
+        }
+
+        // 2. Layout responsivo de e-mail exibe logo e dados da empresa configurados
+        $emailService = app(EmailTemplateService::class);
+        $htmlEmailLayout = $emailService->envolverNoLayout('<p>Corpo de teste</p>', 'Assunto de teste');
+        $this->assertStringContainsString('<img', $htmlEmailLayout);
+        $this->assertStringContainsString('Golden Frota &amp; Segurança Ltda', $htmlEmailLayout);
+        $this->assertStringContainsString('12.345.678/0001-90', $htmlEmailLayout);
+        $this->assertStringContainsString('Av. Brasil, 2500', $htmlEmailLayout);
+        $this->assertStringContainsString('41999998888', $htmlEmailLayout);
+        $this->assertStringContainsString('faturamento@goldenfrota.com.br', $htmlEmailLayout);
+
+        // 3. Mailable avulso (SegundaViaFatura) exibe logo e dados da empresa
+        $cliente = Customer::create([
+            'nome' => 'Carlos Teste',
+            'documento' => '123.456.789-01',
+            'tipo' => 'fisica',
+            'telefone' => '(41) 98888-7777',
+            'email' => 'carlos@teste.com.br',
+            'email_portal' => 'carlos@teste.com.br',
+            'password' => 'senha-portal-123',
+            'status' => 'ativo',
+        ]);
+
+        $htmlSegundaVia = (new SegundaViaFatura($cliente, [
+            'numero' => 'FAT-888',
+            'vencimento' => now()->addDays(5),
+            'total_cents' => 14990,
+            'saldo_cents' => 14990,
+            'status' => 'Unpaid',
+            'metodo' => 'PIX',
+            'url' => 'https://example.test/fat',
+        ]))->render();
+
+        $this->assertStringContainsString('<img', $htmlSegundaVia);
+        $this->assertStringContainsString('Golden Frota &amp; Segurança Ltda', $htmlSegundaVia);
+        $this->assertStringContainsString('12.345.678/0001-90', $htmlSegundaVia);
+        $this->assertStringContainsString('Av. Brasil, 2500', $htmlSegundaVia);
+        $this->assertStringContainsString('faturamento@goldenfrota.com.br', $htmlSegundaVia);
+
+        // 4. Views do estúdio seguem estritamente os tokens dark/light sem blocos <style> ou hex hardcoded
+        foreach ([
+            'admin/faturas-modelo/index.blade.php',
+            'admin/templates-email/edit.blade.php',
+            'admin/templates-email/layout.blade.php',
+        ] as $viewRelativa) {
+            $conteudoView = file_get_contents(resource_path('views/'.$viewRelativa));
+            $this->assertNotFalse($conteudoView);
+            $this->assertStringNotContainsString('<style>', $conteudoView);
+            $this->assertStringNotContainsString('#22262b', $conteudoView);
+            $this->assertStringNotContainsString('#f4f1e9', $conteudoView);
+            $this->assertStringNotContainsString('#e2ddd1', $conteudoView);
+            $this->assertStringNotContainsString('background: #ffffff', $conteudoView);
+        }
+
+        $cssAdmin = file_get_contents(public_path('css/admin-golden.css'));
+        $this->assertNotFalse($cssAdmin);
+        $this->assertStringContainsString('.bloco-dnd-item', $cssAdmin);
+        $this->assertStringContainsString('.a4-preview-stage', $cssAdmin);
+        $this->assertStringContainsString('.preview-frame', $cssAdmin);
+        $this->assertSame(0, preg_match('/#[0-9a-fA-F]{3,8}\b/', $cssAdmin));
     }
 }

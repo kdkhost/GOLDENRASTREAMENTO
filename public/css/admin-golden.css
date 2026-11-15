@@ -290,3 +290,20 @@ button.slot-quadro:hover,button.slot-quadro:focus-visible{border-color:var(--bra
 .perfil-linha-tempo li:first-child::before{top:.75rem}
 .perfil-linha-tempo li:last-child::before{bottom:calc(100% - .75rem)}
 .perfil-ponto{position:absolute;left:0;top:.78rem;width:.6rem;height:.6rem;border-radius:50%;background:var(--gold)}
+
+/* Estúdios de Faturas PDF (A4) e Templates de E-mail: só tokens do tema para manter Claro/Escuro coerentes. */
+.app-content .form-control-color{background-color:var(--bs-body-bg);border:1px solid var(--bs-border-color);border-radius:var(--radius-md);padding:.2rem}
+.bloco-dnd-item{background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-md);padding:.75rem .9rem;margin-bottom:.65rem;cursor:grab;color:var(--bs-body-color);transition:border-color .16s var(--ease),box-shadow .16s var(--ease),opacity .16s var(--ease)}
+.bloco-dnd-item:hover{border-color:var(--brand-gold);box-shadow:0 4px 12px var(--glow-gold)}
+.bloco-dnd-item.is-dragging{opacity:.48;border-style:dashed}
+.bloco-dnd-item.is-drop-target{border-color:var(--brand-gold);box-shadow:0 0 0 2px var(--t-gold-bg)}
+.bloco-dnd-item.is-hidden-block{opacity:.62}
+.drag-handle{color:var(--bs-secondary-color);cursor:grab;padding:.25rem .4rem}
+.a4-preview-stage{background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg);padding:1rem;overflow:auto;min-height:700px;display:flex;justify-content:center;align-items:flex-start}
+.a4-iframe-wrap{transform-origin:top center;transition:transform .18s var(--ease)}
+.a4-iframe{width:210mm;height:297mm;border:1px solid var(--bs-border-color);border-radius:var(--radius-md);background:var(--on-solid);box-shadow:var(--aviso-sombra)}
+.preview-shell,.preview-shell-layout{background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color-translucent);border-radius:var(--radius-lg);padding:.9rem;display:flex;justify-content:center;overflow:auto}
+.preview-frame,.preview-frame-layout{border:1px solid var(--bs-border-color);border-radius:var(--radius-md);background:var(--bs-body-bg);width:100%;height:650px;transition:width .22s var(--ease)}
+.preview-frame.is-mobile,.preview-frame-layout.is-mobile{width:375px;max-width:100%;box-shadow:var(--aviso-sombra)}
+.var-chip{cursor:pointer;border:1px dashed var(--brand-gold);background:var(--t-gold-bg);color:var(--t-gold-fg);border-radius:var(--radius-md);padding:.25rem .5rem;font-size:.76rem;font-family:var(--bs-font-monospace);transition:background .15s var(--ease),color .15s var(--ease)}
+.var-chip:hover{background:var(--brand-gold);color:var(--brand-gold-ink)}

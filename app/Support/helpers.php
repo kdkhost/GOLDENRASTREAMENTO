@@ -197,3 +197,114 @@ if (! function_exists('produto_foto_url')) {
         return asset('storage/'.$foto);
     }
 }
+
+if (! function_exists('golden_empresa')) {
+    /**
+     * Retorna os dados oficiais da empresa e a logomarca configurados no painel
+     * administrativo (Configurações + Imagens do site), com fallback em config/golden.php.
+     *
+     * @return array{
+     *   nome: string,
+     *   slogan: string,
+     *   documento: string,
+     *   endereco: string,
+     *   cidade_uf: string,
+     *   cep: string,
+     *   endereco_completo: string,
+     *   whatsapp: string,
+     *   telefone: string,
+     *   email: string,
+     *   contato_completo: string,
+     *   logo_url: string,
+     *   logo_caminho: string,
+     *   logo_data_uri: string
+     * }
+     */
+    function golden_empresa(): array
+    {
+        $pegar = static function (string $chave, string $padrao = ''): string {
+            $valor = trim((string) Setting::get($chave, ''));
+
+            return $valor !== '' ? $valor : $padrao;
+        };
+
+        $nome = $pegar('site_nome', (string) config('golden.marca.nome', 'Golden Rastreamento'));
+        $slogan = (string) config('golden.marca.slogan', '');
+        $documento = $pegar('empresa_cnpj', (string) config('golden.contato.cnpj', ''));
+        $endereco = $pegar('empresa_endereco', (string) config('golden.contato.endereco', ''));
+        $cidadeUf = $pegar('empresa_cidade', (string) config('golden.contato.cidade_uf', ''));
+        $cep = $pegar('empresa_cep', (string) config('golden.contato.cep', ''));
+
+        $enderecoCompleto = implode(' · ', array_filter([
+            $endereco,
+            $cidadeUf,
+            $cep !== '' ? 'CEP '.$cep : '',
+        ], static fn (string $v): bool => $v !== ''));
+
+        $whatsapp = preg_replace('/\D/', '', $pegar('contato_whatsapp', (string) config('golden.whatsapp', ''))) ?? '';
+        $telefonePadrao = implode(' · ', (array) config('golden.contato.telefones', []));
+        $telefone = $pegar('contato_telefone', $telefonePadrao);
+        $email = $pegar('contato_email', (string) config('golden.email', ''));
+
+        $telefoneDigitos = preg_replace('/\D/', '', $telefone) ?? '';
+        $contatoPartes = array_filter([
+            $telefone !== '' ? 'Tel: '.$telefone : '',
+            $whatsapp !== '' && ($telefone === '' || ! str_contains($telefoneDigitos, $whatsapp)) ? 'WhatsApp: '.$whatsapp : '',
+            $email,
+        ], static fn (string $v): bool => $v !== '');
+        $contatoCompleto = implode(' · ', $contatoPartes);
+
+        $logoUrl = site_img('marca_logo') ?: asset('img/logo-golden.png');
+        $caminhoRelativo = (string) (ConteudoSite::caminho('marca_logo') ?? 'img/logo-golden.png');
+
+        $logoCaminho = '';
+        if ($caminhoRelativo !== '' && str_starts_with($caminhoRelativo, ConteudoSite::PASTA.'/')) {
+            $candidatoStorage = storage_path('app/public/'.$caminhoRelativo);
+            $candidatoPublic = public_path('storage/'.$caminhoRelativo);
+            if (is_file($candidatoStorage)) {
+                $logoCaminho = $candidatoStorage;
+            } elseif (is_file($candidatoPublic)) {
+                $logoCaminho = $candidatoPublic;
+            }
+        } elseif ($caminhoRelativo !== '' && is_file(public_path($caminhoRelativo))) {
+            $logoCaminho = public_path($caminhoRelativo);
+        }
+
+        if ($logoCaminho === '' && is_file(public_path('img/logo-golden.png'))) {
+            $logoCaminho = public_path('img/logo-golden.png');
+        }
+
+        $logoDataUri = $logoUrl;
+        if ($logoCaminho !== '' && is_file($logoCaminho)) {
+            $bytes = @file_get_contents($logoCaminho);
+            if (is_string($bytes) && $bytes !== '') {
+                $ext = strtolower(pathinfo($logoCaminho, PATHINFO_EXTENSION));
+                $mime = match ($ext) {
+                    'jpg', 'jpeg' => 'image/jpeg',
+                    'webp' => 'image/webp',
+                    'gif' => 'image/gif',
+                    'svg' => 'image/svg+xml',
+                    default => 'image/png',
+                };
+                $logoDataUri = 'data:'.$mime.';base64,'.base64_encode($bytes);
+            }
+        }
+
+        return [
+            'nome' => $nome,
+            'slogan' => $slogan,
+            'documento' => $documento,
+            'endereco' => $endereco,
+            'cidade_uf' => $cidadeUf,
+            'cep' => $cep,
+            'endereco_completo' => $enderecoCompleto,
+            'whatsapp' => $whatsapp,
+            'telefone' => $telefone,
+            'email' => $email,
+            'contato_completo' => $contatoCompleto,
+            'logo_url' => $logoUrl,
+            'logo_caminho' => $logoCaminho,
+            'logo_data_uri' => $logoDataUri,
+        ];
+    }
+}

@@ -102,12 +102,18 @@
                         </tr>
                     @endif
                     <tr>
-                        <td class="golden-email-header" align="{{ ($layout['alinhamento_cabecalho'] ?? 'left') === 'center' ? 'center' : 'left' }}" style="background-color:{{ $layout['cor_cabecalho_bg'] ?? '#12161a' }};padding:22px 26px;">
-                            @if(!empty($layout['logo_url']))
-                                <img src="{{ $layout['logo_url'] }}" alt="{{ $layout['marca_nome'] ?? 'GOLDEN' }}" style="max-height:38px;width:auto;display:inline-block;margin-bottom:6px;">
+                        @php
+                            $empresaDados = $empresa ?? golden_empresa();
+                            $marcaTitulo = trim((string) ($layout['marca_nome'] ?? '')) ?: ($empresaDados['nome'] ?? 'GOLDEN');
+                            $logoSrc = trim((string) ($layout['logo_url'] ?? '')) ?: (string) ($empresaDados['logo_url'] ?? asset('img/logo-golden.png'));
+                            $alinhamentoHeader = ($layout['alinhamento_cabecalho'] ?? 'left') === 'center' ? 'center' : 'left';
+                        @endphp
+                        <td class="golden-email-header" align="{{ $alinhamentoHeader }}" style="background-color:{{ $layout['cor_cabecalho_bg'] ?? '#12161a' }};padding:22px 26px;">
+                            @if($logoSrc !== '')
+                                <img src="{{ $logoSrc }}" alt="{{ $marcaTitulo }}" style="max-height:42px;max-width:180px;width:auto;height:auto;display:inline-block;margin-bottom:8px;vertical-align:middle;">
                             @endif
                             <div style="color:{{ $layout['cor_destaque'] ?? '#e0a33e' }};font-weight:800;font-size:20px;letter-spacing:.07em;line-height:1.2;">
-                                {{ $layout['marca_nome'] ?? 'GOLDEN' }}
+                                {{ $marcaTitulo }}
                             </div>
                             @if(!empty($layout['subtitulo']))
                                 <div style="color:{{ $layout['cor_cabecalho_texto'] ?? '#cfd6dd' }};opacity:.86;font-size:12px;margin-top:3px;">
@@ -132,7 +138,29 @@
                                 <p style="margin:0 0 8px;">
                                     {{ $layout['texto_rodape'] }}
                                     @if(!empty($layout['mostrar_whatsapp']))
-                                        WhatsApp: <strong style="color:{{ $layout['cor_texto'] ?? '#1b2127' }};">{{ $whatsapp ?? '' }}</strong>
+                                        WhatsApp: <strong style="color:{{ $layout['cor_texto'] ?? '#1b2127' }};">{{ $whatsapp ?: ($empresaDados['whatsapp'] ?? '') }}</strong>
+                                    @endif
+                                </p>
+                            @endif
+                            @php
+                                $linhaIdentidadeEmpresa = implode(' · ', array_filter([
+                                    $empresaDados['nome'] ?? '',
+                                    !empty($empresaDados['documento']) ? 'CNPJ/Doc: '.$empresaDados['documento'] : '',
+                                ], static fn (string $v): bool => trim($v) !== ''));
+                                $linhaContatosEmpresa = implode(' · ', array_filter([
+                                    !empty($empresaDados['endereco_completo']) ? $empresaDados['endereco_completo'] : '',
+                                    !empty($empresaDados['telefone']) ? 'Tel: '.$empresaDados['telefone'] : '',
+                                    !empty($empresaDados['whatsapp']) ? 'WhatsApp: '.$empresaDados['whatsapp'] : '',
+                                    !empty($empresaDados['email']) ? $empresaDados['email'] : '',
+                                ], static fn (string $v): bool => trim($v) !== ''));
+                            @endphp
+                            @if($linhaIdentidadeEmpresa !== '' || $linhaContatosEmpresa !== '')
+                                <p style="margin:0 0 8px;color:{{ $layout['cor_rodape_texto'] ?? '#6b7280' }};font-size:11.5px;line-height:1.5;">
+                                    @if($linhaIdentidadeEmpresa !== '')
+                                        <strong style="color:{{ $layout['cor_texto'] ?? '#1b2127' }};">{{ $linhaIdentidadeEmpresa }}</strong><br>
+                                    @endif
+                                    @if($linhaContatosEmpresa !== '')
+                                        {{ $linhaContatosEmpresa }}
                                     @endif
                                 </p>
                             @endif

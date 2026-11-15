@@ -193,24 +193,34 @@
                     <section class="a4-bloco {{ $larguraClass }} {{ $padClass }}" data-bloco-id="{{ $bloco['id'] }}" style="{{ $estiloInline }}">
                         @switch($bloco['id'])
                             @case('cabecalho_empresa')
+                                @php
+                                    $empresaDados = $empresa ?? golden_empresa();
+                                    $logoPersonalizada = trim((string) ($estilo['logo_url'] ?? ''));
+                                    $logoPadraoUrl = (string) ($empresaDados['logo_url'] ?? asset('img/logo-golden.png'));
+                                    $logoSrc = ($logoPersonalizada !== '' && $logoPersonalizada !== $logoPadraoUrl)
+                                        ? $logoPersonalizada
+                                        : (($empresaDados['logo_data_uri'] ?? '') !== '' ? $empresaDados['logo_data_uri'] : $logoPadraoUrl);
+                                @endphp
                                 <div style="height:3px;background:{{ $corDestaque }};margin:-12px -14px 10px;"></div>
                                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;">
-                                    <div>
-                                        @if(!empty($estilo['logo_url']))
-                                            <img src="{{ $estilo['logo_url'] }}" alt="{{ $estilo['emitente_nome'] }}" style="max-height:34px;width:auto;margin-bottom:4px;display:block;">
+                                    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;">
+                                        @if($logoSrc !== '')
+                                            <img src="{{ $logoSrc }}" alt="{{ $estilo['emitente_nome'] }}" style="width:46px;height:46px;max-height:46px;object-fit:contain;border-radius:6px;flex-shrink:0;display:block;">
                                         @endif
-                                        <div style="font-size:14pt;font-weight:800;color:{{ $corDestaque }};letter-spacing:.04em;">
-                                            {{ $estilo['emitente_nome'] }}
+                                        <div style="min-width:0;">
+                                            <div style="font-size:13.5pt;font-weight:800;color:{{ $corDestaque }};letter-spacing:.04em;">
+                                                {{ $estilo['emitente_nome'] }}
+                                            </div>
+                                            @if(!empty($estilo['emitente_documento']))
+                                                <div style="font-size:8pt;opacity:.85;margin-top:2px;">CNPJ/Doc: {{ $estilo['emitente_documento'] }}</div>
+                                            @endif
+                                            @if(!empty($estilo['emitente_endereco']))
+                                                <div style="font-size:8pt;opacity:.85;">{{ $estilo['emitente_endereco'] }}</div>
+                                            @endif
+                                            @if(!empty($estilo['emitente_contato']))
+                                                <div style="font-size:8pt;opacity:.85;">{{ $estilo['emitente_contato'] }}</div>
+                                            @endif
                                         </div>
-                                        @if(!empty($estilo['emitente_documento']))
-                                            <div style="font-size:8pt;opacity:.85;margin-top:2px;">CNPJ/Doc: {{ $estilo['emitente_documento'] }}</div>
-                                        @endif
-                                        @if(!empty($estilo['emitente_endereco']))
-                                            <div style="font-size:8pt;opacity:.85;">{{ $estilo['emitente_endereco'] }}</div>
-                                        @endif
-                                        @if(!empty($estilo['emitente_contato']))
-                                            <div style="font-size:8pt;opacity:.85;">{{ $estilo['emitente_contato'] }}</div>
-                                        @endif
                                     </div>
                                     <div style="text-align:right;min-width:155px;">
                                         <div style="font-size:13pt;font-weight:800;">FATURA #{{ $fatura['numero'] }}</div>
@@ -344,7 +354,18 @@
                                 <div class="a4-kicker">Autenticação & Portal do Cliente</div>
                                 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
                                     <div style="font-size:8pt;">
-                                        <div><strong>{{ $estilo['emitente_nome'] }}</strong></div>
+                                        <div>
+                                            <strong>{{ $estilo['emitente_nome'] }}</strong>
+                                            @if(!empty($estilo['emitente_documento']))
+                                                <span> · CNPJ/Doc: {{ $estilo['emitente_documento'] }}</span>
+                                            @endif
+                                        </div>
+                                        @if(!empty($estilo['emitente_endereco']))
+                                            <div style="opacity:.82;">{{ $estilo['emitente_endereco'] }}</div>
+                                        @endif
+                                        @if(!empty($estilo['emitente_contato']))
+                                            <div style="opacity:.82;">{{ $estilo['emitente_contato'] }}</div>
+                                        @endif
                                         <div style="opacity:.8;">Emitido em {{ now()->format('d/m/Y H:i') }}</div>
                                         <div style="font-family:monospace;font-size:7.3pt;opacity:.75;">Verificador: #{{ strtoupper(substr(md5((string) $fatura['numero']), 0, 10)) }}</div>
                                     </div>
@@ -361,7 +382,14 @@
             </div>
 
             <footer class="a4-rodape">
-                {!! golden_html($estilo['rodape_texto'] ?? 'Golden Rastreamento · Fatura A4') !!}
+                <div>{!! golden_html($estilo['rodape_texto'] ?? 'Golden Rastreamento · Fatura A4') !!}</div>
+                @if(!empty($estilo['emitente_nome']) || !empty($estilo['emitente_endereco']) || !empty($estilo['emitente_contato']))
+                    <div style="margin-top:3px;opacity:.9;">
+                        {{ $estilo['emitente_nome'] }}@if(!empty($estilo['emitente_documento'])) · CNPJ/Doc: {{ $estilo['emitente_documento'] }}@endif
+                        @if(!empty($estilo['emitente_endereco'])) · {{ $estilo['emitente_endereco'] }}@endif
+                        @if(!empty($estilo['emitente_contato'])) · {{ $estilo['emitente_contato'] }}@endif
+                    </div>
+                @endif
             </footer>
         </div>
 @if(empty($modoEmbutido))

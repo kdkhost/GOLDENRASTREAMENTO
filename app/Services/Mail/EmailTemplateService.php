@@ -47,10 +47,12 @@ class EmailTemplateService
      */
     public function layoutPadrao(): array
     {
+        $empresa = golden_empresa();
+
         return [
-            'marca_nome' => 'GOLDEN',
-            'subtitulo' => 'Rastreamento Veicular & Gestão',
-            'logo_url' => '',
+            'marca_nome' => $empresa['nome'] !== '' ? $empresa['nome'] : 'GOLDEN',
+            'subtitulo' => $empresa['slogan'] !== '' ? $empresa['slogan'] : 'Rastreamento Veicular & Gestão',
+            'logo_url' => (string) ($empresa['logo_url'] ?? ''),
             'cor_fundo_pagina' => '#f4f1e9',
             'cor_cartao' => '#ffffff',
             'cor_cabecalho_bg' => '#12161a',
@@ -94,7 +96,18 @@ class EmailTemplateService
             return $padrao;
         }
 
-        return array_merge($padrao, $decodificado);
+        $resultado = array_merge($padrao, $decodificado);
+
+        if (trim((string) ($resultado['logo_url'] ?? '')) === '') {
+            $resultado['logo_url'] = (string) ($padrao['logo_url'] ?? '');
+        }
+
+        $marcaSalva = trim((string) ($resultado['marca_nome'] ?? ''));
+        if ($marcaSalva === '' || strcasecmp($marcaSalva, 'GOLDEN') === 0) {
+            $resultado['marca_nome'] = (string) ($padrao['marca_nome'] ?? 'GOLDEN');
+        }
+
+        return $resultado;
     }
 
     /**
@@ -550,8 +563,16 @@ HTML,
         ?string $preCabecalho = null,
         ?array $layoutOverride = null
     ): string {
+        $empresa = golden_empresa();
         $layout = $layoutOverride ? array_merge($this->layoutAtual(), $layoutOverride) : $this->layoutAtual();
-        $whatsapp = (string) Setting::get('contato_whatsapp', config('golden.whatsapp', ''));
+
+        if (trim((string) ($layout['logo_url'] ?? '')) === '') {
+            $layout['logo_url'] = (string) ($empresa['logo_url'] ?? '');
+        }
+
+        $whatsapp = $empresa['whatsapp'] !== ''
+            ? $empresa['whatsapp']
+            : (string) Setting::get('contato_whatsapp', config('golden.whatsapp', ''));
 
         return view('mail.layout-responsivo', [
             'layout' => $layout,
@@ -559,7 +580,30 @@ HTML,
             'preCabecalho' => $preCabecalho ?? '',
             'corpoHtml' => $corpoHtml,
             'whatsapp' => $whatsapp,
+            'empresa' => $empresa,
         ])->render();
+    }
+
+    /**
+     * Variáveis padrão com dados atuais da empresa configurada no painel administrativo.
+     *
+     * @return array<string, string>
+     */
+    public function variaveisEmpresa(): array
+    {
+        $empresa = golden_empresa();
+
+        return [
+            'empresa_nome' => $empresa['nome'],
+            'empresa_documento' => $empresa['documento'],
+            'empresa_endereco' => $empresa['endereco_completo'],
+            'empresa_cidade' => $empresa['cidade_uf'],
+            'empresa_cep' => $empresa['cep'],
+            'empresa_telefone' => $empresa['telefone'],
+            'empresa_whatsapp' => $empresa['whatsapp'],
+            'empresa_email' => $empresa['email'],
+            'empresa_logo_url' => $empresa['logo_url'],
+        ];
     }
 
     /**
@@ -586,6 +630,7 @@ HTML,
         $corpoBase = $corpoOverride ?? $template?->corpo_html ?? ($fallback['corpo_html'] ?? '<p>Mensagem sem conteúdo.</p>');
         $usarLayout = $usarLayoutOverride ?? ($template ? $template->usar_layout : true);
 
+        $variaveis = array_merge($this->variaveisEmpresa(), $variaveis);
         $assunto = $this->substituirVariaveis($assuntoBase, $variaveis, false);
         $preCabecalho = $this->substituirVariaveis((string) $preCabecalhoBase, $variaveis, false);
         $corpoResolvido = $this->substituirVariaveis($corpoBase, $variaveis, true);

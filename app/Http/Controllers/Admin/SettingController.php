@@ -62,6 +62,7 @@ class SettingController extends Controller
             'contato_whatsapp' => [$contato ? 'required' : 'nullable', 'string', 'max:32'],
             'contato_telefone' => ['nullable', 'string', 'max:60'],
             'contato_email' => ['nullable', 'email', 'max:160'],
+            'empresa_cnpj' => ['nullable', 'string', 'max:24'],
             'empresa_endereco' => ['nullable', 'string', 'max:255'],
             'empresa_cidade' => ['nullable', 'string', 'max:120'],
             'empresa_cep' => ['nullable', 'string', 'max:12'],

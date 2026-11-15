@@ -11,46 +11,6 @@
     </a>
 @endsection
 
-@section('styles')
-<style>
-    .preview-shell {
-        background: repeating-conic-gradient(rgba(128,128,128,.08) 0% 25%, transparent 0% 50%) 50% / 18px 18px;
-        border: 1px solid var(--golden-line, #e2ddd1);
-        border-radius: 12px;
-        padding: 14px;
-        display: flex;
-        justify-content: center;
-        overflow: auto;
-    }
-    .preview-frame {
-        border: 1px solid rgba(18, 22, 26, 0.14);
-        border-radius: 10px;
-        background: #f4f1e9;
-        width: 100%;
-        height: 640px;
-        transition: width .22s ease;
-    }
-    .preview-frame.is-mobile {
-        width: 375px;
-        max-width: 100%;
-        box-shadow: 0 10px 28px rgba(0, 0, 0, .18);
-    }
-    .var-chip {
-        cursor: pointer;
-        border: 1px dashed rgba(224, 163, 62, 0.55);
-        background: rgba(224, 163, 62, 0.10);
-        color: inherit;
-        border-radius: 8px;
-        padding: 4px 8px;
-        font-size: 12px;
-        font-family: monospace;
-    }
-    .var-chip:hover {
-        background: rgba(224, 163, 62, 0.24);
-    }
-</style>
-@endsection
-
 @section('content')
 <div class="row g-3">
     {{-- Coluna Esquerda: Editor de Conteúdo (Separado do Layout) --}}

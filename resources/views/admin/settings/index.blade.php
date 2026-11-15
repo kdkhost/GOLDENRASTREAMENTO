@@ -128,6 +128,7 @@
                     <div class="col-xl-5">
                         <x-admin.card title="Endereço da empresa" icon="fa-location-dot" ajuda="endereco_empresa">
                             <div class="row g-3">
+                                <x-admin.field name="empresa_cnpj" label="CNPJ da empresa" :value="$settings['empresa_cnpj'] ?? ''" maxlength="24" :opcional="true" placeholder="00.000.000/0001-00" hint="Exibido nas faturas PDF A4 e no rodapé dos e-mails." />
                                 <x-admin.field name="empresa_endereco" label="Endereço" :value="$settings['empresa_endereco'] ?? ''" maxlength="255" :opcional="true" placeholder="R. Pref. Olinto Réis Campos, 104 - Centro" />
                                 <x-admin.field name="empresa_cidade" label="Cidade / UF" :value="$settings['empresa_cidade'] ?? ''" col="col-8" maxlength="120" :opcional="true" placeholder="Três Pontas - MG" />
                                 <x-admin.field name="empresa_cep" label="CEP" :value="$settings['empresa_cep'] ?? ''" col="col-4" maxlength="12" :opcional="true" placeholder="37185-016" />
