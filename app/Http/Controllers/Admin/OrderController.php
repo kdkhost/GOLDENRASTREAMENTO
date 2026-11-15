@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Services\Correios\CorreiosService;
+use App\Services\RastreioEncomendaService;
 use App\Support\Envio;
 use App\Support\Notifica;
 use Illuminate\Http\JsonResponse;
@@ -238,9 +239,9 @@ class OrderController extends Controller
     }
 
     /**
-     * Consulta em tempo real o código de rastreio nos Correios e retorna JSON para o painel.
+     * Consulta em tempo real o código de rastreio na transportadora ativa e retorna JSON para o painel.
      */
-    public function consultarRastreio(Order $pedido, CorreiosService $correios): JsonResponse
+    public function consultarRastreio(Order $pedido, RastreioEncomendaService $rastreio): JsonResponse
     {
         $codigo = $pedido->codigo_rastreio;
         if (! $codigo) {
@@ -250,23 +251,25 @@ class OrderController extends Controller
             ], 422);
         }
 
-        $dados = $correios->rastrear($codigo);
+        $dados = $rastreio->rastrear($codigo, true);
 
         $ultimoEvento = $dados['eventos'][0] ?? null;
         if ($ultimoEvento) {
-            $chave = "rastreio:{$pedido->id}:".md5(($ultimoEvento['titulo'] ?? '').($ultimoEvento['data_hora'] ?? ''));
+            $titulo = $ultimoEvento['status'] ?? ($ultimoEvento['titulo'] ?? 'Atualizado');
+            $dataHora = trim(($ultimoEvento['data'] ?? '').' '.($ultimoEvento['hora'] ?? '')) ?: now()->format('d/m/Y H:i');
+            $chave = "rastreio:{$pedido->id}:".md5($titulo.$dataHora);
             Notifica::disparar(
                 'entrega_atualizada',
-                "Entrega passo a passo · Pedido {$pedido->numero} (".($ultimoEvento['titulo'] ?? 'Atualizado').')',
-                "Objeto {$codigo}: ".($ultimoEvento['descricao'] ?? '').' em '.($ultimoEvento['local'] ?? 'Trânsito').'.',
+                "Entrega passo a passo · Pedido {$pedido->numero} ({$titulo})",
+                "Objeto {$codigo}: ".($ultimoEvento['detalhe'] ?? ($ultimoEvento['descricao'] ?? '')).' em '.($ultimoEvento['local'] ?? 'Trânsito').'.',
                 (string) $pedido->id,
                 [
                     'pedido_numero' => $pedido->numero,
                     'codigo_rastreio' => $codigo,
-                    'etapa' => $ultimoEvento['titulo'] ?? 'Atualização',
-                    'descricao' => $ultimoEvento['descricao'] ?? '',
+                    'etapa' => $titulo,
+                    'descricao' => $ultimoEvento['detalhe'] ?? ($ultimoEvento['descricao'] ?? ''),
                     'local' => $ultimoEvento['local'] ?? 'Trânsito',
-                    'data_hora' => $ultimoEvento['data_hora'] ?? now()->format('d/m/Y H:i'),
+                    'data_hora' => $dataHora,
                 ],
                 $chave
             );
@@ -275,7 +278,7 @@ class OrderController extends Controller
         return response()->json([
             'sucesso' => true,
             'pedido' => $pedido->numero,
-            'transportadora' => $pedido->transportadoraLabel(),
+            'transportadora' => $dados['transportadora'] ?? $pedido->transportadoraLabel(),
             'codigo' => $codigo,
             'rastreio' => $dados,
         ]);

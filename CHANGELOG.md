@@ -13,6 +13,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Animações leves de scroll e otimização progressiva de seções e imagens no site público.
 - Exclusão de campanhas pausadas ou já removidas no Google Ads mantendo o histórico de leads.
 - Toast ao adicionar produto ao carrinho, cálculo de frete com retorno instantâneo da localidade do CEP e navegação/filtros da loja sem recarregamento completo.
+- Rastreamento unificado de encomendas em tempo real (`/rastreamento`) operando conforme as modalidades de logística ativas no painel (Correios, Melhor Envio, Mercado Envios e Retirada/Logística Própria), exibindo barra de progresso Origem → Destino, trajeto corrente completo, atualização ao vivo sem recarregar a página e histórico completo de movimentações.
 - Instruções de uso individuais (`?`) com passo a passo completo e links exatos (externos e internos) em todos os **175 itens e cartões** de configuração em `config/guia_configuracao.php` (contato oficial, endereço, regras da loja, transportadoras, Correios, Melhor Envio, Mercado Envios, medição/consentimento, testes WHMCS/e-mail, notificações, ambiente do sistema, assistente e preloader).
 
 ### Alterado

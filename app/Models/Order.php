@@ -42,6 +42,7 @@ class Order extends Model
         'correios_sedex' => 'Correios (SEDEX)',
         'correios_pac' => 'Correios (PAC)',
         'correios' => 'Correios',
+        'melhor_envio' => 'Melhor Envio (Transportadoras)',
         'mercado_livre' => 'Mercado Envios (Mercado Livre)',
         'propria' => 'Transportadora Própria / Logística Golden',
         'retira' => 'Retirada na Empresa',

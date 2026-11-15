@@ -4,6 +4,7 @@ namespace App\Services\MelhorEnvio;
 
 use App\Models\Setting;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -270,5 +271,160 @@ final class MelhorEnvioService
         usort($opcoes, fn (array $a, array $b): int => $a['valor_cents'] <=> $b['valor_cents']);
 
         return $opcoes;
+    }
+
+    /**
+     * Consulta rastreamento em tempo real na API v2 do Melhor Envio
+     * via busca de pedido (`/api/v2/me/orders/search`) e endpoint `/api/v2/me/shipment/tracking`.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function rastrear(string $codigo): ?array
+    {
+        if (! $this->ativo()) {
+            return null;
+        }
+
+        $codigoLimpo = trim($codigo);
+        if ($codigoLimpo === '') {
+            return null;
+        }
+
+        try {
+            $ordem = $this->buscarOrdemPorCodigo($codigoLimpo);
+            $ordemId = (string) ($ordem['id'] ?? $codigoLimpo);
+
+            $respTracking = $this->cliente()->post($this->baseUrl().'/api/v2/me/shipment/tracking', [
+                'orders' => [$ordemId],
+            ]);
+
+            $trackingData = $respTracking->successful() ? (array) $respTracking->json() : [];
+            $info = is_array($trackingData[$ordemId] ?? null)
+                ? $trackingData[$ordemId]
+                : (is_array(reset($trackingData)) ? reset($trackingData) : []);
+
+            if ($ordem === null && empty($info)) {
+                return null;
+            }
+
+            $trackingCode = trim((string) ($info['tracking'] ?? $ordem['tracking'] ?? $info['melhorenvio_tracking'] ?? $ordem['melhorenvio_tracking'] ?? $codigoLimpo));
+            $company = trim((string) data_get($ordem, 'service.company.name', data_get($info, 'company.name', 'Melhor Envio')));
+            $service = trim((string) data_get($ordem, 'service.name', ''));
+            $transportadora = $service !== '' ? "{$company} ({$service}) via Melhor Envio" : "{$company} via Melhor Envio";
+
+            $statusBruto = mb_strtolower((string) ($info['status'] ?? $ordem['status'] ?? ''));
+            $eventos = $this->normalizarEventosTracking($info, $ordem ?? [], $transportadora);
+
+            $entregue = in_array($statusBruto, ['delivered', 'entregue'], true)
+                || collect($eventos)->contains(fn (array $e): bool => str_contains(mb_strtolower($e['status']), 'entregue'));
+
+            $statusMapa = [
+                'pending' => 'Etiqueta gerada aguardando postagem',
+                'released' => 'Etiqueta liberada para postagem',
+                'posted' => 'Objeto postado / em trânsito',
+                'delivered' => 'Objeto entregue ao destinatário',
+                'canceled' => 'Envio cancelado',
+                'undelivered' => 'Não entregue — verifique ocorrência',
+            ];
+
+            $statusGeral = $eventos[0]['status'] ?? ($statusMapa[$statusBruto] ?? 'Em acompanhamento no Melhor Envio');
+
+            return [
+                'codigo' => $trackingCode,
+                'transportadora' => $transportadora,
+                'status_geral' => $statusGeral,
+                'entregue' => $entregue,
+                'eventos' => $eventos,
+                'link_externo' => 'https://www.melhorrastreio.com.br/rastreio/'.rawurlencode($trackingCode),
+                'tempo_real' => true,
+            ];
+        } catch (Throwable $e) {
+            Log::warning('Falha ao rastrear encomenda no Melhor Envio.', [
+                'codigo' => $codigoLimpo,
+                'erro' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function buscarOrdemPorCodigo(string $codigo): ?array
+    {
+        $resp = $this->cliente()->get($this->baseUrl().'/api/v2/me/orders/search', [
+            'q' => $codigo,
+        ]);
+
+        if (! $resp->successful()) {
+            return null;
+        }
+
+        $dados = $resp->json();
+        if (! is_array($dados) || empty($dados)) {
+            return null;
+        }
+
+        $primeiro = is_array($dados['data'][0] ?? null) ? $dados['data'][0] : (is_array($dados[0] ?? null) ? $dados[0] : null);
+
+        return is_array($primeiro) ? $primeiro : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $info
+     * @param  array<string, mixed>  $ordem
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizarEventosTracking(array $info, array $ordem, string $transportadora): array
+    {
+        $brutos = (array) ($info['tracking_events'] ?? $info['events'] ?? $ordem['tracking_events'] ?? []);
+        $eventos = [];
+
+        foreach ($brutos as $idx => $ev) {
+            if (! is_array($ev)) {
+                continue;
+            }
+
+            $ts = $ev['date'] ?? $ev['created_at'] ?? $ev['occurred_at'] ?? null;
+            $carbon = $ts ? Carbon::parse((string) $ts) : now();
+
+            $eventos[] = [
+                'data' => $carbon->format('d/m/Y'),
+                'hora' => $carbon->format('H:i'),
+                'local' => trim((string) ($ev['location'] ?? $ev['locale'] ?? $ev['city'] ?? $transportadora)),
+                'status' => trim((string) ($ev['description'] ?? $ev['status'] ?? $ev['title'] ?? 'Movimentação registrada')),
+                'detalhe' => trim((string) ($ev['details'] ?? $ev['message'] ?? $ev['observation'] ?? '')),
+                'destaque' => $idx === 0,
+            ];
+        }
+
+        if (! empty($eventos)) {
+            return $eventos;
+        }
+
+        $marcos = [
+            'delivered_at' => ['Objeto entregue ao destinatário', 'Entrega confirmada pela transportadora no endereço de destino.'],
+            'posted_at' => ['Objeto postado na transportadora', 'Encomenda coletada/postada e em trânsito para o destino.'],
+            'paid_at' => ['Etiqueta emitida e liberada', 'Etiqueta gerada no Melhor Envio aguardando postagem/coleta.'],
+            'created_at' => ['Pedido de envio registrado', 'Registro de envio criado no Melhor Envio.'],
+        ];
+
+        foreach ($marcos as $campo => [$titulo, $detalhe]) {
+            $valor = $info[$campo] ?? $ordem[$campo] ?? null;
+            if (! empty($valor)) {
+                $carbon = Carbon::parse((string) $valor);
+                $eventos[] = [
+                    'data' => $carbon->format('d/m/Y'),
+                    'hora' => $carbon->format('H:i'),
+                    'local' => $transportadora,
+                    'status' => $titulo,
+                    'detalhe' => $detalhe,
+                    'destaque' => empty($eventos),
+                ];
+            }
+        }
+
+        return $eventos;
     }
 }
