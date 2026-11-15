@@ -133,31 +133,38 @@ final class RastreioEncomendaService
             }
         }
 
-        // 2. Correios (quando selecionado no pedido, ou ativo no painel para códigos Correios/gerais)
-        if ($resultado === null && ($correiosAtivo || str_starts_with($transportadoraPedido, 'correios') || $eCodigoCorreios)) {
+        // 2. Correios (quando selecionado no pedido, ou ativo no painel para códigos no formato Correios)
+        if ($resultado === null && ($correiosAtivo && ($eCodigoCorreios || str_starts_with($transportadoraPedido, 'correios') || $pedido !== null))) {
             $correiosResp = $this->correios->rastrear($codigo);
-            $resultado = [
-                'codigo' => $correiosResp['codigo'] ?? $codigo,
-                'transportadora' => $pedido ? $pedido->transportadoraLabel() : ($correiosResp['transportadora'] ?? 'Correios'),
-                'status_geral' => $correiosResp['status_geral'] ?? ($correiosResp['status'] ?? 'Em acompanhamento'),
-                'entregue' => (bool) ($correiosResp['entregue'] ?? false),
-                'eventos' => (array) ($correiosResp['eventos'] ?? []),
-                'link_externo' => $eCodigoCorreios ? "https://rastreamento.correios.com.br/app/index.php?objetos={$codigo}" : null,
-                'tempo_real' => $eCodigoCorreios,
-            ];
-            $modalidade = 'correios';
+            if (! empty($correiosResp['encontrado'])) {
+                $resultado = [
+                    'codigo' => $correiosResp['codigo'] ?? $codigo,
+                    'transportadora' => $pedido ? $pedido->transportadoraLabel() : ($correiosResp['transportadora'] ?? 'Correios'),
+                    'status_geral' => $correiosResp['status_geral'] ?? ($correiosResp['status'] ?? 'Em acompanhamento'),
+                    'entregue' => (bool) ($correiosResp['entregue'] ?? false),
+                    'eventos' => (array) ($correiosResp['eventos'] ?? []),
+                    'link_externo' => $eCodigoCorreios ? "https://rastreamento.correios.com.br/app/index.php?objetos={$codigo}" : null,
+                    'tempo_real' => (bool) ($correiosResp['tempo_real'] ?? false),
+                ];
+                $modalidade = 'correios';
+            }
         }
 
-        // 3. Mercado Envios (quando selecionado no pedido ou única modalidade ativa)
-        if ($resultado === null && ($transportadoraPedido === 'mercado_livre' || $mercadoLivreAtivo)) {
+        // 3. Mercado Envios (somente quando vinculado a um pedido real do sistema)
+        if ($resultado === null && $pedido !== null && ($transportadoraPedido === 'mercado_livre' || $mercadoLivreAtivo)) {
             $resultado = $this->montarRastreioMercadoEnvios($codigo, $pedido);
             $modalidade = 'mercado_livre';
         }
 
-        // 4. Retirada na Empresa ou Logística Própria Golden
-        if ($resultado === null) {
+        // 4. Retirada na Empresa ou Logística Própria Golden (somente quando vinculado a um pedido real)
+        if ($resultado === null && $pedido !== null) {
             $resultado = $this->montarRastreioProprio($codigo, $pedido);
             $modalidade = $transportadoraPedido === 'retira' ? 'retira' : 'propria';
+        }
+
+        // 5. Nenhum dado real encontrado (nem na API das transportadoras ativas nem nos pedidos do sistema)
+        if ($resultado === null) {
+            return $this->respostaNaoEncontrado($codigo, $eCodigoCorreios, $correiosAtivo, $melhorEnvioAtivo, $mercadoLivreAtivo);
         }
 
         $eventos = $this->mesclarEventosPedido((array) ($resultado['eventos'] ?? []), $pedido);
@@ -447,5 +454,54 @@ final class RastreioEncomendaService
         }
 
         return null;
+    }
+
+    /**
+     * Retorno honesto quando nenhuma API ativa retornou eventos e não existe pedido no banco.
+     *
+     * @return array<string, mixed>
+     */
+    private function respostaNaoEncontrado(
+        string $codigo,
+        bool $eCodigoCorreios,
+        bool $correiosAtivo,
+        bool $melhorEnvioAtivo,
+        bool $mercadoLivreAtivo,
+    ): array {
+        $linksConsulta = [];
+
+        if ($eCodigoCorreios || $correiosAtivo) {
+            $linksConsulta[] = [
+                'rotulo' => 'Consultar nos Correios',
+                'url' => 'https://rastreamento.correios.com.br/app/index.php?objetos='.rawurlencode($codigo),
+            ];
+        }
+
+        if ($melhorEnvioAtivo) {
+            $linksConsulta[] = [
+                'rotulo' => 'Consultar no Melhor Rastreio',
+                'url' => 'https://www.melhorrastreio.com.br/rastreio/'.rawurlencode($codigo),
+            ];
+        }
+
+        if ($mercadoLivreAtivo) {
+            $linksConsulta[] = [
+                'rotulo' => 'Acompanhar no Mercado Livre',
+                'url' => 'https://www.mercadolivre.com.br/vendas/compras',
+            ];
+        }
+
+        return [
+            'encontrado' => false,
+            'codigo' => $codigo,
+            'transportadora' => 'Não identificado nas integrações ativas',
+            'logisticas_ativas' => $this->logisticasAtivas(),
+            'status' => 'Não localizado',
+            'status_geral' => 'Sem movimentações retornadas',
+            'mensagem' => 'Não encontramos movimentações reais para este código nos pedidos da loja nem nas APIs de rastreamento ativas no painel. Códigos externos do Mercado Envios ou postagens sem integração CWS/Melhor Envio podem ser consultados diretamente no portal da transportadora.',
+            'links_consulta' => $linksConsulta,
+            'tempo_real' => false,
+            'atualizado_em' => now()->format('d/m/Y H:i:s'),
+        ];
     }
 }

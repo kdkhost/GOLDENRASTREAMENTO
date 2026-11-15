@@ -6,6 +6,7 @@ use App\Mail\PedidoEnviadoRastreio;
 use App\Models\Activity;
 use App\Models\Order;
 use App\Models\Setting;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -199,112 +200,90 @@ class CorreiosService
     }
 
     /**
-     * Executa a consulta real na API dos Correios com fallback elegante de status.
+     * Executa a consulta real na API CWS dos Correios (quando configurada)
+     * ou usa os marcos reais do pedido cadastrado no sistema — sem fabricar eventos falsos.
      */
     private function consultarRastreioReal(string $codigo, ?Order $pedido, string $transportadora): array
     {
         $eventos = [];
-        $statusGeral = 'Objeto postado';
-        $cor = 'primary';
+        $statusGeral = 'Sem movimentações encontradas';
+        $cor = 'secondary';
         $icone = 'fa-box';
         $entregue = false;
+        $tempoReal = false;
 
-        // Se for código padrão Correios (2 letras + 9 números + 2 letras, ex: QB123456789BR)
         $eCodigoCorreios = (bool) preg_match('/^[A-Z]{2}[0-9]{9}[A-Z]{2}$/', $codigo);
 
         if ($eCodigoCorreios) {
-            try {
-                // Consulta via endpoint público de rastreio de encomendas
-                $resp = Http::timeout(6)->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                ])->get("https://api.linkngr.com/correios/?tracking={$codigo}");
-
-                if ($resp->successful()) {
-                    $dados = $resp->json();
-                    $historico = (array) data_get($dados, 'eventos', data_get($dados, 'data', []));
-
-                    if (! empty($historico)) {
-                        foreach ($historico as $idx => $ev) {
-                            $st = (string) ($ev['status'] ?? $ev['descricao'] ?? 'Em trânsito');
-                            $det = (string) ($ev['detalhe'] ?? $ev['descricao_interna'] ?? '');
-                            $loc = (string) ($ev['local'] ?? $ev['cidade'] ?? 'Unidade dos Correios');
-                            $dt = (string) ($ev['data'] ?? now()->format('d/m/Y'));
-                            $hr = (string) ($ev['hora'] ?? now()->format('H:i'));
-
-                            $isEntregue = str_contains(mb_strtolower($st), 'entregue');
-                            if ($isEntregue && $idx === 0) {
-                                $entregue = true;
-                                $statusGeral = 'Objeto entregue ao destinatário';
-                                $cor = 'success';
-                                $icone = 'fa-circle-check';
-                            } elseif ($idx === 0) {
-                                $statusGeral = $st;
-                                $cor = str_contains(mb_strtolower($st), 'saiu') ? 'warning' : 'primary';
-                                $icone = str_contains(mb_strtolower($st), 'saiu') ? 'fa-truck-fast' : 'fa-box';
-                            }
-
-                            $eventos[] = [
-                                'data' => $dt,
-                                'hora' => $hr,
-                                'local' => $loc,
-                                'status' => $st,
-                                'detalhe' => $det,
-                                'destaque' => $idx === 0,
-                            ];
-                        }
-                    }
-                }
-            } catch (Throwable) {
-                // Silencioso: segue para eventos locais garantidos
+            $eventosCws = $this->consultarSroCws($codigo);
+            if (! empty($eventosCws)) {
+                $eventos = $eventosCws;
+                $tempoReal = true;
+                $primeiroStatus = mb_strtolower((string) ($eventos[0]['status'] ?? ''));
+                $entregue = str_contains($primeiroStatus, 'entregue');
+                $statusGeral = (string) ($eventos[0]['status'] ?? 'Em trânsito');
+                $cor = $entregue ? 'success' : (str_contains($primeiroStatus, 'saiu') ? 'warning' : 'primary');
+                $icone = $entregue ? 'fa-circle-check' : (str_contains($primeiroStatus, 'saiu') ? 'fa-truck-fast' : 'fa-box');
             }
         }
 
-        // Se a API dos Correios não respondeu ou o objeto foi recém-despachado:
-        if (empty($eventos)) {
-            $dataDespacho = $pedido?->enviado_em ?: ($pedido?->updated_at ?: now());
-            $localOrigem = Setting::get('correios_cep_origem') ? 'São Paulo / SP' : 'Central Golden Rastreamento';
+        // Usa apenas marcos reais quando existe pedido cadastrado no banco (nunca inventa para código avulso).
+        if (empty($eventos) && $pedido !== null) {
+            $localOrigem = Setting::get('correios_cep_origem')
+                ? trim((string) Setting::get('empresa_cidade', 'Central Golden Rastreamento'))
+                : 'Central Golden Rastreamento';
 
-            if ($pedido?->status === 'entregue') {
+            if ($pedido->status === 'entregue') {
                 $statusGeral = 'Objeto entregue ao destinatário';
                 $cor = 'success';
                 $icone = 'fa-circle-check';
                 $entregue = true;
 
                 $eventos[] = [
-                    'data' => now()->format('d/m/Y'),
-                    'hora' => now()->format('H:i'),
+                    'data' => ($pedido->updated_at ?: now())->format('d/m/Y'),
+                    'hora' => ($pedido->updated_at ?: now())->format('H:i'),
                     'local' => $pedido->cidade ? "{$pedido->cidade} / {$pedido->uf}" : 'Endereço de destino',
                     'status' => 'Objeto entregue ao destinatário',
-                    'detalhe' => 'A encomenda foi entregue com sucesso no endereço cadastrado.',
+                    'detalhe' => 'Entrega registrada no pedido.',
                     'destaque' => true,
                 ];
             }
 
-            if ($pedido?->status === 'enviado' || ! empty($codigo)) {
+            if ($pedido->enviado_em || $pedido->status === 'enviado' || $entregue) {
+                $dataDespacho = $pedido->enviado_em ?: ($pedido->updated_at ?: now());
+                if (! $entregue) {
+                    $statusGeral = 'Objeto postado / despachado';
+                    $cor = 'primary';
+                    $icone = 'fa-truck-fast';
+                }
                 $eventos[] = [
                     'data' => $dataDespacho->format('d/m/Y'),
                     'hora' => $dataDespacho->format('H:i'),
                     'local' => $localOrigem,
                     'status' => Setting::get('correios_possui_contrato') === '1'
                         ? 'Objeto coletado na empresa pelos Correios'
-                        : 'Objeto postado na agência dos Correios',
-                    'detalhe' => 'Etiqueta de rastreamento gerada e objeto em preparação para envio.',
-                    'destaque' => empty($entregue),
+                        : 'Objeto postado nos Correios',
+                    'detalhe' => 'Código de rastreamento vinculado ao pedido.',
+                    'destaque' => ! $entregue,
                 ];
             } else {
+                $statusGeral = 'Em separação para envio';
                 $eventos[] = [
-                    'data' => now()->format('d/m/Y'),
-                    'hora' => now()->format('H:i'),
+                    'data' => ($pedido->created_at ?: now())->format('d/m/Y'),
+                    'hora' => ($pedido->created_at ?: now())->format('H:i'),
                     'local' => 'Central de Logística Golden',
-                    'status' => 'Aguardando envio e geração de etiqueta',
-                    'detalhe' => 'O pedido está em fase de separação e testes do equipamento.',
+                    'status' => 'Aguardando postagem',
+                    'detalhe' => 'Pedido registrado na loja aguardando despacho.',
                     'destaque' => true,
                 ];
             }
         }
 
+        $encontrado = ! empty($eventos);
+
         return [
-            'encontrado' => true,
+            'encontrado' => $encontrado,
+            'tempo_real' => $tempoReal,
             'codigo' => $codigo,
             'transportadora' => $transportadora,
             'status' => $statusGeral,
@@ -314,8 +293,85 @@ class CorreiosService
             'entregue' => $entregue,
             'pedido' => $pedido,
             'eventos' => $eventos,
-            'atualizado_em' => now()->format('d/m/Y H:i'),
+            'atualizado_em' => now()->format('d/m/Y H:i:s'),
         ];
+    }
+
+    /**
+     * Consulta a API oficial SRO Rastro CWS dos Correios quando usuário/token CWS estão configurados.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function consultarSroCws(string $codigo): array
+    {
+        $usuario = trim((string) Setting::get('correios_usuario', ''));
+        $tokenAcesso = trim((string) Setting::get('correios_senha', ''));
+        $cartao = trim((string) Setting::get('correios_cartao_postagem', ''));
+
+        if ($usuario === '' || $tokenAcesso === '') {
+            return [];
+        }
+
+        try {
+            $tokenCacheKey = 'correios_cws_bearer_'.md5($usuario.'|'.$cartao);
+            $bearer = Cache::remember($tokenCacheKey, 1800, function () use ($usuario, $tokenAcesso, $cartao): string {
+                $endpoint = $cartao !== ''
+                    ? 'https://api.correios.com.br/token/v1/autentica/cartaopostagem'
+                    : 'https://api.correios.com.br/token/v1/autentica';
+
+                $payload = $cartao !== '' ? ['numero' => $cartao] : [];
+                $respAuth = Http::timeout(8)
+                    ->withBasicAuth($usuario, $tokenAcesso)
+                    ->acceptJson()
+                    ->post($endpoint, $payload);
+
+                return $respAuth->successful() ? (string) ($respAuth->json('token') ?? '') : '';
+            });
+
+            if ($bearer === '') {
+                return [];
+            }
+
+            $respSro = Http::timeout(8)
+                ->withToken($bearer)
+                ->acceptJson()
+                ->get("https://api.correios.com.br/srorastro/v1/objetos/{$codigo}", [
+                    'resultado' => 'T',
+                ]);
+
+            if (! $respSro->successful()) {
+                return [];
+            }
+
+            $eventosBrutos = (array) data_get($respSro->json(), 'objetos.0.eventos', []);
+            $eventos = [];
+
+            foreach ($eventosBrutos as $idx => $ev) {
+                if (! is_array($ev)) {
+                    continue;
+                }
+
+                $dtRaw = (string) ($ev['dtHrCriado'] ?? '');
+                $carbon = $dtRaw !== '' ? Carbon::parse($dtRaw) : now();
+                $cidade = trim((string) data_get($ev, 'unidade.endereco.cidade', ''));
+                $uf = trim((string) data_get($ev, 'unidade.endereco.uf', ''));
+                $unidadeTipo = trim((string) data_get($ev, 'unidade.tipo', 'Unidade dos Correios'));
+                $local = $cidade !== '' ? "{$cidade}/{$uf} ({$unidadeTipo})" : $unidadeTipo;
+
+                $eventos[] = [
+                    'data' => $carbon->format('d/m/Y'),
+                    'hora' => $carbon->format('H:i'),
+                    'local' => $local,
+                    'status' => (string) ($ev['descricao'] ?? 'Movimentação'),
+                    'detalhe' => trim((string) ($ev['detalhe'] ?? '')),
+                    'destaque' => $idx === 0,
+                ];
+            }
+
+            return $eventos;
+        } catch (Throwable) {
+            return [];
+        }
     }
 
     /**

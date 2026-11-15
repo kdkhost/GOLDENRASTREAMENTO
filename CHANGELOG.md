@@ -26,6 +26,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Erro 500 na view do dashboard Google Ads ao substituir `hasRole` por `isAdmin`.
 - Blocos com fundo claro hardcoded no modo escuro em páginas administrativas.
 - Botão de diminuir quantidade e fluxo AJAX do carrinho na loja sem exibir frete grátis antes da validação do CEP.
+- Removido fallback que gerava eventos falsos no rastreio de encomendas (`/rastreamento`) para códigos externos ou não localizados; adicionada integração oficial com a API SRO CWS dos Correios e retorno honesto quando não há eventos reais.
 
 ## [2.64.0] - 2026-11-12
 

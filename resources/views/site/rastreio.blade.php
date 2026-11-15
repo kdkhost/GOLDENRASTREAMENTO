@@ -45,7 +45,7 @@
     </div>
 </section>
 
-@if($rastreio)
+@if($rastreio && !empty($rastreio['encontrado']))
 <section class="sec-light" style="padding: 3rem 1rem; background: #f8f6f0; min-height: 50vh;">
     <div class="wrap" style="max-width: 860px; margin: 0 auto;">
 
@@ -294,5 +294,34 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+@elseif($rastreio)
+<section class="sec-light" style="padding: 3rem 1rem; background: #f8f6f0; min-height: 45vh;">
+    <div class="wrap" style="max-width: 760px; margin: 0 auto;">
+        <div style="background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; padding: 2rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: #fef3c7; color: #b45309; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <h2 style="font-size: 1.35rem; color: #111827; margin: 0 0 0.5rem;">Nenhuma movimentação encontrada para <code style="color: #b45309;">{{ $rastreio['codigo'] }}</code></h2>
+            <p style="color: #4b5563; font-size: 0.95rem; max-width: 600px; margin: 0 auto 1.5rem;">
+                {{ $rastreio['mensagem'] ?? 'Este código não possui registro nos pedidos da loja nem retornou eventos nas APIs ativas do painel.' }}
+            </p>
+            @if(!empty($rastreio['links_consulta']))
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.65rem; margin-bottom: 1.5rem;">
+                    @foreach($rastreio['links_consulta'] as $lk)
+                        <a href="{{ $lk['url'] }}" target="_blank" rel="noopener"
+                           style="display: inline-flex; align-items: center; gap: 0.45rem; background: #12161a; color: #e0a33e; border-radius: 8px; padding: 0.65rem 1.15rem; font-size: 0.88rem; font-weight: 600; text-decoration: none;">
+                            <i class="fa-solid fa-up-right-from-square"></i> {{ $lk['rotulo'] }}
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+            <a href="https://wa.me/{{ preg_replace('/\D/', '', \App\Models\Setting::get('contato_whatsapp', config('golden.whatsapp'))) }}?text=Ol%C3%A1%2C+preciso+de+ajuda+para+rastrear+o+c%C3%B3digo+{{ urlencode($rastreio['codigo']) }}"
+                target="_blank" rel="noopener"
+                style="display: inline-flex; align-items: center; gap: 0.5rem; background: #25d366; color: #fff; text-decoration: none; font-weight: 700; padding: 0.75rem 1.4rem; border-radius: 8px; font-size: 0.92rem;">
+                <i class="fa-brands fa-whatsapp fs-5"></i> Falar com Suporte no WhatsApp
+            </a>
+        </div>
+    </div>
+</section>
 @endif
 @endsection
