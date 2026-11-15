@@ -149,6 +149,25 @@
         return null;
     }
 
+    function obterHtmlDoEditor(textarea) {
+        if (!textarea) {
+            return '';
+        }
+
+        if (!jqueryDisponivel() || !window.jQuery(textarea).data('summernote')) {
+            return textarea.value || '';
+        }
+
+        var $ta = window.jQuery(textarea);
+        var editor = editorDoTextarea(textarea);
+        var editable = editor ? editor.querySelector('.note-editable') : null;
+        var codable = editor ? editor.querySelector('.note-codable') : null;
+        var emCodeview = !!(editor && editor.classList.contains('codeview') && codable);
+        var html = emCodeview ? codable.value : (editable ? editable.innerHTML : $ta.summernote('code'));
+
+        return conteudoVisualmenteVazio(html) ? '' : html;
+    }
+
     function sincronizarParaTextarea(textarea, dispararInput, dispararChange) {
         if (!textarea || !jqueryDisponivel()) {
             return;
@@ -159,11 +178,7 @@
             return;
         }
 
-        var editor = editorDoTextarea(textarea);
-        var codable = editor ? editor.querySelector('.note-codable') : null;
-        var emCodeview = !!(editor && editor.classList.contains('codeview') && codable);
-        var html = emCodeview ? codable.value : $ta.summernote('code');
-        var valorFinal = conteudoVisualmenteVazio(html) ? '' : html;
+        var valorFinal = obterHtmlDoEditor(textarea);
 
         if (textarea.value !== valorFinal) {
             textarea.value = valorFinal;
@@ -311,7 +326,25 @@
                                 sincronizarParaTextarea(textarea, true, false);
                             }, 0);
                         });
+
+                        if (typeof MutationObserver !== 'undefined') {
+                            var obsEditable = new MutationObserver(function () {
+                                if (!textarea._goldenSnSilencioso) {
+                                    sincronizarParaTextarea(textarea, true, false);
+                                }
+                            });
+                            obsEditable.observe(editable, {
+                                childList: true,
+                                subtree: true,
+                                characterData: true,
+                                attributes: true
+                            });
+                        }
                     }
+
+                    $ta.on('summernote.change summernote.keyup summernote.paste summernote.codeview.toggled', function () {
+                        sincronizarParaTextarea(textarea, true, false);
+                    });
 
                     if (editor) {
                         editor.addEventListener('click', function (ev) {
@@ -556,8 +589,10 @@
 
     window.GoldenSummernote = {
         initAll: inicializarTodos,
+        obterHtml: obterHtmlDoEditor,
         sync: function (textarea) { sincronizarParaTextarea(textarea, false, false); },
         syncForm: sincronizarFormulario,
+        sincronizarFormulario: sincronizarFormulario,
         sincronizarDoTextarea: sincronizarDoTextareaParaEditor,
         inserirTexto: inserirTexto,
         aplicarTema: aplicarTemaNosEditores

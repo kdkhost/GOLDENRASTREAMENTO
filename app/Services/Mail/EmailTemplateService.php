@@ -566,12 +566,16 @@ HTML,
      *
      * @param  array<string, mixed>  $variaveis
      */
-    public function substituirVariaveis(string $texto, array $variaveis, bool $escaparHtml = true): string
-    {
-        return (string) preg_replace_callback('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', function (array $matches) use ($variaveis, $escaparHtml): string {
+    public function substituirVariaveis(
+        string $texto,
+        array $variaveis,
+        bool $escaparHtml = true,
+        bool $manterDesconhecidas = false
+    ): string {
+        return (string) preg_replace_callback('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', function (array $matches) use ($variaveis, $escaparHtml, $manterDesconhecidas): string {
             $chave = $matches[1];
-            if (! array_key_exists($chave, $variaveis)) {
-                return '';
+            if (! array_key_exists($chave, $variaveis) || $variaveis[$chave] === null) {
+                return $manterDesconhecidas ? $matches[0] : '';
             }
 
             $valor = (string) $variaveis[$chave];
@@ -642,7 +646,7 @@ HTML,
      *
      * @param  array<string, mixed>  $variaveis
      * @param  array<string, mixed>|null  $layoutOverride
-     * @return array{assunto: string, html: string, texto: string, usar_layout: bool}
+     * @return array{assunto: string, pre_cabecalho: string, html: string, corpo_html_resolvido: string, texto: string, usar_layout: bool}
      */
     public function renderizarPorChave(
         string $chave,
@@ -651,7 +655,8 @@ HTML,
         ?string $corpoOverride = null,
         ?string $assuntoOverride = null,
         ?string $preCabecalhoOverride = null,
-        ?bool $usarLayoutOverride = null
+        ?bool $usarLayoutOverride = null,
+        bool $manterVariaveisDesconhecidas = false
     ): array {
         $template = Schema::hasTable('email_templates') ? EmailTemplate::porChave($chave) : null;
         $fallback = collect($this->catalogoPadrao())->firstWhere('chave', $chave);
@@ -662,9 +667,9 @@ HTML,
         $usarLayout = $usarLayoutOverride ?? ($template ? $template->usar_layout : true);
 
         $variaveis = array_merge($this->variaveisEmpresa(), $variaveis);
-        $assunto = $this->substituirVariaveis($assuntoBase, $variaveis, false);
-        $preCabecalho = $this->substituirVariaveis((string) $preCabecalhoBase, $variaveis, false);
-        $corpoResolvido = $this->substituirVariaveis($corpoBase, $variaveis, true);
+        $assunto = $this->substituirVariaveis($assuntoBase, $variaveis, false, $manterVariaveisDesconhecidas);
+        $preCabecalho = $this->substituirVariaveis((string) $preCabecalhoBase, $variaveis, false, $manterVariaveisDesconhecidas);
+        $corpoResolvido = $this->substituirVariaveis($corpoBase, $variaveis, true, $manterVariaveisDesconhecidas);
 
         $html = $usarLayout
             ? $this->envolverNoLayout($corpoResolvido, $assunto, $preCabecalho, $layoutOverride)
@@ -676,6 +681,7 @@ HTML,
             'assunto' => $assunto,
             'pre_cabecalho' => $preCabecalho,
             'html' => $html,
+            'corpo_html_resolvido' => $corpoResolvido,
             'texto' => $textoLimpo,
             'usar_layout' => $usarLayout,
         ];

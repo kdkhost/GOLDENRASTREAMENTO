@@ -91,6 +91,7 @@ class EmailTemplateController extends Controller
             $template->corpo_html,
             $template->assunto,
             $template->pre_cabecalho,
+            true,
             true
         );
 
@@ -155,7 +156,11 @@ class EmailTemplateController extends Controller
         $this->templateService->garantirPadroes();
         $template = EmailTemplate::where('chave', $chave)->firstOrFail();
         $exemplos = array_merge($this->templateService->variaveisEmpresa(), $this->templateService->exemplosVariaveis());
-        $previewInicial = $this->templateService->renderizarPorChave($template->chave, $exemplos);
+        $previewInicial = $this->templateService->renderizarPorChave(
+            $template->chave,
+            $exemplos,
+            manterVariaveisDesconhecidas: true
+        );
 
         return view('admin.templates-email.edit', [
             'template' => $template,
@@ -242,6 +247,7 @@ class EmailTemplateController extends Controller
             $request->has('assunto') ? (string) $request->input('assunto') : null,
             $request->has('pre_cabecalho') ? (string) $request->input('pre_cabecalho') : null,
             $request->has('usar_layout') ? $request->boolean('usar_layout') : null,
+            true,
         );
 
         return response()->json([
@@ -249,6 +255,8 @@ class EmailTemplateController extends Controller
             'assunto' => $renderizado['assunto'],
             'pre_cabecalho' => $renderizado['pre_cabecalho'],
             'html' => $renderizado['html'],
+            'corpo_html_resolvido' => $renderizado['corpo_html_resolvido'],
+            'usar_layout' => $renderizado['usar_layout'],
         ]);
     }
 

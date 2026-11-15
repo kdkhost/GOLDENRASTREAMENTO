@@ -232,31 +232,147 @@
     const textarea = document.getElementById('corpo_html');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const previewUrl = @json($modoCriacao ? route('admin.templates-email.preview-livre') : route('admin.templates-email.preview', $template->chave));
+    const exemplosBase = @json(array_merge($exemplos ?? [], app(\App\Services\Mail\EmailTemplateService::class)->variaveisEmpresa()));
+    const nomePadraoTemplate = @json($modoCriacao ? 'Novo Template Personalizado' : $template->nome);
 
     if (!form || !iframe) return;
 
     let timer = null;
     let controller = null;
+    let versaoEdicao = 0;
+    let usuarioJaEditou = false;
+    let ultimoUsarLayoutServidor = form.querySelector('input[name="usar_layout"][type="checkbox"]')?.checked ?? true;
+    let ultimoCorpoDom = null;
+    let ultimoPreCabecalhoDom = null;
+
+    function lerHtmlAoVivoDoEditor() {
+        if (!textarea) return '';
+        if (window.GoldenSummernote && typeof window.GoldenSummernote.obterHtml === 'function') {
+            const html = window.GoldenSummernote.obterHtml(textarea);
+            if (textarea.value !== html) {
+                textarea.value = html;
+            }
+            return html;
+        }
+        const editor = textarea.nextElementSibling;
+        if (editor && editor.classList && editor.classList.contains('note-editor')) {
+            const codable = editor.querySelector('.note-codable');
+            if (editor.classList.contains('codeview') && codable) {
+                textarea.value = codable.value;
+                return codable.value;
+            }
+            const editable = editor.querySelector('.note-editable');
+            if (editable) {
+                textarea.value = editable.innerHTML;
+                return editable.innerHTML;
+            }
+        }
+        return textarea.value || '';
+    }
+
+    function obterMapaVariaveis() {
+        const mapa = Object.assign({}, exemplosBase);
+        form.querySelectorAll('input[name^="variaveis_preview["]').forEach((inp) => {
+            const match = inp.name.match(/^variaveis_preview\[([^\]]+)\]$/);
+            if (match && match[1]) {
+                mapa[match[1]] = inp.value;
+            }
+        });
+        return mapa;
+    }
+
+    function escaparHtmlSeguro(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function interpolarTextoAoVivo(texto, escaparValores, variaveis) {
+        return String(texto || '').replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, chave) => {
+            if (!Object.prototype.hasOwnProperty.call(variaveis, chave) || variaveis[chave] === null) {
+                return match;
+            }
+            const valor = String(variaveis[chave]);
+            if (!escaparValores || chave.endsWith('_html')) {
+                return valor;
+            }
+            return escaparHtmlSeguro(valor);
+        });
+    }
+
+    function atualizarPreviewInstantaneo(forcarDom = false) {
+        const variaveis = obterMapaVariaveis();
+        const nomeInput = form.querySelector('input[name="nome"]');
+        const assuntoInput = form.querySelector('input[name="assunto"]');
+        const preCabecalhoInput = form.querySelector('input[name="pre_cabecalho"]');
+        const usarLayoutCb = form.querySelector('input[name="usar_layout"][type="checkbox"]');
+        const usarLayout = usarLayoutCb ? !!usarLayoutCb.checked : true;
+
+        const nomeLive = (nomeInput?.value || '').trim() || nomePadraoTemplate;
+        const assuntoLive = interpolarTextoAoVivo(assuntoInput?.value || '', false, variaveis);
+        const preCabecalhoLive = interpolarTextoAoVivo(preCabecalhoInput?.value || '', false, variaveis);
+        const corpoResolvido = interpolarTextoAoVivo(lerHtmlAoVivoDoEditor(), true, variaveis);
+
+        if (nomeOut) nomeOut.textContent = nomeLive;
+        if (assuntoOut) assuntoOut.textContent = assuntoLive;
+        if (preCabecalhoOut) preCabecalhoOut.textContent = preCabecalhoLive || '—';
+
+        try {
+            const doc = iframe.contentDocument;
+            if (!doc || !doc.body) return false;
+
+            const slot = doc.querySelector('[data-email-body-slot]');
+            if (usarLayout && slot) {
+                if (forcarDom || ultimoCorpoDom !== corpoResolvido) {
+                    slot.innerHTML = corpoResolvido;
+                    ultimoCorpoDom = corpoResolvido;
+                }
+                const preheaderSlot = doc.querySelector('[data-email-preheader-slot]');
+                if (preheaderSlot && (forcarDom || ultimoPreCabecalhoDom !== preCabecalhoLive)) {
+                    preheaderSlot.textContent = preCabecalhoLive ? (preCabecalhoLive + ' \u00a0\u200c\u00a0\u200c') : '';
+                    ultimoPreCabecalhoDom = preCabecalhoLive;
+                }
+                const titleEl = doc.querySelector('title');
+                if (titleEl && assuntoLive) {
+                    titleEl.textContent = assuntoLive;
+                }
+                return true;
+            }
+
+            if (!usarLayout && !slot) {
+                if (forcarDom || ultimoCorpoDom !== corpoResolvido) {
+                    doc.body.innerHTML = corpoResolvido;
+                    ultimoCorpoDom = corpoResolvido;
+                }
+                return true;
+            }
+        } catch {
+            return false;
+        }
+
+        return false;
+    }
 
     async function atualizarPreview() {
+        const versaoInicio = versaoEdicao;
         if (controller) controller.abort();
         controller = new AbortController();
 
-        if (window.GoldenSummernote && typeof window.GoldenSummernote.syncForm === 'function') {
-            window.GoldenSummernote.syncForm(form);
-        } else if (textarea) {
-            const editor = textarea.nextElementSibling;
-            const editable = editor?.querySelector?.('.note-editable');
-            if (editable && !editor.classList.contains('codeview')) {
-                textarea.value = editable.innerHTML;
-            }
+        const corpoAtual = lerHtmlAoVivoDoEditor();
+        const usarLayoutAtual = form.querySelector('input[name="usar_layout"][type="checkbox"]')?.checked ?? true;
+
+        if (statusBadge) {
+            statusBadge.textContent = 'Sincronizando...';
+            statusBadge.className = 'badge-status tone-amber flex-shrink-0';
         }
 
-        statusBadge.textContent = 'Renderizando...';
-        statusBadge.className = 'badge-status tone-amber flex-shrink-0';
-
         const fd = new FormData(form);
-        fd.set('usar_layout', form.querySelector('input[name="usar_layout"]')?.checked ? '1' : '0');
+        fd.delete('_method');
+        fd.set('corpo_html', corpoAtual);
+        fd.set('usar_layout', usarLayoutAtual ? '1' : '0');
 
         try {
             const resp = await fetch(previewUrl, {
@@ -268,21 +384,62 @@
                 body: fd,
                 signal: controller.signal,
             });
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status}`);
+            }
             const data = await resp.json();
 
-            let scrollAnterior = 0;
-            try {
-                scrollAnterior = iframe.contentWindow?.scrollY || iframe.contentDocument?.documentElement?.scrollTop || 0;
-            } catch {}
+            if (versaoInicio !== versaoEdicao) {
+                atualizarPreviewInstantaneo(false);
+                return;
+            }
 
-            if (typeof data.html === 'string') {
+            const usarLayoutServidor = typeof data.usar_layout === 'boolean' ? data.usar_layout : usarLayoutAtual;
+            const layoutTrocou = usarLayoutServidor !== ultimoUsarLayoutServidor;
+            ultimoUsarLayoutServidor = usarLayoutServidor;
+
+            let atualizadoSemRecarregar = false;
+            if (!layoutTrocou && typeof data.corpo_html_resolvido === 'string') {
+                try {
+                    const doc = iframe.contentDocument;
+                    if (doc && doc.body) {
+                        const slot = doc.querySelector('[data-email-body-slot]');
+                        if (usarLayoutServidor && slot) {
+                            if (ultimoCorpoDom !== data.corpo_html_resolvido) {
+                                slot.innerHTML = data.corpo_html_resolvido;
+                                ultimoCorpoDom = data.corpo_html_resolvido;
+                            }
+                            const preheaderSlot = doc.querySelector('[data-email-preheader-slot]');
+                            if (preheaderSlot && typeof data.pre_cabecalho === 'string') {
+                                preheaderSlot.textContent = data.pre_cabecalho ? (data.pre_cabecalho + ' \u00a0\u200c\u00a0\u200c') : '';
+                                ultimoPreCabecalhoDom = data.pre_cabecalho;
+                            }
+                            atualizadoSemRecarregar = true;
+                        } else if (!usarLayoutServidor && !slot) {
+                            if (ultimoCorpoDom !== data.corpo_html_resolvido) {
+                                doc.body.innerHTML = data.corpo_html_resolvido;
+                                ultimoCorpoDom = data.corpo_html_resolvido;
+                            }
+                            atualizadoSemRecarregar = true;
+                        }
+                    }
+                } catch {}
+            }
+
+            if (!atualizadoSemRecarregar && typeof data.html === 'string') {
+                let scrollAnterior = 0;
+                try {
+                    scrollAnterior = iframe.contentWindow?.scrollY || iframe.contentDocument?.documentElement?.scrollTop || 0;
+                } catch {}
                 if (scrollAnterior > 0) {
                     iframe.addEventListener('load', () => {
                         try { iframe.contentWindow?.scrollTo(0, scrollAnterior); } catch {}
                     }, { once: true });
                 }
+                ultimoCorpoDom = typeof data.corpo_html_resolvido === 'string' ? data.corpo_html_resolvido : null;
                 iframe.srcdoc = data.html;
             }
+
             if (typeof data.nome === 'string' && nomeOut) {
                 nomeOut.textContent = data.nome;
             }
@@ -292,27 +449,73 @@
             if (typeof data.pre_cabecalho === 'string' && preCabecalhoOut) {
                 preCabecalhoOut.textContent = data.pre_cabecalho || '—';
             }
-            statusBadge.textContent = 'Ao vivo';
-            statusBadge.className = 'badge-status tone-green flex-shrink-0';
+            if (statusBadge) {
+                statusBadge.textContent = 'Ao vivo';
+                statusBadge.className = 'badge-status tone-green flex-shrink-0';
+            }
         } catch (err) {
-            if (err.name !== 'AbortError') {
-                statusBadge.textContent = 'Erro no preview';
-                statusBadge.className = 'badge-status tone-red flex-shrink-0';
+            if (err && err.name !== 'AbortError' && statusBadge) {
+                statusBadge.textContent = 'Preview local ativo';
+                statusBadge.className = 'badge-status tone-amber flex-shrink-0';
             }
         }
     }
 
     function agendarPreview() {
         clearTimeout(timer);
-        timer = setTimeout(atualizarPreview, 120);
+        timer = setTimeout(atualizarPreview, 220);
     }
 
-    ['input', 'keyup', 'paste', 'cut', 'golden:summernote-input'].forEach((ev) => {
-        form.addEventListener(ev, agendarPreview);
-    });
-    form.addEventListener('change', atualizarPreview);
+    function marcarEdicao() {
+        versaoEdicao++;
+        usuarioJaEditou = true;
+        atualizarPreviewInstantaneo(false);
+        agendarPreview();
+    }
 
-    document.getElementById('btnForcarPreview')?.addEventListener('click', atualizarPreview);
+    iframe.addEventListener('load', () => {
+        if (usuarioJaEditou) {
+            atualizarPreviewInstantaneo(true);
+        }
+    });
+
+    ['input', 'keyup', 'paste', 'cut', 'golden:summernote-input'].forEach((ev) => {
+        form.addEventListener(ev, marcarEdicao);
+    });
+    form.addEventListener('change', () => {
+        versaoEdicao++;
+        usuarioJaEditou = true;
+        atualizarPreviewInstantaneo(false);
+        atualizarPreview();
+    });
+
+    ['input', 'keyup', 'paste', 'cut'].forEach((ev) => {
+        document.addEventListener(ev, (evento) => {
+            const alvo = evento.target instanceof Element ? evento.target : null;
+            if (!alvo) return;
+            const editor = alvo.closest('.note-editor');
+            if (!editor) return;
+            const ta = editor.previousElementSibling;
+            if (ta === textarea && (alvo.classList.contains('note-editable') || alvo.closest('.note-editable') || alvo.classList.contains('note-codable'))) {
+                if (ev === 'paste' || ev === 'cut') {
+                    window.setTimeout(marcarEdicao, 0);
+                } else {
+                    marcarEdicao();
+                }
+            }
+        }, true);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        if (window.jQuery && textarea) {
+            window.jQuery(textarea).on('summernote.change summernote.keyup summernote.paste summernote.codeview.toggled', marcarEdicao);
+        }
+    });
+
+    document.getElementById('btnForcarPreview')?.addEventListener('click', () => {
+        atualizarPreviewInstantaneo(true);
+        atualizarPreview();
+    });
 
     document.querySelectorAll('[data-inserir-token]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -320,7 +523,7 @@
             const token = btn.getAttribute('data-inserir-token') || '';
             if (window.GoldenSummernote && textarea.dataset.summernoteAtivo === '1') {
                 window.GoldenSummernote.inserirTexto(textarea, token);
-                agendarPreview();
+                marcarEdicao();
                 return;
             }
             const start = textarea.selectionStart ?? textarea.value.length;
@@ -328,7 +531,7 @@
             textarea.value = textarea.value.slice(0, start) + token + textarea.value.slice(end);
             textarea.focus();
             textarea.selectionStart = textarea.selectionEnd = start + token.length;
-            agendarPreview();
+            marcarEdicao();
         });
     });
 

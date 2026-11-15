@@ -746,11 +746,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::get('/', [EmailTemplateController::class, 'index'])->name('index');
         Route::get('/novo', [EmailTemplateController::class, 'create'])->name('create');
         Route::post('/', [EmailTemplateController::class, 'store'])->name('store');
-        Route::post('/preview-livre', [EmailTemplateController::class, 'previewLivre'])->name('preview-livre');
+        Route::match(['post', 'put'], '/preview-livre', [EmailTemplateController::class, 'previewLivre'])->name('preview-livre');
 
         Route::get('/layout', [EmailTemplateController::class, 'layout'])->name('layout');
         Route::put('/layout', [EmailTemplateController::class, 'salvarLayout'])->name('layout.update');
-        Route::post('/layout/preview', [EmailTemplateController::class, 'previewLayout'])->name('layout.preview');
+        Route::match(['post', 'put'], '/layout/preview', [EmailTemplateController::class, 'previewLayout'])->name('layout.preview');
         Route::post('/layout/restaurar', [EmailTemplateController::class, 'restaurarLayout'])->name('layout.restaurar');
 
         Route::get('/fila', [EmailTemplateController::class, 'fila'])->name('fila');
@@ -761,7 +761,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
 
         Route::get('/{chave}', [EmailTemplateController::class, 'edit'])->where('chave', '[a-z0-9_-]+')->name('edit');
         Route::put('/{chave}', [EmailTemplateController::class, 'update'])->where('chave', '[a-z0-9_-]+')->name('update');
-        Route::post('/{chave}/preview', [EmailTemplateController::class, 'preview'])->where('chave', '[a-z0-9_-]+')->name('preview');
+        Route::match(['post', 'put'], '/{chave}/preview', [EmailTemplateController::class, 'preview'])->where('chave', '[a-z0-9_-]+')->name('preview');
         Route::post('/{chave}/testar', [EmailTemplateController::class, 'enviarTeste'])->where('chave', '[a-z0-9_-]+')->name('testar');
         Route::post('/{chave}/restaurar', [EmailTemplateController::class, 'restaurar'])->where('chave', '[a-z0-9_-]+')->name('restaurar');
     });

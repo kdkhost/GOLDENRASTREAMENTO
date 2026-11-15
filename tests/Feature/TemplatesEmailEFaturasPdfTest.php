@@ -466,13 +466,15 @@ class TemplatesEmailEFaturasPdfTest extends TestCase
         $this->get(route('admin.templates-email.create'))
             ->assertOk()
             ->assertSee('Novo Template de E-mail')
-            ->assertSee('Dados de Teste / Variáveis no Preview (Tempo Real)');
+            ->assertSee('Dados de Teste / Variáveis no Preview (Tempo Real)')
+            ->assertSee('atualizarPreviewInstantaneo', false)
+            ->assertSee('lerHtmlAoVivoDoEditor', false);
 
         $respPreviewLivre = $this->postJson(route('admin.templates-email.preview-livre'), [
             'nome' => 'Aviso Personalizado em Criação',
             'assunto' => 'Olá {{cliente_nome}}, fatura #{{fatura_numero}}',
             'pre_cabecalho' => 'Prévia ao vivo {{valor}}',
-            'corpo_html' => '<p>Prezado <strong>{{cliente_nome}}</strong>, vencimento {{vencimento}}.</p>',
+            'corpo_html' => '<p>Prezado <strong>{{cliente_nome}}</strong>, vencimento {{vencimento}}. Token novo: {{token_personalizado}}</p>',
             'variaveis_preview' => [
                 'cliente_nome' => 'Empresa Alpha Logística',
                 'fatura_numero' => 'GR-7700',
@@ -484,11 +486,18 @@ class TemplatesEmailEFaturasPdfTest extends TestCase
         $respPreviewLivre->assertOk()
             ->assertJsonPath('nome', 'Aviso Personalizado em Criação')
             ->assertJsonPath('assunto', 'Olá Empresa Alpha Logística, fatura #GR-7700')
-            ->assertJsonPath('pre_cabecalho', 'Prévia ao vivo R$ 499,90');
+            ->assertJsonPath('pre_cabecalho', 'Prévia ao vivo R$ 499,90')
+            ->assertJsonPath('usar_layout', true);
 
         $htmlLivre = (string) $respPreviewLivre->json('html');
+        $corpoLivreResolvido = (string) $respPreviewLivre->json('corpo_html_resolvido');
         $this->assertStringContainsString('Empresa Alpha Logística', $htmlLivre);
         $this->assertStringContainsString('30/11/2026', $htmlLivre);
+        $this->assertStringContainsString('{{token_personalizado}}', $htmlLivre);
+        $this->assertStringContainsString('{{token_personalizado}}', $corpoLivreResolvido);
+        $this->assertStringContainsString('data-email-body-slot', $htmlLivre);
+        $this->assertStringContainsString('data-email-preheader-slot', $htmlLivre);
+        $this->assertStringContainsString('data-email-marca-slot', $htmlLivre);
 
         // 2. Salvar o novo template criado via POST /admin/templates-email
         $respCreate = $this->post(route('admin.templates-email.store'), [
@@ -503,17 +512,19 @@ class TemplatesEmailEFaturasPdfTest extends TestCase
         ]);
         $respCreate->assertRedirect(route('admin.templates-email.edit', 'aviso_personalizado_alpha'));
 
-        // 3. Edição e preview em tempo real com variáveis customizadas
+        // 3. Edição e preview em tempo real com variáveis customizadas (incluindo proteção contra _method=PUT do FormData)
         $this->get(route('admin.templates-email.edit', 'aviso_personalizado_alpha'))
             ->assertOk()
             ->assertSee('aviso_personalizado_alpha')
-            ->assertSee('Dados de Teste / Variáveis no Preview (Tempo Real)');
+            ->assertSee('Dados de Teste / Variáveis no Preview (Tempo Real)')
+            ->assertSee('atualizarPreviewInstantaneo', false);
 
         $respPreviewEdicao = $this->postJson(route('admin.templates-email.preview', 'aviso_personalizado_alpha'), [
+            '_method' => 'PUT',
             'nome' => 'Aviso Editado Agora',
             'assunto' => 'Atualização para {{cliente_nome}} · {{placa}}',
             'pre_cabecalho' => 'Rastreamento {{codigo_rastreio}}',
-            'corpo_html' => '<p>Placa monitorada: <strong>{{placa}}</strong></p>',
+            'corpo_html' => '<p>Placa monitorada: <strong>{{placa}}</strong> · Extra: {{campo_novo}}</p>',
             'variaveis_preview' => [
                 'cliente_nome' => 'Transportadora Beta',
                 'placa' => 'XYZ-9988',
@@ -524,11 +535,14 @@ class TemplatesEmailEFaturasPdfTest extends TestCase
         $respPreviewEdicao->assertOk()
             ->assertJsonPath('nome', 'Aviso Editado Agora')
             ->assertJsonPath('assunto', 'Atualização para Transportadora Beta · XYZ-9988')
-            ->assertJsonPath('pre_cabecalho', 'Rastreamento BR99887766');
+            ->assertJsonPath('pre_cabecalho', 'Rastreamento BR99887766')
+            ->assertJsonPath('usar_layout', true);
         $this->assertStringContainsString('XYZ-9988', (string) $respPreviewEdicao->json('html'));
+        $this->assertStringContainsString('{{campo_novo}}', (string) $respPreviewEdicao->json('corpo_html_resolvido'));
 
-        // 4. Layout global respeita alternância de WhatsApp e texto editado no preview em tempo real
+        // 4. Layout global respeita alternância de WhatsApp e texto editado no preview em tempo real (inclusive com _method=PUT)
         $respLayoutComWpp = $this->postJson(route('admin.templates-email.layout.preview'), [
+            '_method' => 'PUT',
             'marca_nome' => 'Golden Ao Vivo LTDA',
             'texto_rodape' => 'Rodapé digitado em tempo real.',
             'mostrar_whatsapp' => '1',
