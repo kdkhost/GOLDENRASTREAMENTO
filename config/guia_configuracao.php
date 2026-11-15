@@ -2318,5 +2318,364 @@ return [
                 ['rotulo' => 'Abrir base de conhecimento', 'rota' => 'admin.assistente.conhecimento.index'],
             ],
         ],
+
+        /* ---------------------------------------------------------------- Modo de Manutenção (503) */
+
+        'manutencao_status' => [
+            'onde' => 'Painel de comando imediato que mostra se o site está aberto ao público ou em contingência HTTP 503 e permite ligar ou desligar com um clique.',
+            'passos' => [
+                ['icone' => 'fa-eye', 'titulo' => 'Confira a prévia antes de fechar ao público', 'texto' => 'Abra o botão Prévia da Tela 503 no topo para conferir títulos, contagem regressiva e botões de plantão antes de ativar.'],
+                ['icone' => 'fa-shield-halved', 'titulo' => 'Garanta o acesso da equipe', 'texto' => 'Inclua os IPs do escritório ou gere/copie o link com a chave de bypass na aba Bypass & Liberação por IP.'],
+                ['icone' => 'fa-power-off', 'titulo' => 'Acione ou encerre a manutenção', 'texto' => 'Use o botão de acionamento deste cartão para alternar o estado ao vivo; o painel `/admin` permanece acessível para administradores autenticados.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver site público', 'rota' => 'site.home'],
+                ['rotulo' => 'Consultar auditoria do painel', 'rota' => 'admin.activities.index'],
+            ],
+            'nota' => 'Alterar campos nas abas e clicar em Salvar preserva o status operacional atual sem desligar a manutenção por engano.',
+        ],
+
+        'manutencao_conteudo' => [
+            'onde' => 'Bloco de textos principais exibidos dentro do cartão central da tela de manutenção 503 para informar os clientes com clareza.',
+            'passos' => [
+                ['icone' => 'fa-heading', 'titulo' => 'Defina um título direto ao ponto', 'texto' => 'Informe logo na primeira linha que é uma melhoria programada para transmitir segurança aos motoristas e gestores de frota.'],
+                ['icone' => 'fa-star', 'titulo' => 'Destaque a continuidade no subtítulo dourado', 'texto' => 'Reforce que os rastreadores veiculares continuam transmitindo telemetria normalmente mesmo com o site em atualização.'],
+                ['icone' => 'fa-align-left', 'titulo' => 'Detalhe orientações na mensagem', 'texto' => 'Explique brevemente o motivo da janela de manutenção e convide quem tiver urgência a usar os canais de plantão logo abaixo.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Personalizar textos padrão das páginas de erro', 'rota' => 'admin.erros.index'],
+            ],
+        ],
+
+        'manutencao_cronometro' => [
+            'onde' => 'Controla quem é atingido pelo bloqueio 503 e configura o relógio regressivo que mostra quanto tempo falta para a reabertura.',
+            'passos' => [
+                ['icone' => 'fa-globe', 'titulo' => 'Escolha o escopo do bloqueio', 'texto' => 'Selecione Bloqueio Total para fechar tudo ou Apenas Site Público se os clientes puderem continuar usando o portal em `/portal`.'],
+                ['icone' => 'fa-clock', 'titulo' => 'Informe a data e hora previstas para término', 'texto' => 'Preencha manualmente ou toque nos botões rápidos (+30 min, +1 h, +2 h, +4 h) para ajustar a janela com um toque.'],
+                ['icone' => 'fa-stopwatch', 'titulo' => 'Ative ou oculte o mostrador digital', 'texto' => 'Com o interruptor ligado e a previsão no futuro, a tela 503 exibe dias, horas, minutos e segundos atualizados ao vivo.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Conferir fuso horário da instalação', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_modo' => [
+            'onde' => 'Define a abrangência da barreira 503 quando o modo de manutenção está ligado.',
+            'passos' => [
+                ['icone' => 'fa-lock', 'titulo' => 'Bloqueio Total', 'texto' => 'Exibe a tela 503 tanto no site institucional e loja quanto no portal do cliente (`/portal`), útil em migrações de banco de dados.'],
+                ['icone' => 'fa-users-gear', 'titulo' => 'Apenas Site Público', 'texto' => 'Mantém `/portal` acessível aos clientes já cadastrados enquanto fecha apenas as páginas comerciais da vitrine e loja.'],
+                ['icone' => 'fa-user-shield', 'titulo' => 'Painel administrativo nunca trava', 'texto' => 'As rotas `/admin` e `/login` permanecem sempre liberadas para que a equipe possa operar e desativar a manutenção.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir auditoria de acessos', 'rota' => 'admin.activities.index'],
+            ],
+        ],
+
+        'manutencao_previsao_fim' => [
+            'onde' => 'Data e horário estimados para conclusão dos trabalhos técnicos, usados pelo cronômetro regressivo.',
+            'passos' => [
+                ['icone' => 'fa-calendar-check', 'titulo' => 'Use o horário local configurado no painel', 'texto' => 'O valor respeita o fuso horário escolhido em Configurações → Contato e endereço.'],
+                ['icone' => 'fa-bolt', 'titulo' => 'Aproveite os atalhos de duração', 'texto' => 'Os botões abaixo do campo preenchem automaticamente +30 min, +1h, +2h ou +4h a partir de agora, sem conta de cabeça.'],
+                ['icone' => 'fa-hourglass-end', 'titulo' => 'O que ocorre quando o tempo zera', 'texto' => 'A tela 503 continua visível até você desligar manualmente a manutenção no topo, mas o cronômetro é recolhido automaticamente.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ajustar fuso horário oficial', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_titulo' => [
+            'onde' => 'Cabeçalho principal exibido em fonte grande no centro da página de manutenção 503.',
+            'passos' => [
+                ['icone' => 'fa-pen', 'titulo' => 'Prefira frases curtas e objetivas', 'texto' => 'Recomenda-se até 60 caracteres para manter o equilíbrio visual na tela cheia em computadores e celulares.'],
+                ['icone' => 'fa-check-double', 'titulo' => 'Campo obrigatório', 'texto' => 'Caso fique sem texto personalizado, a tela recua automaticamente para o padrão cadastrado nas páginas de erro.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Gerenciar padrões de erro HTTP', 'rota' => 'admin.erros.index'],
+            ],
+        ],
+
+        'manutencao_subtitulo' => [
+            'onde' => 'Linha dourada em destaque logo abaixo do título na tela de manutenção.',
+            'passos' => [
+                ['icone' => 'fa-award', 'titulo' => 'Reforce a confiança operacional', 'texto' => 'Ideal para lembrar que o rastreamento por satélite e aplicativo segue ativo durante a atualização do portal web.'],
+                ['icone' => 'fa-eraser', 'titulo' => 'Campo opcional', 'texto' => 'Se não preenchido, o texto fallback da página HTTP 503 entra no lugar.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver lista de páginas de erro', 'rota' => 'admin.erros.index'],
+            ],
+        ],
+
+        'manutencao_mensagem' => [
+            'onde' => 'Parágrafo explicativo que orienta o visitante sobre o motivo da pausa e os próximos passos.',
+            'passos' => [
+                ['icone' => 'fa-comment-dots', 'titulo' => 'Comunique com transparência', 'texto' => 'Explique brevemente o que está sendo aprimorado (segurança, velocidade ou novos recursos) em até 2000 caracteres.'],
+                ['icone' => 'fa-life-ring', 'titulo' => 'Sinalize alternativas de contato', 'texto' => 'Combine este texto com o WhatsApp e o plantão ativos na aba Plantão & Redes Sociais para zerar a ansiedade do cliente.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir páginas de erro do sistema', 'rota' => 'admin.erros.index'],
+            ],
+        ],
+
+        'manutencao_exibir_cronometro' => [
+            'onde' => 'Interruptor que mostra ou oculta o relógio regressivo na tela 503.',
+            'passos' => [
+                ['icone' => 'fa-toggle-on', 'titulo' => 'Ative apenas quando houver prazo estimado', 'texto' => 'Exige que o campo Previsão de Término contenha data e horário no futuro.'],
+                ['icone' => 'fa-toggle-off', 'titulo' => 'Desligue em janelas sem prazo fechado', 'texto' => 'Em manutenções emergenciais sem previsão exata, desligar evita mostrar expectativa imprecisa aos clientes.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver configurações gerais do sistema', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_animacao' => [
+            'onde' => 'Controla o cenário animado em Canvas atrás do cartão 503, com veículos circulando exclusivamente nas vias asfaltadas e satélite emitindo telemetria.',
+            'passos' => [
+                ['icone' => 'fa-car-side', 'titulo' => 'Decida sobre a malha viária animada', 'texto' => 'Ativa ou pausa os veículos com faróis e lanternas circulando na paleta escura e dourada da Golden.'],
+                ['icone' => 'fa-satellite', 'titulo' => 'Combine com o satélite orbital', 'texto' => 'Ativa ondas de rádio e feixes conectando o satélite aos veículos da pista sem sobrecarregar celulares simples.'],
+                ['icone' => 'fa-gauge-high', 'titulo' => 'Ajuste o ritmo do movimento', 'texto' => 'Escolha Suave para leitura tranquila, Padrão para 60 FPS equilibrados ou Dinâmica para telemetria ágil.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Configurar preloader e visual do painel', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_resumo_visual' => [
+            'onde' => 'Checklist instantâneo dos 6 módulos visuais e de atendimento que estão ligados na tela 503 atual.',
+            'passos' => [
+                ['icone' => 'fa-list-check', 'titulo' => 'Audite antes de acionar ao vivo', 'texto' => 'Cada selo verde indica um recurso ativo após o último salvamento; selos neutros indicam módulos ocultos.'],
+                ['icone' => 'fa-eye', 'titulo' => 'Valide na prévia real', 'texto' => 'Após salvar alterações nas abas, abra a demonstração em nova aba para confirmar o resultado final em tela cheia.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Gerenciar tela 503 nas páginas de erro', 'rota' => 'admin.erros.index'],
+            ],
+        ],
+
+        'manutencao_exibir_animacao' => [
+            'onde' => 'Liga ou desliga o fundo animado de tráfego viário na tela 503.',
+            'passos' => [
+                ['icone' => 'fa-road', 'titulo' => 'Veículos restritos às pistas', 'texto' => 'Os carros circulam apenas dentro das faixas asfaltadas das ruas traçadas no fundo, nunca invadindo calçadas ou texto.'],
+                ['icone' => 'fa-mobile-screen', 'titulo' => 'Desligue para modo estático leve', 'texto' => 'Mantém apenas os gradientes escuros da marca quando preferir consumo mínimo de GPU no navegador do visitante.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver ajustes visuais em Configurações', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_exibir_satelite' => [
+            'onde' => 'Controla o satélite em órbita e os feixes luminosos de telemetria sobre o mapa viário.',
+            'passos' => [
+                ['icone' => 'fa-satellite-dish', 'titulo' => 'Reforça a identidade de rastreamento', 'texto' => 'Exibe pulsos orbitais dourados e verdes simbolizando que a cobertura satelital continua operando 24h.'],
+                ['icone' => 'fa-sliders', 'titulo' => 'Funciona em conjunto com o Canvas', 'texto' => 'Para o satélite aparecer, certifique-se de que o fundo animado com carros também esteja ativado ou prefira manter ambos ligados.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver site público da Golden', 'rota' => 'site.home'],
+            ],
+        ],
+
+        'manutencao_velocidade_animacao' => [
+            'onde' => 'Define a velocidade de deslocamento dos veículos e a cadência dos feixes no fundo animado.',
+            'passos' => [
+                ['icone' => 'fa-feather', 'titulo' => 'Suave para discrição máxima', 'texto' => 'Deslocamento lento para não desviar atenção do comunicado central e do cronômetro.'],
+                ['icone' => 'fa-gauge', 'titulo' => 'Padrão ou Dinâmica para ritmo vivo', 'texto' => 'Ideal para demonstrar monitoramento ativo constante enquanto o sistema atualiza.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ajustar estilo de animações em Configurações', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_atendimento' => [
+            'onde' => 'Agrupa o botão flutuante de WhatsApp de emergência e os contatos diretos de plantão exibidos durante a manutenção.',
+            'passos' => [
+                ['icone' => 'fa-comments', 'titulo' => 'Ative o botão de WhatsApp dedicado', 'texto' => 'Informe um número com DDI + DDD ou deixe vazio para herdar automaticamente o WhatsApp oficial cadastrado no sistema.'],
+                ['icone' => 'fa-phone-volume', 'titulo' => 'Publique telefone e e-mail do plantão', 'texto' => 'Quando o interruptor de plantão está ligado, clientes veem o número 24h e o e-mail de suporte logo abaixo do comunicado.'],
+                ['icone' => 'fa-paper-plane', 'titulo' => 'Teste o link do WhatsApp após salvar', 'texto' => 'Abra a prévia da tela 503 e confirme se a mensagem pré-formatada abre corretamente na conversa de suporte.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Conferir WhatsApp oficial da empresa', 'rota' => 'admin.settings.index'],
+                ['rotulo' => 'Plataforma WhatsApp Business', 'url' => 'https://business.whatsapp.com/'],
+            ],
+        ],
+
+        'manutencao_exibir_whatsapp' => [
+            'onde' => 'Exibe ou oculta o botão verde de WhatsApp na tela de manutenção 503.',
+            'passos' => [
+                ['icone' => 'fa-comments', 'titulo' => 'Canal prioritário em contingências', 'texto' => 'Evita que clientes com urgência veicular (roubo, furto ou bloqueio) fiquem sem atendimento enquanto o portal atualiza.'],
+                ['icone' => 'fa-hashtag', 'titulo' => 'Verifique o número vinculado', 'texto' => 'Garanta que o campo Número de WhatsApp ou o contato padrão do site esteja preenchido sem símbolos extras.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver configurações de contato e WhatsApp', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_exibir_plantao' => [
+            'onde' => 'Mostra os atalhos clicáveis de telefone 24h e e-mail técnico na base do cartão de manutenção.',
+            'passos' => [
+                ['icone' => 'fa-headset', 'titulo' => 'Ofereça alternativas além do WhatsApp', 'texto' => 'Útil para solicitações corporativas que dependem de ligação telefônica direta ou registro formal por e-mail.'],
+                ['icone' => 'fa-envelope-open-text', 'titulo' => 'Fallback automático dos dados da loja', 'texto' => 'Se os campos desta tela ficarem vazios, o sistema exibe o telefone e e-mail oficiais da aba Contato e endereço.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Editar contato oficial em Configurações', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_whatsapp_numero' => [
+            'onde' => 'Linha exclusiva para atender chamadas urgentes durante uma manutenção; opcional quando já existe WhatsApp oficial.',
+            'passos' => [
+                ['icone' => 'fa-hashtag', 'titulo' => 'Digite apenas dígitos com DDI + DDD', 'texto' => 'Para Brasil, inicie por `55` seguido do DDD e dos 9 dígitos (exemplo: `5519997101483`), sem traços, parênteses ou `+`.'],
+                ['icone' => 'fa-arrows-rotate', 'titulo' => 'Em branco, usa a linha oficial', 'texto' => 'Deixar este campo limpo reaproveita automaticamente o WhatsApp principal salvo em Configurações → Contato e endereço.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Conferir WhatsApp oficial', 'rota' => 'admin.settings.index'],
+                ['rotulo' => 'Documentação de links wa.me', 'url' => 'https://faq.whatsapp.com/5913398998672934'],
+            ],
+        ],
+
+        'manutencao_whatsapp_mensagem' => [
+            'onde' => 'Frase automática já digitada no campo de texto quando o visitante toca no botão do WhatsApp da tela 503.',
+            'passos' => [
+                ['icone' => 'fa-tag', 'titulo' => 'Identifique a origem no texto', 'texto' => 'Escreva uma abertura clara citando a manutenção para que o atendente identifique de imediato quem veio pela tela 503.'],
+                ['icone' => 'fa-ruler-horizontal', 'titulo' => 'Mantenha até 255 caracteres', 'texto' => 'Mensagens curtas abrem instantaneamente no WhatsApp Web e no aplicativo sem truncar na URL.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Configurar mensagens dos atendentes do site', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_telefone' => [
+            'onde' => 'Número exibido no bloco de plantão 24h da tela de manutenção.',
+            'passos' => [
+                ['icone' => 'fa-phone', 'titulo' => 'Formate para leitura fácil', 'texto' => 'Use o padrão `(DD) 9XXXX-XXXX` ou `0800` para o visitante copiar ou ligar pelo celular em um toque.'],
+                ['icone' => 'fa-inbox', 'titulo' => 'Fallback automático', 'texto' => 'Se deixado em branco, busca o telefone configurado em Configurações → Contato e endereço.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver telefones oficiais', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_email' => [
+            'onde' => 'Caixa de suporte exibida nos canais de plantão da tela 503.',
+            'passos' => [
+                ['icone' => 'fa-at', 'titulo' => 'Aponte para caixa monitorada no plantão', 'texto' => 'Prefira `suporte@` ou `plantao@` em vez de conta pessoal para garantir atendimento contínuo pela equipe.'],
+                ['icone' => 'fa-envelope-circle-check', 'titulo' => 'Validação de formato', 'texto' => 'Informe um endereço de e-mail completo e válido; em branco, herda o e-mail comercial cadastrado em Configurações.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Gerenciar contas de e-mail da hospedagem', 'url' => 'https://{host}:2083/email'],
+                ['rotulo' => 'Ver e-mail comercial em Configurações', 'rota' => 'admin.settings.index'],
+            ],
+        ],
+
+        'manutencao_redes' => [
+            'onde' => 'Links das redes sociais oficiais da Golden exibidos discretamente no rodapé da página 503.',
+            'passos' => [
+                ['icone' => 'fa-share-nodes', 'titulo' => 'Centralize avisos externos', 'texto' => 'Em manutenções mais longas, os visitantes costumam verificar comunicados oficiais no Instagram ou YouTube.'],
+                ['icone' => 'fa-link', 'titulo' => 'Cole URLs completas com https://', 'texto' => 'Somente redes com link preenchido são desenhadas como ícone clicável na tela 503.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir Instagram', 'url' => 'https://www.instagram.com/'],
+                ['rotulo' => 'Abrir Facebook', 'url' => 'https://www.facebook.com/'],
+                ['rotulo' => 'Abrir YouTube', 'url' => 'https://www.youtube.com/'],
+                ['rotulo' => 'Abrir LinkedIn', 'url' => 'https://www.linkedin.com/'],
+            ],
+        ],
+
+        'manutencao_exibir_redes' => [
+            'onde' => 'Ativa ou oculta toda a faixa de ícones das redes sociais no rodapé da tela 503.',
+            'passos' => [
+                ['icone' => 'fa-toggle-on', 'titulo' => 'Mantenha visível para comunicação institucional', 'texto' => 'Permite que o visitante acompanhe novidades da empresa sem perder o vínculo com a marca.'],
+                ['icone' => 'fa-toggle-off', 'titulo' => 'Oculte durante manutenções breves', 'texto' => 'Deixa o cartão 503 mais enxuto quando o foco total precisa estar apenas no suporte emergencial.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver site público', 'rota' => 'site.home'],
+            ],
+        ],
+
+        'manutencao_instagram' => [
+            'onde' => 'Endereço completo do perfil oficial da Golden Rastreamento no Instagram.',
+            'passos' => [
+                ['icone' => 'fa-link', 'titulo' => 'Copie a URL completa do navegador', 'texto' => 'Exemplo: `https://instagram.com/goldenrastreamento`. Deixar em branco oculta apenas o ícone do Instagram.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Acessar Instagram', 'url' => 'https://www.instagram.com/'],
+            ],
+        ],
+
+        'manutencao_facebook' => [
+            'onde' => 'Endereço completo da página oficial da empresa no Facebook.',
+            'passos' => [
+                ['icone' => 'fa-link', 'titulo' => 'Informe o link começando por https://', 'texto' => 'Exemplo: `https://facebook.com/goldenrastreamento`. Em branco, não exibe o botão do Facebook.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Acessar Facebook', 'url' => 'https://www.facebook.com/'],
+            ],
+        ],
+
+        'manutencao_youtube' => [
+            'onde' => 'Endereço do canal oficial da Golden Rastreamento no YouTube.',
+            'passos' => [
+                ['icone' => 'fa-play', 'titulo' => 'Use o identificador oficial do canal', 'texto' => 'Exemplo: `https://youtube.com/@goldenrastreamento`. Vazio remove o ícone do YouTube da tela 503.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Acessar YouTube Studio', 'url' => 'https://studio.youtube.com/'],
+            ],
+        ],
+
+        'manutencao_linkedin' => [
+            'onde' => 'Endereço da página corporativa da Golden Rastreamento no LinkedIn.',
+            'passos' => [
+                ['icone' => 'fa-briefcase', 'titulo' => 'Preencha se usar canal corporativo', 'texto' => 'Exemplo: `https://linkedin.com/company/goldenrastreamento`. Em branco por padrão para não exibir ícone sem página ativa.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Acessar LinkedIn', 'url' => 'https://www.linkedin.com/'],
+            ],
+        ],
+
+        'manutencao_ips' => [
+            'onde' => 'Lista de endereços IP que atravessam o modo de manutenção automaticamente e navegam no site sem precisar de senha ou link secreto.',
+            'passos' => [
+                ['icone' => 'fa-network-wired', 'titulo' => 'Adicione seu próprio IP com um clique', 'texto' => 'Clique no botão Incluir meu IP atual para liberar a sua conexão na hora antes de ligar a manutenção.'],
+                ['icone' => 'fa-list-ul', 'titulo' => 'Um endereço IP por linha', 'texto' => 'Você também pode listar o IP fixo do escritório, da central de monitoramento ou dos desenvolvedores, um por linha.'],
+                ['icone' => 'fa-triangle-exclamation', 'titulo' => 'Atenção a conexões móveis dinâmicas', 'texto' => 'Em 4G/5G ou internet residencial o IP muda com frequência; nesses casos, prefira enviar o link de Bypass por chave secreta.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Descobrir meu endereço IP público', 'url' => 'https://whatismyipaddress.com/'],
+                ['rotulo' => 'Ver Whitelist de segurança WAF', 'rota' => 'admin.seguranca-militar.index'],
+            ],
+        ],
+
+        'manutencao_ips_permitidos' => [
+            'onde' => 'Lista de endereços IPv4 ou IPv6 autorizados a ignorar completamente a barreira HTTP 503.',
+            'passos' => [
+                ['icone' => 'fa-keyboard', 'titulo' => 'Separe por quebra de linha ou vírgula', 'texto' => 'Cada IP listado é comparado em tempo real com `$request->ip()` assim que alguém acessa qualquer página pública.'],
+                ['icone' => 'fa-user-plus', 'titulo' => 'Adicione seu IP detectado pelo botão rápido', 'texto' => 'Use o atalho logo abaixo do campo para evitar erro de digitação ao copiar seu endereço atual.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Conferir IP na ferramenta externa', 'url' => 'https://whatismyipaddress.com/'],
+            ],
+        ],
+
+        'manutencao_bypass' => [
+            'onde' => 'Chave secreta que libera o site inteiro para diretoria, equipe de QA ou terceiros através de uma URL especial que grava um cookie de 7 dias no navegador.',
+            'passos' => [
+                ['icone' => 'fa-copy', 'titulo' => 'Copie o Link com Chave Secreta', 'texto' => 'Use o botão Copiar ao lado do endereço `/?golden_bypass=...` para compartilhar com quem precisa homologar o site fechado.'],
+                ['icone' => 'fa-cookie-bite', 'titulo' => 'Navegação contínua por 7 dias', 'texto' => 'Ao abrir o link uma única vez, o navegador recebe o cookie `golden_maintenance_bypass` e navega normalmente por todas as páginas.'],
+                ['icone' => 'fa-arrows-rotate', 'titulo' => 'Revogue e gere nova chave quando terminar', 'texto' => 'O botão Gerar Nova Chave Secreta invalida na hora qualquer link ou cookie antigo que tenha sido compartilhado.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Documentação do Google sobre HTTP 503', 'url' => 'https://developers.google.com/search/docs/crawling-indexing/http-network-errors'],
+                ['rotulo' => 'Consultar auditoria de geração de chaves', 'rota' => 'admin.activities.index'],
+            ],
+            'nota' => 'Enquanto o bloqueio está ativo para visitantes, todas as páginas públicas retornam cabeçalho `HTTP 503 Service Unavailable` com `Retry-After: 300`, protegendo a indexação SEO no Google e Bing.',
+        ],
+
+        'manutencao_token_bypass' => [
+            'onde' => 'Texto da chave secreta anexada ao parâmetro `?golden_bypass=` do endereço liberado.',
+            'passos' => [
+                ['icone' => 'fa-key', 'titulo' => 'Prefira chaves longas e aleatórias', 'texto' => 'Por padrão o sistema sorteia 32 caracteres aleatórios; só edite manualmente se precisar combinar uma senha específica com a equipe.'],
+                ['icone' => 'fa-arrows-rotate', 'titulo' => 'Salvar atualiza o link na hora', 'texto' => 'Ao salvar este campo ou clicar em Gerar Nova Chave Secreta, os cookies que usavam o código anterior perdem validade imediatamente.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Boas práticas HTTP 503 (Google Search Central)', 'url' => 'https://developers.google.com/search/docs/crawling-indexing/http-network-errors'],
+            ],
+        ],
     ],
 ];

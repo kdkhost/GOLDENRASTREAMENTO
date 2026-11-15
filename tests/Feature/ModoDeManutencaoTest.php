@@ -118,6 +118,43 @@ class ModoDeManutencaoTest extends TestCase
         $this->assertSame('5519997101483', Setting::get('manutencao_whatsapp_numero'));
     }
 
+    public function test_salvar_configuracoes_sem_campo_ativa_preserva_estado_ativo_da_manutencao(): void
+    {
+        Setting::set('manutencao_ativa', '1');
+
+        $response = $this->actingAs($this->admin)->put(route('admin.manutencao.update'), [
+            'modo' => 'total',
+            'titulo' => 'Manutenção Preservada',
+        ]);
+
+        $response->assertRedirect(route('admin.manutencao.index'));
+        $this->assertSame('1', Setting::get('manutencao_ativa'));
+        $this->assertSame('Manutenção Preservada', Setting::get('manutencao_titulo'));
+    }
+
+    public function test_tela_de_manutencao_renderiza_abas_ajudas_e_paleta_golden(): void
+    {
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.manutencao.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-abas="manutencao"', $html);
+        $this->assertStringContainsString('data-ajuda="ajuda-tela"', $html);
+        $this->assertStringNotContainsString('text-primary', $html);
+        $this->assertStringNotContainsString('text-info', $html);
+        $this->assertStringNotContainsString('bg-danger-subtle', $html);
+        $this->assertStringNotContainsString('bg-success-subtle', $html);
+
+        preg_match_all('/data-ajuda="(ajuda-[a-z0-9-]+)"/i', $html, $chamados);
+        $this->assertGreaterThan(20, count(array_unique($chamados[1])));
+
+        foreach (array_unique($chamados[1]) as $id) {
+            $this->assertStringContainsString('data-ajuda-corpo="'.$id.'"', $html,
+                "A gaveta de ajuda '{$id}' em /admin/manutencao ficou sem conteúdo.");
+        }
+    }
+
     public function test_tela_503_renderiza_elementos_personalizados_de_animacao_satelite_e_whatsapp(): void
     {
         Setting::set('manutencao_ativa', '1');

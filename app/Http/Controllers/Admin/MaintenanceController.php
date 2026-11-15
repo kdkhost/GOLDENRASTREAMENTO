@@ -78,13 +78,17 @@ class MaintenanceController extends Controller
 
         $this->maintenance->salvarConfiguracoes($validados);
 
-        $statusRotulo = ! empty($validados['ativa']) ? 'LIGADO' : 'DESLIGADO';
+        $ativaAtual = array_key_exists('ativa', $validados)
+            ? ! empty($validados['ativa'])
+            : $this->maintenance->estaAtivo();
+
+        $statusRotulo = $ativaAtual ? 'LIGADO' : 'DESLIGADO';
 
         Activity::log(
             'maintenance_mode_update',
             "Atualizou configurações do Modo de Manutenção (Status: {$statusRotulo}).",
             $request->user(),
-            ['ativa' => ! empty($validados['ativa'])]
+            ['ativa' => $ativaAtual]
         );
 
         return redirect()

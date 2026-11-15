@@ -2,310 +2,450 @@
 @section('title', 'Modo de Manutenção')
 @section('page_title', 'Modo de manutenção do sistema')
 
+@php
+    $ipsLista = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', (string) $ipsPermitidos) ?: [])));
+    $meuIpLiberado = $meuIp && in_array($meuIp, $ipsLista, true);
+
+    $previsaoCarbon = null;
+    if (! empty($previsaoFim)) {
+        try {
+            $previsaoCarbon = \Illuminate\Support\Carbon::parse($previsaoFim);
+        } catch (\Throwable) {
+            $previsaoCarbon = null;
+        }
+    }
+
+    $opcoesModo = [
+        'total' => 'Bloqueio Total (Site público e Portal do Cliente)',
+        'publico_apenas' => 'Apenas Site Público (Portal do Cliente liberado)',
+    ];
+
+    $opcoesVelocidade = [
+        'suave' => 'Suave (Movimento tranquilo e relaxante)',
+        'normal' => 'Padrão (Velocidade balanceada a 60 FPS)',
+        'rapida' => 'Dinâmica (Tráfego ágil com alta taxa de telemetria)',
+    ];
+
+    $modulos503 = [
+        ['rotulo' => 'Fundo Animado (Carros)', 'icone' => 'fa-car-side', 'ativo' => (bool) $exibirAnimacao],
+        ['rotulo' => 'Satélite Orbital & Feixes', 'icone' => 'fa-satellite', 'ativo' => (bool) $exibirSatelite],
+        ['rotulo' => 'Contador Regressivo', 'icone' => 'fa-stopwatch', 'ativo' => (bool) $exibirCronometro],
+        ['rotulo' => 'Botão do WhatsApp', 'icone' => 'fa-comments', 'ativo' => (bool) $exibirWhatsapp],
+        ['rotulo' => 'Redes Sociais', 'icone' => 'fa-share-nodes', 'ativo' => (bool) $exibirRedes],
+        ['rotulo' => 'Plantão de Emergência', 'icone' => 'fa-headset', 'ativo' => (bool) $exibirPlantao],
+    ];
+@endphp
+
 @section('page_actions')
     <a href="{{ route('admin.erros.preview', 503) }}" target="_blank" rel="noopener" class="btn btn-sm btn-golden">
-        <i class="fas fa-eye me-1"></i> Prévia da Tela 503
+        <i class="fas fa-eye" aria-hidden="true"></i> Prévia da Tela 503
+    </a>
+    <a href="{{ $urlBypass }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-key" aria-hidden="true"></i> Testar Bypass
     </a>
     <a href="{{ route('site.home') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
-        <i class="fas fa-globe me-1"></i> Ver o site
+        <i class="fas fa-globe" aria-hidden="true"></i> Ver o site
     </a>
 @endsection
 
 @section('content')
-{{-- Status Banner Prominente --}}
-<div class="card mb-4 shadow-sm border-0 {{ $ativa ? 'border-start border-danger border-4 bg-danger-subtle' : 'border-start border-success border-4 bg-success-subtle' }}">
-    <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle d-grid place-items-center" style="width: 52px; height: 52px; background: {{ $ativa ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)' }};">
-                <i class="fas {{ $ativa ? 'fa-triangle-exclamation text-danger' : 'fa-circle-check text-success' }} fa-xl"></i>
+{{-- Painel de Comando Imediato --}}
+<x-admin.card title="Status Operacional do Sistema" icon="fa-power-off" ajuda="manutencao_status" class="mb-3">
+    <x-slot:actions>
+        <x-admin.status :rotulo="$ativa ? 'manutenção ativa (503)' : 'sistema online'" :tom="$ativa ? 'red' : 'green'" />
+    </x-slot:actions>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-start gap-3">
+            <div class="rounded-circle d-grid flex-none {{ $ativa ? 'tone-red' : 'tone-green' }}" style="width:52px;height:52px;place-items:center">
+                <i class="fas {{ $ativa ? 'fa-triangle-exclamation' : 'fa-circle-check' }} fa-lg" aria-hidden="true"></i>
             </div>
             <div>
-                <h4 class="fw-bold mb-1 {{ $ativa ? 'text-danger' : 'text-success' }}">
+                <h4 class="fw-bold mb-1 {{ $ativa ? 'text-tone-red' : 'text-tone-green' }}">
                     {{ $ativa ? 'MODO DE MANUTENÇÃO ATIVADO' : 'SISTEMA OPERANDO NORMALMENTE' }}
                 </h4>
-                <p class="mb-0 text-secondary small">
+                <p class="mb-2 text-secondary small">
                     {{ $ativa ? 'O site está temporariamente fechado ao público com a tela personalizada de manutenção (HTTP 503).' : 'O site público e todas as páginas estão acessíveis para visitantes e clientes.' }}
                 </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge-status tone-gold">
+                        <i class="fas fa-shield-halved me-1" aria-hidden="true"></i>
+                        {{ $modo === 'total' ? 'Escopo: Bloqueio Total' : 'Escopo: Apenas Site Público' }}
+                    </span>
+                    <span class="badge-status tone-neutral">
+                        <i class="fas fa-clock me-1" aria-hidden="true"></i>
+                        {{ $previsaoCarbon ? 'Previsão: '.$previsaoCarbon->format('d/m/Y H:i') : 'Sem previsão definida' }}
+                    </span>
+                    <span class="badge-status {{ $meuIpLiberado ? 'tone-green' : 'tone-neutral' }}">
+                        <i class="fas fa-network-wired me-1" aria-hidden="true"></i>
+                        Seu IP ({{ $meuIp }}): {{ $meuIpLiberado ? 'liberado na whitelist' : 'não listado' }}
+                    </span>
+                </div>
             </div>
         </div>
-        <div>
-            <form method="POST" action="{{ route('admin.manutencao.toggle') }}"
-                onsubmit="return confirm('{{ $ativa ? 'Deseja realmente desativar o modo de manutenção e liberar o site ao público?' : 'Deseja ativar o modo de manutenção agora? O site público passará a exibir a tela personalizada 503.' }}');">
-                @csrf
-                <button type="submit" class="btn {{ $ativa ? 'btn-success' : 'btn-danger' }} fw-bold px-4 py-2">
-                    <i class="fas {{ $ativa ? 'fa-play' : 'fa-power-off' }} me-2"></i>
-                    {{ $ativa ? 'Desativar Manutenção e Abrir Site' : 'Ativar Modo de Manutenção Agora' }}
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
 
-<div class="row g-4">
-    <div class="col-12 col-lg-8">
-        <form method="POST" action="{{ route('admin.manutencao.update') }}">
+        <form method="POST" action="{{ route('admin.manutencao.toggle') }}" class="m-0"
+            data-atualiza=".app-content, .page-actions"
+            data-confirmar="{{ $ativa ? 'Deseja realmente desativar o modo de manutenção e liberar o site ao público?' : 'Deseja ativar o modo de manutenção agora? O site público passará a exibir a tela personalizada 503.' }}">
             @csrf
-            @method('PUT')
-
-            {{-- 1. Textos e Escopo da Manutenção --}}
-            <x-admin.card title="Conteúdo & Mensagens da Manutenção" icon="fa-pen-to-square" class="mb-4">
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-6">
-                        <label for="campo-modo" class="form-label fw-bold">Escopo do Bloqueio</label>
-                        <select id="campo-modo" name="modo" class="form-select">
-                            <option value="total" {{ $modo === 'total' ? 'selected' : '' }}>Bloqueio Total (Site público e Portal do Cliente)</option>
-                            <option value="publico_apenas" {{ $modo === 'publico_apenas' ? 'selected' : '' }}>Apenas Site Público (Portal do Cliente liberado)</option>
-                        </select>
-                        <div class="form-hint">O painel administrativo (/admin) permanece sempre acessível aos administradores.</div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="campo-previsao_fim" class="form-label fw-bold">Previsão de Término</label>
-                        <input type="datetime-local" id="campo-previsao_fim" name="previsao_fim" class="form-control"
-                            value="{{ old('previsao_fim', $previsaoFim) }}">
-                        <div class="form-hint">Alimenta o cronômetro regressivo da tela de manutenção.</div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="campo-titulo" class="form-label fw-bold">Título Principal <span class="text-danger">*</span></label>
-                    <input type="text" id="campo-titulo" name="titulo" class="form-control"
-                        value="{{ old('titulo', $titulo) }}" required maxlength="160">
-                </div>
-
-                <div class="mb-3">
-                    <label for="campo-subtitulo" class="form-label fw-bold">Subtítulo Dourado</label>
-                    <input type="text" id="campo-subtitulo" name="subtitulo" class="form-control"
-                        value="{{ old('subtitulo', $subtitulo) }}" maxlength="255">
-                </div>
-
-                <div class="mb-3">
-                    <label for="campo-mensagem" class="form-label fw-bold">Mensagem aos Clientes e Visitantes</label>
-                    <textarea id="campo-mensagem" name="mensagem" rows="3" class="form-control"
-                        maxlength="2000">{{ old('mensagem', $mensagem) }}</textarea>
-                </div>
-
-                <div class="form-check form-switch mt-3">
-                    <input class="form-check-input" type="checkbox" role="switch" id="switch-cronometro" name="exibir_cronometro" value="1"
-                        {{ old('exibir_cronometro', $exibirCronometro) ? 'checked' : '' }}>
-                    <label class="form-check-label fw-bold" for="switch-cronometro">Exibir Contador Regressivo ao Vivo</label>
-                    <div class="form-hint">Apresenta mostrador digital com dias, horas, minutos e segundos até a reabertura dos serviços.</div>
-                </div>
-            </x-admin.card>
-
-            {{-- 2. Animação de Fundo Interativa (Carros em Circulação & Satélite de Telemetria) --}}
-            <x-admin.card title="Plano de Fundo Animado (Tráfego de Carros & Satélites)" icon="fa-satellite" class="mb-4">
-                <div class="alert alert-dark border-0 p-3 mb-3 d-flex align-items-center gap-3" style="background: rgba(245, 179, 1, 0.06); border-left: 3px solid #f5b301 !important;">
-                    <i class="fas fa-radar text-warning fa-2x"></i>
-                    <div class="small">
-                        <strong>Simulação de Telemetria Satelital em Tempo Real:</strong> Renderizada em Canvas de alta performance na paleta oficial Golden (Dark Void, Ouro e Verde Satelital), com veículos trafegando nas avenidas e pulsos de satélite transmitindo dados.
-                    </div>
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-6">
-                        <div class="form-check form-switch mt-1">
-                            <input class="form-check-input" type="checkbox" role="switch" id="switch-animacao" name="exibir_animacao" value="1"
-                                {{ old('exibir_animacao', $exibirAnimacao) ? 'checked' : '' }}>
-                            <label class="form-check-label fw-bold" for="switch-animacao">Ativar Fundo Animado com Carros</label>
-                            <div class="form-hint">Carros com faróis e lanternas circulando pela malha viária estilizada.</div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-check form-switch mt-1">
-                            <input class="form-check-input" type="checkbox" role="switch" id="switch-satelite" name="exibir_satelite" value="1"
-                                {{ old('exibir_satelite', $exibirSatelite) ? 'checked' : '' }}>
-                            <label class="form-check-label fw-bold" for="switch-satelite">Exibir Satélite em Órbita & Feixes</label>
-                            <div class="form-hint">Emite ondas de rádio e feixes de laser conectando aos veículos.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-2">
-                    <label for="campo-velocidade_animacao" class="form-label fw-bold">Velocidade da Dinâmica de Tráfego</label>
-                    <select id="campo-velocidade_animacao" name="velocidade_animacao" class="form-select">
-                        <option value="suave" {{ $velocidadeAnimacao === 'suave' ? 'selected' : '' }}>Suave (Movimento tranquilo e relaxante)</option>
-                        <option value="normal" {{ $velocidadeAnimacao === 'normal' ? 'selected' : '' }}>Padrão (Velocidade balanceada a 60 FPS)</option>
-                        <option value="rapida" {{ $velocidadeAnimacao === 'rapida' ? 'selected' : '' }}>Dinâmica (Tráfego ágil com alta taxa de telemetria)</option>
-                    </select>
-                </div>
-            </x-admin.card>
-
-            {{-- 3. WhatsApp e Atendimento de Plantão --}}
-            <x-admin.card title="Atendimento & WhatsApp de Emergência" icon="fa-headset" class="mb-4">
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-6">
-                        <div class="form-check form-switch mt-1">
-                            <input class="form-check-input" type="checkbox" role="switch" id="switch-whatsapp" name="exibir_whatsapp" value="1"
-                                {{ old('exibir_whatsapp', $exibirWhatsapp) ? 'checked' : '' }}>
-                            <label class="form-check-label fw-bold" for="switch-whatsapp">Exibir Botão de WhatsApp em Destaque</label>
-                            <div class="form-hint">Permite aos visitantes abrirem conversa direta de suporte durante a manutenção.</div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-check form-switch mt-1">
-                            <input class="form-check-input" type="checkbox" role="switch" id="switch-plantao" name="exibir_plantao" value="1"
-                                {{ old('exibir_plantao', $exibirPlantao) ? 'checked' : '' }}>
-                            <label class="form-check-label fw-bold" for="switch-plantao">Exibir Canais de Plantão (Tel & E-mail)</label>
-                            <div class="form-hint">Mostra telefonia 24h e endereço de e-mail técnico.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-6">
-                        <label for="campo-whatsapp_numero" class="form-label fw-bold">Número de WhatsApp</label>
-                        <input type="text" id="campo-whatsapp_numero" name="whatsapp_numero" class="form-control"
-                            placeholder="Ex: 5519997101483" value="{{ old('whatsapp_numero', $whatsappNumero) }}" maxlength="32">
-                        <div class="form-hint">Somente números com DDI + DDD (ex: 5519997101483). Deixe em branco para usar o número padrão do site.</div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="campo-whatsapp_mensagem" class="form-label fw-bold">Mensagem Pré-formatada do WhatsApp</label>
-                        <input type="text" id="campo-whatsapp_mensagem" name="whatsapp_mensagem" class="form-control"
-                            value="{{ old('whatsapp_mensagem', $whatsappMensagem) }}" maxlength="255">
-                        <div class="form-hint">Texto que o cliente verá pré-preenchido ao clicar no WhatsApp.</div>
-                    </div>
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <label for="campo-telefone" class="form-label fw-bold">Telefone 24h / Plantão</label>
-                        <input type="text" id="campo-telefone" name="telefone" class="form-control"
-                            value="{{ old('telefone', $telefone) }}" maxlength="60">
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="campo-email" class="form-label fw-bold">E-mail de Suporte Técnico</label>
-                        <input type="email" id="campo-email" name="email" class="form-control"
-                            value="{{ old('email', $email) }}" maxlength="120">
-                    </div>
-                </div>
-            </x-admin.card>
-
-            {{-- 4. Redes Sociais Oficiais --}}
-            <x-admin.card title="Redes Sociais Oficiais" icon="fa-share-nodes" class="mb-4">
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" role="switch" id="switch-redes" name="exibir_redes" value="1"
-                        {{ old('exibir_redes', $exibirRedes) ? 'checked' : '' }}>
-                    <label class="form-check-label fw-bold" for="switch-redes">Exibir Links das Redes Sociais no Rodapé</label>
-                    <div class="form-hint">Apresenta os perfis oficiais da Golden Rastreamento para manter o público conectado.</div>
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <label for="campo-instagram" class="form-label fw-bold"><i class="fab fa-instagram text-danger me-1"></i> Instagram</label>
-                        <input type="url" id="campo-instagram" name="instagram" class="form-control"
-                            placeholder="https://instagram.com/goldenrastreamento" value="{{ old('instagram', $instagram) }}" maxlength="255">
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="campo-facebook" class="form-label fw-bold"><i class="fab fa-facebook text-primary me-1"></i> Facebook</label>
-                        <input type="url" id="campo-facebook" name="facebook" class="form-control"
-                            placeholder="https://facebook.com/goldenrastreamento" value="{{ old('facebook', $facebook) }}" maxlength="255">
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="campo-youtube" class="form-label fw-bold"><i class="fab fa-youtube text-danger me-1"></i> YouTube</label>
-                        <input type="url" id="campo-youtube" name="youtube" class="form-control"
-                            placeholder="https://youtube.com/@goldenrastreamento" value="{{ old('youtube', $youtube) }}" maxlength="255">
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="campo-linkedin" class="form-label fw-bold"><i class="fab fa-linkedin text-info me-1"></i> LinkedIn</label>
-                        <input type="url" id="campo-linkedin" name="linkedin" class="form-control"
-                            placeholder="https://linkedin.com/company/goldenrastreamento" value="{{ old('linkedin', $linkedin) }}" maxlength="255">
-                    </div>
-                </div>
-            </x-admin.card>
-
-            {{-- 5. Whitelist de IPs --}}
-            <x-admin.card title="Acesso Liberado por IP (Whitelist)" icon="fa-shield-halved" class="mb-4">
-                <div class="mb-3">
-                    <label for="campo-ips_permitidos" class="form-label fw-bold">Endereços IP Liberados</label>
-                    <textarea id="campo-ips_permitidos" name="ips_permitidos" rows="3" class="form-control font-monospace"
-                        placeholder="Exemplo:&#10;187.54.120.30&#10;201.89.44.12">{{ old('ips_permitidos', $ipsPermitidos) }}</textarea>
-                    <div class="form-hint">
-                        Digite um endereço IP por linha. Esses endereços nunca verão a tela de manutenção.
-                        <span class="d-block mt-1">Seu IP atual detectado: <strong>{{ $meuIp }}</strong></span>
-                    </div>
-                </div>
-            </x-admin.card>
-
-            <div class="d-flex justify-content-between align-items-center mb-5">
-                <button type="submit" class="btn btn-golden btn-lg px-4 fw-bold">
-                    <i class="fas fa-check me-2"></i> Salvar Todas as Configurações de Manutenção
-                </button>
-                <a href="{{ route('admin.erros.preview', 503) }}" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-lg">
-                    <i class="fas fa-eye me-1"></i> Ver Prévia ao Vivo
-                </a>
-            </div>
+            <button type="submit" class="btn {{ $ativa ? 'btn-success' : 'btn-danger' }} fw-bold px-4 py-2">
+                <i class="fas {{ $ativa ? 'fa-play' : 'fa-power-off' }}" aria-hidden="true"></i>
+                {{ $ativa ? 'Desativar Manutenção e Abrir Site' : 'Ativar Modo de Manutenção Agora' }}
+            </button>
         </form>
     </div>
+</x-admin.card>
 
-    <div class="col-12 col-lg-4">
-        {{-- Card de Chave de Bypass --}}
-        <x-admin.card title="Acesso Secreto por Bypass" icon="fa-key" class="mb-4">
-            <p class="small text-secondary mb-3">
-                Diretores e técnicos podem navegar pelo site normalmente durante a manutenção compartilhando o link com a chave secreta. O navegador grava um cookie temporário de 7 dias.
-            </p>
+{{-- Formulário Unificado em Abas --}}
+<form id="formManutencaoConfig" method="POST" action="{{ route('admin.manutencao.update') }}" data-atualiza=".app-content, .page-actions">
+    @csrf
+    @method('PUT')
+    <input type="hidden" name="ativa" value="{{ $ativa ? '1' : '0' }}">
 
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-uppercase text-secondary">Link com Chave Secreta:</label>
-                <div class="input-group">
-                    <input type="text" id="input-bypass-url" class="form-control form-control-sm font-monospace"
-                        value="{{ $urlBypass }}" readonly>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('input-bypass-url').value); alert('Link de bypass copiado para a área de transferência!');">
-                        <i class="fas fa-copy"></i>
+    <div class="abas" data-abas="manutencao">
+        <div class="abas-barra">
+            <ul class="nav abas-nav" role="tablist" aria-label="Configurações do modo de manutenção">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" type="button" role="tab" id="aba-conteudo-botao"
+                        data-bs-toggle="tab" data-bs-target="#aba-conteudo" data-aba="conteudo"
+                        aria-controls="aba-conteudo" aria-selected="true">
+                        <i class="fas fa-pen-to-square" aria-hidden="true"></i><span>Conteúdo &amp; Cronômetro</span>
                     </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" type="button" role="tab" id="aba-animacao-botao"
+                        data-bs-toggle="tab" data-bs-target="#aba-animacao" data-aba="animacao"
+                        aria-controls="aba-animacao" aria-selected="false">
+                        <i class="fas fa-satellite" aria-hidden="true"></i><span>Telemetria &amp; Cenário 503</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" type="button" role="tab" id="aba-atendimento-botao"
+                        data-bs-toggle="tab" data-bs-target="#aba-atendimento" data-aba="atendimento"
+                        aria-controls="aba-atendimento" aria-selected="false">
+                        <i class="fas fa-headset" aria-hidden="true"></i><span>Plantão &amp; Redes Sociais</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" type="button" role="tab" id="aba-acesso-botao"
+                        data-bs-toggle="tab" data-bs-target="#aba-acesso" data-aba="acesso"
+                        aria-controls="aba-acesso" aria-selected="false">
+                        <i class="fas fa-key" aria-hidden="true"></i><span>Bypass &amp; Liberação por IP</span>
+                        <span class="abas-contagem">{{ count($ipsLista) }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content">
+            {{-- Aba 1: Conteúdo & Cronômetro --}}
+            <div class="tab-pane fade show active" id="aba-conteudo" data-aba-painel="conteudo" role="tabpanel" aria-labelledby="aba-conteudo-botao" tabindex="0">
+                <div class="row g-3">
+                    <div class="col-12 col-xl-7">
+                        <x-admin.card title="Mensagens da Tela 503" icon="fa-pen-to-square" ajuda="manutencao_conteudo"
+                            descricao="Textos principais do comunicado exibido durante a manutenção." class="h-100">
+                            <div class="row g-3">
+                                <x-admin.field name="titulo" label="Título Principal" :value="$titulo" col="col-12"
+                                    :required="true" maxlength="160" ajuda="manutencao_titulo"
+                                    placeholder="Sistema em Manutenção Programada" />
+                                <x-admin.field name="subtitulo" label="Subtítulo Dourado" :value="$subtitulo" col="col-12"
+                                    :opcional="true" maxlength="255" ajuda="manutencao_subtitulo"
+                                    placeholder="Estamos realizando atualizações para melhorar sua experiência." />
+                                <x-admin.field name="mensagem" type="textarea" :rows="4" label="Mensagem aos Clientes e Visitantes"
+                                    :value="$mensagem" col="col-12" :opcional="true" maxlength="2000" ajuda="manutencao_mensagem" />
+                            </div>
+                        </x-admin.card>
+                    </div>
+
+                    <div class="col-12 col-xl-5">
+                        <x-admin.card title="Escopo & Cronômetro Regressivo" icon="fa-stopwatch" ajuda="manutencao_cronometro"
+                            descricao="Abrangência do bloqueio e relógio de retorno." class="h-100">
+                            <div class="row g-3">
+                                <x-admin.field name="modo" type="select" label="Escopo do Bloqueio" :value="$modo"
+                                    :options="$opcoesModo" col="col-12" :required="true" ajuda="manutencao_modo"
+                                    hint="O painel administrativo (/admin) permanece sempre acessível aos administradores." />
+
+                                <x-admin.switch name="exibir_cronometro" label="Exibir Contador Regressivo ao Vivo"
+                                    :checked="$exibirCronometro" col="col-12" ajuda="manutencao_exibir_cronometro"
+                                    hint="Mostra dias, horas, minutos e segundos até a reabertura dos serviços." />
+
+                                <x-admin.field name="previsao_fim" type="datetime-local" label="Previsão de Término"
+                                    :value="$previsaoFim" col="col-12" :opcional="true" ajuda="manutencao_previsao_fim"
+                                    hint="Alimenta o cronômetro regressivo da tela de manutenção." />
+
+                                <div class="col-12">
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-previsao-minutos="30">+30 min</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-previsao-minutos="60">+1 hora</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-previsao-minutos="120">+2 horas</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-previsao-minutos="240">+4 horas</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-previsao-limpar>Limpar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </x-admin.card>
+                    </div>
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('admin.manutencao.gerar-token') }}"
-                onsubmit="return confirm('Deseja gerar uma nova chave secreta? O link anterior deixará de funcionar imediatamente.');">
-                @csrf
-                <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="fas fa-arrows-rotate me-1"></i> Gerar Nova Chave Secreta
-                </button>
-            </form>
+            {{-- Aba 2: Telemetria & Cenário 503 --}}
+            <div class="tab-pane fade" id="aba-animacao" data-aba-painel="animacao" role="tabpanel" aria-labelledby="aba-animacao-botao" tabindex="0">
+                <div class="row g-3">
+                    <div class="col-12 col-xl-7">
+                        <x-admin.card title="Cenário Satelital & Fluxo Viário" icon="fa-satellite" ajuda="manutencao_animacao"
+                            descricao="Animação em Canvas de alta performance na paleta oficial Golden." class="h-100">
+                            <div class="callout mb-3">
+                                <span class="small">
+                                    <i class="fas fa-satellite-dish text-gold me-1" aria-hidden="true"></i>
+                                    <strong>Telemetria em Tempo Real:</strong> veículos trafegam exclusivamente dentro das faixas asfaltadas das vias enquanto feixes orbitais conectam o satélite à frota.
+                                </span>
+                            </div>
 
-            <hr class="my-3">
+                            <div class="row g-3">
+                                <x-admin.switch name="exibir_animacao" label="Ativar Fundo Animado com Carros"
+                                    :checked="$exibirAnimacao" col="col-12 col-md-6" ajuda="manutencao_exibir_animacao"
+                                    hint="Carros com faróis e lanternas circulando na malha viária." />
 
-            <h6 class="fw-bold small text-uppercase text-secondary mb-2">Segurança & SEO</h6>
-            <p class="small text-muted mb-0">
-                A tela 503 envia o cabeçalho HTTP <code>Retry-After: 300</code> para os motores de busca (Google, Bing). Isso instrui os indexadores a voltarem mais tarde sem penalizar o SEO ou desindexar suas páginas.
-            </p>
-        </x-admin.card>
+                                <x-admin.switch name="exibir_satelite" label="Exibir Satélite em Órbita & Feixes"
+                                    :checked="$exibirSatelite" col="col-12 col-md-6" ajuda="manutencao_exibir_satelite"
+                                    hint="Ondas de rádio e feixes luminosos ligando aos veículos." />
 
-        {{-- Card de Resumo de Recursos Ativos --}}
-        <x-admin.card title="Resumo da Tela 503" icon="fa-sliders" class="mb-4">
-            <ul class="list-group list-group-flush small">
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <span>Fundo Animado (Carros):</span>
-                    <span class="badge {{ $exibirAnimacao ? 'bg-success' : 'bg-secondary' }}">{{ $exibirAnimacao ? 'Ativo' : 'Desativado' }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <span>Satélite Orbital & Feixes:</span>
-                    <span class="badge {{ $exibirSatelite ? 'bg-success' : 'bg-secondary' }}">{{ $exibirSatelite ? 'Ativo' : 'Desativado' }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <span>Contador Regressivo:</span>
-                    <span class="badge {{ $exibirCronometro ? 'bg-success' : 'bg-secondary' }}">{{ $exibirCronometro ? 'Ativo' : 'Desativado' }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <span>Botão do WhatsApp:</span>
-                    <span class="badge {{ $exibirWhatsapp ? 'bg-success' : 'bg-secondary' }}">{{ $exibirWhatsapp ? 'Ativo' : 'Desativado' }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <span>Redes Sociais:</span>
-                    <span class="badge {{ $exibirRedes ? 'bg-success' : 'bg-secondary' }}">{{ $exibirRedes ? 'Ativo' : 'Desativado' }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <span>Plantão de Emergência:</span>
-                    <span class="badge {{ $exibirPlantao ? 'bg-success' : 'bg-secondary' }}">{{ $exibirPlantao ? 'Ativo' : 'Desativado' }}</span>
-                </li>
-            </ul>
+                                <x-admin.field name="velocidade_animacao" type="select" label="Velocidade da Dinâmica de Tráfego"
+                                    :value="$velocidadeAnimacao" :options="$opcoesVelocidade" col="col-12"
+                                    ajuda="manutencao_velocidade_animacao" />
+                            </div>
+                        </x-admin.card>
+                    </div>
 
-            <div class="mt-3">
-                <a href="{{ route('admin.erros.preview', 503) }}" target="_blank" rel="noopener" class="btn btn-golden w-100 fw-bold">
-                    <i class="fas fa-play me-1"></i> Abrir Demonstração da Tela
-                </a>
+                    <div class="col-12 col-xl-5">
+                        <x-admin.card title="Resumo dos Módulos da Tela 503" icon="fa-sliders" ajuda="manutencao_resumo_visual"
+                            descricao="Estado salvo atualmente para cada módulo da tela pública." class="h-100">
+                            <ul class="list-group list-group-flush small mb-3">
+                                @foreach($modulos503 as $modulo)
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <span>
+                                            <i class="fas {{ $modulo['icone'] }} text-gold me-2" aria-hidden="true"></i>
+                                            {{ $modulo['rotulo'] }}
+                                        </span>
+                                        <x-admin.status :rotulo="$modulo['ativo'] ? 'Ativo' : 'Desativado'" :tom="tom_por_flag($modulo['ativo'])" />
+                                    </li>
+                                @endforeach
+                            </ul>
+
+                            <a href="{{ route('admin.erros.preview', 503) }}" target="_blank" rel="noopener" class="btn btn-golden w-100">
+                                <i class="fas fa-play" aria-hidden="true"></i> Abrir Demonstração da Tela 503
+                            </a>
+                        </x-admin.card>
+                    </div>
+                </div>
             </div>
-        </x-admin.card>
+
+            {{-- Aba 3: Plantão & Redes Sociais --}}
+            <div class="tab-pane fade" id="aba-atendimento" data-aba-painel="atendimento" role="tabpanel" aria-labelledby="aba-atendimento-botao" tabindex="0">
+                <div class="row g-3">
+                    <div class="col-12 col-xl-7">
+                        <x-admin.card title="Atendimento & WhatsApp de Emergência" icon="fa-headset" ajuda="manutencao_atendimento"
+                            descricao="Canais prioritários exibidos ao cliente durante o fechamento temporário." class="h-100">
+                            <div class="row g-3">
+                                <x-admin.switch name="exibir_whatsapp" label="Exibir Botão de WhatsApp em Destaque"
+                                    :checked="$exibirWhatsapp" col="col-12 col-md-6" ajuda="manutencao_exibir_whatsapp"
+                                    hint="Abre conversa direta de suporte durante a manutenção." />
+
+                                <x-admin.switch name="exibir_plantao" label="Exibir Canais de Plantão (Tel &amp; E-mail)"
+                                    :checked="$exibirPlantao" col="col-12 col-md-6" ajuda="manutencao_exibir_plantao"
+                                    hint="Mostra telefone 24h e endereço de e-mail técnico." />
+
+                                <x-admin.field name="whatsapp_numero" label="Número de WhatsApp" :value="$whatsappNumero"
+                                    col="col-12 col-md-6" :opcional="true" maxlength="32" ajuda="manutencao_whatsapp_numero"
+                                    placeholder="5519997101483"
+                                    hint="Somente dígitos com DDI + DDD. Em branco, usa o WhatsApp padrão do site." />
+
+                                <x-admin.field name="whatsapp_mensagem" label="Mensagem Pré-formatada do WhatsApp"
+                                    :value="$whatsappMensagem" col="col-12 col-md-6" :opcional="true" maxlength="255"
+                                    ajuda="manutencao_whatsapp_mensagem"
+                                    hint="Texto que aparece pré-preenchido ao abrir o WhatsApp." />
+
+                                <x-admin.field name="telefone" label="Telefone 24h / Plantão" :value="$telefone"
+                                    col="col-12 col-md-6" :opcional="true" maxlength="60" ajuda="manutencao_telefone"
+                                    placeholder="(19) 99710-1483" />
+
+                                <x-admin.field name="email" type="email" label="E-mail de Suporte Técnico" :value="$email"
+                                    col="col-12 col-md-6" :opcional="true" maxlength="120" ajuda="manutencao_email"
+                                    placeholder="suporte@goldenrastreamento.com.br" />
+                            </div>
+                        </x-admin.card>
+                    </div>
+
+                    <div class="col-12 col-xl-5">
+                        <x-admin.card title="Redes Sociais no Rodapé" icon="fa-share-nodes" ajuda="manutencao_redes"
+                            descricao="Perfis oficiais da Golden exibidos na base da tela 503." class="h-100">
+                            <div class="row g-3">
+                                <x-admin.switch name="exibir_redes" label="Exibir Links das Redes Sociais no Rodapé"
+                                    :checked="$exibirRedes" col="col-12" ajuda="manutencao_exibir_redes"
+                                    hint="Mantém os canais oficiais visíveis para comunicados." />
+
+                                <x-admin.field name="instagram" type="url" label="Instagram" :value="$instagram"
+                                    col="col-12" :opcional="true" maxlength="255" ajuda="manutencao_instagram"
+                                    placeholder="https://instagram.com/goldenrastreamento" />
+
+                                <x-admin.field name="facebook" type="url" label="Facebook" :value="$facebook"
+                                    col="col-12" :opcional="true" maxlength="255" ajuda="manutencao_facebook"
+                                    placeholder="https://facebook.com/goldenrastreamento" />
+
+                                <x-admin.field name="youtube" type="url" label="YouTube" :value="$youtube"
+                                    col="col-12" :opcional="true" maxlength="255" ajuda="manutencao_youtube"
+                                    placeholder="https://youtube.com/@goldenrastreamento" />
+
+                                <x-admin.field name="linkedin" type="url" label="LinkedIn" :value="$linkedin"
+                                    col="col-12" :opcional="true" maxlength="255" ajuda="manutencao_linkedin"
+                                    placeholder="https://linkedin.com/company/goldenrastreamento" />
+                            </div>
+                        </x-admin.card>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Aba 4: Bypass & Liberação por IP --}}
+            <div class="tab-pane fade" id="aba-acesso" data-aba-painel="acesso" role="tabpanel" aria-labelledby="aba-acesso-botao" tabindex="0">
+                <div class="row g-3">
+                    <div class="col-12 col-xl-6">
+                        <x-admin.card title="Acesso Liberado por IP (Whitelist)" icon="fa-shield-halved" ajuda="manutencao_ips"
+                            descricao="Estes endereços IP navegam no site normalmente durante a manutenção." class="h-100">
+                            <div class="row g-3">
+                                <x-admin.field name="ips_permitidos" type="textarea" :rows="5" class="font-monospace"
+                                    label="Endereços IP Liberados" :value="$ipsPermitidos" col="col-12" :opcional="true"
+                                    ajuda="manutencao_ips_permitidos"
+                                    placeholder="187.54.120.30&#10;201.89.44.12"
+                                    hint="Digite um endereço IP por linha (ou separados por vírgula)." />
+
+                                <div class="col-12">
+                                    <div class="callout">
+                                        <span class="small">
+                                            Seu IP atual detectado: <code>{{ $meuIp }}</code>
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-incluir-ip="{{ $meuIp }}">
+                                            <i class="fas fa-plus" aria-hidden="true"></i> Incluir meu IP atual
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </x-admin.card>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <x-admin.card title="Acesso Secreto por Bypass &amp; SEO" icon="fa-key" ajuda="manutencao_bypass"
+                            descricao="Compartilhe com a diretoria ou equipe técnica para visualizar o site fechado." class="h-100">
+                            <div class="row g-3">
+                                <x-admin.field name="token_bypass" class="font-monospace" label="Chave Secreta Atual"
+                                    :value="$tokenBypass" col="col-12" :opcional="true" maxlength="64"
+                                    ajuda="manutencao_token_bypass"
+                                    hint="Ao abrir a URL com esta chave, o navegador grava um cookie de acesso por 7 dias." />
+
+                                <div class="col-12">
+                                    <x-admin.link-copiar :valor="$urlBypass" label="Link Completo com Chave Secreta"
+                                        hint="(válido por 7 dias no navegador)" id="input-bypass-url" />
+                                </div>
+
+                                <div class="col-12 d-flex flex-wrap gap-2">
+                                    <button type="submit" form="formGerarTokenBypass" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-arrows-rotate" aria-hidden="true"></i> Gerar Nova Chave Secreta
+                                    </button>
+                                    <a href="{{ $urlBypass }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-up-right-from-square" aria-hidden="true"></i> Abrir Link de Bypass
+                                    </a>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="callout">
+                                        <span class="small text-secondary">
+                                            <strong class="text-body">Segurança &amp; SEO:</strong> a tela 503 envia cabeçalho <code>HTTP 503</code> com <code>Retry-After: 300</code> para buscadores (Google/Bing), evitando perda de indexação durante janelas técnicas.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </x-admin.card>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+
+    <div class="abas-salvar aderente">
+        <p class="abas-salvar-note">
+            Salva todas as quatro abas preservando o estado operacional atual (o botão no topo é quem liga ou desliga o bloqueio 503 ao público).
+        </p>
+        <a href="{{ route('admin.erros.preview', 503) }}" target="_blank" rel="noopener" class="btn btn-outline-secondary">
+            <i class="fas fa-eye" aria-hidden="true"></i> Ver Prévia
+        </a>
+        <button type="submit" class="btn btn-golden">
+            <i class="fas fa-save" aria-hidden="true"></i> Salvar Configurações de Manutenção
+        </button>
+    </div>
+</form>
+
+<form id="formGerarTokenBypass" method="POST" action="{{ route('admin.manutencao.gerar-token') }}" class="d-none"
+    data-atualiza=".app-content, .page-actions"
+    data-confirmar="Deseja gerar uma nova chave secreta? O link anterior deixará de funcionar imediatamente.">
+    @csrf
+</form>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('click', function (evento) {
+    var alvo = evento.target instanceof Element ? evento.target : null;
+    if (!alvo) {
+        return;
+    }
+
+    var btnPrevisao = alvo.closest('[data-previsao-minutos]');
+    if (btnPrevisao) {
+        var minutos = parseInt(btnPrevisao.getAttribute('data-previsao-minutos'), 10);
+        var campoData = document.getElementById('f-previsao-fim');
+        if (campoData && Number.isFinite(minutos)) {
+            var agora = new Date(Date.now() + minutos * 60000);
+            var pad = function (n) { return String(n).padStart(2, '0'); };
+            campoData.value = agora.getFullYear() + '-' + pad(agora.getMonth() + 1) + '-' + pad(agora.getDate())
+                + 'T' + pad(agora.getHours()) + ':' + pad(agora.getMinutes());
+            campoData.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+    }
+
+    if (alvo.closest('[data-previsao-limpar]')) {
+        var campoLimpar = document.getElementById('f-previsao-fim');
+        if (campoLimpar) {
+            campoLimpar.value = '';
+            campoLimpar.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+    }
+
+    var btnIp = alvo.closest('[data-incluir-ip]');
+    if (btnIp) {
+        var ip = (btnIp.getAttribute('data-incluir-ip') || '').trim();
+        var textarea = document.getElementById('f-ips-permitidos');
+        if (!ip || !textarea) {
+            return;
+        }
+        var linhas = textarea.value.split(/[\r\n,]+/).map(function (item) {
+            return item.trim();
+        }).filter(Boolean);
+
+        if (linhas.indexOf(ip) !== -1) {
+            if (window.GoldenAvisos) {
+                window.GoldenAvisos.info('Este endereço IP já está na lista.');
+            }
+            return;
+        }
+
+        linhas.push(ip);
+        textarea.value = linhas.join('\n');
+        textarea.focus();
+        if (window.GoldenAvisos) {
+            window.GoldenAvisos.sucesso('IP adicionado. Clique em Salvar Configurações de Manutenção para confirmar.');
+        }
+    }
+});
+</script>
 @endsection

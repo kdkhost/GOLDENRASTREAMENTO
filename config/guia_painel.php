@@ -650,6 +650,25 @@ return [
         ],
 
         [
+            'id' => 'manutencao',
+            'grupo' => 'Sistema',
+            'titulo' => 'Modo de manutenção (503)',
+            'icone' => 'fa-screwdriver-wrench',
+            'rota' => 'admin.manutencao.index',
+            'resumo' => 'Interruptor de contingência que fecha temporariamente o site ao público exibindo a tela HTTP 503 com cronômetro, telemetria, plantão e acessos liberados para a equipe.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'O modo de manutenção suspende o acesso dos visitantes durante atualizações programadas enviando o cabeçalho HTTP 503 com `Retry-After: 300`, preservando o ranqueamento nos buscadores. Administradores autenticados continuam entrando normalmente em `/admin`.'],
+                ['tipo' => 'passos', 'itens' => [
+                    ['icone' => 'fa-power-off', 'titulo' => 'Conferir e acionar o estado operacional', 'texto' => 'No topo da tela, ligue ou desligue o modo de manutenção a qualquer momento. Antes de fechar ao público, confira a tela pelo botão Prévia da Tela 503.'],
+                    ['icone' => 'fa-pen-to-square', 'titulo' => 'Definir mensagens e cronômetro', 'texto' => 'Na aba Conteúdo & Cronômetro, escolha o escopo do bloqueio (total ou apenas site público), escreva os avisos aos clientes e defina a previsão de retorno.'],
+                    ['icone' => 'fa-satellite', 'titulo' => 'Ajustar o cenário de telemetria e canais de plantão', 'texto' => 'Controle a animação de veículos e satélites na tela 503, além do botão de WhatsApp de emergência, telefone 24h, e-mail técnico e redes sociais no rodapé.'],
+                    ['icone' => 'fa-key', 'titulo' => 'Garantir o acesso da equipe antes de ligar', 'texto' => 'Na aba Bypass & Liberação por IP, inclua os endereços IP da diretoria/escritório ou copie o link com a chave secreta para navegar sem bloqueio.'],
+                ]],
+                ['tipo' => 'aviso', 'tom' => 'gold', 'conteudo' => 'Salvar as alterações nas abas mantém o estado atual de ativação: apenas o botão de acionamento no topo liga ou desliga o modo de manutenção no ar.'],
+            ],
+        ],
+
+        [
             'id' => 'ambiente',
             'grupo' => 'Sistema',
             'titulo' => 'Ambiente, e-mail e agendador',
@@ -728,5 +747,6 @@ return [
         'admin.usuarios.' => 'usuarios',
         'admin.seguranca.' => 'seguranca',
         'admin.activities.' => 'auditoria',
+        'admin.manutencao.' => 'manutencao',
     ],
 ];

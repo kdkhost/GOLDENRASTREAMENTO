@@ -225,7 +225,9 @@ class MaintenanceService
      */
     public function salvarConfiguracoes(array $dados): void
     {
-        Setting::set('manutencao_ativa', ! empty($dados['ativa']) ? '1' : '0');
+        if (array_key_exists('ativa', $dados)) {
+            Setting::set('manutencao_ativa', ! empty($dados['ativa']) ? '1' : '0');
+        }
         Setting::set('manutencao_modo', in_array($dados['modo'] ?? '', [self::MODO_TOTAL, self::MODO_PUBLICO], true) ? $dados['modo'] : self::MODO_TOTAL);
         Setting::set('manutencao_titulo', (string) ($dados['titulo'] ?? ''));
         Setting::set('manutencao_subtitulo', (string) ($dados['subtitulo'] ?? ''));

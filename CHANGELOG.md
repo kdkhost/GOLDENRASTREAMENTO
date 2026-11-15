@@ -22,10 +22,12 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 
 ### Alterado
 - Reorganização da aba **Loja & Logística** (`/admin/configuracao#loja`) em sub-abas limpas e estruturadas.
+- Refatoração completa da tela **Modo de Manutenção** (`/admin/manutencao`) com painel de status operacional na paleta Golden, navegação em abas (`Conteúdo & Cronômetro`, `Telemetria & Cenário 503`, `Plantão & Redes Sociais`, `Bypass & Liberação por IP`), atalhos de previsão de término, inclusão de IP em 1 clique, remoção de cores padrão Bootstrap e guias `?` passo a passo individuais em `config/guia_configuracao.php` e `config/guia_painel.php`.
 - Substituição das cores azuis padrão do Bootstrap pela paleta dourada Golden em todo o painel administrativo.
 - Personalização global das barras de rolagem (scrollbars) integradas à identidade visual da plataforma.
 
 ### Corrigido
+- Corrigida a gravação em `MaintenanceService::salvarConfiguracoes()` e `MaintenanceController::update()` para preservar o estado ativo do Modo de Manutenção ao salvar configurações no formulário em abas (evitando desativação acidental caso o parâmetro `ativa` seja omitido).
 - Loop infinito de carregamento na página `/admin/google-ads` (inclusive após limpeza de cache) ao sincronizar métricas diretamente quando a cache está vazia e liberar `'unsafe-eval'` na CSP para execução de diretivas Livewire/Alpine (`wire:poll`, `wire:click`, `wire:model`), além de filtrar campanhas com status `REMOVED`.
 - Erro 500 na view do dashboard Google Ads ao substituir `hasRole` por `isAdmin`.
 - Blocos com fundo claro hardcoded no modo escuro em páginas administrativas.
