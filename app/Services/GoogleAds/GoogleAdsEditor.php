@@ -396,6 +396,35 @@ final class GoogleAdsEditor
     }
 
     /**
+     * Remove definitivamente uma campanha pausada no Google Ads (e tenta remover o orçamento
+     * exclusivo dela se não estiver compartilhado). Não tem volta no Google Ads.
+     */
+    public function removerCampanha(GoogleAdsAccount $conta, array $campanha): void
+    {
+        if (($campanha['status'] ?? '') !== 'PAUSED') {
+            throw new GoogleAdsFalhou('Pause a campanha antes de excluí-la definitivamente.');
+        }
+
+        $this->prepararEscrita($conta);
+        $customer = 'customers/'.$conta->customer_id;
+
+        $this->chamar($conta, $customer.'/campaigns:mutate', [
+            'operations' => [['remove' => $campanha['resource']]],
+        ], 'campanha.remover');
+
+        $orcamentoResource = (string) data_get($campanha, 'orcamento.resource', '');
+        if ($orcamentoResource !== '') {
+            try {
+                $this->chamar($conta, $customer.'/campaignBudgets:mutate', [
+                    'operations' => [['remove' => $orcamentoResource]],
+                ], 'orcamento.remover');
+            } catch (\Throwable) {
+                // Orçamento compartilhado ou já removido: ignora sem falhar a exclusão da campanha.
+            }
+        }
+    }
+
+    /**
      * Sobe a imagem como recurso da conta e vincula à campanha (como AD_IMAGE ou BUSINESS_LOGO).
      *
      * A imagem vai em base64 dentro do JSON — a API não tem upload separado. O recurso nasce

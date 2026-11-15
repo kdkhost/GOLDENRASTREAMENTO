@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SyncGoogleAdsMetrics;
 use App\Models\Activity;
 use App\Models\GoogleAdsAccount;
+use App\Models\GoogleAdsApiLog;
 use App\Models\GoogleAdsPlano;
 use App\Services\GoogleAds\Copiloto;
 use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
@@ -239,6 +240,102 @@ class GoogleAdsCampanhaController extends Controller
         return redirect()
             ->route('admin.google-ads.campanhas.show', ['campanha' => $lida['id'], 'conta' => $conta->id])
             ->with($mudou ? 'success' : 'info', $mudou ? 'Campanha atualizada no Google Ads.' : 'Nada mudou: a campanha já estava assim no Google Ads.');
+    }
+
+    public function remover(Request $request, string $campanha): RedirectResponse
+    {
+        $conta = $this->conta($request, $request->filled('conta') ? (int) $request->input('conta') : null);
+
+        if ($conta === null) {
+            return redirect()->route('admin.google-ads.index')
+                ->with('error', 'Nenhuma conta de Google Ads conectada a esta sessão — ou a conta pedida não está entre as suas.');
+        }
+
+        $lida = null;
+        $removidaDoGoogle = false;
+
+        try {
+            $lida = $this->editor->ler($conta, $campanha);
+        } catch (GoogleAdsFalhou $e) {
+            if (! str_contains($e->motivoPublico, 'não existe nesta conta do Google Ads')) {
+                return $this->erro($e, 'excluir a campanha');
+            }
+        } catch (Throwable $e) {
+            return $this->erro($e, 'excluir a campanha');
+        }
+
+        if ($lida !== null) {
+            $status = (string) ($lida['status'] ?? '');
+
+            if (! in_array($status, ['PAUSED', 'REMOVED'], true)) {
+                return $this->paraCampanha(
+                    $conta,
+                    $lida,
+                    'error',
+                    'Pause a campanha no Google Ads antes de excluí-la permanentemente.'
+                );
+            }
+
+            if ($status === 'PAUSED') {
+                try {
+                    $this->editor->removerCampanha($conta, $lida);
+                    $removidaDoGoogle = true;
+                } catch (Throwable $e) {
+                    return $this->erro($e, 'excluir a campanha');
+                }
+            }
+        }
+
+        $campanhaId = (string) ($lida['id'] ?? $campanha);
+        $nomeCampanha = (string) ($lida['nome'] ?? $campanhaId);
+
+        $planosRemovidos = GoogleAdsPlano::query()
+            ->where('google_ads_account_id', $conta->id)
+            ->get()
+            ->filter(fn (GoogleAdsPlano $plano): bool => (string) ($plano->aplicacao_json['campanha_id'] ?? '') === $campanhaId);
+
+        foreach ($planosRemovidos as $plano) {
+            $plano->delete();
+        }
+
+        $logsRemovidos = GoogleAdsApiLog::query()
+            ->where('google_ads_account_id', $conta->id)
+            ->get()
+            ->filter(function (GoogleAdsApiLog $log) use ($campanhaId): bool {
+                $requestJson = json_encode($log->request_json ?? [], JSON_UNESCAPED_UNICODE) ?: '';
+                $responseJson = json_encode($log->response_json ?? [], JSON_UNESCAPED_UNICODE) ?: '';
+
+                return str_contains($requestJson, $campanhaId) || str_contains($responseJson, $campanhaId);
+            });
+
+        foreach ($logsRemovidos as $log) {
+            $log->delete();
+        }
+
+        $this->esquecerMetricas($conta);
+        GoogleAdsCache::esquecer($conta);
+
+        Activity::log(
+            'google_ads_campanha_removida',
+            $removidaDoGoogle
+                ? "Campanha \"{$nomeCampanha}\" ({$campanhaId}) excluída permanentemente do Google Ads e limpa do painel (leads preservados) na conta {$conta->numeroConta()}."
+                : "Resíduos da campanha \"{$nomeCampanha}\" ({$campanhaId}), que já não existia no Google Ads, removidos do painel (leads preservados) na conta {$conta->numeroConta()}.",
+            $conta,
+            [
+                'campaign_id' => $campanhaId,
+                'removida_do_google' => $removidaDoGoogle,
+                'planos_removidos' => $planosRemovidos->count(),
+                'logs_removidos' => $logsRemovidos->count(),
+            ],
+        );
+
+        $mensagem = $removidaDoGoogle
+            ? "Campanha \"{$nomeCampanha}\" excluída do Google Ads e resíduos limpos do painel. Os leads trazidos por ela foram mantidos no CRM."
+            : "Campanha \"{$nomeCampanha}\" não existia mais no Google Ads; todos os resíduos foram removidos do painel. Os leads trazidos por ela foram mantidos no CRM.";
+
+        return redirect()
+            ->route('admin.google-ads.index', ['conta' => $conta->id])
+            ->with('success', $mensagem);
     }
 
     public function novoGrupo(Request $request, string $campanha): View|RedirectResponse

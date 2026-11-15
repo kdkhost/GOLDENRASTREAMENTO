@@ -293,8 +293,33 @@
                                     <i class="fas fa-{{ $pausar ? 'pause' : 'play' }}" aria-hidden="true"></i>
                                 </button>
                             </form>
+                            @if (! $pausar && auth()->user()?->hasRole('admin'))
+                                <form method="POST" action="{{ route('admin.google-ads.campanhas.remover', ['campanha' => $c['id'], 'conta' => $conta->id]) }}"
+                                    class="d-inline" data-sem-ajax
+                                    data-confirmar="Excluir permanentemente a campanha '{{ $c['nome'] }}' do Google Ads e limpar os resíduos do painel? Os leads serão preservados.">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        title="Excluir campanha permanentemente">
+                                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            @endif
                         @else
-                            <span class="text-secondary small" title="O painel só escreve em campanhas ativas ou pausadas.">—</span>
+                            @if (auth()->user()?->hasRole('admin'))
+                                <form method="POST" action="{{ route('admin.google-ads.campanhas.remover', ['campanha' => $c['id'], 'conta' => $conta->id]) }}"
+                                    class="d-inline" data-sem-ajax
+                                    data-confirmar="Esta campanha não existe mais no Google Ads. Remover '{{ $c['nome'] }}' e todos os resíduos do painel? Os leads serão preservados.">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        title="Remover do painel">
+                                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            @else
+                                <span class="text-secondary small" title="O painel só escreve em campanhas ativas ou pausadas.">—</span>
+                            @endif
                         @endif
                     </div>
                 </td>

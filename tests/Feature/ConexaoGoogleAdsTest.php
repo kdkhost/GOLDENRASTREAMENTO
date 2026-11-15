@@ -7,6 +7,9 @@ use App\Livewire\GoogleAdsDashboard;
 use App\Livewire\RsaPreview;
 use App\Mail\ContaGoogleAdsDesconectada;
 use App\Models\GoogleAdsAccount;
+use App\Models\GoogleAdsApiLog;
+use App\Models\GoogleAdsPlano;
+use App\Models\Lead;
 use App\Models\User;
 use App\Services\GoogleAds\Excecoes\GoogleAdsFalhou;
 use App\Services\GoogleAds\GoogleAdsEditor;
@@ -973,6 +976,228 @@ class ConexaoGoogleAdsTest extends TestCase
         } finally {
             @unlink($tempFile);
         }
+    }
+
+    public function test_excluir_campanha_pausada_remove_do_google_limpa_residuos_e_mantem_leads(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $campanhaId = '24456385340';
+
+        $planoDaCampanha = GoogleAdsPlano::create([
+            'user_id' => $this->admin->id,
+            'google_ads_account_id' => $conta->id,
+            'nome' => 'Campanha Rastreamento',
+            'status' => GoogleAdsPlano::APLICADO,
+            'objetivo' => 'leads',
+            'orcamento_diario_centavos' => 5000,
+            'briefing_json' => ['produto' => 'Rastreador'],
+            'plano_json' => ['nome' => 'Campanha Rastreamento'],
+            'aplicacao_json' => ['campanha_id' => $campanhaId],
+        ]);
+
+        $outroPlano = GoogleAdsPlano::create([
+            'user_id' => $this->admin->id,
+            'google_ads_account_id' => $conta->id,
+            'nome' => 'Outra Campanha',
+            'status' => GoogleAdsPlano::APLICADO,
+            'objetivo' => 'leads',
+            'orcamento_diario_centavos' => 5000,
+            'briefing_json' => ['produto' => 'Rastreador'],
+            'plano_json' => ['nome' => 'Outra Campanha'],
+            'aplicacao_json' => ['campanha_id' => '99999999999'],
+        ]);
+
+        $logDaCampanha = GoogleAdsApiLog::create([
+            'user_id' => $this->admin->id,
+            'google_ads_account_id' => $conta->id,
+            'endpoint' => 'campaigns:mutate',
+            'request_json' => ['resourceName' => "customers/1234567890/campaigns/{$campanhaId}"],
+            'response_json' => ['results' => []],
+        ]);
+
+        $leadTrazido = Lead::create([
+            'name' => 'Cliente da Campanha',
+            'phone' => '11999998888',
+            'utm_campaign' => 'campanha-rastreamento',
+            'gclid' => 'EAIaIQobChMI123456',
+        ]);
+
+        GoogleAdsCache::gravar($conta, 30, [$this->campanha($campanhaId, 'Campanha Rastreamento')], $this->resumo());
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/googleAds:search' => function (Request $request) use ($campanhaId) {
+                if (str_contains((string) ($request['query'] ?? ''), 'FROM campaign WHERE')) {
+                    return Http::response([
+                        'results' => [[
+                            'campaign' => [
+                                'id' => $campanhaId,
+                                'resourceName' => "customers/1234567890/campaigns/{$campanhaId}",
+                                'name' => 'Campanha Rastreamento',
+                                'status' => 'PAUSED',
+                                'advertisingChannelType' => 'SEARCH',
+                                'campaignBudget' => 'customers/1234567890/campaignBudgets/555',
+                            ],
+                            'campaignBudget' => [
+                                'amountMicros' => '50000000',
+                            ],
+                        ]],
+                    ]);
+                }
+
+                return Http::response(['results' => []]);
+            },
+            'https://googleads.googleapis.com/v26/customers/1234567890/campaigns:mutate' => Http::response([
+                'results' => [['resourceName' => "customers/1234567890/campaigns/{$campanhaId}"]],
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/campaignBudgets:mutate' => Http::response([
+                'results' => [['resourceName' => 'customers/1234567890/campaignBudgets/555']],
+            ]),
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->delete(route('admin.google-ads.campanhas.remover', [
+                'campanha' => $campanhaId,
+                'conta' => $conta->id,
+            ]));
+
+        $response->assertRedirect(route('admin.google-ads.index', ['conta' => $conta->id]));
+        $response->assertSessionHas('success');
+
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'campaigns:mutate')
+            && ($request['operations'][0]['remove'] ?? null) === "customers/1234567890/campaigns/{$campanhaId}");
+
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'campaignBudgets:mutate')
+            && ($request['operations'][0]['remove'] ?? null) === 'customers/1234567890/campaignBudgets/555');
+
+        $this->assertDatabaseMissing('google_ads_planos', ['id' => $planoDaCampanha->id]);
+        $this->assertDatabaseHas('google_ads_planos', ['id' => $outroPlano->id]);
+        $this->assertDatabaseMissing('google_ads_api_logs', ['id' => $logDaCampanha->id]);
+        $this->assertDatabaseHas('leads', ['id' => $leadTrazido->id, 'name' => 'Cliente da Campanha']);
+        $this->assertNull(GoogleAdsCache::metricas($conta, 30));
+    }
+
+    public function test_excluir_campanha_ativa_e_bloqueado_ate_pausar(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $campanhaId = '24456385340';
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/googleAds:search' => function (Request $request) use ($campanhaId) {
+                if (str_contains((string) ($request['query'] ?? ''), 'FROM campaign WHERE')) {
+                    return Http::response([
+                        'results' => [[
+                            'campaign' => [
+                                'id' => $campanhaId,
+                                'resourceName' => "customers/1234567890/campaigns/{$campanhaId}",
+                                'name' => 'Campanha Ativa',
+                                'status' => 'ENABLED',
+                                'advertisingChannelType' => 'SEARCH',
+                                'campaignBudget' => 'customers/1234567890/campaignBudgets/555',
+                            ],
+                            'campaignBudget' => [
+                                'amountMicros' => '50000000',
+                            ],
+                        ]],
+                    ]);
+                }
+
+                return Http::response(['results' => []]);
+            },
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->delete(route('admin.google-ads.campanhas.remover', [
+                'campanha' => $campanhaId,
+                'conta' => $conta->id,
+            ]));
+
+        $response->assertRedirect(route('admin.google-ads.campanhas.show', [
+            'campanha' => $campanhaId,
+            'conta' => $conta->id,
+        ]));
+        $response->assertSessionHas('error');
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'campaigns:mutate'));
+    }
+
+    public function test_excluir_campanha_que_nao_existe_mais_no_google_ads_limpa_residuos_do_painel_e_mantem_leads(): void
+    {
+        $conta = GoogleAdsAccount::factory()->create([
+            'user_id' => $this->admin->id,
+            'customer_id' => '1234567890',
+        ]);
+
+        $campanhaId = '24456385340';
+
+        $planoDaCampanha = GoogleAdsPlano::create([
+            'user_id' => $this->admin->id,
+            'google_ads_account_id' => $conta->id,
+            'nome' => 'Campanha Removida no Google',
+            'status' => GoogleAdsPlano::APLICADO,
+            'objetivo' => 'leads',
+            'orcamento_diario_centavos' => 5000,
+            'briefing_json' => ['produto' => 'Rastreador'],
+            'plano_json' => ['nome' => 'Campanha Removida no Google'],
+            'aplicacao_json' => ['campanha_id' => $campanhaId],
+        ]);
+
+        $logDaCampanha = GoogleAdsApiLog::create([
+            'user_id' => $this->admin->id,
+            'google_ads_account_id' => $conta->id,
+            'endpoint' => 'campaigns:mutate',
+            'request_json' => ['resourceName' => "customers/1234567890/campaigns/{$campanhaId}"],
+            'response_json' => ['results' => []],
+        ]);
+
+        $leadTrazido = Lead::create([
+            'name' => 'Lead Preservado',
+            'phone' => '11988887777',
+            'utm_campaign' => 'campanha-removida',
+            'gclid' => 'EAIaIQobChMI999999',
+        ]);
+
+        GoogleAdsCache::gravar($conta, 30, [$this->campanha($campanhaId, 'Campanha Removida')], $this->resumo());
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'token-de-acesso',
+                'expires_in' => 3600,
+            ]),
+            'https://googleads.googleapis.com/v26/customers/1234567890/googleAds:search' => Http::response([
+                'results' => [],
+            ]),
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->delete(route('admin.google-ads.campanhas.remover', [
+                'campanha' => $campanhaId,
+                'conta' => $conta->id,
+            ]));
+
+        $response->assertRedirect(route('admin.google-ads.index', ['conta' => $conta->id]));
+        $response->assertSessionHas('success');
+
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'campaigns:mutate'));
+
+        $this->assertDatabaseMissing('google_ads_planos', ['id' => $planoDaCampanha->id]);
+        $this->assertDatabaseMissing('google_ads_api_logs', ['id' => $logDaCampanha->id]);
+        $this->assertDatabaseHas('leads', ['id' => $leadTrazido->id, 'name' => 'Lead Preservado']);
+        $this->assertNull(GoogleAdsCache::metricas($conta, 30));
     }
 
     /** Uma linha no formato exato que `linhaParaTela` escreve — a tela lê destas chaves. */

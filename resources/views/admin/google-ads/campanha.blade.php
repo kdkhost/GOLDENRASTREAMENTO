@@ -390,9 +390,20 @@
                 <a href="{{ route('admin.google-ads.campanhas.grupos.novo', $endereco) }}" class="btn btn-outline-secondary w-100 mb-2">
                     <i class="fas fa-layer-group me-1" aria-hidden="true"></i> Novo grupo de anúncios
                 </a>
-                <a href="{{ route('admin.google-ads.campanhas.recursos', $endereco) }}" class="btn btn-outline-secondary w-100">
+                <a href="{{ route('admin.google-ads.campanhas.recursos', $endereco) }}" class="btn btn-outline-secondary w-100{{ ($campanha['status'] ?? '') === 'PAUSED' ? ' mb-2' : '' }}">
                     <i class="fas fa-images me-1" aria-hidden="true"></i> Imagens, sitelinks e frases
                 </a>
+                @if (($campanha['status'] ?? '') === 'PAUSED')
+                    <form method="POST" action="{{ route('admin.google-ads.campanhas.remover', $endereco) }}"
+                        data-sem-ajax
+                        data-confirmar="Excluir permanentemente a campanha '{{ $campanha['nome'] }}' do Google Ads e limpar os resíduos do painel? Os leads gerados por ela serão mantidos no CRM.">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-trash-alt me-1" aria-hidden="true"></i> Excluir campanha
+                        </button>
+                    </form>
+                @endif
             </x-admin.card>
         @else
             <x-admin.card title="Quem edita" icon="fa-user-shield" class="mt-3">

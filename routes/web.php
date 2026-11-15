@@ -362,6 +362,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
             Route::get('/', [GoogleAdsCampanhaController::class, 'show'])->name('show');
 
             Route::middleware('role:admin')->group(function () {
+                Route::delete('/', [GoogleAdsCampanhaController::class, 'remover'])->name('remover');
                 Route::get('/editar', [GoogleAdsCampanhaController::class, 'editar'])->name('editar');
                 Route::post('/editar', [GoogleAdsCampanhaController::class, 'atualizar'])->name('atualizar');
                 Route::get('/grupos/novo', [GoogleAdsCampanhaController::class, 'novoGrupo'])->name('grupos.novo');

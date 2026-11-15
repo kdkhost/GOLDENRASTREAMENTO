@@ -97,7 +97,7 @@ class GoogleAdsDashboard extends Component
             try {
                 (new SyncGoogleAdsMetrics($conta->id, $this->dias))->handle($servico);
             } catch (\Throwable $e) {
-                GoogleAdsCache::guardarErro($conta, $this->dias, $e->getMessage());
+                GoogleAdsCache::gravarErro($conta, $this->dias, $e->getMessage());
             }
 
             return;
