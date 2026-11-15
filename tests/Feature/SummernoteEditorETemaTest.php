@@ -171,6 +171,11 @@ class SummernoteEditorETemaTest extends TestCase
         $this->assertStringContainsString('[data-bs-theme="dark"]', $cssConteudo);
         $this->assertStringContainsString('[data-bs-theme="light"]', $cssConteudo);
         $this->assertStringContainsString('.note-editor.note-frame', $cssConteudo);
+
+        $jsConteudo = file_get_contents(public_path('js/golden-summernote.js')) ?: '';
+        $this->assertStringContainsString(':not(.note-codable)', $jsConteudo);
+        $this->assertStringContainsString('.note-editor', $jsConteudo);
+        $this->assertStringContainsString('ehTextareaElegivel', $jsConteudo);
     }
 
     public function test_views_publicas_e_erro_nao_escapam_html_salvo_pelo_summernote(): void

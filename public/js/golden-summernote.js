@@ -4,7 +4,7 @@
 (function () {
     'use strict';
 
-    var SELETOR_ALVOS = 'textarea:not([readonly]):not([disabled]):not([data-summernote="false"]):not(#iaTexto)';
+    var SELETOR_ALVOS = 'textarea:not([readonly]):not([disabled]):not([data-summernote="false"]):not([data-summernote-ativo="1"]):not(.note-codable):not(#iaTexto)';
     var ENTIDADE_TAG_REGEX = /&lt;\s*\/?(?:p|br|strong|b|em|i|u|s|strike|ul|ol|li|a|span|div|h[1-6]|blockquote|table|hr|font)\b/i;
 
     var BARRA_COMPLETA = [
@@ -218,23 +218,40 @@
         }
     }
 
-    function inicializarTextarea(textarea) {
+    function ehTextareaElegivel(textarea) {
         if (!(textarea instanceof HTMLTextAreaElement)) {
-            return;
+            return false;
         }
 
         if (textarea.dataset.summernoteAtivo === '1') {
+            return false;
+        }
+
+        if (textarea.classList.contains('note-codable')) {
+            return false;
+        }
+
+        if (textarea.closest('.note-editor, .note-frame, .note-modal, .note-popover, .note-dialog, template')) {
+            return false;
+        }
+
+        return textarea.matches(SELETOR_ALVOS);
+    }
+
+    function inicializarTextarea(textarea) {
+        if (!ehTextareaElegivel(textarea)) {
             return;
         }
 
-        if (!textarea.matches(SELETOR_ALVOS)) {
+        var $ta = window.jQuery(textarea);
+        if ($ta.data('summernote')) {
+            textarea.dataset.summernoteAtivo = '1';
             return;
         }
 
         // Remove editor órfão caso um DOM morph ou replace tenha deixado markup anterior.
-        var possivelResto = editorDoTextarea(textarea);
-        if (possivelResto && !window.jQuery(textarea).data('summernote')) {
-            possivelResto.remove();
+        while (editorDoTextarea(textarea)) {
+            editorDoTextarea(textarea).remove();
         }
 
         if (textarea.hasAttribute('required')) {
@@ -246,7 +263,6 @@
         var altura = calcularAltura(textarea);
         var toolbar = deveUsarBarraCompacta(textarea) ? BARRA_COMPACTA : BARRA_COMPLETA;
         var placeholder = textarea.getAttribute('placeholder') || 'Digite o conteúdo aqui...';
-        var $ta = window.jQuery(textarea);
 
         textarea.dataset.summernoteAtivo = '1';
 
@@ -276,6 +292,8 @@
                     var editor = editorDoTextarea(textarea);
                     var codable = editor ? editor.querySelector('.note-codable') : null;
                     if (codable) {
+                        codable.setAttribute('data-summernote', 'false');
+                        codable.dataset.summernoteAtivo = '1';
                         codable.addEventListener('input', function () {
                             sincronizarParaTextarea(textarea, true, false);
                         });
@@ -426,20 +444,61 @@
     var timerMutacao = null;
     if (typeof MutationObserver !== 'undefined') {
         var observador = new MutationObserver(function (mutacoes) {
-            var temTextareaNovo = mutacoes.some(function (m) {
-                if (m.type === 'attributes' && m.target === document.documentElement) {
-                    return true;
+            var precisaAtualizarTema = false;
+            var temTextareaNovo = false;
+
+            for (var i = 0; i < mutacoes.length; i++) {
+                var m = mutacoes[i];
+
+                if (m.type === 'attributes') {
+                    if (m.target === document.documentElement || m.target === document.body) {
+                        precisaAtualizarTema = true;
+                    }
+                    continue;
                 }
-                return Array.prototype.some.call(m.addedNodes || [], function (no) {
-                    return no instanceof Element && (no.tagName === 'TEXTAREA' || no.querySelector('textarea'));
-                });
-            });
+
+                if (m.type !== 'childList' || !m.addedNodes || !m.addedNodes.length) {
+                    continue;
+                }
+
+                for (var j = 0; j < m.addedNodes.length; j++) {
+                    var no = m.addedNodes[j];
+                    if (!(no instanceof Element)) {
+                        continue;
+                    }
+
+                    if (no.matches('.note-editor, .note-frame, .note-modal, .note-popover, .note-dialog')
+                        || no.closest('.note-editor, .note-frame, .note-modal, .note-popover, .note-dialog')) {
+                        continue;
+                    }
+
+                    if (ehTextareaElegivel(no)) {
+                        temTextareaNovo = true;
+                        break;
+                    }
+
+                    var candidatos = no.querySelectorAll(SELETOR_ALVOS);
+                    for (var k = 0; k < candidatos.length; k++) {
+                        if (ehTextareaElegivel(candidatos[k])) {
+                            temTextareaNovo = true;
+                            break;
+                        }
+                    }
+
+                    if (temTextareaNovo) {
+                        break;
+                    }
+                }
+            }
+
+            if (precisaAtualizarTema) {
+                aplicarTemaNosEditores();
+            }
 
             if (!temTextareaNovo) {
                 return;
             }
 
-            aplicarTemaNosEditores();
             clearTimeout(timerMutacao);
             timerMutacao = window.setTimeout(function () {
                 inicializarTodos(document);
