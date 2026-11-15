@@ -1046,8 +1046,55 @@
     });
   }
 
+  /* ---------- Animações leves de seções e imagens ao rolar (IntersectionObserver) ---------- */
+  function initAnimacoesScroll(root) {
+    var escopo = root || document;
+    if (semMovimento || !('IntersectionObserver' in window)) return;
+
+    var blocos = escopo.querySelectorAll('main > section:not(:first-child), .prod-card, .kit-card, .seg-card, .video-card, .atalho, .step, .plan-card, .card');
+    var imagens = escopo.querySelectorAll('main img:not(.prod-slide-img)');
+
+    var observer = new IntersectionObserver(function (entries, obs) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        obs.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -5% 0px', threshold: 0.05 });
+
+    blocos.forEach(function (el, idx) {
+      if (el.classList.contains('is-visible')) return;
+      var rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.95 && rect.bottom > 0) {
+        el.classList.add('is-visible');
+        return;
+      }
+      el.classList.add('g-reveal');
+      if (!el.matches('main > section')) {
+        el.style.setProperty('--g-delay', ((idx % 4) * 55) + 'ms');
+      }
+      observer.observe(el);
+    });
+
+    imagens.forEach(function (img) {
+      if (!img.hasAttribute('decoding')) img.setAttribute('decoding', 'async');
+      if (img.closest('main > section:first-child')) return;
+      if (img.classList.contains('is-visible') && img.classList.contains('is-loaded')) return;
+
+      img.classList.add('g-img-reveal');
+      if (img.complete && img.naturalWidth > 0) {
+        img.classList.add('is-loaded');
+      } else {
+        img.addEventListener('load', function () { img.classList.add('is-loaded'); }, { once: true });
+        img.addEventListener('error', function () { img.classList.add('is-loaded'); }, { once: true });
+      }
+      observer.observe(img);
+    });
+  }
+  window.initGoldenScrollAnimations = initAnimacoesScroll;
+
   document.addEventListener('DOMContentLoaded', function () {
-    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initAcesso(); initWhatsBox(); initCarrosseis(); initVideo(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol();
+    initCookie(); initForms(); initKits(); initNav(); initSubmenus(); initAcesso(); initWhatsBox(); initCarrosseis(); initVideo(); initVideos(); initContagem(); initPrefetch(); initCtas(); initFarol(); initAnimacoesScroll();
     track('page_view', { page: location.pathname });
   });
 })();

@@ -1017,3 +1017,37 @@ main>section:nth-child(n+4){animation-delay:.14s}
   .prod-card{border-radius:22px}
   .prod-body{padding:18px 18px 20px}
 }
+
+/* ---------- Performance de scroll e animações leves (GPU: opacity + transform) ---------- */
+main>section:not(:first-child){
+  content-visibility:auto;
+  contain-intrinsic-size:auto 480px;
+}
+.g-reveal{
+  opacity:0;
+  transform:translate3d(0,18px,0);
+  transition:opacity .52s cubic-bezier(.22,1,.36,1),transform .52s cubic-bezier(.22,1,.36,1);
+  transition-delay:var(--g-delay,0ms);
+  will-change:opacity,transform;
+}
+.g-reveal.is-visible{
+  opacity:1;
+  transform:translate3d(0,0,0);
+  will-change:auto;
+}
+.g-img-reveal{
+  opacity:0;
+  transform:scale(.975);
+  transition:opacity .48s cubic-bezier(.22,1,.36,1),transform .48s cubic-bezier(.22,1,.36,1);
+}
+.g-img-reveal.is-visible.is-loaded{
+  opacity:1;
+  transform:scale(1);
+}
+@media(prefers-reduced-motion:reduce){
+  .g-reveal,.g-img-reveal{
+    opacity:1!important;
+    transform:none!important;
+    transition:none!important;
+  }
+}
