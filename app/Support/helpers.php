@@ -13,6 +13,68 @@ if (! function_exists('brl')) {
     }
 }
 
+if (! function_exists('golden_texto_puro')) {
+    /** Converte HTML gerado por editor rico (Summernote) em texto puro preservando quebras de linha. */
+    function golden_texto_puro(?string $valor): string
+    {
+        if ($valor === null || $valor === '') {
+            return '';
+        }
+
+        $texto = html_entity_decode($valor, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $texto = preg_replace('/<\s*br\s*\/?>/i', "\n", $texto) ?? $texto;
+        $texto = preg_replace('/<\/\s*(?:p|div|li|tr|blockquote|h[1-6])\s*>/i', "\n", $texto) ?? $texto;
+        $texto = str_replace("\u{00A0}", ' ', strip_tags($texto));
+        $texto = html_entity_decode($texto, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $texto = str_replace(["\r\n", "\r"], "\n", $texto);
+        $texto = preg_replace("/\n{3,}/", "\n\n", $texto) ?? $texto;
+
+        return trim($texto);
+    }
+}
+
+if (! function_exists('golden_html')) {
+    /**
+     * Renderiza com segurança HTML vindo do Summernote (sem escapar <p>, <strong>, <br> etc.),
+     * decodificando entidades duplamente escapadas e removendo tags/atributos inseguros.
+     */
+    function golden_html(?string $valor): string
+    {
+        if ($valor === null || trim($valor) === '') {
+            return '';
+        }
+
+        $limpo = trim($valor);
+
+        if (preg_match('/&lt;\s*\/?(?:p|br|strong|b|em|i|u|s|strike|ul|ol|li|a|span|div|h[1-6]|blockquote|table|hr|font)\b/i', $limpo) === 1) {
+            $limpo = html_entity_decode($limpo, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+
+        $limpo = preg_replace('/<\s*(script|style|iframe|object|embed|form)\b[^>]*>.*?<\s*\/\s*\1\s*>/is', '', $limpo) ?? $limpo;
+        $limpo = preg_replace('/<\s*(?:script|style|iframe|object|embed|form|input|textarea|button|select|meta|link)\b[^>]*\/?>/is', '', $limpo) ?? $limpo;
+        $limpo = preg_replace('/\s+on[a-z]+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/is', '', $limpo) ?? $limpo;
+        $limpo = preg_replace('/(href|src)\s*=\s*(["\'])\s*(?:javascript|vbscript|data\s*:\s*text\/html)\s*:.*?\2/is', '$1="#"', $limpo) ?? $limpo;
+
+        $contemTagPermitida = preg_match('/<\s*\/?(?:p|br|strong|b|em|i|u|s|strike|sub|sup|ul|ol|li|a|span|div|h[1-6]|blockquote|pre|code|hr|table|thead|tbody|tfoot|tr|th|td|img|figure|figcaption|small|mark|font)\b/i', $limpo) === 1;
+        if (! $contemTagPermitida) {
+            return nl2br(e(trim($limpo)));
+        }
+
+        $tagsPermitidas = '<p><br><strong><b><em><i><u><s><strike><sub><sup><ul><ol><li><a><span><div><h1><h2><h3><h4><h5><h6><blockquote><pre><code><hr><table><thead><tbody><tfoot><tr><th><td><img><figure><figcaption><small><mark><font>';
+        $filtrado = trim(strip_tags($limpo, $tagsPermitidas));
+
+        if ($filtrado === '' && trim(strip_tags($limpo)) === '') {
+            return '';
+        }
+
+        if (strip_tags($filtrado) === $filtrado) {
+            return nl2br(e($filtrado));
+        }
+
+        return $filtrado;
+    }
+}
+
 if (! function_exists('wa_url')) {
     /**
      * Link wa.me no padrão do sistema: número vindo do painel (só dígitos) e mensagem
@@ -26,8 +88,9 @@ if (! function_exists('wa_url')) {
             (string) ($numero ?: Setting::get('contato_whatsapp', config('golden.whatsapp')))
         );
         $url = 'https://wa.me/'.$numero;
+        $textoLimpo = $msg !== null ? golden_texto_puro($msg) : '';
 
-        return ($msg === null || trim($msg) === '') ? $url : $url.'?text='.urlencode($msg);
+        return $textoLimpo === '' ? $url : $url.'?text='.urlencode($textoLimpo);
     }
 }
 

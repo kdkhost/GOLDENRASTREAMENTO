@@ -37,6 +37,9 @@ $(function(){
     });
 });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/lang/summernote-pt-BR.min.js"></script>
+<script src="{{ asset('js/golden-summernote.js') }}?v={{ filemtime(public_path('js/golden-summernote.js')) }}"></script>
 {{-- A gravação em segundo plano do painel e do portal. Uma folha só, chamada aqui, porque é aqui
      que os dois layouts se encontram: todo formulário de escrita das duas áreas passa por ela sem
      que a view precise chamar nada — e nenhuma tela volta a piscar depois de salvar. --}}

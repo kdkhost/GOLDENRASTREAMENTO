@@ -337,7 +337,7 @@
 
                             @case('observacoes_legais')
                                 <div class="a4-kicker">Instruções & Observações</div>
-                                <div style="font-size:8.2pt;white-space:pre-line;">{{ $fatura['observacoes'] !== '' ? $fatura['observacoes'] : 'Fatura emitida automaticamente pelo gateway conectado ao WHMCS.' }}</div>
+                                <div style="font-size:8.2pt;line-height:1.45;">{!! $fatura['observacoes'] !== '' ? golden_html($fatura['observacoes']) : 'Fatura emitida automaticamente pelo gateway conectado ao WHMCS.' !!}</div>
                                 @break
 
                             @case('assinatura_rodape')
@@ -361,7 +361,7 @@
             </div>
 
             <footer class="a4-rodape">
-                {{ $estilo['rodape_texto'] ?? 'Golden Rastreamento · Fatura A4' }}
+                {!! golden_html($estilo['rodape_texto'] ?? 'Golden Rastreamento · Fatura A4') !!}
             </footer>
         </div>
 @if(empty($modoEmbutido))

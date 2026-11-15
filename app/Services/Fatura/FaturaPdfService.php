@@ -615,7 +615,8 @@ class FaturaPdfService
 
         // Rodapé institucional discreto em toda última página
         $rodapeY = max(18.0, $marginBottom - 12.0);
-        $stream .= $this->pdfTexto($marginLeft, $rodapeY, 7.5, '#6B7280', (string) ($estilo['rodape_texto'] ?? ''), false);
+        $rodapePuro = golden_texto_puro((string) ($estilo['rodape_texto'] ?? ''));
+        $stream .= $this->pdfTexto($marginLeft, $rodapeY, 7.5, '#6B7280', $rodapePuro, false);
         $paginasStreams[] = $stream;
 
         return $this->empacotarDocumentoPdf14($paginasStreams);
@@ -794,7 +795,7 @@ class FaturaPdfService
 
             case 'observacoes_legais':
                 $out .= $this->pdfTexto($x + $pad, $curY, 8.5, $destaque, 'INSTRUÇÕES & OBSERVAÇÕES', true);
-                $obs = $fatura['observacoes'] !== '' ? $fatura['observacoes'] : 'Fatura emitida pelo sistema financeiro integrado.';
+                $obs = $fatura['observacoes'] !== '' ? golden_texto_puro($fatura['observacoes']) : 'Fatura emitida pelo sistema financeiro integrado.';
                 $linhasObs = $this->quebrarLinhasTexto($obs, $width < 300 ? 44 : 92, 3);
                 foreach ($linhasObs as $idx => $linhaObs) {
                     $out .= $this->pdfTexto($x + $pad, $curY - 16.0 - ($idx * 12.0), 8.0, $textoCor, $linhaObs, false);

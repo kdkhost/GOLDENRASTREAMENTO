@@ -249,6 +249,11 @@
         btn.addEventListener('click', () => {
             if (!textarea) return;
             const token = btn.getAttribute('data-inserir-token') || '';
+            if (window.GoldenSummernote && textarea.dataset.summernoteAtivo === '1') {
+                window.GoldenSummernote.inserirTexto(textarea, token);
+                agendarPreview();
+                return;
+            }
             const start = textarea.selectionStart ?? textarea.value.length;
             const end = textarea.selectionEnd ?? textarea.value.length;
             textarea.value = textarea.value.slice(0, start) + token + textarea.value.slice(end);

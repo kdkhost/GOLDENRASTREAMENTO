@@ -250,7 +250,7 @@
                                             · {{ $parada['data'] ?? '' }} {{ $parada['hora'] ?? '' }}
                                         </div>
                                         @if(!empty($parada['detalhe']))
-                                            <div class="text-muted mt-1" style="font-size: 0.76rem;">{{ $parada['detalhe'] }}</div>
+                                            <div class="text-muted mt-1" style="font-size: 0.76rem;">{!! golden_html($parada['detalhe']) !!}</div>
                                         @endif
                                     </div>
                                     <form method="POST" action="{{ route('admin.pedidos.rastreio.movimentacao.remover', [$pedido, $idx]) }}"

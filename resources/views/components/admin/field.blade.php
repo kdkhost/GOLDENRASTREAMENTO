@@ -52,7 +52,7 @@
     @endif
 
     @if($type === 'textarea')
-        <textarea id="{{ $id }}" name="{{ $name }}" rows="{{ $rows }}" class="{{ $classe }} {{ $attributes->get('class') }}"
+        <textarea id="{{ $id }}" name="{{ $name }}" rows="{{ $rows }}" data-summernote="true" class="{{ $classe }} {{ $attributes->get('class') }}"
             @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required && !$travado) required @endif @if($travado) disabled @endif {!! $extra !!}>{{ $atual }}</textarea>
     @elseif($type === 'select')
         <select id="{{ $id }}" name="{{ $name }}" class="{{ $classe }} {{ $attributes->get('class') }}"

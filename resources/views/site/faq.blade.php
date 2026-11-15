@@ -9,7 +9,7 @@
     <div class="wrap">
         <div class="faq" style="margin-top:0">
             @foreach($faq as $f)
-            <details><summary>{{ $f['q'] }}</summary><p>{{ $f['a'] }}</p></details>
+            <details><summary>{{ $f['q'] }}</summary><div class="faq-body">{!! golden_html($f['a']) !!}</div></details>
             @endforeach
         </div>
         <p class="center" style="margin-top:30px">Não encontrou sua resposta? <a href="{{ route('site.contato') }}" style="color:var(--gold-2);font-weight:700">Fale com um especialista →</a></p>

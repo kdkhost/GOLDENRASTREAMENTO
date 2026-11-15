@@ -38,7 +38,7 @@
                         </span>
                         <small class="text-secondary">{{ $mensagem->created_at->format('d/m/Y \à\s H:i') }}</small>
                     </div>
-                    <div class="small mt-1" style="white-space:pre-wrap">{{ $mensagem->corpo }}</div>
+                    <div class="small mt-1">{!! golden_html($mensagem->corpo) !!}</div>
                 </div>
                 @endforeach
             </div>

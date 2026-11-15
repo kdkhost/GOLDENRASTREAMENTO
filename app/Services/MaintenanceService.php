@@ -155,8 +155,8 @@ class MaintenanceService
      */
     public function ipsPermitidos(): array
     {
-        $raw = (string) Setting::get('manutencao_ips_permitidos', '');
-        $linhas = preg_split('/[\r\n,]+/', $raw) ?: [];
+        $raw = golden_texto_puro((string) Setting::get('manutencao_ips_permitidos', ''));
+        $linhas = preg_split('/[\r\n,;]+/', $raw) ?: [];
 
         return array_values(array_filter(array_map('trim', $linhas)));
     }
@@ -257,7 +257,7 @@ class MaintenanceService
         }
 
         if (isset($dados['ips_permitidos'])) {
-            Setting::set('manutencao_ips_permitidos', trim((string) $dados['ips_permitidos']));
+            Setting::set('manutencao_ips_permitidos', golden_texto_puro((string) $dados['ips_permitidos']));
         }
     }
 }

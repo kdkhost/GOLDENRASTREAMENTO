@@ -153,7 +153,7 @@
                     <dt>Origem</dt><dd><a href="{{ route('admin.leads.show', $cliente->lead) }}">Lead #{{ $cliente->lead_id }}</a> — {{ $cliente->lead->name }}</dd>
                 @endif
                 @if($cliente->observacoes)
-                    <dt>Observações</dt><dd>{{ $cliente->observacoes }}</dd>
+                    <dt>Observações</dt><dd>{!! golden_html($cliente->observacoes) !!}</dd>
                 @endif
             </dl>
             @can('admin')
@@ -190,7 +190,7 @@
                             </span>
                             <small class="text-secondary text-nowrap">{{ $i->created_at->format('d/m/Y H:i') }}</small>
                         </div>
-                        @if($i->descricao)<div class="small text-secondary">{{ $i->descricao }}</div>@endif
+                        @if($i->descricao)<div class="small text-secondary">{!! golden_html($i->descricao) !!}</div>@endif
                         <div class="small text-secondary">
                             {{ $i->user?->name ?: 'Sistema' }} · {{ $i->tipoLabel() }}
                             @if($i->proxima_acao_em) · <span class="text-gold fw-semibold">próxima: {{ $i->proxima_acao_em->format('d/m/Y') }}</span>@endif

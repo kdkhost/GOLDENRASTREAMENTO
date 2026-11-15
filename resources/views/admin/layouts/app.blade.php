@@ -22,6 +22,8 @@
     <link rel="stylesheet" href="{{ asset('css/golden-preloader.css') }}?v={{ filemtime(public_path('css/golden-preloader.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-tooltips.css') }}?v={{ filemtime(public_path('css/golden-tooltips.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/admin-golden.css') }}?v={{ filemtime(public_path('css/admin-golden.css')) }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css">
+    <link rel="stylesheet" href="{{ asset('css/golden-summernote.css') }}?v={{ filemtime(public_path('css/golden-summernote.css')) }}">
     @yield('styles')
 </head>
 <body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">

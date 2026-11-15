@@ -10,7 +10,7 @@
             @if($item['resposta'])
             <details>
                 <summary>{{ $item['pergunta'] }}</summary>
-                <p>{{ $item['resposta'] }}</p>
+                <div class="faq-body">{!! golden_html($item['resposta']) !!}</div>
             </details>
             @endif
             @endforeach

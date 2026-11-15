@@ -210,6 +210,7 @@ class EmailTemplateController extends Controller
         $dados['mostrar_pre_cabecalho'] = $request->boolean('mostrar_pre_cabecalho');
         $dados['mostrar_whatsapp'] = $request->boolean('mostrar_whatsapp');
         $dados['mostrar_links_rodape'] = $request->boolean('mostrar_links_rodape');
+        $dados['css_adicional'] = golden_texto_puro($dados['css_adicional'] ?? '');
 
         $this->templateService->salvarLayout($dados);
 
@@ -247,7 +248,7 @@ class EmailTemplateController extends Controller
             'rodape_legal' => (string) $request->input('rodape_legal', ''),
             'mostrar_whatsapp' => $request->boolean('mostrar_whatsapp'),
             'mostrar_links_rodape' => $request->boolean('mostrar_links_rodape'),
-            'css_adicional' => (string) $request->input('css_adicional', ''),
+            'css_adicional' => golden_texto_puro((string) $request->input('css_adicional', '')),
         ];
 
         $renderizado = $this->templateService->renderizarPorChave(

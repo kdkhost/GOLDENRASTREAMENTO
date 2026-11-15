@@ -1,0 +1,377 @@
+/* Golden Rastreamento — Tema unificado Light / Dark para o editor Summernote.
+ * Usa exclusivamente os tokens visuais da casa (golden-theme.css) e elimina
+ * qualquer tom azul padrão do Bootstrap ou branco estourado no modo escuro. */
+
+:root,
+[data-bs-theme="light"] {
+    --sn-bg: #ffffff;
+    --sn-toolbar-bg: #f8fafc;
+    --sn-statusbar-bg: #f4f6f8;
+    --sn-border: #dbe1e8;
+    --sn-border-focus: var(--brand-gold, #e0a33e);
+    --sn-text: #12161a;
+    --sn-muted: #5b6672;
+    --sn-btn-bg: #ffffff;
+    --sn-btn-border: #e2e8f0;
+    --sn-btn-hover-bg: rgba(224, 163, 62, 0.14);
+    --sn-btn-hover-border: rgba(201, 134, 42, 0.45);
+    --sn-btn-active-bg: rgba(224, 163, 62, 0.22);
+    --sn-btn-active-text: #8a5610;
+    --sn-dropdown-bg: #ffffff;
+    --sn-dropdown-shadow: 0 14px 34px -14px rgba(18, 22, 26, 0.28);
+    --sn-code-bg: #12161a;
+    --sn-code-text: #e6edf3;
+    --sn-blockquote-bg: rgba(224, 163, 62, 0.08);
+    --sn-modal-bg: #ffffff;
+    --sn-modal-header-bg: #f8fafc;
+    --sn-input-bg: #ffffff;
+}
+
+[data-bs-theme="dark"],
+body.dark-mode,
+html.dark,
+.note-editor.note-theme-dark {
+    --sn-bg: #12171b;
+    --sn-toolbar-bg: #181e24;
+    --sn-statusbar-bg: #151a20;
+    --sn-border: #2c343c;
+    --sn-border-focus: var(--brand-gold, #e0a33e);
+    --sn-text: #eef2f5;
+    --sn-muted: #9aa7b4;
+    --sn-btn-bg: #1f262e;
+    --sn-btn-border: #303942;
+    --sn-btn-hover-bg: rgba(224, 163, 62, 0.2);
+    --sn-btn-hover-border: rgba(224, 163, 62, 0.55);
+    --sn-btn-active-bg: rgba(224, 163, 62, 0.28);
+    --sn-btn-active-text: #f3c46b;
+    --sn-dropdown-bg: #1a2026;
+    --sn-dropdown-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.72);
+    --sn-code-bg: #0c1014;
+    --sn-code-text: #e6edf3;
+    --sn-blockquote-bg: rgba(224, 163, 62, 0.12);
+    --sn-modal-bg: #181e24;
+    --sn-modal-header-bg: #13181d;
+    --sn-input-bg: #12171b;
+}
+
+/* Container principal do editor */
+.note-editor.note-frame,
+.note-editor.note-airframe {
+    width: 100%;
+    border: 1px solid var(--sn-border);
+    border-radius: var(--radius-md, 10px);
+    background-color: var(--sn-bg);
+    color: var(--sn-text);
+    overflow: visible;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-family: var(--font-sans, "Inter", "Segoe UI", system-ui, sans-serif);
+}
+
+.note-editor.note-frame:focus-within {
+    border-color: var(--sn-border-focus);
+    box-shadow: 0 0 0 3px var(--t-gold-bg, rgba(224, 163, 62, 0.18));
+}
+
+/* Estado inválido (validação Laravel / AJAX) */
+textarea.is-invalid + .note-editor.note-frame {
+    border-color: var(--brand-red, #c0392b);
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.18);
+}
+
+/* Garante exibição da mensagem de erro abaixo do editor quando o textarea está oculto */
+textarea.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+/* Barra de ferramentas */
+.note-editor.note-frame .note-toolbar {
+    background-color: var(--sn-toolbar-bg);
+    border-bottom: 1px solid var(--sn-border);
+    border-top-left-radius: var(--radius-md, 10px);
+    border-top-right-radius: var(--radius-md, 10px);
+    padding: 6px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    z-index: 2;
+}
+
+.note-editor .note-toolbar > .note-btn-group {
+    margin: 0;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+.note-editor .note-btn {
+    background-color: var(--sn-btn-bg);
+    border: 1px solid var(--sn-btn-border);
+    color: var(--sn-text);
+    border-radius: 7px;
+    font-size: 0.78rem;
+    line-height: 1.25;
+    padding: 5px 8px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    box-shadow: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.note-editor .note-btn:hover,
+.note-editor .note-btn:focus {
+    background-color: var(--sn-btn-hover-bg);
+    border-color: var(--sn-btn-hover-border);
+    color: var(--sn-text);
+}
+
+.note-editor .note-btn.active,
+.note-editor .note-btn:active,
+.note-editor .note-btn[aria-expanded="true"] {
+    background-color: var(--sn-btn-active-bg);
+    border-color: var(--brand-gold, #e0a33e);
+    color: var(--sn-btn-active-text);
+}
+
+.note-editor .note-btn-group .note-btn + .note-btn {
+    margin-left: 0;
+}
+
+/* Área editável */
+.note-editor.note-frame .note-editing-area {
+    background-color: var(--sn-bg);
+    color: var(--sn-text);
+}
+
+.note-editor.note-frame .note-editing-area .note-editable {
+    background-color: var(--sn-bg);
+    color: var(--sn-text);
+    padding: 12px 14px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    font-family: var(--font-sans, "Inter", "Segoe UI", system-ui, sans-serif);
+    caret-color: var(--brand-gold, #e0a33e);
+}
+
+.note-editor.note-frame .note-editing-area .note-editable p:last-child {
+    margin-bottom: 0;
+}
+
+.note-editor.note-frame .note-editing-area .note-editable a {
+    color: var(--brand-gold-2, #c9862a);
+    text-decoration: underline;
+}
+
+.note-editor.note-frame .note-editing-area .note-editable blockquote {
+    border-left: 3px solid var(--brand-gold, #e0a33e);
+    background: var(--sn-blockquote-bg);
+    padding: 8px 12px;
+    margin: 8px 0;
+    border-radius: 0 8px 8px 0;
+}
+
+.note-editor.note-frame .note-editing-area .note-editable table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.note-editor.note-frame .note-editing-area .note-editable td,
+.note-editor.note-frame .note-editing-area .note-editable th {
+    border: 1px solid var(--sn-border);
+    padding: 6px 8px;
+}
+
+.note-editor .note-placeholder {
+    color: var(--sn-muted);
+    padding: 12px 14px;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+/* Modo Código-Fonte (Codeview) */
+.note-editor.note-frame .note-editing-area .note-codable {
+    background-color: var(--sn-code-bg);
+    color: var(--sn-code-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    padding: 12px 14px;
+    border: 0;
+}
+
+/* Barra inferior de redimensionamento */
+.note-editor.note-frame .note-statusbar {
+    background-color: var(--sn-statusbar-bg);
+    border-top: 1px solid var(--sn-border);
+    border-bottom-left-radius: var(--radius-md, 10px);
+    border-bottom-right-radius: var(--radius-md, 10px);
+}
+
+.note-editor.note-frame .note-statusbar .note-resizebar .note-icon-bar {
+    border-top: 1px solid var(--sn-muted);
+    opacity: 0.55;
+}
+
+/* Dropdowns e popovers (sem texto invisível no tema escuro) */
+.note-editor .note-dropdown-menu,
+.note-popover.popover {
+    background-color: var(--sn-dropdown-bg);
+    color: var(--sn-text);
+    border: 1px solid var(--sn-border);
+    border-radius: var(--radius-md, 10px);
+    box-shadow: var(--sn-dropdown-shadow);
+    z-index: 1060;
+}
+
+.note-editor .note-dropdown-menu a,
+.note-editor .note-dropdown-menu .note-dropdown-item,
+.note-editor .note-dropdown-menu button {
+    color: var(--sn-text);
+}
+
+.note-editor .note-dropdown-menu a:hover,
+.note-editor .note-dropdown-menu .note-dropdown-item:hover {
+    background-color: var(--sn-btn-hover-bg);
+    color: var(--sn-text);
+}
+
+.note-popover .popover-arrow::after {
+    border-bottom-color: var(--sn-dropdown-bg);
+    border-top-color: var(--sn-dropdown-bg);
+}
+
+.note-editor .note-color .note-dropdown-menu .note-palette .note-palette-title {
+    color: var(--sn-muted);
+    border-bottom-color: var(--sn-border);
+}
+
+.note-editor .note-color .note-dropdown-menu .note-palette .note-color-reset,
+.note-editor .note-color .note-dropdown-menu .note-palette .note-color-select {
+    background-color: var(--sn-btn-bg);
+    color: var(--sn-text);
+    border-color: var(--sn-border);
+}
+
+.note-editor .note-color .note-dropdown-menu .note-palette .note-color-reset:hover,
+.note-editor .note-color .note-dropdown-menu .note-palette .note-color-select:hover {
+    background-color: var(--sn-btn-hover-bg);
+}
+
+/* Modais do Summernote (Link, Imagem, Vídeo, Ajuda) */
+.note-modal {
+    z-index: 1080;
+}
+
+.note-modal-backdrop {
+    z-index: 1075;
+    background-color: rgba(12, 16, 20, 0.72);
+}
+
+.note-modal-content {
+    background-color: var(--sn-modal-bg);
+    color: var(--sn-text);
+    border: 1px solid var(--sn-border);
+    border-radius: var(--radius-lg, 16px);
+    box-shadow: var(--sn-dropdown-shadow);
+    overflow: hidden;
+}
+
+.note-modal-header {
+    background-color: var(--sn-modal-header-bg);
+    border-bottom: 1px solid var(--sn-border);
+    color: var(--sn-text);
+    padding: 14px 18px;
+}
+
+.note-modal-title {
+    color: var(--sn-text);
+    font-weight: 700;
+}
+
+.note-modal-header .close {
+    color: var(--sn-muted);
+    opacity: 0.9;
+}
+
+.note-modal-body {
+    padding: 16px 18px;
+    color: var(--sn-text);
+}
+
+.note-modal-body .note-form-label {
+    color: var(--sn-text);
+    font-weight: 600;
+    font-size: 0.84rem;
+}
+
+.note-modal-body .note-input,
+.note-modal-body input[type="text"],
+.note-modal-body input[type="url"] {
+    background-color: var(--sn-input-bg);
+    color: var(--sn-text);
+    border: 1px solid var(--sn-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.note-modal-body .note-input:focus {
+    border-color: var(--brand-gold, #e0a33e);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--t-gold-bg, rgba(224, 163, 62, 0.2));
+}
+
+.note-modal-footer {
+    border-top: 1px solid var(--sn-border);
+    padding: 12px 18px;
+    background-color: var(--sn-modal-header-bg);
+}
+
+.note-modal-footer .note-btn-primary {
+    background: linear-gradient(135deg, var(--brand-gold, #e0a33e), var(--brand-gold-2, #c9862a));
+    border-color: var(--brand-gold-2, #c9862a);
+    color: var(--brand-gold-ink, #241a06);
+    font-weight: 700;
+}
+
+.note-modal-footer .note-btn-primary:hover {
+    filter: brightness(1.06);
+}
+
+/* Input-group com textarea + botão Copiar (ex.: 2FA) */
+.input-group > .note-editor.note-frame {
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+}
+
+/* Conteúdo rico renderizado nas páginas públicas (FAQ e depoimentos) sem escape HTML */
+.faq details .faq-body {
+    padding: 0 22px 20px;
+    color: var(--slate, #475569);
+}
+
+.faq details .faq-body p {
+    padding: 0;
+    margin: 0 0 0.55rem;
+}
+
+.faq details .faq-body p:last-child {
+    margin-bottom: 0;
+}
+
+.depo-card .depo-txt {
+    color: var(--slate, #475569);
+    font-style: italic;
+    margin: 0;
+}
+
+.depo-card .depo-txt p {
+    margin: 0 0 0.4rem;
+}
+
+.depo-card .depo-txt p:last-child {
+    margin-bottom: 0;
+}

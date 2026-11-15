@@ -241,7 +241,7 @@
                 <div class="pdp-detail-card">
                     <span class="eyebrow">Especificações & Detalhes</span>
                     <h2>Tudo sobre {{ $produto['nome'] }}</h2>
-                    <div class="prod-desc">{!! nl2br(e($produto['descricao'])) !!}</div>
+                    <div class="prod-desc">{!! golden_html($produto['descricao']) !!}</div>
                 </div>
             @endif
 

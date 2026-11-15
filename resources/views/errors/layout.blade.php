@@ -653,7 +653,7 @@
         @endif
 
         @if(!empty($dados['message']))
-            <p class="err-message">{{ $dados['message'] }}</p>
+            <div class="err-message">{!! golden_html($dados['message']) !!}</div>
         @endif
 
         {{-- Conteúdo Injetado (ex: Cronômetro da Manutenção 503) --}}

@@ -183,7 +183,7 @@
                     <div class="swiper-slide">
                         <div class="depo-card">
                             <div class="stars">{{ str_repeat('★', max(1, min(5, (int) $d['nota']))) }}</div>
-                            <p>"{{ $d['texto'] }}"</p>
+                            <div class="depo-txt">{!! golden_html($d['texto']) !!}</div>
                             <div class="depo-who">
                                 <div class="avatar">@if($d['avatar'])<img src="{{ $d['avatar'] }}" alt="Foto de {{ $d['nome'] }}" loading="lazy" width="46" height="46">@else{{ $d['iniciais'] }}@endif</div>
                                 <div><b>{{ $d['nome'] }}</b>@if($d['papel'])<small>{{ $d['papel'] }}@if($d['cidade']) · {{ $d['cidade'] }}@endif</small>@endif</div>
@@ -216,7 +216,7 @@
         </div>
         <div class="faq">
             @foreach(array_slice($faq, 0, 5) as $f)
-            <details><summary>{{ $f['q'] }}</summary><p>{{ $f['a'] }}</p></details>
+            <details><summary>{{ $f['q'] }}</summary><div class="faq-body">{!! golden_html($f['a']) !!}</div></details>
             @endforeach
         </div>
     </div>

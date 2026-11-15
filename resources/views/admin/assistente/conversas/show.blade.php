@@ -33,7 +33,7 @@
                         </div>
 
                         @if($m->textoVisivel() !== '')
-                            <div class="small mt-1" style="white-space:pre-wrap">{{ $m->textoVisivel() }}</div>
+                            <div class="small mt-1">{!! golden_html($m->textoVisivel()) !!}</div>
                         @endif
 
                         @if($m->temMidia())

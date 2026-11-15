@@ -649,7 +649,7 @@
                 <p class="maint-subtitle" style="margin-bottom:0">{{ $subtitulo }}</p>
             </div>
         </div>
-        <p class="maint-message">{{ $mensagem }}</p>
+        <div class="maint-message">{!! golden_html($mensagem) !!}</div>
 
         {{-- Selo de Telemetria Contínua 24h --}}
         <div class="maint-telemetry-badge">
