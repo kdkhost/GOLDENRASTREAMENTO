@@ -131,6 +131,7 @@ return [
     // entra aqui para aparecer escolhido no select.
     'comandos_sugeridos' => [
         'queue:work --stop-when-empty --max-time=50' => 'Drenar a fila de envios (e-mails, avisos e jobs)',
+        'golden:emails:processar-fila --limite=20' => 'Processar a fila anti-spam de e-mails e faturas PDF',
         'google-ads:sync --agendamento' => 'Sincronizar as métricas das contas de Google Ads conectadas',
         'clientes:puxar-do-financeiro' => 'Sincronizar dados e fichas de clientes com o financeiro (WHMCS)',
         'rastreio:podar' => 'Apagar visitas e eventos mais velhos que a retenção',

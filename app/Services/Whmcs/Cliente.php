@@ -1662,6 +1662,270 @@ class Cliente
     }
 
     /**
+     * Lista os gateways de pagamento ativos cadastrados no WHMCS conectado.
+     *
+     * @return array<int, array{modulo: string, nome: string, tipo: string}>
+     */
+    public function metodosDePagamento(): array
+    {
+        $resposta = $this->chamar('GetPaymentMethods', []);
+        if (! is_array($resposta)) {
+            return [];
+        }
+
+        return collect($this->lista($resposta['paymentmethods']['paymentmethod'] ?? []))
+            ->filter(fn (mixed $item): bool => is_array($item) && trim((string) ($item['module'] ?? '')) !== '')
+            ->map(function (array $item): array {
+                $modulo = trim((string) ($item['module'] ?? ''));
+                $nome = trim((string) ($item['displayname'] ?? '')) ?: $modulo;
+
+                return [
+                    'modulo' => $modulo,
+                    'nome' => $nome,
+                    'tipo' => $this->classificarTipoGateway($modulo, $nome),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Obtém os detalhes completos de uma fatura no WHMCS, enriquecidos pelo plugin
+     * Golden no WHMCS quando instalado (`goldengetinvoicepaymentdata`).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function detalharFatura(int $faturaId, ?int $clientId = null): ?array
+    {
+        if ($faturaId <= 0 || ! $this->configurado()) {
+            return null;
+        }
+
+        $fatura = $this->chamar('GetInvoice', ['invoiceid' => $faturaId]);
+        if (! is_array($fatura) || (int) ($fatura['invoiceid'] ?? 0) <= 0) {
+            return null;
+        }
+
+        $donoId = (int) ($fatura['userid'] ?? 0);
+        if ($clientId !== null && $donoId !== $clientId) {
+            return null;
+        }
+
+        $metodoSlug = trim((string) ($fatura['paymentmethod'] ?? ''));
+        $gateways = collect($this->metodosDePagamento())->keyBy('modulo');
+        $gatewayInfo = $gateways->get($metodoSlug);
+        $gatewayNome = is_array($gatewayInfo) ? (string) $gatewayInfo['nome'] : ($metodoSlug !== '' ? $metodoSlug : 'Gateway WHMCS');
+        $gatewayTipo = is_array($gatewayInfo) ? (string) $gatewayInfo['tipo'] : $this->classificarTipoGateway($metodoSlug, $gatewayNome);
+
+        $itens = collect($this->lista($fatura['items']['item'] ?? []))
+            ->filter(fn (mixed $item): bool => is_array($item))
+            ->map(function (array $item): array {
+                $valorCents = $this->centavos($item['amount'] ?? 0);
+
+                return [
+                    'id' => (int) ($item['id'] ?? 0),
+                    'tipo' => (string) ($item['type'] ?? ''),
+                    'descricao' => trim((string) ($item['description'] ?? 'Serviço de rastreamento')),
+                    'quantidade' => 1,
+                    'valor_unitario_cents' => $valorCents,
+                    'valor_cents' => $valorCents,
+                    'tributavel' => (int) ($item['taxed'] ?? 0) === 1,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $transacoes = collect($this->lista($fatura['transactions']['transaction'] ?? []))
+            ->filter(fn (mixed $tr): bool => is_array($tr))
+            ->map(fn (array $tr): array => [
+                'id' => (int) ($tr['id'] ?? 0),
+                'transid' => (string) ($tr['transid'] ?? ''),
+                'data' => $this->data($tr['date'] ?? null),
+                'gateway' => (string) ($tr['gateway'] ?? ''),
+                'descricao' => (string) ($tr['description'] ?? ''),
+                'entrada_cents' => $this->centavos($tr['amountin'] ?? 0),
+            ])
+            ->values()
+            ->all();
+
+        $observacoes = trim((string) ($fatura['notes'] ?? ''));
+        $numero = trim((string) ($fatura['invoicenum'] ?? '')) ?: (string) $faturaId;
+
+        $dados = [
+            'id' => $faturaId,
+            'whmcs_client_id' => $donoId,
+            'numero' => $numero,
+            'status' => (string) ($fatura['status'] ?? ''),
+            'status_rotulo' => self::rotuloDaFatura((string) ($fatura['status'] ?? '')),
+            'emitida' => $this->data($fatura['date'] ?? null),
+            'vencimento' => $this->data($fatura['duedate'] ?? null),
+            'paga_em' => $this->data($fatura['datepaid'] ?? null),
+            'subtotal_cents' => $this->centavos($fatura['subtotal'] ?? 0),
+            'imposto_cents' => $this->centavos($fatura['tax'] ?? 0) + $this->centavos($fatura['tax2'] ?? 0),
+            'credito_cents' => $this->centavos($fatura['credit'] ?? 0),
+            'total_cents' => $this->centavos($fatura['total'] ?? 0),
+            'saldo_cents' => $this->centavos($fatura['balance'] ?? 0),
+            'metodo' => $metodoSlug,
+            'metodo_rotulo' => $gatewayNome,
+            'gateway_tipo' => $gatewayTipo,
+            'url' => $this->linkDaArea('viewinvoice', $faturaId),
+            'observacoes' => $observacoes,
+            'itens' => $itens,
+            'transacoes' => $transacoes,
+            'pix_copia_cola' => $this->extrairPixDoTexto($observacoes),
+            'linha_digitavel' => $this->extrairLinhaDigitavelDoTexto($observacoes),
+            'codigo_barras' => '',
+            'nosso_numero' => '',
+            'checkout_url' => $this->linkDaArea('viewinvoice', $faturaId),
+            'plugin_ativo' => false,
+            'cliente' => [],
+        ];
+
+        $pluginResposta = $this->chamarCrua('goldengetinvoicepaymentdata', ['invoiceid' => $faturaId]);
+        if ($pluginResposta['estado'] === 'ok' && is_array($pluginResposta['resposta'])) {
+            $ext = $pluginResposta['resposta'];
+            $dados['plugin_ativo'] = true;
+
+            if (! empty($ext['gateway_display_name'])) {
+                $dados['metodo_rotulo'] = (string) $ext['gateway_display_name'];
+            }
+            if (! empty($ext['gateway_type'])) {
+                $dados['gateway_tipo'] = (string) $ext['gateway_type'];
+            }
+            if (! empty($ext['pix_copia_cola'])) {
+                $dados['pix_copia_cola'] = (string) $ext['pix_copia_cola'];
+            }
+            if (! empty($ext['linha_digitavel'])) {
+                $dados['linha_digitavel'] = (string) $ext['linha_digitavel'];
+            }
+            if (! empty($ext['codigo_barras'])) {
+                $dados['codigo_barras'] = (string) $ext['codigo_barras'];
+            }
+            if (! empty($ext['nosso_numero'])) {
+                $dados['nosso_numero'] = (string) $ext['nosso_numero'];
+            }
+            if (! empty($ext['checkout_url'])) {
+                $dados['checkout_url'] = (string) $ext['checkout_url'];
+            }
+            if (is_array($ext['cliente'] ?? null)) {
+                $dados['cliente'] = $ext['cliente'];
+            }
+        }
+
+        if ($dados['cliente'] === [] && $donoId > 0) {
+            $clienteWhmcs = $this->chamar('GetClientsDetails', ['clientid' => $donoId, 'stats' => false]);
+            if (is_array($clienteWhmcs)) {
+                $dados['cliente'] = [
+                    'nome' => trim(((string) ($clienteWhmcs['firstname'] ?? '')).' '.((string) ($clienteWhmcs['lastname'] ?? ''))),
+                    'empresa' => trim((string) ($clienteWhmcs['companyname'] ?? '')),
+                    'email' => trim((string) ($clienteWhmcs['email'] ?? '')),
+                    'telefone' => $this->telefone($clienteWhmcs['phonenumber'] ?? ''),
+                    'documento' => trim((string) ($clienteWhmcs['tax_id'] ?? '')),
+                    'endereco' => trim(((string) ($clienteWhmcs['address1'] ?? '')).' '.((string) ($clienteWhmcs['address2'] ?? ''))),
+                    'cidade' => trim((string) ($clienteWhmcs['city'] ?? '')),
+                    'uf' => trim((string) ($clienteWhmcs['state'] ?? '')),
+                    'cep' => trim((string) ($clienteWhmcs['postcode'] ?? '')),
+                ];
+            }
+        }
+
+        return $dados;
+    }
+
+    /**
+     * Verifica conectividade com a API do WHMCS e detecta se o plugin
+     * `golden_rastreamento` está ativo no servidor WHMCS.
+     *
+     * @return array{
+     *   configurado: bool,
+     *   conectado: bool,
+     *   plugin_instalado: bool,
+     *   versao_plugin: ?string,
+     *   gateways_total: int,
+     *   mensagem: string
+     * }
+     */
+    public function statusPluginWhmcs(): array
+    {
+        if (! $this->configurado()) {
+            return [
+                'configurado' => false,
+                'conectado' => false,
+                'plugin_instalado' => false,
+                'versao_plugin' => null,
+                'gateways_total' => 0,
+                'mensagem' => 'Configure a URL, Identifier e Secret do WHMCS em Sistema → Configurações.',
+            ];
+        }
+
+        $gateways = $this->metodosDePagamento();
+        $ping = $this->chamarCrua('goldengetinvoicepaymentdata', ['ping' => 1]);
+
+        if ($ping['estado'] === 'ok' && is_array($ping['resposta'])) {
+            return [
+                'configurado' => true,
+                'conectado' => true,
+                'plugin_instalado' => true,
+                'versao_plugin' => (string) ($ping['resposta']['version'] ?? '1.0.0'),
+                'gateways_total' => count($gateways),
+                'mensagem' => 'API WHMCS conectada e plugin Golden ativo no servidor financeiro.',
+            ];
+        }
+
+        $sondaPadrao = $this->chamarCrua('GetPaymentMethods', []);
+        $conectado = $sondaPadrao['estado'] === 'ok';
+
+        return [
+            'configurado' => true,
+            'conectado' => $conectado,
+            'plugin_instalado' => false,
+            'versao_plugin' => null,
+            'gateways_total' => count($gateways),
+            'mensagem' => $conectado
+                ? 'WHMCS conectado pela API padrão. Instale o plugin Golden no WHMCS para capturar PIX Copia e Cola, linha digitável e webhooks automáticos.'
+                : ($sondaPadrao['detalhe'] !== '' ? $sondaPadrao['detalhe'] : 'Não foi possível comunicar com o WHMCS.'),
+        ];
+    }
+
+    private function classificarTipoGateway(string $modulo, string $nome): string
+    {
+        $texto = mb_strtolower($modulo.' '.$nome);
+
+        if (str_contains($texto, 'pix')) {
+            return 'pix';
+        }
+        if (str_contains($texto, 'boleto') || str_contains($texto, 'gerencianet') || str_contains($texto, 'efi') || str_contains($texto, 'asaas') || str_contains($texto, 'cora') || str_contains($texto, 'inter')) {
+            return 'boleto_pix';
+        }
+        if (str_contains($texto, 'card') || str_contains($texto, 'cartao') || str_contains($texto, 'stripe') || str_contains($texto, 'cielo') || str_contains($texto, 'rede') || str_contains($texto, 'mercadopago') || str_contains($texto, 'pagseguro')) {
+            return 'cartao';
+        }
+        if (str_contains($texto, 'bank') || str_contains($texto, 'transfer')) {
+            return 'transferencia';
+        }
+
+        return 'gateway';
+    }
+
+    private function extrairPixDoTexto(string $texto): string
+    {
+        if (preg_match('/(000201[0-9A-Za-zÀ-ÿ\.\-\+\/\=\*\s]{25,400})/', $texto, $match) === 1) {
+            return preg_replace('/\s+/', '', trim($match[1])) ?? '';
+        }
+
+        return '';
+    }
+
+    private function extrairLinhaDigitavelDoTexto(string $texto): string
+    {
+        if (preg_match('/(\d{5}[\.\s]?\d{5}\s+\d{5}[\.\s]?\d{6}\s+\d{5}[\.\s]?\d{6}\s+\d\s+\d{14})/', $texto, $match) === 1) {
+            return trim(preg_replace('/\s+/', ' ', $match[1]) ?? '');
+        }
+
+        return '';
+    }
+
+    /**
      * A chamada crua. Devolve o JSON de sucesso ou `null` — e o `null` é sempre uma falha,
      * nunca um "não tem nada". Quem chama decide o que mostrar, mas nunca recebe exceção de
      * rede: a página do cliente não pode cair porque o financeiro demorou.

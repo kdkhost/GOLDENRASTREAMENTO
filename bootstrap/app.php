@@ -61,6 +61,10 @@ return Application::configure(basePath: dirname(__DIR__))
             ResponderEscritaAjax::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'api/webhooks/whmcs',
+        ]);
+
         $middleware->alias([
             'role' => ControleAcesso::class,
             'cliente' => AutenticarCliente::class,

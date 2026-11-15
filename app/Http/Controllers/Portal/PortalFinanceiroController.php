@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Services\Fatura\FaturaPdfService;
 use App\Services\Whmcs\Cliente as Financeiro;
 use App\Services\Whmcs\Veiculacao;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 /**
@@ -122,5 +124,52 @@ class PortalFinanceiroController extends PortalBaseController
         return $itens === null
             ? ['situacao' => 'fora_do_ar', 'itens' => []]
             : ['situacao' => 'ok', 'itens' => $itens];
+    }
+
+    /** Gera o arquivo PDF cirúrgico de uma fatura verificando titularidade no WHMCS. */
+    public function pdf(int $fatura, FaturaPdfService $pdfService): Response
+    {
+        abort_unless(Veiculacao::abre('faturas'), 404);
+
+        $idCliente = $this->idNoFinanceiro();
+        $financeiro = $this->financeiro();
+
+        if ($idCliente === null || ! $financeiro->configurado()) {
+            abort(404);
+        }
+
+        $dados = $financeiro->detalharFatura($fatura, $idCliente);
+        if (! is_array($dados)) {
+            abort(404);
+        }
+
+        $binario = $pdfService->gerarPdfBinario($dados);
+        $nomeArquivo = 'fatura-'.preg_replace('/[^A-Za-z0-9\-]/', '-', (string) ($dados['numero'] ?? $fatura)).'.pdf';
+
+        return response($binario, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$nomeArquivo.'"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    /** Abre a visualização cirúrgica A4 pronta para impressão pelo próprio cliente. */
+    public function imprimir(int $fatura, FaturaPdfService $pdfService): Response
+    {
+        abort_unless(Veiculacao::abre('faturas'), 404);
+
+        $idCliente = $this->idNoFinanceiro();
+        $financeiro = $this->financeiro();
+
+        if ($idCliente === null || ! $financeiro->configurado()) {
+            abort(404);
+        }
+
+        $dados = $financeiro->detalharFatura($fatura, $idCliente);
+        if (! is_array($dados)) {
+            abort(404);
+        }
+
+        return response($pdfService->renderizarHtmlCirurgico($dados));
     }
 }

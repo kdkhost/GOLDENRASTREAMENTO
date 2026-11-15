@@ -472,6 +472,8 @@ class PermissionService
             'admin.contratos.' => 'contratos',
             'admin.conteudo.' => 'conteudo',
             'admin.settings.' => 'configuracoes',
+            'admin.templates-email.' => 'configuracoes',
+            'admin.faturas-modelo.' => 'configuracoes',
             'admin.erros.' => 'erros_manutencao',
             'admin.manutencao.' => 'erros_manutencao',
             'admin.usuarios.' => 'usuarios',

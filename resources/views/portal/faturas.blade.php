@@ -63,13 +63,23 @@
                 @endif
             </td>
             <td class="text-end">
-                @if($fatura['url'] !== '')
-                    <a class="btn btn-sm text-nowrap {{ $fatura['saldo_cents'] > 0 ? 'btn-golden' : 'btn-outline-secondary' }}" href="{{ $fatura['url'] }}" target="_blank" rel="noopener noreferrer">
-                        {{ $fatura['saldo_cents'] > 0 ? 'Pagar' : 'Abrir' }}
-                    </a>
-                @else
-                    <span class="small text-secondary">Pelo atendimento</span>
-                @endif
+                <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-end">
+                    @if(!empty($fatura['id']))
+                        <a class="btn btn-sm btn-outline-secondary text-nowrap" href="{{ route('portal.faturas.pdf', $fatura['id']) }}" title="Baixar Fatura em PDF">
+                            <i class="fas fa-file-pdf" aria-hidden="true"></i> PDF
+                        </a>
+                        <a class="btn btn-sm btn-outline-secondary text-nowrap" href="{{ route('portal.faturas.imprimir', $fatura['id']) }}" target="_blank" rel="noopener noreferrer" title="Imprimir Fatura A4">
+                            <i class="fas fa-print" aria-hidden="true"></i> Imprimir
+                        </a>
+                    @endif
+                    @if($fatura['url'] !== '')
+                        <a class="btn btn-sm text-nowrap {{ $fatura['saldo_cents'] > 0 ? 'btn-golden' : 'btn-outline-secondary' }}" href="{{ $fatura['url'] }}" target="_blank" rel="noopener noreferrer">
+                            {{ $fatura['saldo_cents'] > 0 ? 'Pagar' : 'Abrir' }}
+                        </a>
+                    @elseif(empty($fatura['id']))
+                        <span class="small text-secondary">Pelo atendimento</span>
+                    @endif
+                </div>
             </td>
         </tr>
         @endforeach

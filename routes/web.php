@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CronController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\ErrorPageController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\FunnelController as AdminFunnelController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Admin\GoogleAdsController;
 use App\Http\Controllers\Admin\GoogleAdsCopilotoController;
 use App\Http\Controllers\Admin\GoogleAdsRelatorioController;
 use App\Http\Controllers\Admin\GuiaController;
+use App\Http\Controllers\Admin\InvoiceTemplateController;
 use App\Http\Controllers\Admin\LeadController as AdminLeadController;
 use App\Http\Controllers\Admin\MaintenanceController;
 use App\Http\Controllers\Admin\MilitarySecurityController;
@@ -56,6 +58,11 @@ use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\RastreamentoController;
 use App\Http\Controllers\Site\RastreioController as SiteRastreioController;
 use App\Http\Controllers\Site\StoreController;
+use App\Http\Controllers\Site\WhmcsWebhookController;
+use App\Http\Middleware\CheckCustomMaintenance;
+use App\Http\Middleware\IdentificadorVisita;
+use App\Http\Middleware\RegistrarRastreio;
+use App\Http\Middleware\ResponderEscritaAjax;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -208,6 +215,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
             ->whereNumber('servico')->middleware('throttle:30,1')->name('servicos.show');
         Route::get('faturas', [PortalFinanceiroController::class, 'faturas'])
             ->middleware('throttle:30,1')->name('faturas');
+        Route::get('faturas/{fatura}/pdf', [PortalFinanceiroController::class, 'pdf'])
+            ->whereNumber('fatura')->middleware('throttle:30,1')->name('faturas.pdf');
+        Route::get('faturas/{fatura}/imprimir', [PortalFinanceiroController::class, 'imprimir'])
+            ->whereNumber('fatura')->middleware('throttle:30,1')->name('faturas.imprimir');
 
         Route::get('dados', [PortalContaController::class, 'dados'])->name('dados');
         Route::post('dados', [PortalContaController::class, 'salvarDados'])->name('dados.salvar');
@@ -725,4 +736,61 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::post('/whitelist-meu-ip', [MilitarySecurityController::class, 'whitelistMeuIp'])->name('whitelist.meu-ip');
         Route::delete('/logs/limpar', [MilitarySecurityController::class, 'limparLogs'])->name('logs.limpar');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Templates de E-mail, Layout Separado & Fila Anti-Spam
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('templates-email')->name('templates-email.')->middleware('role:admin')->group(function () {
+        Route::get('/', [EmailTemplateController::class, 'index'])->name('index');
+
+        Route::get('/layout', [EmailTemplateController::class, 'layout'])->name('layout');
+        Route::put('/layout', [EmailTemplateController::class, 'salvarLayout'])->name('layout.update');
+        Route::post('/layout/preview', [EmailTemplateController::class, 'previewLayout'])->name('layout.preview');
+        Route::post('/layout/restaurar', [EmailTemplateController::class, 'restaurarLayout'])->name('layout.restaurar');
+
+        Route::get('/fila', [EmailTemplateController::class, 'fila'])->name('fila');
+        Route::put('/fila/configuracoes', [EmailTemplateController::class, 'salvarConfiguracoesFila'])->name('fila.config');
+        Route::post('/fila/processar', [EmailTemplateController::class, 'processarFila'])->name('fila.processar');
+        Route::post('/fila/{emailFila}/enviar', [EmailTemplateController::class, 'enviarItemFila'])->whereNumber('emailFila')->name('fila.enviar');
+        Route::post('/fila/{emailFila}/cancelar', [EmailTemplateController::class, 'cancelarItemFila'])->whereNumber('emailFila')->name('fila.cancelar');
+
+        Route::get('/{chave}', [EmailTemplateController::class, 'edit'])->where('chave', '[a-z0-9_-]+')->name('edit');
+        Route::put('/{chave}', [EmailTemplateController::class, 'update'])->where('chave', '[a-z0-9_-]+')->name('update');
+        Route::post('/{chave}/preview', [EmailTemplateController::class, 'preview'])->where('chave', '[a-z0-9_-]+')->name('preview');
+        Route::post('/{chave}/testar', [EmailTemplateController::class, 'enviarTeste'])->where('chave', '[a-z0-9_-]+')->name('testar');
+        Route::post('/{chave}/restaurar', [EmailTemplateController::class, 'restaurar'])->where('chave', '[a-z0-9_-]+')->name('restaurar');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Personalização Cirúrgica de Faturas PDF (A4) & Gateway WHMCS
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('faturas-modelo')->name('faturas-modelo.')->middleware('role:admin')->group(function () {
+        Route::get('/', [InvoiceTemplateController::class, 'index'])->name('index');
+        Route::put('/', [InvoiceTemplateController::class, 'update'])->name('update');
+        Route::post('/preview', [InvoiceTemplateController::class, 'preview'])->name('preview');
+        Route::get('/imprimir', [InvoiceTemplateController::class, 'imprimir'])->name('imprimir');
+        Route::get('/pdf', [InvoiceTemplateController::class, 'pdf'])->name('pdf');
+        Route::get('/whmcs-plugin.zip', [InvoiceTemplateController::class, 'baixarPluginWhmcs'])->name('whmcs-plugin');
+        Route::post('/enviar-teste', [InvoiceTemplateController::class, 'enviarTeste'])->name('enviar-teste');
+        Route::post('/restaurar', [InvoiceTemplateController::class, 'restaurar'])->name('restaurar');
+    });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Webhook do Plugin Golden no WHMCS
+|--------------------------------------------------------------------------
+*/
+Route::post('/api/webhooks/whmcs', [WhmcsWebhookController::class, 'receber'])
+    ->withoutMiddleware([
+        CheckCustomMaintenance::class,
+        IdentificadorVisita::class,
+        RegistrarRastreio::class,
+        ResponderEscritaAjax::class,
+    ])
+    ->middleware('throttle:60,1')
+    ->name('webhooks.whmcs');

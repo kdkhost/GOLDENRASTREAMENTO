@@ -669,6 +669,78 @@ return [
         ],
 
         [
+            'id' => 'templates-email',
+            'grupo' => 'Sistema',
+            'titulo' => 'Templates de e-mail e fila anti-spam',
+            'icone' => 'fa-envelope-open-text',
+            'rota' => 'admin.templates-email.index',
+            'resumo' => 'Rotas dedicadas por template com layout responsivo separado do conteúdo, preview em tempo real durante a digitação e fila cadenciada anti-spam.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'O cabeçalho, cores responsivas, logomarca, botões e rodapé ficam isolados no Layout Global. Cada disparo transacional edita apenas o assunto, pré-cabeçalho e corpo HTML com prévia simultânea para Desktop e Mobile.'],
+                ['tipo' => 'passos', 'itens' => [
+                    ['icone' => 'fa-palette', 'titulo' => 'Ajustar o layout responsivo separado', 'texto' => 'Acesse Configurar Layout Separado para definir cores, largura máxima, logo e rodapé sem alterar os textos dos e-mails individuais.'],
+                    ['icone' => 'fa-eye', 'titulo' => 'Editar template com preview instantâneo', 'texto' => 'Abra qualquer template pela rota dedicada, clique nas variáveis para inserir tokens dinâmicos e acompanhe o resultado ao vivo enquanto digita.'],
+                    ['icone' => 'fa-paper-plane', 'titulo' => 'Gerenciar a fila anti-spam', 'texto' => 'Defina intervalo mínimo entre envios e tetos por minuto e por hora para proteger o domínio contra bloqueios e filtros de spam.'],
+                ]],
+                ['tipo' => 'aviso', 'tom' => 'gold', 'conteudo' => 'A tarefa agendada da fila de e-mails envia automaticamente lotes cadenciados em segundo plano a cada minuto.'],
+            ],
+        ],
+
+        [
+            'id' => 'faturas-modelo',
+            'grupo' => 'Sistema',
+            'titulo' => 'Personalização de faturas PDF (A4)',
+            'icone' => 'fa-file-invoice-dollar',
+            'rota' => 'admin.faturas-modelo.index',
+            'resumo' => 'Montador visual arrasta-e-solta em folha A4 cirúrgica (210mm × 297mm), impressão fiel 1:1, geração nativa de PDF e plugin oficial do gateway WHMCS.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'Cada bloco do documento A4 pode ser arrastado, alternado entre meia largura (50%) e largura total (100%), colorido e ocultado. O mesmo mapa de blocos gera a página de impressão e o arquivo PDF anexado nos e-mails.'],
+                ['tipo' => 'passos', 'itens' => [
+                    ['icone' => 'fa-grip-vertical', 'titulo' => 'Montar os blocos por arrasta e solta', 'texto' => 'Reorganize cabeçalho, dados do sacado, resumo financeiro, itens, gateway PIX e código de barras observando o espelho A4 em tempo real.'],
+                    ['icone' => 'fa-plug', 'titulo' => 'Conectar gateways e baixar o plugin WHMCS', 'texto' => 'Na aba Gateway WHMCS e Plugin, consulte os métodos de pagamento ativos no WHMCS e baixe o pacote ZIP instalável com endpoint API e webhooks automáticos.'],
+                    ['icone' => 'fa-print', 'titulo' => 'Validar impressão cirúrgica e PDF', 'texto' => 'Use Impressão Cirúrgica A4 e Baixar PDF Real para conferir margens em milímetros, QR Code PIX e ficha de compensação antes de disparar aos clientes.'],
+                ]],
+                ['tipo' => 'aviso', 'tom' => 'amber', 'conteudo' => 'Após instalar o plugin no WHMCS, ative a ação goldengetinvoicepaymentdata na API Role do WHMCS para leitura completa do PIX e linha digitável.'],
+            ],
+        ],
+
+        [
+            'id' => 'paginas-erro',
+            'grupo' => 'Sistema',
+            'titulo' => 'Páginas de erro personalizadas',
+            'icone' => 'fa-triangle-exclamation',
+            'rota' => 'admin.erros.index',
+            'resumo' => 'Personalização de títulos, mensagens, botões e visual das telas HTTP de erro (400, 401, 403, 404, 419, 429, 500 e 503).',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'Cada código HTTP possui layout ajustado à altura da tela do visitante para leitura imediata sem rolagem desnecessária e botões de retorno seguro.'],
+            ],
+        ],
+
+        [
+            'id' => 'seguranca-militar',
+            'grupo' => 'Sistema',
+            'titulo' => 'Segurança Militar (WAF)',
+            'icone' => 'fa-shield-halved',
+            'rota' => 'admin.seguranca-militar.index',
+            'resumo' => 'Escudo de proteção contra ataques automatizados, varreduras hostis, tentativas de injeção e controle de lista branca/negra de IPs.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'Monitoramento de requisições suspeitas com bloqueio automático de ameaças e liberação imediata do IP da equipe.'],
+            ],
+        ],
+
+        [
+            'id' => 'permissoes',
+            'grupo' => 'Sistema',
+            'titulo' => 'Permissões e Perfis',
+            'icone' => 'fa-key',
+            'rota' => 'admin.permissoes.index',
+            'resumo' => 'Matriz de controle de acesso por perfil e módulo do painel administrativo.',
+            'blocos' => [
+                ['tipo' => 'texto', 'conteudo' => 'Define ações de visualização, edição e exclusão permitidas para cada perfil da equipe sem afetar o Super Administrador.'],
+            ],
+        ],
+
+        [
             'id' => 'ambiente',
             'grupo' => 'Sistema',
             'titulo' => 'Ambiente, e-mail e agendador',
@@ -748,5 +820,10 @@ return [
         'admin.seguranca.' => 'seguranca',
         'admin.activities.' => 'auditoria',
         'admin.manutencao.' => 'manutencao',
+        'admin.erros.' => 'paginas-erro',
+        'admin.seguranca-militar.' => 'seguranca-militar',
+        'admin.permissoes.' => 'permissoes',
+        'admin.templates-email.' => 'templates-email',
+        'admin.faturas-modelo.' => 'faturas-modelo',
     ],
 ];

@@ -907,6 +907,8 @@ return [
 
         ['titulo' => 'Sistema', 'icone' => 'fa-gear', 'admin' => true, 'filhos' => [
             ['titulo' => 'Configurações', 'rota' => 'admin.settings.index', 'prefixo' => 'admin.settings.', 'icone' => 'fa-sliders'],
+            ['titulo' => 'Templates de e-mail', 'rota' => 'admin.templates-email.index', 'prefixo' => 'admin.templates-email.', 'icone' => 'fa-envelope-open-text'],
+            ['titulo' => 'Faturas PDF (A4)', 'rota' => 'admin.faturas-modelo.index', 'prefixo' => 'admin.faturas-modelo.', 'icone' => 'fa-file-invoice-dollar'],
             ['titulo' => 'Páginas de erro', 'rota' => 'admin.erros.index', 'prefixo' => 'admin.erros.', 'icone' => 'fa-triangle-exclamation'],
             ['titulo' => 'Modo de manutenção', 'rota' => 'admin.manutencao.index', 'prefixo' => 'admin.manutencao.', 'icone' => 'fa-screwdriver-wrench'],
             ['titulo' => 'Segurança Militar', 'rota' => 'admin.seguranca-militar.index', 'prefixo' => 'admin.seguranca-militar.', 'icone' => 'fa-shield-halved'],
