@@ -79,12 +79,11 @@ class StoreController extends Controller
         $linhas = $carrinho->linhas();
         $subtotal = array_sum(array_column($linhas, 'subtotal'));
         $desc = $carrinho->resumoDesconto($subtotal);
-        $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal);
 
         return view('site.store.cart', [
             'linhas' => $linhas,
             'subtotal' => $subtotal,
-            'frete' => $frete,
+            'frete' => 0,
             'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
             'cupom' => $desc['cupom'],
             'descontoCents' => $desc['desconto_cents'],
@@ -227,9 +226,8 @@ class StoreController extends Controller
         $linhas = $carrinho->linhas();
         $subtotal = array_sum(array_column($linhas, 'subtotal'));
         $desc = $carrinho->resumoDesconto($subtotal);
-        $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal);
         $freteGratisEm = $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal);
-        $total = max(0, $subtotal - ($desc['desconto_cents'] ?? 0)) + $frete;
+        $totalSemFrete = max(0, $subtotal - ($desc['desconto_cents'] ?? 0));
 
         return response()->json([
             'sucesso' => true,
@@ -242,15 +240,19 @@ class StoreController extends Controller
                 'quantidade' => (int) $l['quantidade'],
                 'subtotal_formatado' => brl($l['subtotal']),
             ], $linhas),
+            'subtotal_cents' => $subtotal,
+            'desconto_cents' => (int) ($desc['desconto_cents'] ?? 0),
+            'total_sem_frete_cents' => $totalSemFrete,
             'subtotal_formatado' => brl($subtotal),
-            'frete_formatado' => $frete > 0 ? brl($frete) : 'Grátis',
+            'frete_formatado' => 'Calcule pelo CEP',
             'frete_gratis_faltam_formatado' => $freteGratisEm > 0 ? brl($freteGratisEm) : null,
             'cupom' => $desc['cupom'] ? [
                 'codigo' => $desc['cupom']->codigo,
                 'rotulo' => $desc['cupom']->rotuloDesconto(),
                 'desconto_formatado' => ($desc['desconto_cents'] ?? 0) > 0 ? '− '.brl($desc['desconto_cents']) : 'Frete grátis',
+                'frete_gratis' => (bool) $desc['frete_gratis'],
             ] : null,
-            'total_formatado' => brl($total),
+            'total_formatado' => brl($totalSemFrete),
         ]);
     }
 

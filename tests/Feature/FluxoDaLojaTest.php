@@ -328,4 +328,35 @@ class FluxoDaLojaTest extends TestCase
             ->assertJsonPath('sucesso', true)
             ->assertJsonPath('endereco_cep.resumo', 'Praça da Sé, Sé — São Paulo/SP');
     }
+
+    public function test_carrinho_nao_exibe_frete_gratis_sem_cep_e_atualiza_quantidade_via_ajax(): void
+    {
+        $produto = Product::where('ativo', true)->firstOrFail();
+
+        $this->postJson(route('site.loja.carrinho.adicionar'), [
+            'produto' => $produto->id,
+            'quantidade' => 3,
+        ])->assertOk();
+
+        $this->get(route('site.loja.carrinho'))
+            ->assertOk()
+            ->assertSee('Calcule pelo CEP')
+            ->assertDontSee('id="cartFreteDisplay">Grátis');
+
+        $this->postJson(route('site.loja.carrinho.atualizar'), [
+            'quantidades' => [$produto->id => 1],
+        ])
+            ->assertOk()
+            ->assertJsonPath('sucesso', true)
+            ->assertJsonPath('total_unidades', 1)
+            ->assertJsonPath('frete_formatado', 'Calcule pelo CEP');
+
+        $this->postJson(route('site.loja.carrinho.atualizar'), [
+            'quantidades' => [$produto->id => 0],
+        ])
+            ->assertOk()
+            ->assertJsonPath('sucesso', true)
+            ->assertJsonPath('vazio', true)
+            ->assertJsonPath('total_unidades', 0);
+    }
 }

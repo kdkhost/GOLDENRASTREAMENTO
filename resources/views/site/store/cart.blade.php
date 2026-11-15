@@ -48,17 +48,17 @@
             </div>
         </form>
 
-        <aside class="cart-summary">
+        <aside class="cart-summary" data-total-sem-frete="{{ max(0, $subtotal - ($descontoCents ?? 0)) }}">
             <h2>Resumo</h2>
             <div class="sum-line"><span id="cartSummaryUnitsLabel">Subtotal ({{ array_sum(array_column($linhas, 'quantidade')) }} itens)</span><b id="cartSubtotalDisplay">{{ brl($subtotal) }}</b></div>
-            <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
+            <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">Calcule pelo CEP</b></div>
             <div class="sum-line" id="cartCupomSummaryRow" style="color:var(--teal)" @if(empty($cupom)) hidden @endif>
                 <span id="cartCupomSummaryLabel">@if(!empty($cupom))Cupom <b>{{ $cupom->codigo }}</b> ({{ $cupom->rotuloDesconto() }})@endif</span>
                 <b id="cartCupomSummaryVal">@if(!empty($cupom)){{ ($descontoCents ?? 0) > 0 ? '− '.brl($descontoCents) : 'Frete grátis' }}@endif</b>
             </div>
             <div class="sum-line" style="font-size:1.06rem;border-bottom:0;padding-top:10px">
                 <strong>Total estimado</strong>
-                <strong id="cartTotalDisplay" style="color:var(--gold-2)">{{ brl(max(0, $subtotal - ($descontoCents ?? 0)) + $frete) }}</strong>
+                <strong id="cartTotalDisplay" style="color:var(--gold-2)">{{ brl(max(0, $subtotal - ($descontoCents ?? 0))) }}</strong>
             </div>
             <p class="sum-hint" id="cartFreteGratisHint" @if($freteGratisEm <= 0) hidden @endif>
                 <i class="fa-solid fa-gift" style="color:var(--gold)"></i>
@@ -146,11 +146,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let ultimoCepCart = '';
 
+    const summaryAside = document.querySelector('.cart-summary');
+    let totalSemFreteCents = summaryAside ? (parseInt(summaryAside.getAttribute('data-total-sem-frete') || '0', 10) || 0) : 0;
+    let freteCalculadoCents = null;
+    let freteCalculadoTexto = 'Calcule pelo CEP';
+    let freteCodigoSelecionado = null;
+
+    function formatBrlCents(cents) {
+        return 'R$ ' + ((cents || 0) / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function atualizarResumoComFrete() {
+        const freteEl = document.getElementById('cartFreteDisplay');
+        const totalEl = document.getElementById('cartTotalDisplay');
+        if (freteEl) {
+            freteEl.textContent = freteCalculadoCents === null ? 'Calcule pelo CEP' : freteCalculadoTexto;
+        }
+        if (totalEl) {
+            const soma = totalSemFreteCents + (freteCalculadoCents || 0);
+            totalEl.textContent = formatBrlCents(soma);
+        }
+    }
+
+    window.goldenRecalcularFreteCart = function () {
+        if (ultimoCepCart && ultimoCepCart.length === 8) {
+            consultarFreteCart();
+        }
+    };
+
     function consultarFreteCart() {
         const rawCep = inputCep.value.replace(/\D/g, '');
         if (rawCep.length !== 8) {
             boxResultados.style.display = 'block';
             boxResultados.innerHTML = '<span style="color:#dc2626">Informe um CEP válido com 8 dígitos.</span>';
+            freteCalculadoCents = null;
+            freteCalculadoTexto = 'Calcule pelo CEP';
+            atualizarResumoComFrete();
             return;
         }
 
@@ -175,6 +206,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!data.sucesso || !data.opcoes || data.opcoes.length === 0) {
                 boxResultados.innerHTML = '<span style="color:#dc2626">Não foi possível calcular o frete para este CEP.</span>';
+                freteCalculadoCents = null;
+                freteCalculadoTexto = 'Calcule pelo CEP';
+                atualizarResumoComFrete();
                 return;
             }
 
@@ -185,15 +219,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 html += '</div>';
             }
 
-            html += '<ul style="list-style:none;padding:0;margin:4px 0 0;display:flex;flex-direction:column;gap:6px">';
+            let opSelecionada = data.opcoes.find(op => String(op.codigo || op.id) === String(freteCodigoSelecionado)) || data.opcoes[0];
+            freteCodigoSelecionado = String(opSelecionada.codigo || opSelecionada.id);
+            freteCalculadoCents = parseInt(opSelecionada.valor_cents || 0, 10) || 0;
+            freteCalculadoTexto = freteCalculadoCents === 0 ? 'Grátis' : opSelecionada.valor_formatado;
+            atualizarResumoComFrete();
+
+            html += '<div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">';
             data.opcoes.forEach(op => {
-                const prazo = op.prazo_dias ? (op.prazo_dias + ' ' + (op.prazo_dias > 1 ? 'dias úteis' : 'dia útil')) : '';
-                html += '<li style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:#fff;border:1px solid #e2e8f0;border-radius:6px">';
-                html += '<div><strong>' + op.nome + '</strong>' + (prazo ? '<br><small style="color:#64748b">' + prazo + '</small>' : '') + '</div>';
+                const code = String(op.codigo || op.id);
+                const checked = code === freteCodigoSelecionado ? 'checked' : '';
+                const prazo = op.prazo_dias ? (op.prazo_dias + ' ' + (op.prazo_dias > 1 ? 'dias úteis' : 'dia útil')) : (op.prazo_texto || '');
+                html += '<label style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 9px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">';
+                html += '<span style="display:flex;align-items:center;gap:8px"><input type="radio" name="cart_frete_opcao" value="' + code + '" data-cents="' + (parseInt(op.valor_cents || 0, 10) || 0) + '" data-texto="' + (op.valor_formatado || 'Grátis') + '" ' + checked + '><span><strong>' + op.nome + '</strong>' + (prazo ? '<br><small style="color:#64748b">' + prazo + '</small>' : '') + '</span></span>';
                 html += '<strong style="color:var(--gold);white-space:nowrap">' + op.valor_formatado + '</strong>';
-                html += '</li>';
+                html += '</label>';
             });
-            html += '</ul>';
+            html += '</div>';
             boxResultados.innerHTML = html;
         })
         .catch(() => {
@@ -203,6 +245,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    boxResultados.addEventListener('change', function (e) {
+        const radio = e.target.closest('input[name="cart_frete_opcao"]');
+        if (!radio) return;
+        freteCodigoSelecionado = radio.value;
+        freteCalculadoCents = parseInt(radio.getAttribute('data-cents') || '0', 10) || 0;
+        freteCalculadoTexto = freteCalculadoCents === 0 ? 'Grátis' : (radio.getAttribute('data-texto') || formatBrlCents(freteCalculadoCents));
+        atualizarResumoComFrete();
+    });
+
     inputCep.addEventListener('input', function () {
         let v = inputCep.value.replace(/\D/g, '').slice(0, 8);
         inputCep.value = v.replace(/^(\d{5})(\d)/, '$1-$2');
@@ -211,6 +262,11 @@ document.addEventListener('DOMContentLoaded', function () {
             consultarFreteCart();
         } else if (v.length < 8) {
             ultimoCepCart = '';
+            freteCalculadoCents = null;
+            freteCalculadoTexto = 'Calcule pelo CEP';
+            boxResultados.style.display = 'none';
+            boxResultados.innerHTML = '';
+            atualizarResumoComFrete();
         }
     });
 
@@ -218,6 +274,11 @@ document.addEventListener('DOMContentLoaded', function () {
         ultimoCepCart = inputCep.value.replace(/\D/g, '');
         consultarFreteCart();
     });
+
+    window.goldenSetTotalSemFreteCents = function (cents) {
+        totalSemFreteCents = parseInt(cents || 0, 10) || 0;
+        atualizarResumoComFrete();
+    };
 });
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -291,8 +352,15 @@ document.addEventListener('DOMContentLoaded', function () {
             unitsLabel.textContent = 'Subtotal (' + u + ' ' + (u === 1 ? 'item' : 'itens') + ')';
         }
         if (subtotalEl) subtotalEl.textContent = data.subtotal_formatado;
-        if (freteEl) freteEl.textContent = data.frete_formatado;
-        if (totalEl) totalEl.textContent = data.total_formatado;
+        if (typeof window.goldenSetTotalSemFreteCents === 'function' && typeof data.total_sem_frete_cents !== 'undefined') {
+            window.goldenSetTotalSemFreteCents(data.total_sem_frete_cents);
+        } else {
+            if (freteEl) freteEl.textContent = data.frete_formatado;
+            if (totalEl) totalEl.textContent = data.total_formatado;
+        }
+        if (typeof window.goldenRecalcularFreteCart === 'function') {
+            window.goldenRecalcularFreteCart();
+        }
 
         if (freteGratisHint && freteGratisVal) {
             if (data.frete_gratis_faltam_formatado) {
@@ -318,8 +386,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     let pendingTimer = null;
+    let requestSeq = 0;
 
     function enviarQuantidades() {
+        const mySeq = ++requestSeq;
         const quantidades = {};
         cartForm.querySelectorAll('[data-cart-qty]').forEach(function (input) {
             const id = input.getAttribute('data-cart-qty');
@@ -337,6 +407,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(res => res.json())
         .then(function (data) {
+            if (mySeq !== requestSeq) return;
             aplicarEstadoCarrinho(data);
             if (data && data.sucesso && typeof window.goldenSiteToast === 'function') {
                 window.goldenSiteToast(data.mensagem || 'Carrinho atualizado.', { type: 'success', duration: 2400 });
