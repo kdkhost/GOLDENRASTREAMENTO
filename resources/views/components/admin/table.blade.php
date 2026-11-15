@@ -5,10 +5,12 @@
     'title' => null,
     'icon' => null,
     'descricao' => null,
+    'ajuda' => null,
 ])
 @php
     $linhas = trim((string) $slot);
     $alinhamentos = ['center' => 'text-center', 'end' => 'text-end'];
+    $gaveta = $ajuda ? \App\Support\GuiaConfiguracao::gaveta($ajuda, $title) : null;
 @endphp
 <div {{ $attributes->merge(['class' => 'card shadow-sm']) }}>
     @if($title)
@@ -16,6 +18,7 @@
             <span>
                 @if($icon)<i class="fas {{ $icon }} me-1 text-gold" aria-hidden="true"></i>@endif
                 <span class="fw-bold">{{ $title }}</span>
+                @if($gaveta)<x-admin.ajuda :gaveta="$gaveta" />@endif
                 @if($descricao)<span class="form-hint d-block fw-normal small text-secondary">{{ $descricao }}</span>@endif
             </span>
             @if(isset($actions))<span class="table-actions">{{ $actions }}</span>@endif

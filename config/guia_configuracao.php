@@ -2677,5 +2677,90 @@ return [
                 ['rotulo' => 'Boas práticas HTTP 503 (Google Search Central)', 'url' => 'https://developers.google.com/search/docs/crawling-indexing/http-network-errors'],
             ],
         ],
+
+        'dashboard_grafico_leads' => [
+            'onde' => 'Curva diária dos leads capturados nos últimos 30 dias pelos formulários do site, loja, simulador e campanhas rastreadas.',
+            'passos' => [
+                ['icone' => 'fa-chart-area', 'titulo' => 'Compare picos com suas campanhas', 'texto' => 'Os dias de maior volume indicam quando anúncios ou páginas de destino geraram mais contatos comerciais.'],
+                ['icone' => 'fa-moon', 'titulo' => 'Adaptado ao tema claro e escuro', 'texto' => 'O gráfico acompanha automaticamente as cores da paleta Golden ao alternar o tema do painel no topo.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir lista completa de leads', 'rota' => 'admin.leads.index'],
+                ['rotulo' => 'Gerenciar campanhas', 'rota' => 'admin.campanhas.index'],
+            ],
+        ],
+
+        'dashboard_para_fazer' => [
+            'onde' => 'Fila imediata das pendências operacionais que exigem retorno da equipe comercial, suporte ou expedição.',
+            'passos' => [
+                ['icone' => 'fa-user-plus', 'titulo' => 'Atenda leads novos rapidamente', 'texto' => 'Contatos em estado novo ainda não receberam o primeiro retorno do time de vendas.'],
+                ['icone' => 'fa-headset', 'titulo' => 'Acompanhe chamados e conversas aguardando', 'texto' => 'Chamados abertos no portal e atendimentos do assistente transferidos para a equipe ficam destacados para resposta ágil.'],
+                ['icone' => 'fa-box-open', 'titulo' => 'Despache pedidos e reponha estoque baixo', 'texto' => 'Pedidos em aberto aguardam confirmação ou postagem na loja, enquanto alertas de estoque indicam produtos no limite mínimo.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver leads', 'rota' => 'admin.leads.index'],
+                ['rotulo' => 'Ver pedidos da loja', 'rota' => 'admin.pedidos.index'],
+                ['rotulo' => 'Ver chamados de suporte', 'rota' => 'admin.chamados.index'],
+                ['rotulo' => 'Ver conversas aguardando equipe', 'rota' => 'admin.assistente.conversas.index'],
+            ],
+        ],
+
+        'dashboard_funil' => [
+            'onde' => 'Distribuição do volume total de leads entre cada etapa comercial até a venda fechada ou perda.',
+            'passos' => [
+                ['icone' => 'fa-filter', 'titulo' => 'Identifique gargalos entre etapas', 'texto' => 'Se houver muitos leads parados em contatado ou proposta, priorize retornos para acelerar o fechamento.'],
+                ['icone' => 'fa-check-double', 'titulo' => 'Atualize o andamento em cada ficha', 'texto' => 'Alterar a etapa na ficha do lead recalcula a taxa de conversão e a receita fechada no painel.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Filtrar leads por etapa', 'rota' => 'admin.leads.index'],
+            ],
+        ],
+
+        'dashboard_leads_recentes' => [
+            'onde' => 'Os oito últimos contatos registrados no sistema, mostrando nome, cidade, origem ou campanha, etapa atual e data.',
+            'passos' => [
+                ['icone' => 'fa-arrow-up-right-from-square', 'titulo' => 'Abra o contato direto da linha', 'texto' => 'Selecione o nome do lead para abrir a ficha completa, registrar anotações e converter em cliente.'],
+                ['icone' => 'fa-bullhorn', 'titulo' => 'Confira a campanha de origem', 'texto' => 'A coluna de campanha mostra qual ação de marketing trouxe o interessado, ou marca direto quando veio sem código de rastreio.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir todos os leads', 'rota' => 'admin.leads.index'],
+            ],
+        ],
+
+        'dashboard_pedidos_recentes' => [
+            'onde' => 'Resumo dos últimos pedidos da loja virtual e despachos, com valor total, situação atual e vínculo com o rastreamento de entregas.',
+            'passos' => [
+                ['icone' => 'fa-truck-fast', 'titulo' => 'Acompanhe despachos e códigos de rastreio', 'texto' => 'Quando o pedido já possui código cadastrado, acesse o pedido no painel ou confira a linha do tempo na página pública de rastreamento.'],
+                ['icone' => 'fa-receipt', 'titulo' => 'Atualize status e paradas de entrega', 'texto' => 'Clique no número do pedido para lançar pagamento, nota fiscal, código de envio e movimentações manuais ou automáticas.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Gerenciar todos os pedidos', 'rota' => 'admin.pedidos.index'],
+                ['rotulo' => 'Abrir página pública de rastreamento', 'rota' => 'site.rastreio.index'],
+            ],
+        ],
+
+        'dashboard_campanhas' => [
+            'onde' => 'As oito campanhas mais produtivas em volume de leads acumulados nos últimos contatos.',
+            'passos' => [
+                ['icone' => 'fa-bullseye', 'titulo' => 'Compare campanhas ativas e pausadas', 'texto' => 'Cada barra mostra quantos leads chegaram por aquele código, facilitando o ajuste de orçamento nos canais mais eficientes.'],
+                ['icone' => 'fa-sliders', 'titulo' => 'Gerencie links e status', 'texto' => 'Acesse o módulo de campanhas para ativar, pausar ou criar novos links de rastreamento por veículo ou canal de mídia.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir campanhas', 'rota' => 'admin.campanhas.index'],
+            ],
+        ],
+
+        'dashboard_modulos' => [
+            'onde' => 'Visão consolidada dos módulos integrados do sistema — relacionamento, catálogo da loja, pedidos em trânsito, atendimento e conteúdo publicado.',
+            'passos' => [
+                ['icone' => 'fa-cubes', 'titulo' => 'Monitore a operação em um só lugar', 'texto' => 'Cada cartão resume os números ativos do módulo e abre a listagem correspondente ao ser selecionado.'],
+                ['icone' => 'fa-gears', 'titulo' => 'Ajuste integrações e loja quando necessário', 'texto' => 'Administradores podem ligar ou desligar a loja, manutenção ou escudo militar nas respectivas telas de controle.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver clientes', 'rota' => 'admin.clientes.index'],
+                ['rotulo' => 'Ver chamados abertos', 'rota' => 'admin.chamados.index'],
+                ['rotulo' => 'Ver pedidos da loja', 'rota' => 'admin.pedidos.index'],
+            ],
+        ],
     ],
 ];

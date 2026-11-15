@@ -23,6 +23,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 ### Alterado
 - Reorganização da aba **Loja & Logística** (`/admin/configuracao#loja`) em sub-abas limpas e estruturadas.
 - Refatoração completa da tela **Modo de Manutenção** (`/admin/manutencao`) com painel de status operacional na paleta Golden, navegação em abas (`Conteúdo & Cronômetro`, `Telemetria & Cenário 503`, `Plantão & Redes Sociais`, `Bypass & Liberação por IP`), atalhos de previsão de término, inclusão de IP em 1 clique, remoção de cores padrão Bootstrap e guias `?` passo a passo individuais em `config/guia_configuracao.php` e `config/guia_painel.php`.
+- Refatoração completa do **Dashboard Administrativo** (`/admin/dashboard`) com faixa operacional em tempo real (`Site Online`/`503`, `Loja Virtual`, `Escudo Militar WAF`), KPIs principais, curva de leads em 30 dias com tokens do tema, fila prioritária *Para fazer agora* (com leads novos, pedidos em aberto, chamados, conversas aguardando equipe e estoque baixo), abas em memória (`Comercial & Funil`, `Pedidos & Despachos`, `Campanhas & Módulos`), suporte ao atributo `ajuda` no componente `<x-admin.table>`, sete novas gavetas `?` em `config/guia_configuracao.php` e remoção completa de tons azuis em favor da paleta Golden.
 - Substituição das cores azuis padrão do Bootstrap pela paleta dourada Golden em todo o painel administrativo.
 - Personalização global das barras de rolagem (scrollbars) integradas à identidade visual da plataforma.
 
