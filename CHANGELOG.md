@@ -33,6 +33,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Atualizado o comando agendado `golden:rastreamentos:atualizar` (`AtualizarRastreamentosCommand`) para utilizar o `RastreioEncomendaService` e ler os campos reais de movimentação (`status`, `detalhe`, `data`, `hora`).
 - Corrigida a chave de cache do token CWS dos Correios em `CorreiosService::consultarSroCws()` para incluir o token de acesso e não armazenar resposta vazia em cache quando a autenticação falhar.
 - Ajustado o layout das páginas de erro (`resources/views/errors/layout.blade.php`) para se adaptar proporcionalmente à altura da janela (`vh`/`dvh`) com ícone e código HTTP lado a lado, evitando a necessidade de rolagem vertical para visualizar o conteúdo completo.
+- Atualizada a página de manutenção (`resources/views/errors/503.blade.php`) com layout proporcional à altura da janela (`vh`/`dvh`) sem rolagem vertical e corrigida a malha viária do canvas para que todos os veículos trafeguem exclusivamente dentro das faixas asfaltadas das ruas (nunca sobre as calçadas).
 
 ## [2.64.0] - 2026-11-12
 

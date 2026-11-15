@@ -90,7 +90,7 @@
             justify-content: center;
             position: relative;
             overflow-x: hidden;
-            padding: clamp(20px, 4vw, 40px) 16px;
+            padding: clamp(10px, 2vh, 24px) 16px;
             min-height: 100vh;
             min-height: 100dvh;
         }
@@ -121,12 +121,12 @@
             position: relative;
             z-index: 2;
             width: 100%;
-            max-width: 680px;
+            max-width: 720px;
             background: var(--bg-card);
             border: 1px solid rgba(245, 179, 1, 0.24);
             border-top: 1px solid rgba(255, 255, 255, 0.18);
             border-radius: var(--radius-card);
-            padding: clamp(28px, 5vw, 48px) clamp(20px, 4.5vw, 42px);
+            padding: clamp(18px, 2.8vh, 30px) clamp(18px, 4vw, 36px);
             text-align: center;
             box-shadow:
                 0 30px 90px -12px rgba(0, 0, 0, 0.9),
@@ -142,9 +142,9 @@
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: clamp(20px, 3.5vw, 30px);
-            padding-bottom: 16px;
+            gap: 10px;
+            margin-bottom: clamp(12px, 2vh, 20px);
+            padding-bottom: clamp(10px, 1.4vh, 14px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
@@ -209,18 +209,28 @@
             100% { transform: scale(0.9); opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
+        /* Palco compacto com Ícone e Título lado a lado */
+        .maint-hero {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: clamp(12px, 2.2vw, 20px);
+            margin-bottom: clamp(8px, 1.5vh, 14px);
+        }
+
         /* Palco do Ícone de Ferramenta & Satélite */
         .maint-icon-stage {
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: clamp(14px, 2.5vw, 20px);
+            margin-bottom: 0;
         }
 
         .maint-icon-halo {
             position: absolute;
-            inset: -14px;
+            inset: -10px;
             border-radius: 50%;
             border: 1px dashed rgba(245, 179, 1, 0.35);
             animation: rotate-maint-radar 22s linear infinite;
@@ -232,15 +242,15 @@
         }
 
         .maint-icon-circle {
-            width: clamp(66px, 12vw, 78px);
-            height: clamp(66px, 12vw, 78px);
+            width: clamp(48px, 6.8vh, 62px);
+            height: clamp(48px, 6.8vh, 62px);
             border-radius: 50%;
             background: linear-gradient(135deg, rgba(245, 179, 1, 0.18) 0%, rgba(216, 150, 0, 0.08) 100%);
             border: 1.5px solid var(--gold);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: clamp(1.8rem, 4vw, 2.2rem);
+            font-size: clamp(1.3rem, 2.4vh, 1.7rem);
             color: var(--gold-light);
             box-shadow: 0 0 30px rgba(245, 179, 1, 0.4);
             animation: pulse-maint-ring 3s infinite ease-in-out;
@@ -255,28 +265,28 @@
         /* Títulos e Textos */
         .maint-title {
             font-family: var(--font-display);
-            font-size: clamp(1.4rem, 3.8vw, 2rem);
+            font-size: clamp(1.2rem, 2.8vh, 1.7rem);
             font-weight: 800;
             color: #ffffff;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             letter-spacing: -0.02em;
-            line-height: 1.25;
+            line-height: 1.2;
         }
 
         .maint-subtitle {
-            font-size: clamp(0.96rem, 2.2vw, 1.12rem);
+            font-size: clamp(0.88rem, 1.8vh, 1.02rem);
             font-weight: 600;
             color: var(--gold-light);
-            margin-bottom: 14px;
-            line-height: 1.45;
+            margin-bottom: 8px;
+            line-height: 1.4;
         }
 
         .maint-message {
-            font-size: clamp(0.88rem, 2vw, 0.98rem);
+            font-size: clamp(0.82rem, 1.6vh, 0.92rem);
             color: var(--text-slate);
-            line-height: 1.65;
-            margin: 0 auto clamp(20px, 3.5vw, 28px);
-            max-width: 540px;
+            line-height: 1.5;
+            margin: 0 auto clamp(12px, 2vh, 18px);
+            max-width: 560px;
         }
 
         /* Barra de Telemetria Satelital Ativa */
@@ -284,30 +294,30 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            padding: 8px 18px;
+            gap: 8px;
+            padding: 6px 15px;
             background: rgba(31, 158, 134, 0.1);
             border: 1px solid rgba(31, 158, 134, 0.35);
             border-radius: 9999px;
-            font-size: clamp(0.74rem, 1.8vw, 0.82rem);
+            font-size: clamp(0.72rem, 1.5vh, 0.8rem);
             color: #5eead4;
             font-weight: 600;
-            margin-bottom: clamp(20px, 3.5vw, 28px);
+            margin-bottom: clamp(12px, 2vh, 18px);
             max-width: 100%;
         }
 
         .maint-telemetry-badge i {
             color: #2dd4bf;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         /* Cronômetro Regressivo Digital */
         .maint-timer-box {
             background: rgba(245, 179, 1, 0.05);
             border: 1px solid rgba(245, 179, 1, 0.28);
-            border-radius: 18px;
-            padding: clamp(16px, 3vw, 22px);
-            margin: 0 auto clamp(20px, 3.5vw, 28px);
+            border-radius: 16px;
+            padding: clamp(10px, 1.8vh, 16px);
+            margin: 0 auto clamp(12px, 2vh, 18px);
             box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(245, 179, 1, 0.04);
             backdrop-filter: blur(12px);
         }
@@ -316,18 +326,18 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.78rem;
+            font-size: 0.74rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: var(--gold);
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
 
         .maint-timer-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: clamp(6px, 1.8vw, 12px);
+            gap: clamp(6px, 1.5vw, 10px);
             align-items: center;
             justify-content: center;
         }
@@ -336,7 +346,7 @@
             background: rgba(14, 18, 28, 0.88);
             border: 1px solid rgba(245, 179, 1, 0.25);
             border-radius: 12px;
-            padding: clamp(10px, 2vw, 16px) 6px;
+            padding: clamp(8px, 1.4vh, 12px) 6px;
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
             position: relative;
             overflow: hidden;
@@ -626,17 +636,19 @@
             </div>
         </header>
 
-        {{-- Palco do Ícone em Anel Radar --}}
-        <div class="maint-icon-stage">
-            <div class="maint-icon-halo"></div>
-            <div class="maint-icon-circle">
-                <i class="fa-solid fa-satellite-dish"></i>
+        {{-- Palco compacto: Ícone + Título --}}
+        <div class="maint-hero">
+            <div class="maint-icon-stage">
+                <div class="maint-icon-halo"></div>
+                <div class="maint-icon-circle">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                </div>
+            </div>
+            <div>
+                <h1 class="maint-title">{{ $titulo }}</h1>
+                <p class="maint-subtitle" style="margin-bottom:0">{{ $subtitulo }}</p>
             </div>
         </div>
-
-        {{-- Título, Subtítulo e Mensagem --}}
-        <h1 class="maint-title">{{ $titulo }}</h1>
-        <p class="maint-subtitle">{{ $subtitulo }}</p>
         <p class="maint-message">{{ $mensagem }}</p>
 
         {{-- Selo de Telemetria Contínua 24h --}}
@@ -826,19 +838,17 @@
                 const speedMultiplier = speedSetting === 'rapida' ? 1.6 : (speedSetting === 'suave' ? 0.7 : 1.0);
                 const hasSatellite = {{ $exibirSatelite ? 'true' : 'false' }};
 
-                // Rede de Avenidas e Vias
+                // Rede de Avenidas e Vias (somente vias asfaltadas ortogonais, com calçadas externas)
                 let roads = [];
                 function buildRoadNetwork() {
                     roads = [];
-                    // Vias principais longitudinais e transversais estilizadas
-                    // Linhas de avenidas com faixas de tráfego
                     const countH = Math.max(3, Math.floor(height / 240));
                     for (let i = 1; i <= countH; i++) {
                         const y = (height / (countH + 1)) * i;
                         roads.push({
                             type: 'horizontal',
                             y: y,
-                            dir: i % 2 === 0 ? 1 : -1,
+                            halfWidth: 22,
                             lanes: 2
                         });
                     }
@@ -849,31 +859,13 @@
                         roads.push({
                             type: 'vertical',
                             x: x,
-                            dir: j % 2 === 0 ? 1 : -1,
+                            halfWidth: 22,
                             lanes: 2
                         });
                     }
-
-                    // Avenidas diagonais modernas
-                    roads.push({
-                        type: 'diagonal',
-                        x1: -50,
-                        y1: height * 0.2,
-                        x2: width + 50,
-                        y2: height * 0.85,
-                        dir: 1
-                    });
-                    roads.push({
-                        type: 'diagonal',
-                        x1: width + 50,
-                        y1: height * 0.15,
-                        x2: -50,
-                        y2: height * 0.75,
-                        dir: -1
-                    });
                 }
 
-                // Criação de Carros com Faróis e Lanterna
+                // Criação de Carros com Faróis e Lanterna (estritamente dentro da pista asfaltada)
                 const CAR_COUNT = Math.min(26, Math.max(14, Math.floor((window.innerWidth * window.innerHeight) / 55000)));
                 const cars = [];
                 const carPalette = [
@@ -885,36 +877,28 @@
 
                 function spawnCar() {
                     const roadIndex = Math.floor(Math.random() * roads.length);
-                    const road = roads[roadIndex] || { type: 'horizontal', y: height * 0.5, dir: 1 };
+                    const road = roads[roadIndex] || { type: 'horizontal', y: height * 0.5, halfWidth: 22 };
                     const theme = carPalette[Math.floor(Math.random() * carPalette.length)];
 
                     let x = 0, y = 0, angle = 0, vx = 0, vy = 0;
                     const baseSpeed = (1.2 + Math.random() * 1.5) * speedMultiplier;
+                    const dir = Math.random() > 0.5 ? 1 : -1;
 
                     if (road.type === 'horizontal') {
-                        x = road.dir > 0 ? -40 - Math.random() * 200 : width + 40 + Math.random() * 200;
-                        const laneOffset = (Math.random() > 0.5 ? 8 : -8);
+                        // Mão dupla dentro do asfalto (+/-10px do centro da via de 44px; calçada fica além de +/-22px)
+                        x = dir > 0 ? -40 - Math.random() * 200 : width + 40 + Math.random() * 200;
+                        const laneOffset = dir > 0 ? 10 : -10;
                         y = road.y + laneOffset;
-                        angle = road.dir > 0 ? 0 : Math.PI;
-                        vx = road.dir * baseSpeed;
+                        vx = dir * baseSpeed;
                         vy = 0;
-                    } else if (road.type === 'vertical') {
-                        y = road.dir > 0 ? -40 - Math.random() * 200 : height + 40 + Math.random() * 200;
-                        const laneOffset = (Math.random() > 0.5 ? 8 : -8);
+                        angle = Math.atan2(vy, vx);
+                    } else {
+                        y = dir > 0 ? -40 - Math.random() * 200 : height + 40 + Math.random() * 200;
+                        const laneOffset = dir > 0 ? -10 : 10;
                         x = road.x + laneOffset;
-                        angle = road.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
                         vx = 0;
-                        vy = road.dir * baseSpeed;
-                    } else if (road.type === 'diagonal') {
-                        const t = Math.random();
-                        x = road.x1 + (road.x2 - road.x1) * t;
-                        y = road.y1 + (road.y2 - road.y1) * t;
-                        const dx = road.x2 - road.x1;
-                        const dy = road.y2 - road.y1;
-                        angle = Math.atan2(dy, dx) * road.dir;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        vx = (dx / dist) * baseSpeed * road.dir;
-                        vy = (dy / dist) * baseSpeed * road.dir;
+                        vy = dir * baseSpeed;
+                        angle = Math.atan2(vy, vx);
                     }
 
                     return {
@@ -966,43 +950,37 @@
                     roads.forEach(road => {
                         ctx.save();
                         if (road.type === 'horizontal') {
-                            // Asfalto da pista
-                            ctx.fillStyle = 'rgba(11, 16, 28, 0.45)';
-                            ctx.fillRect(0, road.y - 20, width, 40);
+                            // Asfalto da pista (44px de largura; calçadas externas além de +/-22px)
+                            ctx.fillStyle = 'rgba(11, 16, 28, 0.52)';
+                            ctx.fillRect(0, road.y - 22, width, 44);
 
-                            // Bordas da avenida
-                            ctx.strokeStyle = 'rgba(31, 158, 134, 0.14)';
+                            // Meio-fio / bordas da calçada
+                            ctx.strokeStyle = 'rgba(31, 158, 134, 0.18)';
                             ctx.beginPath();
-                            ctx.moveTo(0, road.y - 20); ctx.lineTo(width, road.y - 20);
-                            ctx.moveTo(0, road.y + 20); ctx.lineTo(width, road.y + 20);
+                            ctx.moveTo(0, road.y - 22); ctx.lineTo(width, road.y - 22);
+                            ctx.moveTo(0, road.y + 22); ctx.lineTo(width, road.y + 22);
                             ctx.stroke();
 
                             // Linha tracejada central
-                            ctx.strokeStyle = 'rgba(245, 179, 1, 0.15)';
+                            ctx.strokeStyle = 'rgba(245, 179, 1, 0.18)';
                             ctx.setLineDash([8, 12]);
                             ctx.beginPath();
                             ctx.moveTo(0, road.y); ctx.lineTo(width, road.y);
                             ctx.stroke();
                         } else if (road.type === 'vertical') {
-                            ctx.fillStyle = 'rgba(11, 16, 28, 0.45)';
-                            ctx.fillRect(road.x - 20, 0, 40, height);
+                            ctx.fillStyle = 'rgba(11, 16, 28, 0.52)';
+                            ctx.fillRect(road.x - 22, 0, 44, height);
 
-                            ctx.strokeStyle = 'rgba(31, 158, 134, 0.14)';
+                            ctx.strokeStyle = 'rgba(31, 158, 134, 0.18)';
                             ctx.beginPath();
-                            ctx.moveTo(road.x - 20, 0); ctx.lineTo(road.x - 20, height);
-                            ctx.moveTo(road.x + 20, 0); ctx.lineTo(road.x + 20, height);
+                            ctx.moveTo(road.x - 22, 0); ctx.lineTo(road.x - 22, height);
+                            ctx.moveTo(road.x + 22, 0); ctx.lineTo(road.x + 22, height);
                             ctx.stroke();
 
-                            ctx.strokeStyle = 'rgba(245, 179, 1, 0.15)';
+                            ctx.strokeStyle = 'rgba(245, 179, 1, 0.18)';
                             ctx.setLineDash([8, 12]);
                             ctx.beginPath();
                             ctx.moveTo(road.x, 0); ctx.lineTo(road.x, height);
-                            ctx.stroke();
-                        } else if (road.type === 'diagonal') {
-                            ctx.strokeStyle = 'rgba(245, 179, 1, 0.12)';
-                            ctx.setLineDash([12, 16]);
-                            ctx.beginPath();
-                            ctx.moveTo(road.x1, road.y1); ctx.lineTo(road.x2, road.y2);
                             ctx.stroke();
                         }
                         ctx.restore();
@@ -1245,7 +1223,10 @@
                     }
                 }
 
-                window.addEventListener('resize', resize);
+                window.addEventListener('resize', function() {
+                    resize();
+                    initCars();
+                });
                 document.addEventListener('visibilitychange', function() {
                     if (!document.hidden) {
                         lastTime = performance.now();
