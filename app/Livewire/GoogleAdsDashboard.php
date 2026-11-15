@@ -55,7 +55,7 @@ class GoogleAdsDashboard extends Component
         $this->sincronizarSeFaltar();
     }
 
-    /** "Atualizar agora": descarta esta janela, enfileira de novo e deixa o polling mostrar. */
+    /** "Atualizar agora": descarta esta janela e sincroniza imediatamente para evitar espera em fila. */
     public function atualizar(): void
     {
         $conta = $this->conta();
@@ -68,7 +68,7 @@ class GoogleAdsDashboard extends Component
         $this->sincronizacaoDemorada = false;
 
         GoogleAdsCache::esquecerJanela($conta, $this->dias);
-        SyncGoogleAdsMetrics::dispatch($conta->id, $this->dias);
+        $this->executarSincronizacao($conta);
     }
 
     /**
@@ -193,7 +193,7 @@ class GoogleAdsDashboard extends Component
         return GoogleAdsAccount::visiveisPara(auth()->user())->comCampanhas()->orderByDesc('id')->get();
     }
 
-    /** Enfileira a janela pedida se ela ainda está vazia — e só se ninguém já pediu ela. */
+    /** Sem métrica em cache, sincroniza imediatamente para exibir os números sem loop de espera. */
     private function sincronizarSeFaltar(): void
     {
         $conta = $this->conta();
@@ -202,11 +202,21 @@ class GoogleAdsDashboard extends Component
             return;
         }
 
-        if (GoogleAdsCache::acabaDeSerEnfileirado($conta, $this->dias)) {
+        if (GoogleAdsCache::erro($conta, $this->dias) !== null) {
             return;
         }
 
-        SyncGoogleAdsMetrics::dispatch($conta->id, $this->dias);
+        $this->executarSincronizacao($conta);
+    }
+
+    /** Executa o job de sincronização de forma síncrona com tratamento seguro de falha. */
+    private function executarSincronizacao(GoogleAdsAccount $conta): void
+    {
+        try {
+            (new SyncGoogleAdsMetrics($conta->id, $this->dias))->handle(app(GoogleAdsService::class));
+        } catch (\Throwable $e) {
+            GoogleAdsCache::gravarErro($conta, $this->dias, $e->getMessage());
+        }
     }
 
     /** Busca + situação sobre a lista que já está em cache: nenhum filtro volta ao Google. */

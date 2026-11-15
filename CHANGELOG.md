@@ -21,7 +21,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Personalização global das barras de rolagem (scrollbars) integradas à identidade visual da plataforma.
 
 ### Corrigido
-- Loop infinito de carregamento na página `/admin/google-ads` ao filtrar campanhas com status `REMOVED` e atualizar cache sem travar a interface.
+- Loop infinito de carregamento na página `/admin/google-ads` (inclusive após limpeza de cache) ao sincronizar métricas diretamente quando a cache está vazia e liberar `'unsafe-eval'` na CSP para execução de diretivas Livewire/Alpine (`wire:poll`, `wire:click`, `wire:model`), além de filtrar campanhas com status `REMOVED`.
 - Erro 500 na view do dashboard Google Ads ao substituir `hasRole` por `isAdmin`.
 - Blocos com fundo claro hardcoded no modo escuro em páginas administrativas.
 - Botão de diminuir quantidade e fluxo AJAX do carrinho na loja sem exibir frete grátis antes da validação do CEP.

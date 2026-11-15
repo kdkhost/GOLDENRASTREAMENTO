@@ -50,8 +50,8 @@ class CabecalhosDeSeguranca
             'Cross-Origin-Opener-Policy' => 'same-origin',
             'Content-Security-Policy' => implode('; ', array_filter([
                 "default-src 'self'",
-                // `'unsafe-inline'` é o que ainda falta: o tema escreve `<script>` dentro das views.
-                "script-src 'self' 'unsafe-inline' {$origens['script']}",
+                // `'unsafe-inline'` e `'unsafe-eval'` cobrem os blocos `<script>` do tema e as expressões do Livewire/Alpine.
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' {$origens['script']}",
                 "style-src 'self' 'unsafe-inline' {$origens['estilo']}",
                 "font-src 'self' data: {$origens['fonte']}",
                 // `data:` cobre avatar em linha-base64; `i.ytimg.com`, a capa do vídeo do YouTube.
