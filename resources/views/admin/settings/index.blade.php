@@ -227,7 +227,7 @@
                     <form method="POST" action="{{ route('admin.settings.loja-regras') }}" id="formLojaRegras" class="row g-3" data-atualiza=".app-content">
                         @csrf
                         <div class="col-12">
-                            <x-admin.card title="Regras Comerciais &amp; Pagamento" icon="fa-sliders" ajuda="loja_regras" descricao="Frete base, retirada na empresa, chave Pix e e-mail de alertas.">
+                            <x-admin.card title="Regras Comerciais & Pagamento" icon="fa-sliders" ajuda="loja_regras" descricao="Frete base, retirada na empresa, chave Pix e e-mail de alertas.">
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <x-admin.switch name="loja_livre" label="Frete combinado / a combinar" :checked="$livre" />
@@ -244,7 +244,7 @@
                         </div>
 
                         <div class="col-12">
-                    <x-admin.card title="Logística &amp; Transportadoras" icon="fa-truck-fast" ajuda="logistica_transportadoras"
+                    <x-admin.card title="Logística & Transportadoras" icon="fa-truck-fast" ajuda="logistica_transportadoras"
                         descricao="Configure cada modalidade de envio em sua respectiva aba e clique em salvar ao final.">
                         <ul class="nav nav-pills gap-2 mb-3 pb-2 border-bottom" id="lojaLogisticaTabs" role="tablist">
                             <li class="nav-item" role="presentation">
