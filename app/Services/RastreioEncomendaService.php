@@ -6,7 +6,9 @@ use App\Models\Order;
 use App\Models\Setting;
 use App\Services\Correios\CorreiosService;
 use App\Services\MelhorEnvio\MelhorEnvioService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Orquestrador unificado de rastreamento de encomendas em tempo real.
@@ -150,6 +152,15 @@ final class RastreioEncomendaService
             }
         }
 
+        // 2b. API Universal de Rastreamento (Wonca / Seu Rastreio — quando configurada)
+        if ($resultado === null) {
+            $woncaResp = $this->consultarWonca($codigo, $pedido, $eCodigoCorreios);
+            if ($woncaResp !== null) {
+                $resultado = $woncaResp;
+                $modalidade = $eCodigoCorreios || str_starts_with($transportadoraPedido, 'correios') ? 'correios' : 'propria';
+            }
+        }
+
         // 3. Mercado Envios (somente quando vinculado a um pedido real do sistema)
         if ($resultado === null && $pedido !== null && ($transportadoraPedido === 'mercado_livre' || $mercadoLivreAtivo)) {
             $resultado = $this->montarRastreioMercadoEnvios($codigo, $pedido);
@@ -198,6 +209,148 @@ final class RastreioEncomendaService
             'instrucoes' => $this->resolverInstrucoes($modalidade),
             'tempo_real' => (bool) ($resultado['tempo_real'] ?? false),
             'atualizado_em' => now()->format('d/m/Y H:i:s'),
+        ];
+    }
+
+    /**
+     * Consulta a API universal Wonca / Seu Rastreio quando a Apikey estiver configurada no painel.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function consultarWonca(string $codigo, ?Order $pedido, bool $eCodigoCorreios): ?array
+    {
+        $token = trim((string) Setting::get('rastreio_wonca_token', ''));
+        if ($token === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(8)
+                ->withHeaders([
+                    'Authorization' => 'Apikey '.$token,
+                    'Accept' => 'application/json',
+                ])
+                ->get('https://api-labs.wonca.com.br/v1/tracks/'.urlencode($codigo));
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $json = $response->json();
+            if (! is_array($json)) {
+                return null;
+            }
+
+            $rawEvents = $json['events']
+                ?? $json['eventos']
+                ?? ($json['data']['events'] ?? null)
+                ?? ($json['data']['eventos'] ?? null)
+                ?? [];
+
+            if (! is_array($rawEvents) || $rawEvents === []) {
+                return null;
+            }
+
+            $eventos = [];
+            foreach ($rawEvents as $ev) {
+                if (! is_array($ev)) {
+                    continue;
+                }
+
+                $status = trim((string) ($ev['description'] ?? $ev['status'] ?? $ev['descricao'] ?? ''));
+                if ($status === '') {
+                    continue;
+                }
+
+                $detalhe = trim((string) ($ev['detail'] ?? $ev['detalhe'] ?? ''));
+                $local = trim((string) ($ev['location'] ?? $ev['local'] ?? ''));
+                if ($local === '' && ! empty($ev['unidade']) && is_array($ev['unidade'])) {
+                    $cidade = trim((string) ($ev['unidade']['endereco']['cidade'] ?? ''));
+                    $uf = trim((string) ($ev['unidade']['endereco']['uf'] ?? ''));
+                    $tipo = trim((string) ($ev['unidade']['tipo'] ?? ''));
+                    $cidadeUf = trim($cidade.($uf !== '' ? "/{$uf}" : ''));
+                    $local = trim($tipo.($tipo !== '' && $cidadeUf !== '' ? ' - ' : '').$cidadeUf);
+                }
+
+                [$dataStr, $horaStr] = $this->formatarDataHoraWonca(
+                    $ev['date'] ?? $ev['data'] ?? $ev['dtHrCriado'] ?? null,
+                    $ev['time'] ?? $ev['hora'] ?? null,
+                );
+
+                $lower = mb_strtolower($status);
+                $cor = 'warning';
+                $icone = 'fa-truck';
+                if (str_contains($lower, 'entregue') || str_contains($lower, 'entrega efetuada')) {
+                    $cor = 'success';
+                    $icone = 'fa-circle-check';
+                } elseif (str_contains($lower, 'saiu para entrega')) {
+                    $cor = 'info';
+                    $icone = 'fa-motorcycle';
+                } elseif (str_contains($lower, 'postado') || str_contains($lower, 'coletado')) {
+                    $cor = 'primary';
+                    $icone = 'fa-box';
+                } elseif (str_contains($lower, 'devolvido') || str_contains($lower, 'cancelado') || str_contains($lower, 'extraviado')) {
+                    $cor = 'danger';
+                    $icone = 'fa-triangle-exclamation';
+                }
+
+                $eventos[] = [
+                    'data' => $dataStr,
+                    'hora' => $horaStr,
+                    'local' => $local !== '' ? $local : 'Brasil',
+                    'status' => $status,
+                    'detalhe' => $detalhe,
+                    'cor' => $cor,
+                    'icone' => $icone,
+                    'concluido' => true,
+                ];
+            }
+
+            if ($eventos === []) {
+                return null;
+            }
+
+            $primeiroStatus = mb_strtolower((string) ($eventos[0]['status'] ?? ''));
+            $entregue = str_contains($primeiroStatus, 'entregue') || str_contains($primeiroStatus, 'entrega efetuada');
+
+            return [
+                'codigo' => strtoupper($codigo),
+                'transportadora' => $pedido ? $pedido->transportadoraLabel() : ($eCodigoCorreios ? 'Correios' : (string) ($json['carrier'] ?? $json['transportadora'] ?? 'Transportadora')),
+                'status_geral' => (string) $eventos[0]['status'],
+                'entregue' => $entregue,
+                'eventos' => $eventos,
+                'link_externo' => $eCodigoCorreios ? "https://rastreamento.correios.com.br/app/index.php?objetos={$codigo}" : null,
+                'tempo_real' => true,
+            ];
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function formatarDataHoraWonca(mixed $rawDate, mixed $rawTime): array
+    {
+        $rawDateStr = is_string($rawDate) ? trim($rawDate) : '';
+        $rawTimeStr = is_string($rawTime) ? trim($rawTime) : '';
+
+        if ($rawDateStr !== '') {
+            try {
+                $dt = Carbon::parse($rawDateStr);
+
+                return [
+                    $dt->format('d/m/Y'),
+                    $rawTimeStr !== '' ? substr($rawTimeStr, 0, 5) : $dt->format('H:i'),
+                ];
+            } catch (\Throwable) {
+                // Mantém o valor bruto se não for parseável pelo Carbon.
+            }
+        }
+
+        return [
+            $rawDateStr !== '' ? $rawDateStr : now()->format('d/m/Y'),
+            $rawTimeStr !== '' ? substr($rawTimeStr, 0, 5) : '--:--',
         ];
     }
 

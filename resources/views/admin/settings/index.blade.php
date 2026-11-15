@@ -375,6 +375,15 @@
                             </div>
                         </div>
 
+                        <div class="pt-3 mt-3 border-top">
+                            <div class="row g-3">
+                                <x-admin.field name="rastreio_wonca_token" type="password" label="Chave API de Rastreamento Universal (Wonca / Seu Rastreio — Opcional)"
+                                    value="" col="col-12" :opcional="true"
+                                    :placeholder="!empty($settings['rastreio_wonca_token']) ? '•••••••••••••••• (token salvo — deixe em branco para manter)' : 'Cole sua Apikey da Wonca / Seu Rastreio'"
+                                    hint="Permite rastrear encomendas dos Correios e outras transportadoras em tempo real na página /rastreamento sem exigir contrato CWS." />
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-end pt-3 mt-3 border-top">
                             <button type="submit" class="btn btn-golden">
                                 <i class="fas fa-save me-1"></i> Salvar todas as regras e configurações de logística

@@ -358,6 +358,8 @@ class SettingController extends Controller
             // Mercado Livre
             'mercado_livre_link_loja' => ['nullable', 'string', 'max:255'],
             'mercado_livre_instrucoes' => ['nullable', 'string', 'max:1000'],
+            // Rastreamento universal (Wonca / Seu Rastreio)
+            'rastreio_wonca_token' => ['nullable', 'string', 'max:300'],
         ]);
 
         Setting::set('loja_livre', $request->boolean('loja_livre') ? '1' : '0');
@@ -403,6 +405,10 @@ class SettingController extends Controller
         Setting::set('mercado_livre_envio_ativo', $request->boolean('mercado_livre_envio_ativo') ? '1' : '0');
         Setting::set('mercado_livre_link_loja', trim($data['mercado_livre_link_loja'] ?? ''));
         Setting::set('mercado_livre_instrucoes', trim($data['mercado_livre_instrucoes'] ?? ''));
+
+        if (! empty($data['rastreio_wonca_token'])) {
+            Setting::set('rastreio_wonca_token', trim($data['rastreio_wonca_token']));
+        }
 
         Activity::log('loja_regras', 'Regras comerciais e logística da loja atualizadas.');
 

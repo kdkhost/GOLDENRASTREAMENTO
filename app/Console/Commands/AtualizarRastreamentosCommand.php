@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
-use App\Services\Correios\CorreiosService;
+use App\Services\RastreioEncomendaService;
 use App\Support\Notifica;
 use Illuminate\Console\Command;
 
@@ -13,7 +13,7 @@ class AtualizarRastreamentosCommand extends Command
 
     protected $description = 'Consulta e atualiza o rastreamento em tempo real dos pedidos despachados, alertando o administrador a cada etapa.';
 
-    public function handle(CorreiosService $correios): int
+    public function handle(RastreioEncomendaService $rastreio): int
     {
         $pedidos = Order::where('status', 'enviado')
             ->whereNotNull('codigo_rastreio')
@@ -31,27 +31,30 @@ class AtualizarRastreamentosCommand extends Command
 
         foreach ($pedidos as $pedido) {
             $codigo = $pedido->codigo_rastreio;
-            $dados = $correios->rastrear($codigo);
+            $dados = $rastreio->rastrear($codigo, true);
 
             $ultimo = $dados['eventos'][0] ?? null;
             if (! $ultimo) {
                 continue;
             }
 
-            $chave = "rastreio:{$pedido->id}:".md5(($ultimo['titulo'] ?? '').($ultimo['data_hora'] ?? ''));
+            $titulo = $ultimo['status'] ?? ($ultimo['titulo'] ?? 'Atualizado');
+            $descricao = $ultimo['detalhe'] ?? ($ultimo['descricao'] ?? '');
+            $dataHora = trim(($ultimo['data'] ?? '').' '.($ultimo['hora'] ?? '')) ?: now()->format('d/m/Y H:i');
+            $chave = "rastreio:{$pedido->id}:".md5($titulo.$dataHora);
 
             $disparou = Notifica::disparar(
                 'entrega_atualizada',
-                "Passo a passo de entrega · Pedido {$pedido->numero} (".($ultimo['titulo'] ?? 'Atualizado').')',
-                "Objeto {$codigo}: ".($ultimo['descricao'] ?? '').' em '.($ultimo['local'] ?? 'Trânsito').'.',
+                "Passo a passo de entrega · Pedido {$pedido->numero} ({$titulo})",
+                "Objeto {$codigo}: {$descricao} em ".($ultimo['local'] ?? 'Trânsito').'.',
                 (string) $pedido->id,
                 [
                     'pedido_numero' => $pedido->numero,
                     'codigo_rastreio' => $codigo,
-                    'etapa' => $ultimo['titulo'] ?? 'Atualização',
-                    'descricao' => $ultimo['descricao'] ?? '',
+                    'etapa' => $titulo,
+                    'descricao' => $descricao,
                     'local' => $ultimo['local'] ?? 'Trânsito',
-                    'data_hora' => $ultimo['data_hora'] ?? now()->format('d/m/Y H:i'),
+                    'data_hora' => $dataHora,
                 ],
                 $chave
             );

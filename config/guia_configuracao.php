@@ -526,6 +526,21 @@ return [
             ],
         ],
 
+        'rastreio_wonca_token' => [
+            'titulo' => 'Chave API de Rastreamento Universal (Wonca / Seu Rastreio)',
+            'onde' => 'Permite consultar a movimentação real de códigos de rastreio dos Correios e outras transportadoras na página /rastreamento mesmo sem contrato CWS.',
+            'passos' => [
+                ['icone' => 'fa-user-plus', 'titulo' => '1. Crie uma conta gratuita na Wonca / Seu Rastreio', 'texto' => 'Acesse o portal Wonca Labs ou Seu Rastreio e gere sua chave de API (Apikey) no plano gratuito ou contratado.'],
+                ['icone' => 'fa-key', 'titulo' => '2. Cole a Apikey e salve', 'texto' => 'Cole a chave no campo e clique em salvar. Por segurança, o campo fica oculto após salvo.'],
+                ['icone' => 'fa-location-dot', 'titulo' => '3. Teste na página de rastreamento', 'texto' => 'Consulte um código real em /rastreamento para acompanhar todo o trajeto em tempo real.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Portal Wonca (API Rastreio)', 'url' => 'https://wonca.com.br/'],
+                ['rotulo' => 'Seu Rastreio', 'url' => 'https://seurastreio.com.br/'],
+                ['rotulo' => 'Abrir página de Rastreamento', 'rota' => 'site.rastreamento'],
+            ],
+        ],
+
         'melhor_envio_ativo' => [
             'titulo' => 'Ativar cálculo via Melhor Envio',
             'onde' => 'Habilita cotações em tempo real pela API v2 do Melhor Envio no carrinho e checkout.',
