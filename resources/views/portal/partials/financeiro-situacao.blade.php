@@ -13,50 +13,59 @@
     ];
 @endphp
 @if($situacao === 'desligado')
-<div class="alert alert-secondary shadow-sm d-flex gap-3">
-    <i class="fas fa-lock fs-5 mt-1" aria-hidden="true"></i>
-    <div class="small">
-        <strong class="d-block">{{ $titulos['desligado'] }}</strong>
-        A Golden mantém a consulta direta ao financeiro fechada nesta área do portal por enquanto. Nada mudou na sua conta: é a tela que está desligada, e a equipe continua atendendo pelo canal de sempre.
-        <div class="mt-2 d-flex flex-wrap gap-2">
-            <a class="btn btn-sm btn-golden" href="{{ wa_url() }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp me-1"></i> Falar no WhatsApp</a>
-            <a class="btn btn-sm btn-outline-secondary" href="{{ route('portal.inicio') }}">Voltar ao início</a>
+<div class="card stat-card shadow-sm mb-3 portal-situacao-card portal-situacao-neutra">
+    <div class="card-body d-flex align-items-start gap-3">
+        <div class="icon tone-neutral"><i class="fas fa-lock" aria-hidden="true"></i></div>
+        <div class="small flex-grow-1">
+            <strong class="d-block text-body mb-1 fs-6">{{ $titulos['desligado'] }}</strong>
+            <p class="text-secondary mb-2">A Golden mantém a consulta direta ao financeiro fechada nesta área do portal por enquanto. Nada mudou na sua conta: é a tela que está desligada, e a equipe continua atendendo pelo canal de sempre.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-sm btn-golden" href="{{ wa_url() }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp me-1"></i> Falar no WhatsApp</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ route('portal.inicio') }}">Voltar ao início</a>
+            </div>
         </div>
     </div>
 </div>
 @elseif($situacao === 'sem_configuracao')
-<div class="alert alert-secondary shadow-sm d-flex gap-3">
-    <i class="fas fa-plug-circle-xmark fs-5 mt-1" aria-hidden="true"></i>
-    <div class="small">
-        <strong class="d-block">{{ $titulos['sem_configuracao'] }}</strong>
-        A leitura de serviços e faturas direto do financeiro está sendo ligada nesta conta. Enquanto isso, a equipe resolve tudo com você pelo atendimento.
-        <div class="mt-2 d-flex flex-wrap gap-2">
-            <a class="btn btn-sm btn-golden" href="{{ wa_url() }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp me-1"></i> Falar no WhatsApp</a>
-            <a class="btn btn-sm btn-outline-secondary" href="{{ route('site.contato') }}">Canais de atendimento</a>
+<div class="card stat-card shadow-sm mb-3 portal-situacao-card portal-situacao-neutra">
+    <div class="card-body d-flex align-items-start gap-3">
+        <div class="icon tone-neutral"><i class="fas fa-plug-circle-xmark" aria-hidden="true"></i></div>
+        <div class="small flex-grow-1">
+            <strong class="d-block text-body mb-1 fs-6">{{ $titulos['sem_configuracao'] }}</strong>
+            <p class="text-secondary mb-2">A leitura de serviços e faturas direto do financeiro está sendo ligada nesta conta. Enquanto isso, a equipe resolve tudo com você pelo atendimento.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-sm btn-golden" href="{{ wa_url() }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp me-1"></i> Falar no WhatsApp</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ route('site.contato') }}">Canais de atendimento</a>
+            </div>
         </div>
     </div>
 </div>
 @elseif($situacao === 'sem_conta')
-<div class="alert alert-warning shadow-sm d-flex gap-3">
-    <i class="fas fa-magnifying-glass fs-5 mt-1" aria-hidden="true"></i>
-    <div class="small">
-        <strong class="d-block">{{ $titulos['sem_conta'] }}</strong>
-        O e-mail de acesso deste portal pode ser diferente do cadastro no financeiro da Golden. A equipe acerta isso em minutos e, a partir daí, esta tela passa a mostrar seus serviços e faturas.
-        <div class="mt-2 d-flex flex-wrap gap-2">
-            <a class="btn btn-sm btn-golden" href="{{ wa_url() }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp me-1"></i> Falar com a equipe</a>
-            <a class="btn btn-sm btn-outline-secondary" href="{{ route('portal.dados') }}">Conferir meus dados</a>
+<div class="card stat-card shadow-sm mb-3 portal-situacao-card">
+    <div class="card-body d-flex align-items-start gap-3">
+        <div class="icon tone-gold"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></div>
+        <div class="small flex-grow-1">
+            <strong class="d-block text-body mb-1 fs-6">{{ $titulos['sem_conta'] }}</strong>
+            <p class="text-secondary mb-2">O e-mail de acesso deste portal pode ser diferente do cadastro no financeiro da Golden. A equipe acerta isso em minutos e, a partir daí, esta tela passa a mostrar seus serviços e faturas.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-sm btn-golden" href="{{ wa_url() }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp me-1"></i> Falar com a equipe</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ route('portal.dados') }}">Conferir meus dados</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ route('portal.chamados.criar') }}">Abrir chamado</a>
+            </div>
         </div>
     </div>
 </div>
 @elseif($situacao === 'fora_do_ar')
-<div class="alert alert-warning shadow-sm d-flex gap-3">
-    <i class="fas fa-triangle-exclamation fs-5 mt-1" aria-hidden="true"></i>
-    <div class="small">
-        <strong class="d-block">{{ $titulos['fora_do_ar'] }}</strong>
-        Não é falta de nada na sua conta: a consulta ao sistema financeiro falhou neste momento. Tente de novo em instantes — se continuar, a equipe verifica por dentro.
-        <div class="mt-2 d-flex flex-wrap gap-2">
-            <a class="btn btn-sm btn-outline-secondary" href="{{ url()->current() }}"><i class="fas fa-rotate me-1"></i> Tentar de novo</a>
-            <a class="btn btn-sm btn-golden" href="{{ wa_url() }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp me-1"></i> Avisar a equipe</a>
+<div class="card stat-card shadow-sm mb-3 portal-situacao-card portal-situacao-alerta">
+    <div class="card-body d-flex align-items-start gap-3">
+        <div class="icon tone-amber"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i></div>
+        <div class="small flex-grow-1">
+            <strong class="d-block text-body mb-1 fs-6">{{ $titulos['fora_do_ar'] }}</strong>
+            <p class="text-secondary mb-2">Não é falta de nada na sua conta: a consulta ao sistema financeiro falhou neste momento. Tente de novo em instantes — se continuar, a equipe verifica por dentro.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url()->current() }}"><i class="fas fa-rotate me-1"></i> Tentar de novo</a>
+                <a class="btn btn-sm btn-golden" href="{{ wa_url() }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp me-1"></i> Avisar a equipe</a>
+            </div>
         </div>
     </div>
 </div>

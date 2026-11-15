@@ -18,26 +18,39 @@
         $abertaEm = \Illuminate\Support\Carbon::createFromTimestamp($janela['desde']);
         $fechaEm = $abertaEm->copy()->addMinutes(\App\Services\Whmcs\Veiculacao::minutosDeSupervisao());
     @endphp
-    <div class="container-fluid">
-        <div class="alert alert-warning shadow-sm border-start border-warning border-4 d-flex flex-wrap align-items-center gap-3 mb-3" role="status">
-            <i class="fas fa-user-shield fs-3" aria-hidden="true"></i>
-            <div class="small flex-grow-1">
-                <strong class="d-block">Supervisão aberta na conta de {{ $cliente->nome }} — modo somente leitura.</strong>
-                Você está vendo o portal desta pessoa, tela por tela e com os mesmos filtros do financeiro que ela vê.
-                Aberto por {{ $janela['admin_nome'] }} às {{ $abertaEm->format('d/m/Y H:i') }}; a janela fecha sozinha às {{ $fechaEm->format('H:i') }}.
-                Nada aqui é gravado: chamado, pedido, cadastro, senha e depoimento ficam exatamente como estão.
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-                <form method="POST" action="{{ route('portal.supervisao.sair') }}" class="d-inline">
+    <aside class="supervisao-flutuante" role="status" aria-label="Modo de supervisão ativa">
+        <div class="supervisao-flutuante-barra">
+            <span class="supervisao-flutuante-icone" aria-hidden="true"><i class="fas fa-user-shield"></i></span>
+
+            <details class="supervisao-detalhes">
+                <summary title="Ver detalhes da janela de supervisão">
+                    <span>Supervisão · {{ \Illuminate\Support\Str::limit($cliente->nome, 22) }}</span>
+                    <span class="text-secondary fw-normal">até {{ $fechaEm->format('H:i') }}</span>
+                    <i class="fas fa-circle-info text-secondary" aria-hidden="true"></i>
+                </summary>
+                <div class="supervisao-popover">
+                    <strong class="d-block mb-1 text-body">Supervisão aberta na conta de {{ $cliente->nome }} — modo somente leitura.</strong>
+                    <p class="text-secondary mb-0">
+                        Você está vendo o portal desta pessoa, tela por tela e com os mesmos filtros do financeiro que ela vê.
+                        Aberto por {{ $janela['admin_nome'] }} às {{ $abertaEm->format('d/m/Y H:i') }}; a janela fecha sozinha às {{ $fechaEm->format('H:i') }}.
+                        Nada aqui é gravado: chamado, pedido, cadastro, senha e depoimento ficam exatamente como estão.
+                    </p>
+                </div>
+            </details>
+
+            <div class="d-flex align-items-center gap-1 flex-wrap">
+                <form method="POST" action="{{ route('portal.supervisao.sair') }}" class="d-inline m-0">
                     @csrf
-                    <button class="btn btn-sm btn-warning text-nowrap"><i class="fas fa-arrow-right-from-bracket me-1" aria-hidden="true"></i> Sair da conta do cliente</button>
+                    <button type="submit" class="btn btn-sm btn-golden">
+                        <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sair da conta do cliente
+                    </button>
                 </form>
                 @can('admin')
-                    <a class="btn btn-sm btn-outline-secondary text-nowrap" href="{{ route('admin.clientes.show', $janela['cliente_id']) }}">
-                        <i class="fas fa-address-card me-1" aria-hidden="true"></i> Ir à ficha no painel
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.clientes.show', $janela['cliente_id']) }}">
+                        <i class="fas fa-address-card" aria-hidden="true"></i> Ir à ficha no painel
                     </a>
                 @endcan
             </div>
         </div>
-    </div>
+    </aside>
 @endif

@@ -26,15 +26,29 @@
 @include('portal.partials.financeiro-situacao')
 
 @if($situacao === 'ok' && $emAbertoCents > 0)
-<div class="alert alert-warning shadow-sm d-flex gap-3">
-    <i class="fas fa-file-invoice-dollar fs-5 mt-1" aria-hidden="true"></i>
-    <div class="small">
-        <strong class="d-block">{{ brl($emAbertoCents) }} em aberto.</strong>
-        @if($abreNoFinanceiro)
-            Abra a fatura no financeiro para pagar ou pegar a segunda via. O rastreamento continua funcionando enquanto a mensalidade estiver em dia.
-        @else
-            Acerte o pagamento com a equipe pelo atendimento — ela envia o Pix ou a segunda via e confirma por aqui. O rastreamento continua funcionando enquanto a mensalidade estiver em dia.
-        @endif
+<div class="card stat-card shadow-sm mb-3 portal-situacao-card portal-situacao-alerta">
+    <div class="card-body d-flex align-items-start gap-3">
+        <div class="icon tone-amber"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></div>
+        <div class="small flex-grow-1">
+            <strong class="d-block text-body mb-1 fs-6">{{ brl($emAbertoCents) }} em aberto.</strong>
+            <p class="text-secondary mb-0">
+                @if($abreNoFinanceiro)
+                    Abra a fatura no financeiro para pagar ou pegar a segunda via. O rastreamento continua funcionando enquanto a mensalidade estiver em dia.
+                @else
+                    Acerte o pagamento com a equipe pelo atendimento — ela envia o Pix ou a segunda via e confirma por aqui. O rastreamento continua funcionando enquanto a mensalidade estiver em dia.
+                @endif
+            </p>
+        </div>
+    </div>
+</div>
+@elseif($situacao === 'ok' && $quantas > 0)
+<div class="card stat-card shadow-sm mb-3 portal-situacao-card portal-situacao-ok">
+    <div class="card-body d-flex align-items-center gap-3">
+        <div class="icon tone-green"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
+        <div class="small">
+            <strong class="d-block text-body fs-6">Todas as faturas emitidas estão quitadas.</strong>
+            <span class="text-secondary">Nenhum valor pendente encontrado nesta conta até o momento.</span>
+        </div>
     </div>
 </div>
 @endif
