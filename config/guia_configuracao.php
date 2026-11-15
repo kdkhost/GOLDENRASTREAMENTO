@@ -541,6 +541,20 @@ return [
             ],
         ],
 
+        'mercado_livre_access_token' => [
+            'titulo' => 'Access Token API Oficial Mercado Livre',
+            'onde' => 'Token OAuth da API oficial do Mercado Livre para consultar o status e histórico de envios (Shipments) do Mercado Envios em tempo real.',
+            'passos' => [
+                ['icone' => 'fa-code', 'titulo' => '1. Acesse o DevCenter do Mercado Livre', 'texto' => 'Crie ou abra sua aplicação no Mercado Livre Developers e gere um Access Token OAuth com permissão de leitura de envios.'],
+                ['icone' => 'fa-key', 'titulo' => '2. Cole o Access Token e salve', 'texto' => 'Cole o token no campo e salve. O campo fica em branco depois de salvo por segurança.'],
+                ['icone' => 'fa-truck', 'titulo' => '3. Consulte pelo ID da remessa (Shipment ID)', 'texto' => 'Com o Mercado Envios ativo, informe o ID numérico da remessa ou código do pedido em /rastreamento.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Mercado Livre DevCenter', 'url' => 'https://developers.mercadolivre.com.br/devcenter'],
+                ['rotulo' => 'Documentação API Shipments', 'url' => 'https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-envios'],
+            ],
+        ],
+
         'melhor_envio_ativo' => [
             'titulo' => 'Ativar cálculo via Melhor Envio',
             'onde' => 'Habilita cotações em tempo real pela API v2 do Melhor Envio no carrinho e checkout.',

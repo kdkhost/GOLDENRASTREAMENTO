@@ -356,6 +356,7 @@ class SettingController extends Controller
             'melhor_envio_comprimento_cm' => ['nullable', 'integer', 'min:16', 'max:200'],
             'melhor_envio_servicos' => ['nullable', 'string', 'max:120'],
             // Mercado Livre
+            'mercado_livre_access_token' => ['nullable', 'string', 'max:500'],
             'mercado_livre_link_loja' => ['nullable', 'string', 'max:255'],
             'mercado_livre_instrucoes' => ['nullable', 'string', 'max:1000'],
             // Rastreamento universal (Wonca / Seu Rastreio)
@@ -403,6 +404,9 @@ class SettingController extends Controller
 
         // Mercado Livre
         Setting::set('mercado_livre_envio_ativo', $request->boolean('mercado_livre_envio_ativo') ? '1' : '0');
+        if (! empty($data['mercado_livre_access_token'])) {
+            Setting::set('mercado_livre_access_token', trim($data['mercado_livre_access_token']));
+        }
         Setting::set('mercado_livre_link_loja', trim($data['mercado_livre_link_loja'] ?? ''));
         Setting::set('mercado_livre_instrucoes', trim($data['mercado_livre_instrucoes'] ?? ''));
 

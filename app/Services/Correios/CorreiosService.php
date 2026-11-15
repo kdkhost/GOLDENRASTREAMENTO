@@ -313,8 +313,10 @@ class CorreiosService
         }
 
         try {
-            $tokenCacheKey = 'correios_cws_bearer_'.md5($usuario.'|'.$cartao);
-            $bearer = Cache::remember($tokenCacheKey, 1800, function () use ($usuario, $tokenAcesso, $cartao): string {
+            $tokenCacheKey = 'correios_cws_bearer_'.md5($usuario.'|'.$tokenAcesso.'|'.$cartao);
+            $bearer = (string) Cache::get($tokenCacheKey, '');
+
+            if ($bearer === '') {
                 $endpoint = $cartao !== ''
                     ? 'https://api.correios.com.br/token/v1/autentica/cartaopostagem'
                     : 'https://api.correios.com.br/token/v1/autentica';
@@ -325,8 +327,11 @@ class CorreiosService
                     ->acceptJson()
                     ->post($endpoint, $payload);
 
-                return $respAuth->successful() ? (string) ($respAuth->json('token') ?? '') : '';
-            });
+                $bearer = $respAuth->successful() ? (string) ($respAuth->json('token') ?? '') : '';
+                if ($bearer !== '') {
+                    Cache::put($tokenCacheKey, $bearer, 1800);
+                }
+            }
 
             if ($bearer === '') {
                 return [];

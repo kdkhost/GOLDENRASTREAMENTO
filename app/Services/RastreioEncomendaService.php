@@ -161,10 +161,16 @@ final class RastreioEncomendaService
             }
         }
 
-        // 3. Mercado Envios (somente quando vinculado a um pedido real do sistema)
-        if ($resultado === null && $pedido !== null && ($transportadoraPedido === 'mercado_livre' || $mercadoLivreAtivo)) {
-            $resultado = $this->montarRastreioMercadoEnvios($codigo, $pedido);
-            $modalidade = 'mercado_livre';
+        // 3. Mercado Envios (API oficial quando token configurado, ou marcos reais quando vinculado a um pedido)
+        if ($resultado === null && ($mercadoLivreAtivo || $transportadoraPedido === 'mercado_livre')) {
+            $mlResp = $this->consultarMercadoLivre($codigo, $pedido);
+            if ($mlResp !== null) {
+                $resultado = $mlResp;
+                $modalidade = 'mercado_livre';
+            } elseif ($pedido !== null) {
+                $resultado = $this->montarRastreioMercadoEnvios($codigo, $pedido);
+                $modalidade = 'mercado_livre';
+            }
         }
 
         // 4. Retirada na Empresa ou Logística Própria Golden (somente quando vinculado a um pedido real)
@@ -352,6 +358,112 @@ final class RastreioEncomendaService
             $rawDateStr !== '' ? $rawDateStr : now()->format('d/m/Y'),
             $rawTimeStr !== '' ? substr($rawTimeStr, 0, 5) : '--:--',
         ];
+    }
+
+    /**
+     * Consulta a API oficial de Shipments do Mercado Livre quando o Access Token estiver configurado.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function consultarMercadoLivre(string $codigo, ?Order $pedido): ?array
+    {
+        $token = trim((string) Setting::get('mercado_livre_access_token', ''));
+        $shipmentId = preg_replace('/\D+/', '', $codigo) ?? '';
+
+        if ($token === '' || $shipmentId === '') {
+            return null;
+        }
+
+        try {
+            $resp = Http::timeout(8)
+                ->withToken($token)
+                ->acceptJson()
+                ->get("https://api.mercadolibre.com/shipments/{$shipmentId}");
+
+            if (! $resp->successful()) {
+                return null;
+            }
+
+            $shipment = $resp->json();
+            if (! is_array($shipment) || empty($shipment['id'])) {
+                return null;
+            }
+
+            $statusMapa = [
+                'pending' => 'Aguardando postagem',
+                'handling' => 'Em preparação para envio',
+                'ready_to_ship' => 'Etiqueta pronta para envio',
+                'shipped' => 'Objeto em trânsito',
+                'delivered' => 'Objeto entregue ao destinatário',
+                'not_delivered' => 'Não entregue — verifique ocorrência',
+                'cancelled' => 'Envio cancelado',
+            ];
+
+            $statusBruto = mb_strtolower((string) ($shipment['status'] ?? ''));
+            $subStatus = trim((string) ($shipment['substatus'] ?? ''));
+            $entregue = $statusBruto === 'delivered';
+
+            $eventos = [];
+            $respHist = Http::timeout(8)
+                ->withToken($token)
+                ->acceptJson()
+                ->get("https://api.mercadolibre.com/shipments/{$shipmentId}/history");
+
+            if ($respHist->successful() && is_array($respHist->json())) {
+                $histList = array_reverse($respHist->json());
+                foreach ($histList as $idx => $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+                    $st = mb_strtolower((string) ($item['status'] ?? ''));
+                    $sub = trim((string) ($item['substatus'] ?? ''));
+                    $dtRaw = (string) ($item['date'] ?? '');
+                    $dt = $dtRaw !== '' ? Carbon::parse($dtRaw) : now();
+
+                    $eventos[] = [
+                        'data' => $dt->format('d/m/Y'),
+                        'hora' => $dt->format('H:i'),
+                        'local' => 'Mercado Envios',
+                        'status' => $statusMapa[$st] ?? ucfirst($st !== '' ? $st : 'Atualização'),
+                        'detalhe' => $sub !== '' ? "Substatus: {$sub}" : '',
+                        'cor' => $st === 'delivered' ? 'success' : ($st === 'cancelled' || $st === 'not_delivered' ? 'danger' : 'primary'),
+                        'icone' => $st === 'delivered' ? 'fa-circle-check' : 'fa-truck',
+                        'concluido' => true,
+                    ];
+                }
+            }
+
+            if ($eventos === []) {
+                $dtRaw = (string) ($shipment['last_updated'] ?? $shipment['date_created'] ?? '');
+                $dt = $dtRaw !== '' ? Carbon::parse($dtRaw) : now();
+                $cidade = trim((string) data_get($shipment, 'receiver_address.city.name', ''));
+                $uf = trim((string) data_get($shipment, 'receiver_address.state.name', ''));
+                $local = $cidade !== '' ? trim("{$cidade}".($uf !== '' ? "/{$uf}" : '')) : 'Mercado Envios';
+
+                $eventos[] = [
+                    'data' => $dt->format('d/m/Y'),
+                    'hora' => $dt->format('H:i'),
+                    'local' => $local,
+                    'status' => $statusMapa[$statusBruto] ?? 'Em acompanhamento no Mercado Envios',
+                    'detalhe' => $subStatus !== '' ? "Substatus: {$subStatus}" : '',
+                    'cor' => $entregue ? 'success' : 'primary',
+                    'icone' => $entregue ? 'fa-circle-check' : 'fa-truck',
+                    'concluido' => true,
+                ];
+            }
+
+            return [
+                'codigo' => (string) $shipment['id'],
+                'transportadora' => $pedido ? $pedido->transportadoraLabel() : 'Mercado Envios',
+                'status_geral' => (string) $eventos[0]['status'],
+                'entregue' => $entregue,
+                'eventos' => $eventos,
+                'link_externo' => trim((string) Setting::get('mercado_livre_link_loja', '')) ?: null,
+                'tempo_real' => true,
+            ];
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

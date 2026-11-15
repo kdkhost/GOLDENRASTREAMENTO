@@ -16,6 +16,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Rastreamento unificado de encomendas em tempo real (`/rastreamento`) operando conforme as modalidades de logística ativas no painel (Correios, Melhor Envio, Mercado Envios e Retirada/Logística Própria), exibindo barra de progresso Origem → Destino, trajeto corrente completo, atualização ao vivo sem recarregar a página e histórico completo de movimentações.
 - Instruções de uso individuais (`?`) com passo a passo completo e links exatos (externos e internos) em todos os **175 itens e cartões** de configuração em `config/guia_configuracao.php` (contato oficial, endereço, regras da loja, transportadoras, Correios, Melhor Envio, Mercado Envios, medição/consentimento, testes WHMCS/e-mail, notificações, ambiente do sistema, assistente e preloader).
 - Integração opcional com a **API Universal de Rastreamento Wonca / Seu Rastreio** (`rastreio_wonca_token`) em `/admin/configuracao#loja` (com guia passo a passo `?` e links oficiais) para consulta de movimentações reais em `/rastreamento` mesmo sem contrato CWS dos Correios.
+- Integração com a **API Oficial de Shipments do Mercado Livre (Mercado Envios)** (`mercado_livre_access_token`) em `/admin/configuracao#loja` (com guia `?` e links do DevCenter) para consulta de histórico real de remessas quando o Mercado Envios estiver ativo.
 
 ### Alterado
 - Reorganização da aba **Loja & Logística** (`/admin/configuracao#loja`) em sub-abas limpas e estruturadas.
@@ -29,6 +30,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Botão de diminuir quantidade e fluxo AJAX do carrinho na loja sem exibir frete grátis antes da validação do CEP.
 - Removido fallback que gerava eventos falsos no rastreio de encomendas (`/rastreamento`) para códigos externos ou não localizados; adicionada integração oficial com a API SRO CWS dos Correios e retorno honesto quando não há eventos reais.
 - Atualizado o comando agendado `golden:rastreamentos:atualizar` (`AtualizarRastreamentosCommand`) para utilizar o `RastreioEncomendaService` e ler os campos reais de movimentação (`status`, `detalhe`, `data`, `hora`).
+- Corrigida a chave de cache do token CWS dos Correios em `CorreiosService::consultarSroCws()` para incluir o token de acesso e não armazenar resposta vazia em cache quando a autenticação falhar.
 
 ## [2.64.0] - 2026-11-12
 

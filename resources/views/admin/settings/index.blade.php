@@ -369,6 +369,10 @@
                                     <div class="col-12">
                                         <x-admin.switch name="mercado_livre_envio_ativo" label="Habilitar opção de envio pelo Mercado Livre (Mercado Envios)" :checked="$mercadoLivreAtivo" />
                                     </div>
+                                    <x-admin.field name="mercado_livre_access_token" type="password" label="Access Token API Oficial Mercado Livre (Opcional)"
+                                        value="" col="col-12" :opcional="true"
+                                        :placeholder="!empty($settings['mercado_livre_access_token']) ? '•••••••••••••••• (token salvo — deixe em branco para manter)' : 'Cole seu Access Token OAuth da API Mercado Livre'"
+                                        hint="Necessário para consultar envios do Mercado Envios em tempo real na API oficial (api.mercadolibre.com/shipments)." />
                                     <x-admin.field name="mercado_livre_link_loja" label="Link da Loja / Anúncio Oficial no Mercado Livre" :value="$settings['mercado_livre_link_loja'] ?? ''" col="col-12" :opcional="true" placeholder="https://www.mercadolivre.com.br/loja/golden-rastreamento" />
                                     <x-admin.field name="mercado_livre_instrucoes" type="textarea" label="Instruções e orientações do Mercado Envios" :value="$settings['mercado_livre_instrucoes'] ?? ''" rows="2" col="col-12" :opcional="true" placeholder="Ex.: O envio é gerenciado pela plataforma do Mercado Livre com código de rastreamento Mercado Envios." />
                                 </div>
