@@ -26,6 +26,11 @@
     --gold:var(--brand-gold);
     --bs-primary:var(--brand-gold-2);
     --bs-primary-rgb:201,134,42;
+    --bs-link-color:var(--brand-gold-2);
+    --bs-link-color-rgb:201,134,42;
+    --bs-link-hover-color:var(--brand-gold);
+    --bs-link-hover-color-rgb:224,163,62;
+    --bs-focus-ring-color:rgba(201,134,42,.25);
 
     /* tipografia e forma */
     --font-sans:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
@@ -205,3 +210,51 @@ optgroup{font-weight:600}
 }
 ::-webkit-scrollbar-thumb:hover{background:var(--golden-scroll-thumb-hover);background-clip:padding-box}
 ::-webkit-scrollbar-corner{background:transparent}
+
+/* Elimina o azul padrão do Bootstrap (#0d6efd) em pills, botões, switches, paginação e foco */
+.nav-pills{
+    --bs-nav-pills-link-active-bg:var(--brand-gold-2);
+    --bs-nav-pills-link-active-color:#fff;
+}
+.nav-pills .nav-link{color:var(--bs-secondary-color,#6c757d)}
+.nav-pills .nav-link:hover{color:var(--brand-gold-2)}
+.nav-pills .nav-link.active{
+    background-color:var(--brand-gold-2)!important;
+    color:#fff!important;
+}
+.btn-primary{
+    --bs-btn-color:#fff;
+    --bs-btn-bg:var(--brand-gold-2);
+    --bs-btn-border-color:var(--brand-gold-2);
+    --bs-btn-hover-color:#fff;
+    --bs-btn-hover-bg:var(--brand-gold);
+    --bs-btn-hover-border-color:var(--brand-gold);
+    --bs-btn-active-bg:var(--brand-gold-2);
+    --bs-btn-active-border-color:var(--brand-gold-2);
+    --bs-btn-disabled-bg:var(--brand-gold-2);
+    --bs-btn-disabled-border-color:var(--brand-gold-2);
+}
+.btn-outline-primary{
+    --bs-btn-color:var(--brand-gold-2);
+    --bs-btn-border-color:var(--brand-gold-2);
+    --bs-btn-hover-color:#fff;
+    --bs-btn-hover-bg:var(--brand-gold-2);
+    --bs-btn-hover-border-color:var(--brand-gold-2);
+    --bs-btn-active-bg:var(--brand-gold-2);
+    --bs-btn-active-border-color:var(--brand-gold-2);
+}
+.form-check-input:checked{
+    background-color:var(--brand-gold-2)!important;
+    border-color:var(--brand-gold-2)!important;
+}
+.form-check-input:focus,.form-control:focus,.form-select:focus{
+    border-color:var(--brand-gold)!important;
+    box-shadow:0 0 0 .2rem rgba(201,134,42,.22)!important;
+}
+.pagination{
+    --bs-pagination-color:var(--brand-gold-2);
+    --bs-pagination-hover-color:var(--brand-gold);
+    --bs-pagination-active-bg:var(--brand-gold-2);
+    --bs-pagination-active-border-color:var(--brand-gold-2);
+    --bs-pagination-focus-box-shadow:0 0 0 .2rem rgba(201,134,42,.22);
+}
