@@ -359,4 +359,77 @@ class FluxoDaLojaTest extends TestCase
             ->assertJsonPath('vazio', true)
             ->assertJsonPath('total_unidades', 0);
     }
+
+    public function test_melhor_envio_retorna_opcoes_e_faz_fallback_se_api_falhar(): void
+    {
+        Setting::set('melhor_envio_ativo', '1');
+        Setting::set('melhor_envio_sandbox', '0');
+        Setting::set('melhor_envio_token', 'token-melhor-envio');
+        Setting::set('melhor_envio_cep_origem', '35500-000');
+        Setting::set('melhor_envio_prazo_adicional', '1');
+
+        $produto = Product::where('ativo', true)->firstOrFail();
+
+        Http::fake([
+            'https://viacep.com.br/ws/01001000/json/' => Http::response([
+                'cep' => '01001-000',
+                'logradouro' => 'Praça da Sé',
+                'bairro' => 'Sé',
+                'localidade' => 'São Paulo',
+                'uf' => 'SP',
+            ]),
+            'https://melhorenvio.com.br/api/v2/me/shipment/calculate' => Http::response([
+                [
+                    'id' => 3,
+                    'name' => '.Package',
+                    'price' => '17.50',
+                    'delivery_time' => 3,
+                    'company' => ['name' => 'Jadlog'],
+                ],
+                [
+                    'id' => 99,
+                    'name' => 'Indisponível',
+                    'error' => 'Trecho não atendido',
+                    'company' => ['name' => 'Outra'],
+                ],
+            ]),
+        ]);
+
+        $this->postJson(route('site.loja.frete.calcular'), [
+            'cep' => '01001-000',
+            'produto_id' => $produto->id,
+            'quantidade' => 1,
+        ])
+            ->assertOk()
+            ->assertJsonPath('sucesso', true)
+            ->assertJsonFragment([
+                'id' => 'melhor_envio_3',
+                'nome' => 'Jadlog - .Package',
+                'valor_cents' => 1750,
+                'prazo_dias' => 4,
+                'tipo' => 'melhor_envio',
+            ])
+            ->assertJsonMissing(['id' => 'melhor_envio_99']);
+
+        // Agora simula falha na API do Melhor Envio com outro CEP e garante fallback para Correios
+        Http::fake([
+            'https://viacep.com.br/ws/30130010/json/' => Http::response([
+                'cep' => '30130-010',
+                'logradouro' => 'Praça Sete',
+                'bairro' => 'Centro',
+                'localidade' => 'Belo Horizonte',
+                'uf' => 'MG',
+            ]),
+            'https://melhorenvio.com.br/api/v2/me/shipment/calculate' => Http::response(['message' => 'Server Error'], 500),
+        ]);
+
+        $this->postJson(route('site.loja.frete.calcular'), [
+            'cep' => '30130-010',
+            'produto_id' => $produto->id,
+            'quantidade' => 1,
+        ])
+            ->assertOk()
+            ->assertJsonPath('sucesso', true)
+            ->assertJsonFragment(['id' => 'correios_sedex']);
+    }
 }

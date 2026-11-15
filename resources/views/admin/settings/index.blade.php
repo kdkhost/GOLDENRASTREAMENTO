@@ -11,6 +11,9 @@
     $correiosColeta = ($settings['correios_coleta_empresa'] ?? '0') === '1';
     $correiosSedex = ($settings['correios_sedex_ativo'] ?? '1') === '1';
     $correiosPac = ($settings['correios_pac_ativo'] ?? '1') === '1';
+    $melhorEnvioAtivo = ($settings['melhor_envio_ativo'] ?? '0') === '1';
+    $melhorEnvioSandbox = ($settings['melhor_envio_sandbox'] ?? '0') === '1';
+    $melhorEnvioTemToken = trim((string) ($settings['melhor_envio_token'] ?? '')) !== '';
     $mercadoLivreAtivo = ($settings['mercado_livre_envio_ativo'] ?? '0') === '1';
     $boxAtivo = ($settings['whatsapp_box_ativo'] ?? '1') === '1';
     $paraExibir = fn ($cents) => ((int) $cents) > 0 ? number_format(((int) $cents) / 100, 2, '.', '') : '';
@@ -277,6 +280,56 @@
                                             <x-admin.field name="correios_senha" type="password" label="Senha / Token CWS" :value="$settings['correios_senha'] ?? ''" col="col-md-6" :opcional="true" placeholder="••••••••" />
                                             <x-admin.field name="correios_instrucoes_coleta" type="textarea" label="Instruções de Coleta na Empresa" :value="$settings['correios_instrucoes_coleta'] ?? ''" rows="2" col="col-12" :opcional="true" hint="Ex.: Coleta diária às 15h na sede da Golden Rastreamento. Contato da expedição: (37) 99999-9999." />
                                         </div>
+                                    </div>
+                                </div>
+                            </x-admin.card>
+                        </div>
+
+                        <div class="col-12">
+                            <x-admin.card title="Melhor Envio (Multi-transportadoras em tempo real)" icon="fa-shipping-fast"
+                                descricao="Cotação em tempo real pela API v2 do Melhor Envio (Correios, Jadlog, Azul Cargo, Loggi, etc.) com suporte a Produção e Sandbox.">
+                                <x-slot:actions>
+                                    <x-admin.status :rotulo="$melhorEnvioAtivo ? ($melhorEnvioSandbox ? 'sandbox ativo' : 'ativo') : 'desativado'" :tom="tom_por_flag($melhorEnvioAtivo)" />
+                                </x-slot:actions>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <x-admin.switch name="melhor_envio_ativo" label="Ativar cálculo dinâmico via Melhor Envio no carrinho e checkout" :checked="$melhorEnvioAtivo" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <x-admin.switch name="melhor_envio_sandbox" label="Modo Sandbox (homologação / testes)" :checked="$melhorEnvioSandbox" />
+                                        <div class="form-hint">Use Sandbox apenas com token gerado em sandbox.melhorenvio.com.br.</div>
+                                    </div>
+
+                                    <x-admin.field name="melhor_envio_token" type="password" label="Token de Acesso (API v2 Melhor Envio)"
+                                        value="" col="col-md-8" :opcional="true"
+                                        :placeholder="$melhorEnvioTemToken ? '•••••••••••••••• (token salvo — deixe em branco para manter)' : 'Cole o Bearer Token gerado no painel do Melhor Envio'"
+                                        hint="Deixe em branco para manter o token atual salvo." />
+                                    <x-admin.field name="melhor_envio_cep_origem" label="CEP de Origem (Melhor Envio)"
+                                        :value="$settings['melhor_envio_cep_origem'] ?? ($settings['correios_cep_origem'] ?? '35500-000')"
+                                        col="col-md-4" placeholder="35500-000" hint="Se vazio, usa o CEP de origem dos Correios." />
+
+                                    <x-admin.field name="melhor_envio_peso_kg" type="number" step="0.01" min="0.05" max="100"
+                                        label="Peso padrão por item (kg)" :value="$settings['melhor_envio_peso_kg'] ?? '0.35'" col="col-md-3" />
+                                    <x-admin.field name="melhor_envio_largura_cm" type="number" min="11" max="200"
+                                        label="Largura padrão (cm)" :value="$settings['melhor_envio_largura_cm'] ?? 16" col="col-md-3" />
+                                    <x-admin.field name="melhor_envio_altura_cm" type="number" min="2" max="200"
+                                        label="Altura padrão (cm)" :value="$settings['melhor_envio_altura_cm'] ?? 8" col="col-md-3" />
+                                    <x-admin.field name="melhor_envio_comprimento_cm" type="number" min="16" max="200"
+                                        label="Comprimento padrão (cm)" :value="$settings['melhor_envio_comprimento_cm'] ?? 22" col="col-md-3" />
+
+                                    <x-admin.field name="melhor_envio_prazo_adicional" type="number" min="0" max="30"
+                                        label="Prazo adicional (dias úteis)" :value="$settings['melhor_envio_prazo_adicional'] ?? 1" col="col-md-4" />
+                                    <x-admin.field name="melhor_envio_taxa_adicional" type="number" step="0.01" min="0" max="999"
+                                        label="Taxa adicional / embalagem (R$)" :value="$paraExibir($settings['melhor_envio_taxa_adicional_cents'] ?? 0)" col="col-md-4" placeholder="0,00" />
+                                    <x-admin.field name="melhor_envio_servicos" label="IDs de serviços (opcional)"
+                                        :value="$settings['melhor_envio_servicos'] ?? ''" col="col-md-4" :opcional="true"
+                                        placeholder="Ex.: 1,2,3,4,17" hint="Deixe vazio para todas as transportadoras disponíveis." />
+
+                                    <div class="col-12 d-flex align-items-center gap-2 pt-2 border-top">
+                                        <button type="submit" formaction="{{ route('admin.settings.melhor-envio.testar') }}" formnovalidate class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-plug me-1"></i> Testar conexão com Melhor Envio
+                                        </button>
+                                        <span class="small text-secondary">Salve as configurações antes de testar um token novo.</span>
                                     </div>
                                 </div>
                             </x-admin.card>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Setting;
 use App\Services\Mail\Sonda as Correio;
+use App\Services\MelhorEnvio\MelhorEnvioService;
 use App\Services\Whmcs\Cliente as Financeiro;
 use App\Support\ChavesDeIntegracao;
 use App\Support\Fuso;
@@ -342,6 +343,16 @@ class SettingController extends Controller
             'correios_prazo_adicional' => ['nullable', 'integer', 'min:0', 'max:30'],
             'correios_taxa_manuseio' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'correios_instrucoes_coleta' => ['nullable', 'string', 'max:1000'],
+            // Melhor Envio
+            'melhor_envio_token' => ['nullable', 'string', 'max:3000'],
+            'melhor_envio_cep_origem' => ['nullable', 'string', 'max:12'],
+            'melhor_envio_prazo_adicional' => ['nullable', 'integer', 'min:0', 'max:30'],
+            'melhor_envio_taxa_adicional' => ['nullable', 'numeric', 'min:0', 'max:999'],
+            'melhor_envio_peso_kg' => ['nullable', 'numeric', 'min:0.05', 'max:100'],
+            'melhor_envio_largura_cm' => ['nullable', 'integer', 'min:11', 'max:200'],
+            'melhor_envio_altura_cm' => ['nullable', 'integer', 'min:2', 'max:200'],
+            'melhor_envio_comprimento_cm' => ['nullable', 'integer', 'min:16', 'max:200'],
+            'melhor_envio_servicos' => ['nullable', 'string', 'max:120'],
             // Mercado Livre
             'mercado_livre_link_loja' => ['nullable', 'string', 'max:255'],
             'mercado_livre_instrucoes' => ['nullable', 'string', 'max:1000'],
@@ -355,6 +366,8 @@ class SettingController extends Controller
         Setting::set('loja_email_equipe', strtolower(trim($data['loja_email_equipe'] ?? '')));
 
         // Correios
+        Setting::set('correios_ativo', $request->boolean('correios_ativo') ? '1' : '0');
+        Setting::set('correios_coleta_empresa', $request->boolean('correios_coleta_empresa') ? '1' : '0');
         Setting::set('correios_possui_contrato', $request->boolean('correios_possui_contrato') ? '1' : '0');
         Setting::set('correios_sedex_ativo', $request->boolean('correios_sedex_ativo') ? '1' : '0');
         Setting::set('correios_pac_ativo', $request->boolean('correios_pac_ativo') ? '1' : '0');
@@ -369,6 +382,21 @@ class SettingController extends Controller
         Setting::set('correios_taxa_manuseio_cents', (int) round(((float) ($data['correios_taxa_manuseio'] ?? 0)) * 100));
         Setting::set('correios_instrucoes_coleta', trim($data['correios_instrucoes_coleta'] ?? ''));
 
+        // Melhor Envio
+        Setting::set('melhor_envio_ativo', $request->boolean('melhor_envio_ativo') ? '1' : '0');
+        Setting::set('melhor_envio_sandbox', $request->boolean('melhor_envio_sandbox') ? '1' : '0');
+        if (! empty($data['melhor_envio_token'])) {
+            Setting::set('melhor_envio_token', trim($data['melhor_envio_token']));
+        }
+        Setting::set('melhor_envio_cep_origem', trim($data['melhor_envio_cep_origem'] ?? ''));
+        Setting::set('melhor_envio_prazo_adicional', (int) ($data['melhor_envio_prazo_adicional'] ?? 1));
+        Setting::set('melhor_envio_taxa_adicional_cents', (int) round(((float) ($data['melhor_envio_taxa_adicional'] ?? 0)) * 100));
+        Setting::set('melhor_envio_peso_kg', (string) ($data['melhor_envio_peso_kg'] ?? '0.35'));
+        Setting::set('melhor_envio_largura_cm', (int) ($data['melhor_envio_largura_cm'] ?? 16));
+        Setting::set('melhor_envio_altura_cm', (int) ($data['melhor_envio_altura_cm'] ?? 8));
+        Setting::set('melhor_envio_comprimento_cm', (int) ($data['melhor_envio_comprimento_cm'] ?? 22));
+        Setting::set('melhor_envio_servicos', preg_replace('/\s+/', '', trim($data['melhor_envio_servicos'] ?? '')) ?? '');
+
         // Mercado Livre
         Setting::set('mercado_livre_envio_ativo', $request->boolean('mercado_livre_envio_ativo') ? '1' : '0');
         Setting::set('mercado_livre_link_loja', trim($data['mercado_livre_link_loja'] ?? ''));
@@ -377,5 +405,12 @@ class SettingController extends Controller
         Activity::log('loja_regras', 'Regras comerciais e logística da loja atualizadas.');
 
         return back()->with('success', 'Regras da loja e logística salvas com sucesso.');
+    }
+
+    public function testarMelhorEnvio(MelhorEnvioService $melhorEnvio): RedirectResponse
+    {
+        $res = $melhorEnvio->testarConexao();
+
+        return back()->with($res['ok'] ? 'success' : 'error', $res['mensagem']);
     }
 }

@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\StockMovement;
 use App\Services\Correios\CorreiosService;
+use App\Services\MelhorEnvio\MelhorEnvioService;
 use App\Services\Rastreio;
 use App\Services\Whmcs\Cliente;
 use App\Support\Carrinho;
@@ -39,6 +40,7 @@ class StoreController extends Controller
     public function __construct(
         private readonly Rastreio $rastreio,
         private readonly CorreiosService $correios,
+        private readonly MelhorEnvioService $melhorEnvio,
     ) {}
 
     public function index(Request $request): View
@@ -293,13 +295,20 @@ class StoreController extends Controller
             }
         }
 
+        $linhas = [];
         if ($subtotal <= 0) {
             $carrinho = Carrinho::daSessao();
             $linhas = $carrinho->linhas();
             $subtotal = array_sum(array_column($linhas, 'subtotal'));
+        } elseif ($prod !== null) {
+            $linhas = [[
+                'id' => $prod->id,
+                'preco' => $prod->preco(),
+                'quantidade' => max(1, (int) ($data['quantidade'] ?? 1)),
+            ]];
         }
 
-        $opcoes = $this->correios->calcularFrete($data['cep'], $subtotal);
+        $opcoes = $this->calcularOpcoesFrete($data['cep'], $subtotal, $linhas);
 
         // Se for plano ou serviço com ativação digital
         if ($prod && ($prod->category?->slug === 'planos' || ($prod->preco_cents === 0 && $prod->mensalidade_cents > 0))) {
@@ -485,7 +494,7 @@ class StoreController extends Controller
                 $opcaoEscolhida = null;
 
                 if (! empty($opcaoFrete) && ! empty($data['cep'])) {
-                    $opcoes = $this->correios->calcularFrete((string) $data['cep'], $subtotal);
+                    $opcoes = $this->calcularOpcoesFrete((string) $data['cep'], $subtotal, $itensDaSessao);
                     $opcaoEscolhida = collect($opcoes)->first(fn ($item) => is_array($item) && ($item['id'] ?? null) === $opcaoFrete);
                 }
 
@@ -691,6 +700,39 @@ class StoreController extends Controller
     }
 
     /** @return array<string, string> */
+    /**
+     * Combina cotações em tempo real do Melhor Envio com as modalidades configuradas dos Correios.
+     *
+     * @param  array<int, array<string, mixed>>  $linhas
+     * @return array<int, array<string, mixed>>
+     */
+    private function calcularOpcoesFrete(string $cep, int $subtotal, array $linhas = []): array
+    {
+        $opcoesMelhorEnvio = $this->melhorEnvio->calcularFrete($cep, $subtotal, $linhas);
+        $correiosAtivo = Setting::get('correios_ativo', '1') === '1';
+        $opcoesCorreios = ($correiosAtivo || $opcoesMelhorEnvio === [])
+            ? $this->correios->calcularFrete($cep, $subtotal)
+            : [];
+
+        $envio = [];
+        $extras = [];
+
+        foreach (array_merge($opcoesMelhorEnvio, $opcoesCorreios) as $op) {
+            if (! is_array($op)) {
+                continue;
+            }
+            if (in_array($op['tipo'] ?? '', ['retira', 'digital', 'mercado_livre'], true)) {
+                $extras[] = $op;
+            } else {
+                $envio[] = $op;
+            }
+        }
+
+        usort($envio, fn (array $a, array $b): int => ((int) ($a['valor_cents'] ?? 0)) <=> ((int) ($b['valor_cents'] ?? 0)));
+
+        return array_merge($envio, $extras);
+    }
+
     private function entregasDisponiveis(): array
     {
         $entregas = ['entrega' => Order::ENTREGAS['entrega']];
