@@ -570,6 +570,7 @@ class GoogleAdsService
 
         return 'SELECT '.$campos.' FROM campaign '
             .'WHERE '.$this->clausulaData($dias)
+            ."AND campaign.status != 'REMOVED' "
             .'ORDER BY metrics.cost_micros DESC';
     }
 

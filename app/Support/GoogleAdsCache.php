@@ -121,6 +121,35 @@ class GoogleAdsCache
         self::store()->forget(self::chaveMetricas($conta));
     }
 
+    /** Remove uma única campanha de todas as janelas em cache sem obrigar novo carregamento completo. */
+    public static function removerCampanha(GoogleAdsAccount $conta, string $campanhaId): void
+    {
+        $chave = self::chaveMetricas($conta);
+        $bloco = self::store()->get($chave);
+
+        if (! is_array($bloco) || empty($bloco['janelas']) || ! is_array($bloco['janelas'])) {
+            return;
+        }
+
+        foreach ($bloco['janelas'] as $dias => $janela) {
+            if (! is_array($janela)) {
+                continue;
+            }
+
+            $campanhas = array_values(array_filter(
+                (array) ($janela['campanhas'] ?? []),
+                static fn (array $c): bool => (string) ($c['id'] ?? '') !== $campanhaId
+            ));
+
+            $bloco['janelas'][$dias]['campanhas'] = $campanhas;
+            if (isset($bloco['janelas'][$dias]['resumo']) && is_array($bloco['janelas'][$dias]['resumo'])) {
+                $bloco['janelas'][$dias]['resumo']['campanhas'] = count($campanhas);
+            }
+        }
+
+        self::store()->put($chave, $bloco, now()->addMinutes((int) config('google_ads.cache_minutos', 30)));
+    }
+
     /**
      * Esquece só uma janela, e libera a fila dela. É o "Atualizar agora" da tela: o pedido é
      * por esta janela, e apagar as vizinhas jogaria fora o trabalho que o agendamento acabou

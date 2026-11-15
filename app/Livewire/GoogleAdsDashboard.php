@@ -100,10 +100,14 @@ class GoogleAdsDashboard extends Component
                 GoogleAdsCache::gravarErro($conta, $this->dias, $e->getMessage());
             }
 
+            if (GoogleAdsCache::metricas($conta, $this->dias) === null && GoogleAdsCache::erro($conta, $this->dias) === null) {
+                $this->sincronizacaoDemorada = true;
+            }
+
             return;
         }
 
-        if ($this->tentativasPoll >= 5) {
+        if ($this->tentativasPoll >= 4) {
             $this->sincronizacaoDemorada = true;
         }
     }

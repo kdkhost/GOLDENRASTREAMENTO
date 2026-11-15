@@ -176,3 +176,32 @@ optgroup{font-weight:600}
 .codigos-recuperacao{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
 .codigos-recuperacao code{display:block;text-align:center;padding:12px 8px;font-size:1.02rem;letter-spacing:.06em;
     background:var(--t-neutral-bg);border:1px dashed var(--login-line);border-radius:10px;color:var(--bs-body-color)}
+
+/* Scrollbars personalizados Golden: finos, integrados ao tema claro/escuro em todo o site e painel. */
+:root{
+    --golden-scroll-track:rgba(15,23,42,.05);
+    --golden-scroll-thumb:linear-gradient(180deg,rgba(212,175,55,.68),rgba(181,139,34,.82));
+    --golden-scroll-thumb-solid:rgba(181,139,34,.75);
+    --golden-scroll-thumb-hover:linear-gradient(180deg,#e4c45a,#c99a24);
+}
+[data-theme="dark"],[data-bs-theme="dark"]{
+    --golden-scroll-track:rgba(255,255,255,.04);
+    --golden-scroll-thumb:linear-gradient(180deg,rgba(212,175,55,.55),rgba(166,124,26,.72));
+    --golden-scroll-thumb-solid:rgba(212,175,55,.62);
+    --golden-scroll-thumb-hover:linear-gradient(180deg,#f0cf65,#d4af37);
+}
+*{
+    scrollbar-width:thin;
+    scrollbar-color:var(--golden-scroll-thumb-solid) var(--golden-scroll-track);
+}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--golden-scroll-track);border-radius:999px}
+::-webkit-scrollbar-thumb{
+    background:var(--golden-scroll-thumb);
+    border-radius:999px;
+    border:2px solid transparent;
+    background-clip:padding-box;
+    transition:background .2s ease;
+}
+::-webkit-scrollbar-thumb:hover{background:var(--golden-scroll-thumb-hover);background-clip:padding-box}
+::-webkit-scrollbar-corner{background:transparent}

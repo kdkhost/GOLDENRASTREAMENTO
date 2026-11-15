@@ -312,8 +312,7 @@ class GoogleAdsCampanhaController extends Controller
             $log->delete();
         }
 
-        $this->esquecerMetricas($conta);
-        GoogleAdsCache::esquecer($conta);
+        GoogleAdsCache::removerCampanha($conta, $campanhaId);
 
         Activity::log(
             'google_ads_campanha_removida',

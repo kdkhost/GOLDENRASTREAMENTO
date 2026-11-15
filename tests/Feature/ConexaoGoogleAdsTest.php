@@ -1081,7 +1081,7 @@ class ConexaoGoogleAdsTest extends TestCase
         $this->assertDatabaseHas('google_ads_planos', ['id' => $outroPlano->id]);
         $this->assertDatabaseMissing('google_ads_api_logs', ['id' => $logDaCampanha->id]);
         $this->assertDatabaseHas('leads', ['id' => $leadTrazido->id, 'name' => 'Cliente da Campanha']);
-        $this->assertNull(GoogleAdsCache::metricas($conta, 30));
+        $this->assertSame([], GoogleAdsCache::metricas($conta, 30)['campanhas'] ?? null);
     }
 
     public function test_excluir_campanha_ativa_e_bloqueado_ate_pausar(): void
@@ -1197,7 +1197,7 @@ class ConexaoGoogleAdsTest extends TestCase
         $this->assertDatabaseMissing('google_ads_planos', ['id' => $planoDaCampanha->id]);
         $this->assertDatabaseMissing('google_ads_api_logs', ['id' => $logDaCampanha->id]);
         $this->assertDatabaseHas('leads', ['id' => $leadTrazido->id, 'name' => 'Lead Preservado']);
-        $this->assertNull(GoogleAdsCache::metricas($conta, 30));
+        $this->assertSame([], GoogleAdsCache::metricas($conta, 30)['campanhas'] ?? null);
     }
 
     /** Uma linha no formato exato que `linhaParaTela` escreve — a tela lê destas chaves. */
