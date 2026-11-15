@@ -184,6 +184,49 @@ textarea.is-invalid ~ .invalid-feedback {
     padding: 6px 8px;
 }
 
+/* Contraste automático em blocos com fundo claro inline dentro do modo escuro */
+.note-editor.note-frame .note-editing-area .note-editable [style*="background:#f" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background: #f" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background-color:#f" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background-color: #f" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background:#e" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background: #e" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background-color:#e" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background-color: #e" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background:#fff" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background: #fff" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background-color:#fff" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background-color: #fff" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background:rgb(2" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background: rgb(2" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background-color:rgb(2" i],
+.note-editor.note-frame .note-editing-area .note-editable [style*="background-color: rgb(2" i] {
+    color: #1b2127;
+}
+
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background:#f" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background:#f" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background: #f" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background: #f" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color:#f" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color:#f" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color: #f" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color: #f" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background:#fff" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background:#fff" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color:#fff" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color:#fff" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background:rgb(2" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background:rgb(2" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background: rgb(2" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background: rgb(2" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color:rgb(2" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color:rgb(2" i] th,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color: rgb(2" i] td,
+.note-editor.note-frame .note-editing-area .note-editable table[style*="background-color: rgb(2" i] th {
+    border-color: #e5e0d3;
+}
+
 .note-editor .note-placeholder {
     color: var(--sn-muted);
     padding: 12px 14px;

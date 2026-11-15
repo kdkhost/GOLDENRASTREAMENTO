@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\EmailTemplate;
 use App\Models\ErrorPage;
 use App\Models\Faq;
 use App\Models\FunnelPage;
@@ -210,5 +211,60 @@ class SummernoteEditorETemaTest extends TestCase
             ->assertOk()
             ->assertSee('<p>Verifique o link ou fale com a <strong>equipe Golden</strong>.</p>', false)
             ->assertDontSee('&lt;p&gt;Verifique o link', false);
+    }
+
+    public function test_blocos_claros_no_summernote_e_templates_de_email_garantem_contraste_no_modo_escuro(): void
+    {
+        $cssSummernote = file_get_contents(public_path('css/golden-summernote.css'));
+        $this->assertNotFalse($cssSummernote);
+        $this->assertStringContainsString('[style*="background:#f" i]', $cssSummernote);
+        $this->assertStringContainsString('color: #1b2127;', $cssSummernote);
+        $this->assertStringContainsString('border-color: #e5e0d3;', $cssSummernote);
+
+        // Simula template legado já gravado no banco antes da correção (sem color explícito)
+        $legacyHtml = <<<'HTML'
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;background:#faf8f2;">
+    <tr>
+        <td style="padding:11px 16px;border-bottom:1px solid #ece7db;color:#6b7280;font-size:13px;">Número</td>
+        <td style="padding:11px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;">{{fatura_numero}}</td>
+    </tr>
+    <tr>
+        <td style="padding:11px 16px;color:#6b7280;font-size:13px;">Forma de pagamento</td>
+        <td style="padding:11px 16px;text-align:right;font-weight:600;">{{gateway_nome}}</td>
+    </tr>
+</table>
+<p style="font-size:13px;background:#f8fafc;border-left:3px solid #e0a33e;padding:10px 14px;border-radius:8px;">
+    <strong>PIX / Linha Digitável:</strong><br>
+    <span style="font-family:monospace;word-break:break-all;">{{pix_copia_cola}}</span>
+</p>
+HTML;
+
+        EmailTemplate::updateOrCreate(
+            ['chave' => 'fatura_pdf_anexo'],
+            [
+                'nome' => 'Fatura em PDF Anexo + Gateway WHMCS',
+                'categoria' => 'financeiro',
+                'assunto' => 'Fatura {{fatura_numero}} em PDF',
+                'corpo_html' => $legacyHtml,
+                'usar_layout' => true,
+                'ativo' => true,
+            ]
+        );
+
+        $service = app(EmailTemplateService::class);
+        $service->garantirPadroes();
+
+        $atualizado = EmailTemplate::where('chave', 'fatura_pdf_anexo')->firstOrFail();
+        $this->assertStringContainsString('background:#faf8f2;color:#1b2127;', $atualizado->corpo_html);
+        $this->assertStringContainsString('text-align:right;font-weight:700;color:#12161a;', $atualizado->corpo_html);
+        $this->assertStringContainsString('text-align:right;font-weight:600;color:#12161a;', $atualizado->corpo_html);
+        $this->assertStringContainsString('background:#f8fafc;color:#1b2127;', $atualizado->corpo_html);
+        $this->assertStringContainsString('<strong style="color:#12161a;">PIX / Linha Digitável:</strong>', $atualizado->corpo_html);
+        $this->assertStringContainsString('font-family:monospace;word-break:break-all;color:#1b2127;', $atualizado->corpo_html);
+
+        // Execução repetida deve ser idempotente
+        $service->garantirPadroes();
+        $reexecutado = EmailTemplate::where('chave', 'fatura_pdf_anexo')->firstOrFail();
+        $this->assertSame($atualizado->corpo_html, $reexecutado->corpo_html);
     }
 }

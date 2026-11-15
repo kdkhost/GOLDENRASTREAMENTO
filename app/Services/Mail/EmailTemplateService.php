@@ -181,22 +181,22 @@ class EmailTemplateService
                 'corpo_html' => <<<'HTML'
 <h1 style="font-size:20px;margin:0 0 8px;">Olá, {{cliente_nome}}</h1>
 <p>Segue a segunda via solicitada da sua fatura na Golden Rastreamento.</p>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;background:#faf8f2;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;background:#faf8f2;color:#1b2127;">
     <tr>
         <td style="padding:12px 16px;border-bottom:1px solid #ece7db;color:#6b7280;font-size:13px;">Fatura</td>
-        <td style="padding:12px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;">{{fatura_numero}}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;color:#12161a;">{{fatura_numero}}</td>
     </tr>
     <tr>
         <td style="padding:12px 16px;border-bottom:1px solid #ece7db;color:#6b7280;font-size:13px;">Valor</td>
-        <td style="padding:12px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;font-size:16px;">{{fatura_valor}}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;font-size:16px;color:#12161a;">{{fatura_valor}}</td>
     </tr>
     <tr>
         <td style="padding:12px 16px;border-bottom:1px solid #ece7db;color:#6b7280;font-size:13px;">Vencimento</td>
-        <td style="padding:12px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:600;">{{fatura_vencimento}}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:600;color:#12161a;">{{fatura_vencimento}}</td>
     </tr>
     <tr>
         <td style="padding:12px 16px;color:#6b7280;font-size:13px;">Situação</td>
-        <td style="padding:12px 16px;text-align:right;font-weight:600;">{{fatura_status}}</td>
+        <td style="padding:12px 16px;text-align:right;font-weight:600;color:#12161a;">{{fatura_status}}</td>
     </tr>
 </table>
 <p style="margin:22px 0;">
@@ -228,27 +228,27 @@ HTML,
                 'corpo_html' => <<<'HTML'
 <h1 style="font-size:20px;margin:0 0 8px;">Olá, {{cliente_nome}}</h1>
 <p>Sua fatura <strong>{{fatura_numero}}</strong> já foi emitida e segue <strong>anexada neste e-mail em formato PDF</strong>.</p>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;background:#faf8f2;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;background:#faf8f2;color:#1b2127;">
     <tr>
         <td style="padding:11px 16px;border-bottom:1px solid #ece7db;color:#6b7280;font-size:13px;">Número</td>
-        <td style="padding:11px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;">{{fatura_numero}}</td>
+        <td style="padding:11px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;color:#12161a;">{{fatura_numero}}</td>
     </tr>
     <tr>
         <td style="padding:11px 16px;border-bottom:1px solid #ece7db;color:#6b7280;font-size:13px;">Valor total</td>
-        <td style="padding:11px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;">{{fatura_valor}}</td>
+        <td style="padding:11px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:700;color:#12161a;">{{fatura_valor}}</td>
     </tr>
     <tr>
         <td style="padding:11px 16px;border-bottom:1px solid #ece7db;color:#6b7280;font-size:13px;">Vencimento</td>
-        <td style="padding:11px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:600;">{{fatura_vencimento}}</td>
+        <td style="padding:11px 16px;border-bottom:1px solid #ece7db;text-align:right;font-weight:600;color:#12161a;">{{fatura_vencimento}}</td>
     </tr>
     <tr>
         <td style="padding:11px 16px;color:#6b7280;font-size:13px;">Forma de pagamento</td>
-        <td style="padding:11px 16px;text-align:right;font-weight:600;">{{gateway_nome}}</td>
+        <td style="padding:11px 16px;text-align:right;font-weight:600;color:#12161a;">{{gateway_nome}}</td>
     </tr>
 </table>
-<p style="font-size:13px;background:#f8fafc;border-left:3px solid #e0a33e;padding:10px 14px;border-radius:8px;">
-    <strong>PIX / Linha Digitável:</strong><br>
-    <span style="font-family:monospace;word-break:break-all;">{{pix_copia_cola}}</span>
+<p style="font-size:13px;background:#f8fafc;color:#1b2127;border-left:3px solid #e0a33e;padding:10px 14px;border-radius:8px;">
+    <strong style="color:#12161a;">PIX / Linha Digitável:</strong><br>
+    <span style="font-family:monospace;word-break:break-all;color:#1b2127;">{{pix_copia_cola}}</span>
 </p>
 <p style="margin:22px 0;">
     <a href="{{fatura_url}}" data-btn="true" class="golden-btn" style="display:inline-block;background:#e0a33e;color:#12161a;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:10px;">
@@ -434,7 +434,7 @@ HTML,
                 'corpo_html' => <<<'HTML'
 <div style="display:inline-block;background:#12161a;color:#e0a33e;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:10px;">{{tipo_alerta}}</div>
 <h1 style="font-size:20px;margin:0 0 8px;">{{titulo_alerta}}</h1>
-<p style="background:#f8fafc;border-left:3px solid #e0a33e;padding:12px 16px;border-radius:8px;">{{mensagem_alerta}}</p>
+<p style="background:#f8fafc;color:#1b2127;border-left:3px solid #e0a33e;padding:12px 16px;border-radius:8px;">{{mensagem_alerta}}</p>
 <p style="margin:22px 0;">
     <a href="{{url_painel}}" data-btn="true" class="golden-btn" style="display:inline-block;background:#e0a33e;color:#12161a;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:10px;">
         Abrir no Painel Administrativo
@@ -467,7 +467,38 @@ HTML,
             }
         }
 
+        foreach (EmailTemplate::all() as $template) {
+            $corpoAtual = (string) $template->corpo_html;
+            $corpoNormalizado = $this->normalizarContrasteCorpoHtml($corpoAtual);
+            if ($corpoNormalizado !== $corpoAtual) {
+                $template->update(['corpo_html' => $corpoNormalizado]);
+            }
+        }
+
         return EmailTemplate::orderBy('categoria')->orderBy('nome')->get();
+    }
+
+    /**
+     * Garante cor de texto escura explícita em blocos legados com fundo claro inline
+     * para evitar texto invisível em editores ou clientes com modo escuro ativo.
+     */
+    private function normalizarContrasteCorpoHtml(string $html): string
+    {
+        if ($html === '') {
+            return '';
+        }
+
+        $substituicoes = [
+            'background:#faf8f2;"' => 'background:#faf8f2;color:#1b2127;"',
+            'background:#f8fafc;border-left:3px solid #e0a33e;' => 'background:#f8fafc;color:#1b2127;border-left:3px solid #e0a33e;',
+            'text-align:right;font-weight:700;">' => 'text-align:right;font-weight:700;color:#12161a;">',
+            'text-align:right;font-weight:700;font-size:16px;">' => 'text-align:right;font-weight:700;font-size:16px;color:#12161a;">',
+            'text-align:right;font-weight:600;">' => 'text-align:right;font-weight:600;color:#12161a;">',
+            '<strong>PIX / Linha Digitável:</strong>' => '<strong style="color:#12161a;">PIX / Linha Digitável:</strong>',
+            'font-family:monospace;word-break:break-all;">' => 'font-family:monospace;word-break:break-all;color:#1b2127;">',
+        ];
+
+        return str_replace(array_keys($substituicoes), array_values($substituicoes), $html);
     }
 
     /**
