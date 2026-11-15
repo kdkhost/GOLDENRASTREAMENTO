@@ -166,11 +166,11 @@
                             @endif
                             @if(!empty($layout['mostrar_links_rodape']))
                                 <p style="margin:0 0 8px;">
-                                    <a href="{{ url('/') }}" style="color:{{ $layout['cor_destaque'] ?? '#e0a33e' }};text-decoration:none;font-weight:600;">Site Oficial</a>
+                                    <a href="{{ route('site.home') }}" style="color:{{ $layout['cor_destaque'] ?? '#e0a33e' }};text-decoration:none;font-weight:600;">Site Oficial</a>
                                     &nbsp;&middot;&nbsp;
-                                    <a href="{{ url('/portal') }}" style="color:{{ $layout['cor_destaque'] ?? '#e0a33e' }};text-decoration:none;font-weight:600;">Portal do Cliente</a>
+                                    <a href="{{ route('portal.inicio') }}" style="color:{{ $layout['cor_destaque'] ?? '#e0a33e' }};text-decoration:none;font-weight:600;">Portal do Cliente</a>
                                     &nbsp;&middot;&nbsp;
-                                    <a href="{{ url('/rastrear') }}" style="color:{{ $layout['cor_destaque'] ?? '#e0a33e' }};text-decoration:none;font-weight:600;">Rastrear Pedido</a>
+                                    <a href="{{ route('site.rastreio.index') }}" style="color:{{ $layout['cor_destaque'] ?? '#e0a33e' }};text-decoration:none;font-weight:600;">Rastrear Pedido</a>
                                 </p>
                             @endif
                             @if(!empty($layout['rodape_legal']))

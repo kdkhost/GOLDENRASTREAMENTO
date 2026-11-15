@@ -260,6 +260,10 @@
                                 <input type="text" class="form-control form-control-sm font-monospace" data-fatura-campo="nosso_numero" value="{{ $faturaDemo['nosso_numero'] }}">
                             </div>
                             <div class="col-12">
+                                <label class="form-label small fw-semibold mb-1">Link de Pagamento / Portal (Checkout URL)</label>
+                                <input type="text" class="form-control form-control-sm" data-fatura-campo="checkout_url" value="{{ $faturaDemo['checkout_url'] }}">
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label small fw-semibold mb-1">PIX Copia e Cola (EMV)</label>
                                 <input type="text" class="form-control form-control-sm font-monospace" data-fatura-campo="pix_copia_cola" value="{{ $faturaDemo['pix_copia_cola'] }}">
                             </div>
@@ -993,8 +997,8 @@
             metodo: '',
             metodo_rotulo: 'PIX Instantâneo · Gateway WHMCS',
             gateway_tipo: 'gateway',
-            url: '',
-            checkout_url: '',
+            url: @json(route('portal.faturas')),
+            checkout_url: @json(route('portal.faturas')),
             pix_copia_cola: '',
             linha_digitavel: '',
             codigo_barras: '',

@@ -1776,7 +1776,7 @@ class Cliente
             'linha_digitavel' => $this->extrairLinhaDigitavelDoTexto($observacoes),
             'codigo_barras' => '',
             'nosso_numero' => '',
-            'checkout_url' => $this->linkDaArea('viewinvoice', $faturaId),
+            'checkout_url' => $this->linkDaArea('viewinvoice', $faturaId) ?: route('portal.faturas'),
             'plugin_ativo' => false,
             'cliente' => [],
         ];

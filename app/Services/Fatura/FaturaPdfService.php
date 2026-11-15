@@ -389,8 +389,8 @@ class FaturaPdfService
             'metodo' => 'pix',
             'metodo_rotulo' => 'PIX Instantâneo · Gateway WHMCS',
             'gateway_tipo' => 'pix',
-            'url' => url('/minha-conta/faturas'),
-            'checkout_url' => url('/minha-conta/faturas'),
+            'url' => route('portal.faturas'),
+            'checkout_url' => route('portal.faturas'),
             'pix_copia_cola' => '00020126580014br.gov.bcb.pix0136golden-rastreamento-fatura-88415204000053039865802BR',
             'linha_digitavel' => '23793.38128 60000.000003 00000.000401 1 99990000012990',
             'codigo_barras' => '23791999900000129903381260000000000000000040',
@@ -481,8 +481,10 @@ class FaturaPdfService
             'metodo' => (string) ($bruta['metodo'] ?? ''),
             'metodo_rotulo' => (string) ($bruta['metodo_rotulo'] ?? ($bruta['metodo'] ?: 'Gateway WHMCS')),
             'gateway_tipo' => (string) ($bruta['gateway_tipo'] ?? 'gateway'),
-            'url' => (string) ($bruta['url'] ?? url('/minha-conta/faturas')),
-            'checkout_url' => (string) ($bruta['checkout_url'] ?? $bruta['url'] ?? url('/minha-conta/faturas')),
+            'url' => isset($bruta['url']) ? trim((string) $bruta['url']) : route('portal.faturas'),
+            'checkout_url' => isset($bruta['checkout_url'])
+                ? trim((string) $bruta['checkout_url'])
+                : (trim((string) ($bruta['url'] ?? '')) !== '' ? trim((string) $bruta['url']) : route('portal.faturas')),
             'pix_copia_cola' => trim((string) ($bruta['pix_copia_cola'] ?? '')),
             'linha_digitavel' => $linhaDigitavel,
             'codigo_barras' => $codigoBarras,
@@ -912,7 +914,9 @@ class FaturaPdfService
                         $out .= $this->pdfTexto($x + $pad, $curY - 54.0, 7.2, $textoCor, mb_strimwidth(substr($pixPayload, 74), 0, 74, '...'), false);
                     }
                 }
-                $out .= $this->pdfTexto($x + $pad, $curY - 70.0, 7.6, $textoCor, 'Link Checkout: '.mb_strimwidth($fatura['checkout_url'], 0, 70, '...'), false);
+                if ($fatura['checkout_url'] !== '') {
+                    $out .= $this->pdfTexto($x + $pad, $curY - 70.0, 7.6, $textoCor, 'Link Checkout: '.mb_strimwidth($fatura['checkout_url'], 0, 70, '...'), false);
+                }
                 break;
 
             case 'codigo_barras_boleto':
@@ -946,7 +950,7 @@ class FaturaPdfService
                 if ($dadosEmpresaLinha !== '') {
                     $out .= $this->pdfTexto($x + $pad, $curY - 27.0, 7.6, $textoCor, mb_strimwidth($dadosEmpresaLinha, 0, 100, '...'), false);
                 }
-                $out .= $this->pdfTexto($x + $pad, $curY - 40.0, 7.5, $textoCor, 'Emitido em '.now()->format('d/m/Y H:i').' · Hash #'.strtoupper(substr(md5((string) $fatura['numero']), 0, 10)).' · /minha-conta/faturas', false);
+                $out .= $this->pdfTexto($x + $pad, $curY - 40.0, 7.5, $textoCor, 'Emitido em '.now()->format('d/m/Y H:i').' · Hash #'.strtoupper(substr(md5((string) $fatura['numero']), 0, 10)).' · /portal/faturas', false);
                 break;
         }
 

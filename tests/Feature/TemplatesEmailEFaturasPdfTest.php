@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as RequisicaoHttp;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 use ZipArchive;
 
@@ -633,5 +634,44 @@ class TemplatesEmailEFaturasPdfTest extends TestCase
         $this->get(route('admin.faturas-modelo.imprimir', ['rascunho' => 1]))
             ->assertOk()
             ->assertDontSee('GR-LIVE-9001', false);
+    }
+
+    public function test_fatura_a4_pdf_e_templates_de_email_usam_rotas_reais_do_portal_em_vez_de_minha_conta(): void
+    {
+        $pdfService = app(FaturaPdfService::class);
+        $mailService = app(EmailTemplateService::class);
+
+        // 1. Fatura padrão em HTML A4 e binário PDF usa /portal/faturas e nunca /minha-conta/faturas
+        $htmlPadrao = $pdfService->renderizarHtmlCirurgico();
+        $this->assertStringContainsString('/portal/faturas', $htmlPadrao);
+        $this->assertStringNotContainsString('/minha-conta/', $htmlPadrao);
+
+        $pdfPadrao = $pdfService->gerarPdfBinario();
+        $this->assertStringContainsString('/portal/faturas', $pdfPadrao);
+        $this->assertStringNotContainsString('/minha-conta/', $pdfPadrao);
+
+        // 2. Quando checkout_url é explicitamente limpo, o HTML/PDF omite Link Checkout em vez de exibir fallback inexistente
+        $semCheckout = $pdfService->faturaExemplo();
+        $semCheckout['url'] = '';
+        $semCheckout['checkout_url'] = '';
+        $htmlSemCheckout = $pdfService->renderizarHtmlCirurgico($semCheckout);
+        $pdfSemCheckout = $pdfService->gerarPdfBinario($semCheckout);
+        $this->assertStringNotContainsString('Pagamento online:', $htmlSemCheckout);
+        $this->assertStringNotContainsString('Link Checkout:', $pdfSemCheckout);
+
+        // 3. E-mails transacionais e exemplos de variáveis usam /portal/faturas e /portal/chamados
+        $exemplos = $mailService->exemplosVariaveis();
+        $this->assertStringContainsString('/portal/faturas', $exemplos['fatura_url']);
+        $this->assertStringContainsString('/portal/chamados', $exemplos['url_portal']);
+        $this->assertStringNotContainsString('/minha-conta/', $exemplos['fatura_url']);
+        $this->assertStringNotContainsString('/minha-conta/', $exemplos['url_portal']);
+
+        $emailFatura = $mailService->renderizarPorChave('segunda_via_fatura', $exemplos);
+        $this->assertStringContainsString('/portal/faturas', $emailFatura['html']);
+        $this->assertStringNotContainsString('/minha-conta/', $emailFatura['html']);
+
+        // 4. Rotas /portal/faturas e /portal/chamados realmente existem (não retornam 404)
+        $this->assertTrue(Route::has('portal.faturas'));
+        $this->assertTrue(Route::has('portal.chamados'));
     }
 }
