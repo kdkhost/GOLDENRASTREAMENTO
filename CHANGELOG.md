@@ -13,7 +13,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Animações leves de scroll e otimização progressiva de seções e imagens no site público.
 - Exclusão de campanhas pausadas ou já removidas no Google Ads mantendo o histórico de leads.
 - Toast ao adicionar produto ao carrinho, cálculo de frete com retorno instantâneo da localidade do CEP e navegação/filtros da loja sem recarregamento completo.
-- Instruções de uso individuais (`?`) em todos os cartões e campos de configuração que ainda não possuíam guia em `config/guia_configuracao.php` (contato oficial, endereço, regras da loja, transportadoras, Melhor Envio, consentimento/medição, testes WHMCS/e-mail, ambiente do sistema e preloader).
+- Instruções de uso individuais (`?`) com passo a passo completo e links exatos (externos e internos) em todos os **175 itens e cartões** de configuração em `config/guia_configuracao.php` (contato oficial, endereço, regras da loja, transportadoras, Correios, Melhor Envio, Mercado Envios, medição/consentimento, testes WHMCS/e-mail, notificações, ambiente do sistema, assistente e preloader).
 
 ### Alterado
 - Reorganização da aba **Loja & Logística** (`/admin/configuracao#loja`) em sub-abas limpas e estruturadas.

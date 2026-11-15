@@ -79,6 +79,10 @@ return [
                 ['icone' => 'fa-server', 'titulo' => 'Nunca deixe a hospedagem decidir', 'texto' => 'O servidor acorda em UTC. Sem escolha gravada, o chat sai três horas adiantado para quem escreve do Brasil.'],
                 ['icone' => 'fa-circle-check', 'titulo' => 'O que já estava gravado foi corrigido', 'texto' => 'Ao escolher o fuso, o sistema atrasou o histórico que havia sido escrito no relógio de UTC. Nada precisa ser refeito à mão.'],
             ],
+            'links' => [
+                ['rotulo' => 'Lista oficial de fusos horários (PHP)', 'url' => 'https://www.php.net/manual/pt_BR/timezones.america.php'],
+                ['rotulo' => 'Conferir horários no painel', 'rota' => 'admin.settings.index'],
+            ],
             'nota' => 'Em branco, vale o `APP_TIMEZONE` deste servidor — o que funciona enquanto ninguém decide, e é justamente o que deixa o relógio adiantado.',
         ],
 
@@ -92,6 +96,9 @@ return [
                 ['icone' => 'fa-up-right-from-square', 'titulo' => 'Teste numa aba nova', 'texto' => 'Todo acesso abre fora do site. Se a página pedir login próprio, é o esperado: o endereço é da outra plataforma.'],
                 ['icone' => 'fa-font', 'titulo' => 'Dê o nome que o cliente reconhece', 'texto' => 'O rótulo é o que a pessoa lê no modal; o endereço fica escondido no link. Nome de servidor interno confunde mais do que ajuda.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver o botão de acessos no site', 'rota' => 'site.home'],
+            ],
         ],
 
         'acesso_servidor_url' => [
@@ -99,7 +106,10 @@ return [
             'passos' => [
                 ['icone' => 'fa-keyboard', 'titulo' => 'Abra a plataforma e copie a barra de endereço', 'texto' => 'Entre com a sua conta e copie o endereço tal como o navegador mostra, inclusive a porta quando ela aparecer.'],
                 ['icone' => 'fa-shield-halved', 'titulo' => 'Prefira o endereço com cadeado', 'texto' => '`https://` em vez de IP com porta, sempre que a plataforma oferecer. Em celular, endereço solto sem cadeado costuma ser bloqueado.'],
-                ['icone' => 'fa-eye', 'titulo' => 'Conira no site', 'texto' => 'Salve, abra o site e toque no botão de acesso. O modal deve listar o nome que você deu em seguida.'],
+                ['icone' => 'fa-eye', 'titulo' => 'Confira no site', 'texto' => 'Salve, abra o site e toque no botão de acesso. O modal deve listar o nome que você deu em seguida.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar abertura no site', 'rota' => 'site.home'],
             ],
         ],
 
@@ -121,6 +131,9 @@ return [
                 ['icone' => 'fa-font', 'titulo' => 'Escreva com as palavras do balcão', 'texto' => 'O rótulo do botão é o que a pessoa procura no site. Nome de sistema interno ("tracking_v2") não é nome de botão.'],
                 ['icone' => 'fa-eraser', 'titulo' => 'Campo vazio devolve o padrão', 'texto' => 'Cada frase tem o texto da casa atrás de si: apagando, aquela linha volta a ser a padrão sem afetar as outras.'],
                 ['icone' => 'fa-mobile-screen', 'titulo' => 'Leia no celular antes de fechar', 'texto' => 'Rótulo longo quebra o menu em três linhas e empurra os botões. Meio centena de caracteres já é demais para uma linha.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver textos no cabeçalho do site', 'rota' => 'site.home'],
             ],
             'nota' => 'Estes campos são texto, não credencial: ninguém precisa ir a lugar nenhum buscar o que vai escrever aqui.',
         ],
@@ -149,6 +162,10 @@ return [
                 ['icone' => 'fa-money-bill-wave', 'titulo' => 'Publique a chave Pix do recebedor', 'texto' => 'É a chave que cai na conta da empresa, não a de um sócio: o comprovante que o cliente anexa é conferido contra ela.'],
                 ['icone' => 'fa-envelope-circle-check', 'titulo' => 'Diga quem acorda com a venda', 'texto' => 'O e-mail da equipe recebe o alerta de cada pedido novo. Caixa de pessoa some de férias; caixa de função, não.'],
             ],
+            'links' => [
+                ['rotulo' => 'Abrir a loja no site', 'rota' => 'site.loja.index'],
+                ['rotulo' => 'Ver carrinho da loja', 'rota' => 'site.loja.carrinho'],
+            ],
         ],
 
         'loja_pix_chave' => [
@@ -158,6 +175,9 @@ return [
                 ['icone' => 'fa-key', 'titulo' => 'Escolha ou gere a chave', 'texto' => 'CPF/CNPJ, e-mail, telefone ou chave aleatória. A aleatória é a única que não publica dado pessoal nem telefone da empresa.'],
                 ['icone' => 'fa-paper-plane', 'titulo' => 'Teste com valor mínimo', 'texto' => 'Mande R$ 0,01 para a chave antes de publicá-la. É o único teste que prova que a chave cai na conta certa.'],
                 ['icone' => 'fa-paste', 'titulo' => 'Cole exatamente como o banco mostra', 'texto' => 'Nada de espaços. E-mail em minúsculas e CNPJ sem máscara são as duas trocas que mais geram Pix devolvido.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar checkout da loja', 'rota' => 'site.loja.checkout'],
             ],
             'nota' => 'Chave de PIX não é segredo: ela é publicada no site. O que não pode aparecer é a senha do banco — nada deste sistema pede isso.',
         ],
@@ -181,6 +201,10 @@ return [
                 ['icone' => 'fa-comments', 'titulo' => 'Atendimento personalizado', 'texto' => 'Ideal para pedidos de frotas ou grandes volumes onde a cotação varia conforme a transportadora.'],
                 ['icone' => 'fa-lock', 'titulo' => 'Trava os campos fixos', 'texto' => 'Ao ligar o frete combinado, os campos de Frete fixo e Frete grátis ficam desabilitados automaticamente.'],
             ],
+            'links' => [
+                ['rotulo' => 'Simular no carrinho da loja', 'rota' => 'site.loja.carrinho'],
+                ['rotulo' => 'Abrir atendimento no WhatsApp', 'url' => 'https://wa.me/{whatsapp}'],
+            ],
         ],
 
         'loja_retirada' => [
@@ -189,6 +213,10 @@ return [
             'passos' => [
                 ['icone' => 'fa-store', 'titulo' => 'Retirada presencial imediata', 'texto' => 'O cliente visualiza o endereço da matriz no checkout e pode buscar o rastreador já configurado e testado.'],
                 ['icone' => 'fa-handshake', 'titulo' => 'Zero custo de frete', 'texto' => 'A opção de retirada sempre aparece como R$ 0,00 (Grátis) na simulação e no carrinho.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver endereço configurado no site', 'rota' => 'site.contato'],
+                ['rotulo' => 'Testar retirada no checkout', 'rota' => 'site.loja.checkout'],
             ],
         ],
 
@@ -199,6 +227,9 @@ return [
                 ['icone' => 'fa-tag', 'titulo' => 'Defina o valor base', 'texto' => 'Digite o valor em reais (ex: 29,90) cobrado para pedidos que não utilizam cálculo dinâmico.'],
                 ['icone' => 'fa-cart-shopping', 'titulo' => 'Aplicação no carrinho', 'texto' => 'Este valor é adicionado ao subtotal do carrinho até que o cliente atinja a faixa de frete grátis.'],
             ],
+            'links' => [
+                ['rotulo' => 'Simular frete no carrinho', 'rota' => 'site.loja.carrinho'],
+            ],
         ],
 
         'loja_frete_gratis_acima' => [
@@ -206,7 +237,10 @@ return [
             'onde' => 'Valor mínimo de compras no pedido para isenção total do frete.',
             'passos' => [
                 ['icone' => 'fa-gift', 'titulo' => 'Incentivo de compra', 'texto' => 'Defina um valor (ex: 997,00). Compras que atinjam ou superem este total recebem frete grátis automaticamente.'],
-                ['icone' => 'fa-calculator', 'titulo' => 'Barra de progresso no carrinho', 'texto' => 'O cliente vê em tempo real quanto falta para atingir a entrega gratuita.'],
+                ['icone' => 'fa-calculator', 'titulo' => 'Barra de progresso no carrinho', 'texto' => 'O cliente vê em tempo real quanto falta para atingir a entrega gratuita (somente após informar o CEP).'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver barra de frete grátis no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -219,6 +253,11 @@ return [
                 ['icone' => 'fa-truck-ramp-box', 'titulo' => 'Solicitação de coleta', 'texto' => 'Permite que a expedição solicite coleta direta na sede da empresa com 1 clique no pedido.'],
                 ['icone' => 'fa-envelope-circle-check', 'titulo' => 'Notificações automáticas', 'texto' => 'O cliente recebe o código e acompanha o rastreio em tempo real dentro do site da Golden.'],
             ],
+            'links' => [
+                ['rotulo' => 'Portal CWS Correios (APIs)', 'url' => 'https://cws.correios.com.br/'],
+                ['rotulo' => 'Correios Empresas (Contrato)', 'url' => 'https://empresas.correios.com.br/'],
+                ['rotulo' => 'Testar cálculo no carrinho', 'rota' => 'site.loja.carrinho'],
+            ],
         ],
 
         'correios_ativo' => [
@@ -227,6 +266,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-toggle-on', 'titulo' => 'Ligue para cálculo ao vivo', 'texto' => 'O cliente informa o CEP e o sistema calcula SEDEX e PAC instantaneamente.'],
                 ['icone' => 'fa-location-dot', 'titulo' => 'Origem configurada', 'texto' => 'O cálculo usa o CEP de Origem da expedição da Golden Rastreamento.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar cálculo no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -237,6 +279,10 @@ return [
                 ['icone' => 'fa-percent', 'titulo' => 'Tarifas reduzidas', 'texto' => 'Empresas com contrato Correios Fácil ou CWS contam com descontos de até 25% nas postagens.'],
                 ['icone' => 'fa-key', 'titulo' => 'Credenciais CWS', 'texto' => 'Preencha o Código Administrativo, Cartão de Postagem e Token CWS para faturamento corporativo.'],
             ],
+            'links' => [
+                ['rotulo' => 'Portal Correios Empresas', 'url' => 'https://empresas.correios.com.br/'],
+                ['rotulo' => 'Portal CWS (Tokens)', 'url' => 'https://cws.correios.com.br/'],
+            ],
         ],
 
         'correios_coleta_empresa' => [
@@ -245,6 +291,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-truck-ramp-box', 'titulo' => 'Botão no painel', 'texto' => 'Habilita o botão "Solicitar Coleta na Empresa" na tela de detalhes de cada pedido aprovado.'],
                 ['icone' => 'fa-bell', 'titulo' => 'Avisos multicanal', 'texto' => 'Dispara e-mail e notificação no celular para o administrador e expedição organizarem os pacotes.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Portal Correios Empresas', 'url' => 'https://empresas.correios.com.br/'],
             ],
         ],
 
@@ -255,6 +304,9 @@ return [
                 ['icone' => 'fa-map-pin', 'titulo' => 'Informe o CEP completo', 'texto' => 'Digite o CEP com 8 dígitos (ex: 37190-000) da matriz em Três Pontas/MG.'],
                 ['icone' => 'fa-route', 'titulo' => 'Ponto de partida do frete', 'texto' => 'A distância e os prazos são calculados a partir deste endereço.'],
             ],
+            'links' => [
+                ['rotulo' => 'Consultar CEP oficial nos Correios', 'url' => 'https://buscacepinter.correios.com.br/'],
+            ],
         ],
 
         'correios_prazo_adicional' => [
@@ -263,6 +315,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-screwdriver-wrench', 'titulo' => 'Preparação do rastreador', 'texto' => 'Rastreadores veiculares exigem inserção do chip M2M, testes de sinal e homologação antes do envio.'],
                 ['icone' => 'fa-calendar-check', 'titulo' => 'Transparência ao cliente', 'texto' => 'Adicionar 1 ou 2 dias evita cobranças de prazos irreais por parte do comprador.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Conferir prazos no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -273,6 +328,9 @@ return [
                 ['icone' => 'fa-box', 'titulo' => 'Custo de embalagem', 'texto' => 'Informe centavos ou reais caso queira somar o custo de embalagem ao frete pago pelo cliente.'],
                 ['icone' => 'fa-ban', 'titulo' => 'Deixe 0.00 para não cobrar', 'texto' => 'Com 0.00, o cliente paga somente a tarifa líquida da transportadora.'],
             ],
+            'links' => [
+                ['rotulo' => 'Conferir valor final no carrinho', 'rota' => 'site.loja.carrinho'],
+            ],
         ],
 
         'correios_sedex_ativo' => [
@@ -281,6 +339,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-bolt', 'titulo' => 'Entrega expressa', 'texto' => 'Garante entregas em 1 a 3 dias úteis para a maioria das cidades brasileiras.'],
                 ['icone' => 'fa-check', 'titulo' => 'Prioridade de expedição', 'texto' => 'Pedidos com SEDEX recebem prioridade na bancada de testes e envio.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver opções de frete na loja', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -291,6 +352,9 @@ return [
                 ['icone' => 'fa-coins', 'titulo' => 'Custo acessível', 'texto' => 'Tarifa menor voltada para clientes que priorizam economia em relação ao prazo.'],
                 ['icone' => 'fa-location-crosshairs', 'titulo' => 'Rastreamento completo', 'texto' => 'Mesmo econômico, o PAC oferece acompanhamento de cada movimentação passo a passo.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver opções de frete na loja', 'rota' => 'site.loja.carrinho'],
+            ],
         ],
 
         'correios_codigo_administrativo' => [
@@ -299,6 +363,10 @@ return [
             'passos' => [
                 ['icone' => 'fa-file-invoice', 'titulo' => 'Consulte no contrato', 'texto' => 'Encontrado no documento de ativação do contrato comercial Correios Empresas.'],
                 ['icone' => 'fa-id-card', 'titulo' => 'Identificação do cliente', 'texto' => 'Identifica sua conta jurídica junto aos servidores dos Correios.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Portal CWS Correios (Contratos)', 'url' => 'https://cws.correios.com.br/'],
+                ['rotulo' => 'Correios Empresas', 'url' => 'https://empresas.correios.com.br/'],
             ],
         ],
 
@@ -309,6 +377,9 @@ return [
                 ['icone' => 'fa-credit-card', 'titulo' => 'Localize no portal CWS', 'texto' => 'Disponível no menu Meus Contratos > Cartões de Postagem no portal dos Correios.'],
                 ['icone' => 'fa-barcode', 'titulo' => 'Validação das etiquetas', 'texto' => 'Necessário para emissão e chancela de etiquetas de postagem.'],
             ],
+            'links' => [
+                ['rotulo' => 'Portal CWS Correios (Cartões)', 'url' => 'https://cws.correios.com.br/'],
+            ],
         ],
 
         'correios_usuario' => [
@@ -317,6 +388,10 @@ return [
             'passos' => [
                 ['icone' => 'fa-user-lock', 'titulo' => 'Acesse o portal CWS', 'texto' => 'cws.correios.com.br — utilize o ID Correios da empresa para gerar o acesso.'],
                 ['icone' => 'fa-keyboard', 'titulo' => 'Digite o login de API', 'texto' => 'Cole exatamente o usuário autorizado para emissão de chaves.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Acessar Portal CWS Correios', 'url' => 'https://cws.correios.com.br/'],
+                ['rotulo' => 'Documentação de APIs Correios', 'url' => 'https://www.correios.com.br/atendimento/developers'],
             ],
         ],
 
@@ -327,6 +402,9 @@ return [
                 ['icone' => 'fa-key', 'titulo' => 'Gere o token no portal', 'texto' => 'Em Gestão de Acesso a APIs no portal CWS, crie uma chave de API para o sistema.'],
                 ['icone' => 'fa-shield-halved', 'titulo' => 'Armazenamento seguro', 'texto' => 'O token é protegido no banco de dados e nunca exposto a terceiros.'],
             ],
+            'links' => [
+                ['rotulo' => 'Gerar Token no Portal CWS', 'url' => 'https://cws.correios.com.br/'],
+            ],
         ],
 
         'correios_instrucoes_coleta' => [
@@ -335,6 +413,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-clock', 'titulo' => 'Horário e local', 'texto' => 'Ex: "Coletas diárias das 14h às 16h na portaria da matriz (Rua Exemplo, 123)".'],
                 ['icone' => 'fa-phone', 'titulo' => 'Telefone da expedição', 'texto' => 'Inclua o ramal ou WhatsApp do encarregado de conferir e entregar os pacotes.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver endereço de contato no site', 'rota' => 'site.contato'],
             ],
         ],
 
@@ -345,13 +426,22 @@ return [
                 ['icone' => 'fa-bag-shopping', 'titulo' => 'Mercado Envios', 'texto' => 'Permite disponibilizar pontos de coleta e entrega intermediada pelo Mercado Livre.'],
                 ['icone' => 'fa-link', 'titulo' => 'Link da loja oficial', 'texto' => 'Conduz clientes interessados diretamente aos anúncios homologados da Golden.'],
             ],
+            'links' => [
+                ['rotulo' => 'Central de Envios (Mercado Livre)', 'url' => 'https://www.mercadolivre.com.br/vendas/envios'],
+                ['rotulo' => 'Meus anúncios no Mercado Livre', 'url' => 'https://www.mercadolivre.com.br/anuncios/lista'],
+            ],
         ],
 
         'mercado_livre_envio_ativo' => [
             'titulo' => 'Habilitar envio pelo Mercado Livre',
             'onde' => 'Mostra aos compradores a modalidade Mercado Envios com garantia e entrega rápida.',
             'passos' => [
-                ['icone' => 'fa-toggle-on', 'titulo' => 'Ative o canal', 'texto' => 'Exibe a opção no simulador e orienta sobre o fluxo de envio pelo Mercado Livre.'],
+                ['icone' => 'fa-toggle-on', 'titulo' => 'Ative o canal', 'texto' => 'Ligue o interruptor para disponibilizar a opção aos compradores na loja.'],
+                ['icone' => 'fa-store', 'titulo' => 'Preencha o link oficial', 'texto' => 'Informe logo abaixo o endereço da sua loja no Mercado Livre para direcionar o cliente corretamente.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Central de Envios (Mercado Livre)', 'url' => 'https://www.mercadolivre.com.br/vendas/envios'],
+                ['rotulo' => 'Ver opções na loja', 'rota' => 'site.loja.index'],
             ],
         ],
 
@@ -359,7 +449,11 @@ return [
             'titulo' => 'Link da Loja no Mercado Livre',
             'onde' => 'Endereço da página oficial de produtos da Golden no Mercado Livre.',
             'passos' => [
-                ['icone' => 'fa-arrow-up-right-from-square', 'titulo' => 'Copie o link público', 'texto' => 'Ex: https://www.mercadolivre.com.br/loja/golden-rastreamento'],
+                ['icone' => 'fa-user-check', 'titulo' => 'Acesse sua conta de vendedor', 'texto' => 'Entre no Mercado Livre e abra a página pública da sua loja ou lista de anúncios.'],
+                ['icone' => 'fa-arrow-up-right-from-square', 'titulo' => 'Copie o link público completo', 'texto' => 'Cole a URL com `https://` (ex: https://www.mercadolivre.com.br/loja/golden-rastreamento).'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir meus anúncios no Mercado Livre', 'url' => 'https://www.mercadolivre.com.br/anuncios/lista'],
             ],
         ],
 
@@ -367,7 +461,12 @@ return [
             'titulo' => 'Instruções do Mercado Envios',
             'onde' => 'Texto explicativo sobre como o comprador recebe o código de rastreio e prazo pelo Mercado Livre.',
             'passos' => [
-                ['icone' => 'fa-circle-info', 'titulo' => 'Orientações ao cliente', 'texto' => 'Ex: "Envio gerenciado com código e garantia do Mercado Livre via pontos de coleta".'],
+                ['icone' => 'fa-circle-info', 'titulo' => 'Orientações ao cliente', 'texto' => 'Explique em 1 ou 2 frases como funciona o envio (ex: "Envio gerenciado com código e garantia do Mercado Livre via pontos de coleta").'],
+                ['icone' => 'fa-eye', 'titulo' => 'Confira na loja', 'texto' => 'Após salvar, abra o carrinho/checkout para validar a leitura do texto pelo cliente.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Central de Envios (Mercado Livre)', 'url' => 'https://www.mercadolivre.com.br/vendas/envios'],
+                ['rotulo' => 'Conferir no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -375,8 +474,13 @@ return [
             'titulo' => 'Contato oficial da empresa',
             'onde' => 'Define WhatsApp, telefone, e-mail e horário de atendimento exibidos no site e nos alertas.',
             'passos' => [
-                ['icone' => 'fa-phone', 'titulo' => 'Padrão internacional no WhatsApp', 'texto' => 'Use DDI + DDD + número sem espaços (ex.: 5537999999999) para os links wa.me funcionarem.'],
-                ['icone' => 'fa-envelope', 'titulo' => 'E-mail institucional', 'texto' => 'Aparece no rodapé do site, formulários de contato e rodapé dos e-mails transacionais.'],
+                ['icone' => 'fa-phone', 'titulo' => '1. Preencha o WhatsApp no padrão internacional', 'texto' => 'Use DDI + DDD + número sem espaços (ex.: 5537999999999) para os links wa.me funcionarem em qualquer aparelho.'],
+                ['icone' => 'fa-envelope', 'titulo' => '2. Informe o e-mail institucional', 'texto' => 'Aparece no rodapé do site, formulários de contato e rodapé dos e-mails transacionais.'],
+                ['icone' => 'fa-clock', 'titulo' => '3. Defina o horário de atendimento', 'texto' => 'Salve e confira no rodapé e na página de Contato do site.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar WhatsApp configurado', 'url' => 'https://wa.me/{whatsapp}'],
+                ['rotulo' => 'Ver página de Contato no site', 'rota' => 'site.contato'],
             ],
         ],
 
@@ -384,7 +488,12 @@ return [
             'titulo' => 'Endereço da empresa',
             'onde' => 'Endereço exibido no rodapé, página de contato e opção de retirada presencial na loja.',
             'passos' => [
-                ['icone' => 'fa-location-dot', 'titulo' => 'Preencha completo', 'texto' => 'Informe rua, número, bairro, cidade/UF e CEP para orientar clientes e coletas.'],
+                ['icone' => 'fa-magnifying-glass', 'titulo' => '1. Confira o CEP oficial', 'texto' => 'Valide o CEP e o logradouro oficial no Busca CEP dos Correios para evitar divergências de entrega/coleta.'],
+                ['icone' => 'fa-location-dot', 'titulo' => '2. Preencha completo e salve', 'texto' => 'Informe rua, número, bairro, cidade/UF e CEP para orientar clientes e coletas.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Consultar CEP nos Correios', 'url' => 'https://buscacepinter.correios.com.br/'],
+                ['rotulo' => 'Ver endereço no site', 'rota' => 'site.contato'],
             ],
         ],
 
@@ -392,8 +501,13 @@ return [
             'titulo' => 'Regras Comerciais & Pagamento',
             'onde' => 'Controla frete fixo padrão, meta de frete grátis, retirada na sede, chave Pix e alertas de venda.',
             'passos' => [
-                ['icone' => 'fa-truck', 'titulo' => 'Frete grátis só após CEP', 'texto' => 'No carrinho, o sistema exibe "Calcule pelo CEP" até o cliente informar um CEP válido.'],
-                ['icone' => 'fa-qrcode', 'titulo' => 'Chave Pix', 'texto' => 'Exibida no checkout para pagamentos instantâneos; deixe vazio se usar apenas gateway.'],
+                ['icone' => 'fa-truck', 'titulo' => '1. Defina frete fixo, combinado ou frete grátis', 'texto' => 'No carrinho, o sistema exibe "Calcule pelo CEP" até o cliente informar um CEP válido.'],
+                ['icone' => 'fa-qrcode', 'titulo' => '2. Cadastre a chave Pix da empresa', 'texto' => 'Exibida no checkout para pagamentos instantâneos; deixe vazio se usar apenas gateway.'],
+                ['icone' => 'fa-envelope', 'titulo' => '3. Informe o e-mail da equipe', 'texto' => 'Toda nova venda dispara alerta imediato para essa caixa.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir a loja no site', 'rota' => 'site.loja.index'],
+                ['rotulo' => 'Testar checkout', 'rota' => 'site.loja.checkout'],
             ],
         ],
 
@@ -401,8 +515,14 @@ return [
             'titulo' => 'Logística & Transportadoras',
             'onde' => 'Centraliza as integrações de frete em tempo real (Correios, Melhor Envio e Mercado Envios).',
             'passos' => [
-                ['icone' => 'fa-layer-group', 'titulo' => 'Sub-abas por transportadora', 'texto' => 'Alterne entre Correios, Melhor Envio e Mercado Envios, ajuste os parâmetros e salve tudo de uma vez no botão ao final.'],
-                ['icone' => 'fa-shield-halved', 'titulo' => 'Fallback automático', 'texto' => 'Se o Melhor Envio estiver ativo e falhar temporariamente, o sistema recorre automaticamente aos Correios.'],
+                ['icone' => 'fa-layer-group', 'titulo' => '1. Escolha a transportadora na sub-aba', 'texto' => 'Alterne entre Correios, Melhor Envio e Mercado Envios e preencha os parâmetros desejados.'],
+                ['icone' => 'fa-shield-halved', 'titulo' => '2. Fallback automático', 'texto' => 'Se o Melhor Envio estiver ativo e falhar temporariamente, o sistema recorre automaticamente aos Correios.'],
+                ['icone' => 'fa-cart-shopping', 'titulo' => '3. Salve e simule no carrinho', 'texto' => 'Após salvar ao final da página, teste um CEP real no carrinho da loja.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Painel Melhor Envio', 'url' => 'https://melhorenvio.com.br/painel'],
+                ['rotulo' => 'Portal CWS Correios', 'url' => 'https://cws.correios.com.br/'],
+                ['rotulo' => 'Simular frete no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -410,7 +530,12 @@ return [
             'titulo' => 'Ativar cálculo via Melhor Envio',
             'onde' => 'Habilita cotações em tempo real pela API v2 do Melhor Envio no carrinho e checkout.',
             'passos' => [
-                ['icone' => 'fa-toggle-on', 'titulo' => 'Como funciona', 'texto' => 'Consulta Correios, Jadlog, Azul Cargo e outras transportadoras habilitadas na sua conta Melhor Envio.'],
+                ['icone' => 'fa-key', 'titulo' => '1. Gere e cole o Token da API v2', 'texto' => 'Antes de ligar, gere o Token de acesso no painel do Melhor Envio e cole no campo Token abaixo.'],
+                ['icone' => 'fa-toggle-on', 'titulo' => '2. Ative e salve', 'texto' => 'O sistema passa a consultar Correios, Jadlog, Azul Cargo e outras transportadoras habilitadas na sua conta.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Gerar Token no Melhor Envio', 'url' => 'https://melhorenvio.com.br/painel/gerenciar/tokens'],
+                ['rotulo' => 'Testar cálculo no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -418,7 +543,12 @@ return [
             'titulo' => 'Modo Sandbox (Homologação)',
             'onde' => 'Direciona as requisições para sandbox.melhorenvio.com.br em vez do ambiente de produção.',
             'passos' => [
-                ['icone' => 'fa-flask', 'titulo' => 'Atenção ao token', 'texto' => 'Tokens de Sandbox só funcionam com esta chave ligada; tokens de Produção exigem ela desligada.'],
+                ['icone' => 'fa-flask', 'titulo' => '1. Use somente em testes', 'texto' => 'Ligue quando estiver usando um token criado em sandbox.melhorenvio.com.br.'],
+                ['icone' => 'fa-rocket', 'titulo' => '2. Desligue para produção', 'texto' => 'Tokens reais da conta oficial exigem esta chave desligada.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Tokens Sandbox (Melhor Envio)', 'url' => 'https://sandbox.melhorenvio.com.br/painel/gerenciar/tokens'],
+                ['rotulo' => 'Tokens Produção (Melhor Envio)', 'url' => 'https://melhorenvio.com.br/painel/gerenciar/tokens'],
             ],
         ],
 
@@ -426,8 +556,14 @@ return [
             'titulo' => 'Token de Acesso (API v2 Melhor Envio)',
             'onde' => 'Bearer Token pessoal/aplicativo gerado no painel do Melhor Envio.',
             'passos' => [
-                ['icone' => 'fa-key', 'titulo' => 'Onde gerar', 'texto' => 'No painel do Melhor Envio, acesse Integrações → Tokens de acesso e gere um token com permissão de cotação.'],
-                ['icone' => 'fa-lock', 'titulo' => 'Proteção ao salvar', 'texto' => 'Depois de salvo, o campo fica em branco por segurança — só preencha novamente se quiser trocar o token.'],
+                ['icone' => 'fa-arrow-up-right-from-square', 'titulo' => '1. Acesse Integrações → Tokens de acesso', 'texto' => 'Entre na sua conta Melhor Envio, clique em Integrações → Permissões/Tokens e clique em "Gerar novo token".'],
+                ['icone' => 'fa-check-double', 'titulo' => '2. Marque as permissões de cotação', 'texto' => 'Habilite o escopo de cálculo de fretes (shipping-calculate) e copie o token gerado.'],
+                ['icone' => 'fa-lock', 'titulo' => '3. Cole e salve uma vez', 'texto' => 'Depois de salvo, o campo fica em branco por segurança — só preencha novamente se quiser trocar o token.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Gerar Token (Produção)', 'url' => 'https://melhorenvio.com.br/painel/gerenciar/tokens'],
+                ['rotulo' => 'Gerar Token (Sandbox)', 'url' => 'https://sandbox.melhorenvio.com.br/painel/gerenciar/tokens'],
+                ['rotulo' => 'Documentação API v2 Melhor Envio', 'url' => 'https://docs.melhorenvio.com.br/reference/calculo-de-fretes'],
             ],
         ],
 
@@ -435,7 +571,12 @@ return [
             'titulo' => 'CEP de Origem (Melhor Envio)',
             'onde' => 'CEP de onde os pacotes da Golden Rastreamento saem para cálculo de distância e prazo.',
             'passos' => [
-                ['icone' => 'fa-map-pin', 'titulo' => 'Fallback automático', 'texto' => 'Se ficar vazio, o sistema usa automaticamente o CEP de origem configurado nos Correios.'],
+                ['icone' => 'fa-map-pin', 'titulo' => '1. Informe o CEP de postagem', 'texto' => 'Digite os 8 dígitos do CEP da matriz ou centro de distribuição (ex.: 37190000).'],
+                ['icone' => 'fa-arrows-rotate', 'titulo' => '2. Fallback automático', 'texto' => 'Se ficar vazio, o sistema usa automaticamente o CEP de origem configurado nos Correios.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Buscar CEP nos Correios', 'url' => 'https://buscacepinter.correios.com.br/'],
+                ['rotulo' => 'Endereços no Melhor Envio', 'url' => 'https://melhorenvio.com.br/painel/enderecos'],
             ],
         ],
 
@@ -443,7 +584,11 @@ return [
             'titulo' => 'Peso padrão por item (kg)',
             'onde' => 'Peso médio utilizado na cotação da embalagem na API do Melhor Envio (ex.: 0.35 kg).',
             'passos' => [
-                ['icone' => 'fa-weight-hanging', 'titulo' => 'Valor mínimo', 'texto' => 'Informe em quilogramas usando ponto decimal (mínimo 0.05 kg).'],
+                ['icone' => 'fa-weight-hanging', 'titulo' => '1. Pese o kit completo', 'texto' => 'Considere rastreador, chicote, caixa e proteção em quilogramas usando ponto decimal (mínimo 0.05 kg).'],
+                ['icone' => 'fa-calculator', 'titulo' => '2. Multiplicado pela quantidade', 'texto' => 'No carrinho, o sistema soma o peso proporcional aos itens do pedido.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Regras de cubagem e peso (Melhor Envio)', 'url' => 'https://docs.melhorenvio.com.br/reference/calculo-de-fretes'],
             ],
         ],
 
@@ -451,7 +596,11 @@ return [
             'titulo' => 'Largura padrão da caixa (cm)',
             'onde' => 'Largura mínima exigida pelas transportadoras (11 cm a 200 cm).',
             'passos' => [
-                ['icone' => 'fa-ruler-horizontal', 'titulo' => 'Medida padrão', 'texto' => 'Recomendado 16 cm para caixas de rastreadores e chips M2M.'],
+                ['icone' => 'fa-ruler-horizontal', 'titulo' => '1. Meça a caixa fechada', 'texto' => 'Informe a largura em centímetros (mínimo 11 cm; recomendado 16 cm para caixas de rastreadores).'],
+                ['icone' => 'fa-floppy-disk', 'titulo' => '2. Salve e valide no carrinho', 'texto' => 'Medidas fora dos limites das transportadoras podem ocultar modalidades na cotação.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Limites de dimensões (Melhor Envio)', 'url' => 'https://docs.melhorenvio.com.br/reference/calculo-de-fretes'],
             ],
         ],
 
@@ -459,7 +608,11 @@ return [
             'titulo' => 'Altura padrão da caixa (cm)',
             'onde' => 'Altura do pacote para cubagem (2 cm a 200 cm).',
             'passos' => [
-                ['icone' => 'fa-ruler-vertical', 'titulo' => 'Medida padrão', 'texto' => 'Recomendado 8 cm para embalagens compactas da loja.'],
+                ['icone' => 'fa-ruler-vertical', 'titulo' => '1. Informe a altura em cm', 'texto' => 'Recomendado 8 cm para embalagens compactas da loja (mínimo 2 cm).'],
+                ['icone' => 'fa-box', 'titulo' => '2. Atenção à cubagem', 'texto' => 'Evite informar altura maior do que a caixa real para não encarecer o frete cotado.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Documentação de cálculo (Melhor Envio)', 'url' => 'https://docs.melhorenvio.com.br/reference/calculo-de-fretes'],
             ],
         ],
 
@@ -467,7 +620,11 @@ return [
             'titulo' => 'Comprimento padrão da caixa (cm)',
             'onde' => 'Comprimento mínimo aceito pelos Correios/transportadoras (16 cm a 200 cm).',
             'passos' => [
-                ['icone' => 'fa-ruler', 'titulo' => 'Medida padrão', 'texto' => 'Recomendado 22 cm para acomodar equipamento, chicote e manual.'],
+                ['icone' => 'fa-ruler', 'titulo' => '1. Informe o comprimento em cm', 'texto' => 'Mínimo aceito é 16 cm; recomendado 22 cm para acomodar equipamento, chicote e manual.'],
+                ['icone' => 'fa-check', 'titulo' => '2. Teste com um CEP', 'texto' => 'Salve e confira no carrinho se as opções da transportadora aparecem normalmente.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar cotação no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -475,7 +632,11 @@ return [
             'titulo' => 'Prazo adicional (Melhor Envio)',
             'onde' => 'Dias úteis somados ao prazo retornado pela transportadora (preparo, testes e postagem).',
             'passos' => [
-                ['icone' => 'fa-calendar-plus', 'titulo' => 'Margem de segurança', 'texto' => 'Soma-se automaticamente ao prazo exibido ao cliente no carrinho e checkout.'],
+                ['icone' => 'fa-calendar-plus', 'titulo' => '1. Defina os dias de preparo', 'texto' => 'Informe quantos dias úteis a equipe precisa para configurar o rastreador e postar (ex.: 1 ou 2).'],
+                ['icone' => 'fa-clock', 'titulo' => '2. Soma automática', 'texto' => 'O valor é somado ao prazo exibido ao cliente no carrinho e checkout.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Conferir prazo exibido no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -483,7 +644,11 @@ return [
             'titulo' => 'Taxa adicional / embalagem (Melhor Envio)',
             'onde' => 'Valor fixo em reais somado ao frete cotado para cobrir caixa, plástico-bolha e coleta.',
             'passos' => [
-                ['icone' => 'fa-box', 'titulo' => 'Opcional', 'texto' => 'Deixe 0,00 para repassar exatamente a tarifa retornada pelo Melhor Envio.'],
+                ['icone' => 'fa-box', 'titulo' => '1. Informe o valor ou deixe 0.00', 'texto' => 'Deixe 0.00 para repassar exatamente a tarifa retornada pelo Melhor Envio.'],
+                ['icone' => 'fa-coins', 'titulo' => '2. Aplicação transparente', 'texto' => 'O adicional é embutido automaticamente no valor final de cada modalidade retornada.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Conferir tarifas no carrinho', 'rota' => 'site.loja.carrinho'],
             ],
         ],
 
@@ -491,7 +656,12 @@ return [
             'titulo' => 'IDs de serviços (Melhor Envio)',
             'onde' => 'Lista opcional de IDs numéricos separados por vírgula para restringir modalidades.',
             'passos' => [
-                ['icone' => 'fa-filter', 'titulo' => 'Exemplos comuns', 'texto' => '1 = PAC, 2 = SEDEX, 3 = Jadlog .Package, 4 = Jadlog .Com, 17 = Mini Envios. Deixe vazio para exibir todas.'],
+                ['icone' => 'fa-filter', 'titulo' => '1. Deixe vazio ou liste os IDs', 'texto' => 'Exemplos: 1 = PAC, 2 = SEDEX, 3 = Jadlog .Package, 4 = Jadlog .Com, 17 = Mini Envios.'],
+                ['icone' => 'fa-list-check', 'titulo' => '2. Consulte os IDs na API', 'texto' => 'Deixe em branco para exibir todas as transportadoras ativas na sua conta Melhor Envio.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Lista de serviços e IDs (Melhor Envio)', 'url' => 'https://docs.melhorenvio.com.br/reference/listar-servicos'],
+                ['rotulo' => 'Transportadoras no painel Melhor Envio', 'url' => 'https://melhorenvio.com.br/painel/gerenciar/transportadoras'],
             ],
         ],
 
@@ -499,7 +669,14 @@ return [
             'titulo' => 'Medição, Pixels & Consentimento',
             'onde' => 'Configura Google Tag Manager, GA4, Google Ads, Meta Pixel e banner LGPD de cookies.',
             'passos' => [
-                ['icone' => 'fa-chart-line', 'titulo' => 'IDs oficiais', 'texto' => 'Informe apenas os IDs (GTM-..., G-..., AW-...) sem colar scripts HTML inteiros.'],
+                ['icone' => 'fa-chart-line', 'titulo' => '1. Copie apenas os IDs oficiais', 'texto' => 'Informe os códigos (GTM-..., G-..., AW-..., Pixel ID) sem colar scripts HTML inteiros.'],
+                ['icone' => 'fa-shield-halved', 'titulo' => '2. Ative a medição e revise a Política', 'texto' => 'Ligue a chave principal de medição somente após publicar a Política de Privacidade no site.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Google Tag Manager', 'url' => 'https://tagmanager.google.com/'],
+                ['rotulo' => 'Google Analytics 4', 'url' => 'https://analytics.google.com/'],
+                ['rotulo' => 'Google Ads', 'url' => 'https://ads.google.com/'],
+                ['rotulo' => 'Meta Events Manager', 'url' => 'https://business.facebook.com/events_manager2/list/pixel'],
             ],
         ],
 
@@ -507,7 +684,12 @@ return [
             'titulo' => 'Testar conexão com WHMCS',
             'onde' => 'Executa uma chamada real à API do WHMCS configurado para confirmar credenciais e IP liberado.',
             'passos' => [
-                ['icone' => 'fa-satellite-dish', 'titulo' => 'Quando usar', 'texto' => 'Sempre que alterar URL, Identifier ou Secret do WHMCS, salve e clique em testar.'],
+                ['icone' => 'fa-floppy-disk', 'titulo' => '1. Salve URL, Identifier e Secret', 'texto' => 'Sempre que alterar qualquer credencial do WHMCS, clique em Salvar antes de testar.'],
+                ['icone' => 'fa-satellite-dish', 'titulo' => '2. Informe um e-mail real e teste', 'texto' => 'Digite o e-mail de um cliente cadastrado no WHMCS e clique no botão de sondagem.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Tela de API do seu WHMCS', 'url' => '{whmcs}/admin/configapi.php'],
+                ['rotulo' => 'Lista de clientes no WHMCS', 'url' => '{whmcs}/admin/clients.php'],
             ],
         ],
 
@@ -515,7 +697,12 @@ return [
             'titulo' => 'Testar envio de e-mail',
             'onde' => 'Envia um e-mail de diagnóstico imediato usando o remetente e SMTP salvos.',
             'passos' => [
-                ['icone' => 'fa-paper-plane', 'titulo' => 'Validação', 'texto' => 'Confirma se o servidor SMTP aceita autenticação e entrega mensagens sem cair em erro.'],
+                ['icone' => 'fa-at', 'titulo' => '1. Informe um destinatário seu', 'texto' => 'Digite seu e-mail de teste e clique em Enviar teste.'],
+                ['icone' => 'fa-paper-plane', 'titulo' => '2. Leia o diagnóstico', 'texto' => 'Confirma se o servidor SMTP aceita autenticação e entrega mensagens sem cair em erro.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Contas de e-mail (cPanel)', 'url' => 'https://{host}:2083/email'],
+                ['rotulo' => 'Webmail do domínio', 'url' => 'https://{host}:2083/webmail'],
             ],
         ],
 
@@ -523,7 +710,12 @@ return [
             'titulo' => 'Ambiente & Limpeza de Cache',
             'onde' => 'Mostra versão do PHP/Laravel, modo de execução e permite limpar caches direto pelo painel.',
             'passos' => [
-                ['icone' => 'fa-broom', 'titulo' => 'Limpar cache', 'texto' => 'Use o botão "Limpar cache" no topo de Configurações ou no menu do usuário sempre que atualizar regras ou textos.'],
+                ['icone' => 'fa-broom', 'titulo' => '1. Limpe o cache após alterações', 'texto' => 'Use o botão "Limpar cache" no topo de Configurações ou no menu do usuário sempre que atualizar regras ou textos.'],
+                ['icone' => 'fa-server', 'titulo' => '2. Confira o estado do servidor', 'texto' => 'Verifique aqui se o ambiente está em produção, o fuso horário ativo e a versão do PHP.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir o site público', 'rota' => 'site.home'],
+                ['rotulo' => 'Abrir guia completo do painel', 'rota' => 'admin.guia.index'],
             ],
         ],
 
@@ -531,7 +723,12 @@ return [
             'titulo' => 'Preloader Personalizado Golden',
             'onde' => 'Controla a animação de carregamento inicial no site público e no painel administrativo.',
             'passos' => [
-                ['icone' => 'fa-sliders', 'titulo' => 'Controle independente', 'texto' => 'Ative ou desative separadamente para Site Público e Painel Admin conforme a preferência da equipe.'],
+                ['icone' => 'fa-sliders', 'titulo' => '1. Ative ou desative por ambiente', 'texto' => 'Use os interruptores independentes para Site Público e Painel Admin.'],
+                ['icone' => 'fa-palette', 'titulo' => '2. Personalize estilo, título e cor', 'texto' => 'Escolha entre Radar GPS, Órbita Dourada ou Pulso Minimalista, ajuste o texto e salve.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Visualizar no Site Público', 'rota' => 'site.home'],
+                ['rotulo' => 'Visualizar na Loja', 'rota' => 'site.loja.index'],
             ],
         ],
 
@@ -539,7 +736,11 @@ return [
             'titulo' => 'Preloader no Site Público',
             'onde' => 'Exibe a animação Golden ao navegar entre páginas públicas; ações AJAX na loja/carrinho não disparam o preloader.',
             'passos' => [
-                ['icone' => 'fa-globe', 'titulo' => 'Experiência fluida', 'texto' => 'Desligue aqui se quiser abertura imediata sem tela de transição nas páginas públicas.'],
+                ['icone' => 'fa-toggle-on', 'titulo' => '1. Ligue ou desligue conforme preferência', 'texto' => 'Ativado, exibe a transição suave ao abrir páginas do site.'],
+                ['icone' => 'fa-globe', 'titulo' => '2. Confira no site', 'texto' => 'Salve e abra a página inicial ou a loja para testar a velocidade de abertura.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar na Home do site', 'rota' => 'site.home'],
             ],
         ],
 
@@ -547,7 +748,11 @@ return [
             'titulo' => 'Preloader no Painel Admin',
             'onde' => 'Exibe a animação de transição ao abrir ou recarregar páginas administrativas.',
             'passos' => [
-                ['icone' => 'fa-user-shield', 'titulo' => 'Independente do site', 'texto' => 'Pode ficar desligado no painel mesmo enquanto permanece ativo para visitantes do site.'],
+                ['icone' => 'fa-user-shield', 'titulo' => '1. Controle independente', 'texto' => 'Pode ficar desligado no painel mesmo enquanto permanece ativo para visitantes do site.'],
+                ['icone' => 'fa-floppy-disk', 'titulo' => '2. Salve e recarregue', 'texto' => 'Após salvar, pressione F5 para validar imediatamente o comportamento.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Recarregar Configurações', 'rota' => 'admin.settings.index'],
             ],
         ],
 
@@ -555,7 +760,11 @@ return [
             'titulo' => 'Estilo da animação do Preloader',
             'onde' => 'Define o visual exibido durante o carregamento (Radar GPS, Órbita Dourada ou Pulso Minimalista).',
             'passos' => [
-                ['icone' => 'fa-wand-magic-sparkles', 'titulo' => 'Identidade Golden', 'texto' => 'Escolha o estilo que melhor combina com a campanha ou momento da marca.'],
+                ['icone' => 'fa-wand-magic-sparkles', 'titulo' => '1. Selecione o estilo desejado', 'texto' => 'Radar GPS traz leitura de rastreamento; Órbita Dourada e Pulso são ainda mais minimalistas.'],
+                ['icone' => 'fa-eye', 'titulo' => '2. Teste ao vivo', 'texto' => 'Salve e navegue para outra página para ver a animação aplicada.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver resultado no site', 'rota' => 'site.home'],
             ],
         ],
 
@@ -563,7 +772,11 @@ return [
             'titulo' => 'Título exibido no Preloader',
             'onde' => 'Texto principal exibido abaixo da animação (padrão: Golden Rastreamento).',
             'passos' => [
-                ['icone' => 'fa-font', 'titulo' => 'Curto e legível', 'texto' => 'Use o nome da empresa ou uma frase curta de até 80 caracteres.'],
+                ['icone' => 'fa-font', 'titulo' => '1. Digite um texto curto', 'texto' => 'Use o nome da empresa ou uma frase curta de até 80 caracteres.'],
+                ['icone' => 'fa-check', 'titulo' => '2. Salve e confira', 'texto' => 'O texto aparece centralizado logo abaixo do ícone animado.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver resultado no site', 'rota' => 'site.home'],
             ],
         ],
 
@@ -571,7 +784,11 @@ return [
             'titulo' => 'Cor de destaque do Preloader',
             'onde' => 'Cor principal dos anéis, pulso e brilho da animação (padrão dourado #d4a017).',
             'passos' => [
-                ['icone' => 'fa-palette', 'titulo' => 'Seletor visual', 'texto' => 'Clique na amostra de cor para ajustar exatamente ao tom desejado.'],
+                ['icone' => 'fa-palette', 'titulo' => '1. Escolha no seletor de cor', 'texto' => 'Clique na amostra de cor para ajustar ao tom desejado ou mantenha #d4a017.'],
+                ['icone' => 'fa-floppy-disk', 'titulo' => '2. Salve para aplicar', 'texto' => 'A cor atualiza tanto os anéis animados quanto o destaque visual da tela de carregamento.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver resultado no site', 'rota' => 'site.home'],
             ],
         ],
 
@@ -581,6 +798,10 @@ return [
             'passos' => [
                 ['icone' => 'fa-bell', 'titulo' => 'Receba tudo na hora', 'texto' => 'Novos leads, vendas aprovadas, novos depoimentos, pedidos de coleta e entregas passo a passo.'],
                 ['icone' => 'fa-mobile-screen', 'titulo' => 'Escolha o canal', 'texto' => 'Configure abaixo seu Telegram Bot gratuito ou Webhook de WhatsApp para receber as mensagens.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir BotFather no Telegram', 'url' => 'https://t.me/BotFather'],
+                ['rotulo' => 'Central de Notificações', 'rota' => 'admin.notificacoes.index'],
             ],
         ],
 
@@ -593,6 +814,10 @@ return [
                 ['icone' => 'fa-key', 'titulo' => 'Copie o Token gerado', 'texto' => 'O BotFather fornecerá um token no formato 123456789:ABCdefGhIJK... Cole neste campo.'],
                 ['icone' => 'fa-play', 'titulo' => 'Dê /start no seu bot', 'texto' => 'Abra uma conversa com o bot criado e clique em Iniciar (Start).'],
             ],
+            'links' => [
+                ['rotulo' => 'Criar bot no @BotFather', 'url' => 'https://t.me/BotFather'],
+                ['rotulo' => 'Documentação de Bots do Telegram', 'url' => 'https://core.telegram.org/bots#how-do-i-create-a-bot'],
+            ],
             'nota' => 'O Telegram é 100% gratuito, não tem limite de mensagens e vibra no celular imediatamente em cada evento.',
         ],
 
@@ -604,6 +829,10 @@ return [
                 ['icone' => 'fa-users', 'titulo' => 'Para alertar grupo da equipe', 'texto' => 'Adicione o bot ao grupo da empresa e informe o ID do grupo (número negativo, ex: -100123456789).'],
                 ['icone' => 'fa-vial', 'titulo' => 'Teste com 1 clique', 'texto' => 'Após salvar, use o botão "Testar Alerta no Celular" para validar.'],
             ],
+            'links' => [
+                ['rotulo' => 'Descobrir Chat ID no @userinfobot', 'url' => 'https://t.me/userinfobot'],
+                ['rotulo' => 'Preferências de Notificações', 'rota' => 'admin.notificacoes.preferencias'],
+            ],
         ],
 
         'webhook_celular' => [
@@ -613,13 +842,21 @@ return [
                 ['icone' => 'fa-network-wired', 'titulo' => 'Crie o webhook na sua API', 'texto' => 'Configure a URL de destino no seu servidor de mensagens ou fluxo de automação.'],
                 ['icone' => 'fa-code', 'titulo' => 'Payload JSON completo', 'texto' => 'O sistema envia evento, título, texto detalhado, dados do cliente e link do painel.'],
             ],
+            'links' => [
+                ['rotulo' => 'Preferências de Notificações', 'rota' => 'admin.notificacoes.preferencias'],
+            ],
         ],
 
         'email_ativo' => [
             'titulo' => 'Alertas por E-mail da Empresa',
             'onde' => 'Ativa o envio de e-mails transacionais instantâneos para a equipe e diretoria a cada acontecimento.',
             'passos' => [
-                ['icone' => 'fa-envelope-open-text', 'titulo' => 'E-mails padronizados', 'texto' => 'Dispara e-mails ricos no layout preto e dourado da Golden com todos os detalhes da ocorrência.'],
+                ['icone' => 'fa-envelope-open-text', 'titulo' => '1. Configure o SMTP primeiro', 'texto' => 'Certifique-se de que o servidor SMTP na aba E-mail está configurado e testado.'],
+                ['icone' => 'fa-toggle-on', 'titulo' => '2. Ative os disparos', 'texto' => 'Dispara e-mails ricos no layout preto e dourado da Golden com todos os detalhes da ocorrência.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Contas de e-mail (cPanel)', 'url' => 'https://{host}:2083/email'],
+                ['rotulo' => 'Preferências de Notificações', 'rota' => 'admin.notificacoes.preferencias'],
             ],
         ],
 
@@ -631,6 +868,10 @@ return [
                 ['icone' => 'fa-inbox', 'titulo' => 'Caixas de equipe', 'texto' => 'Prefira e-mails de departamento (vendas@, suporte@) para que toda a equipe acompanhe.'],
                 ['icone' => 'fa-paper-plane', 'titulo' => 'Teste de envio', 'texto' => 'Use o botão "Testar Alerta por E-mail" para conferir a formatação na sua caixa de entrada.'],
             ],
+            'links' => [
+                ['rotulo' => 'Gerenciar caixas na hospedagem', 'url' => 'https://{host}:2083/email'],
+                ['rotulo' => 'Preferências de Notificações', 'rota' => 'admin.notificacoes.preferencias'],
+            ],
         ],
 
         'retencao' => [
@@ -640,13 +881,20 @@ return [
                 ['icone' => 'fa-broom', 'titulo' => 'Limpeza de banco', 'texto' => 'Notificações lidas após este período são podadas periodicamente para não acumular espaço no banco.'],
                 ['icone' => 'fa-calendar', 'titulo' => 'Recomendação', 'texto' => 'Manter entre 30 e 90 dias garante histórico recente sem pesar no painel.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver notificações no painel', 'rota' => 'admin.notificacoes.index'],
+            ],
         ],
 
         'expiracao' => [
             'titulo' => 'Apagar não lidas depois de (dias)',
             'onde' => 'Prazo máximo de vida para alertas antigos que nunca foram abertos pelo usuário.',
             'passos' => [
-                ['icone' => 'fa-clock-rotate-left', 'titulo' => 'Poda de notificações abandonadas', 'texto' => 'Evita que notificações esquecidas fiquem acumulando no contador do sino.'],
+                ['icone' => 'fa-clock-rotate-left', 'titulo' => '1. Defina o prazo máximo', 'texto' => 'Informe em dias quanto tempo alertas não abertos permanecem no sino (ex.: 90 dias).'],
+                ['icone' => 'fa-broom', 'titulo' => '2. Poda automática', 'texto' => 'Evita que notificações esquecidas fiquem acumulando no contador do sino.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver notificações no painel', 'rota' => 'admin.notificacoes.index'],
             ],
         ],
 
@@ -661,6 +909,10 @@ return [
                 ['icone' => 'fa-font', 'titulo' => 'Escreva a mensagem pronta', 'texto' => 'É o texto que já vai digitado na conversa. Comece pelo que o cliente diria, não pelo que a empresa quer dizer.'],
                 ['icone' => 'fa-mobile-screen', 'titulo' => 'Teste no celular', 'texto' => 'O que abre a caixa no computador é o que chama no bolso. Confira a dica do botão flutuante e o rodapé antes de fechar.'],
             ],
+            'links' => [
+                ['rotulo' => 'Testar no site público', 'rota' => 'site.home'],
+                ['rotulo' => 'Abrir conversa no WhatsApp principal', 'url' => 'https://wa.me/{whatsapp}'],
+            ],
             'nota' => 'O assistente virtual não é um destes canais: a ficha dele, com a saudação e as falas da bolha, fica em Atendimento → Assistente virtual.',
         ],
 
@@ -673,6 +925,11 @@ return [
                 ['icone' => 'fa-key', 'titulo' => 'Preencha ao menos um identificador', 'texto' => 'Ligar sem nenhum ID não mede nada: o carregamento das etiquetas só acontece com o identificador correspondente no lugar.'],
                 ['icone' => 'fa-bolt', 'titulo' => 'Confira na própria ferramenta', 'texto' => 'Depois de salvar, abra a etiqueta que ligou (GA4, Pixel ou GTM) na aba "tempo real" e navegue no site. Ela precisa mostrar a visita chegando.'],
                 ['icone' => 'fa-power-off', 'titulo' => 'Desligar é legítimo', 'texto' => 'A atribuição do painel — de onde veio cada lead — é medida pelo próprio sistema e não depende de nenhuma destas três ferramentas.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Google Analytics 4', 'url' => 'https://analytics.google.com/'],
+                ['rotulo' => 'Google Tag Manager', 'url' => 'https://tagmanager.google.com/'],
+                ['rotulo' => 'Gerenciador de Eventos Meta', 'url' => 'https://business.facebook.com/events_manager2/list/pixel'],
             ],
         ],
 
@@ -769,6 +1026,10 @@ return [
                 ['icone' => 'fa-globe', 'titulo' => 'Informe só a raiz', 'texto' => 'Até o domínio e a pasta da instalação: `https://financeiro.seudominio.com.br`. O painel completa o caminho do arquivo de API sozinho.'],
                 ['icone' => 'fa-code', 'titulo' => 'Só escreva o caminho completo se a pasta foi renomeada', 'texto' => 'Instalação com o arquivo de API fora do padrão pede o endereço inteiro, terminando em `.php`.'],
                 ['icone' => 'fa-circle-check', 'titulo' => 'Confira na sonda', 'texto' => 'Endereço errado responde erro de HTTP ou servidor mudo; endereço certo responde se a conta existe.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Tela de API do seu WHMCS', 'url' => '{whmcs}/admin/configapi.php'],
+                ['rotulo' => 'Documentação da API do WHMCS', 'url' => 'https://docs.whmcs.com/Authentication'],
             ],
         ],
 
@@ -891,6 +1152,10 @@ return [
                 ['icone' => 'fa-bolt', 'titulo' => 'Sonde e leia a resposta', 'texto' => 'A tela diz, em português, o que aconteceu: conta confirmada, conta inexistente, credencial recusada, erro de HTTP ou servidor sem resposta.'],
                 ['icone' => 'fa-list-check', 'titulo' => 'Cada resposta tem um conserto', 'texto' => 'Credencial recusada volta para as duas de API; erro de HTTP, para o endereço; servidor mudo, para o tempo de espera e para a disponibilidade do financeiro.'],
             ],
+            'links' => [
+                ['rotulo' => 'Lista de clientes no WHMCS', 'url' => '{whmcs}/admin/clients.php'],
+                ['rotulo' => 'Tela de API do seu WHMCS', 'url' => '{whmcs}/admin/configapi.php'],
+            ],
         ],
 
         'sonda_email_destino' => [
@@ -899,6 +1164,9 @@ return [
                 ['icone' => 'fa-at', 'titulo' => 'Digite a sua própria caixa', 'texto' => 'Isto é teste de transporte, não correspondência: nunca mande prova para cliente.'],
                 ['icone' => 'fa-inbox', 'titulo' => 'Olhe também o spam', 'texto' => 'Mensagem que chega no lixo eletrônico quer dizer que o transporte funcionou e a reputação do servidor é que precisa de ajuste.'],
                 ['icone' => 'fa-stopwatch', 'titulo' => 'Espere a fila', 'texto' => 'O disparo sai pela fila do agendador. Se o cron estiver parado, a mensagem fica esperando na tabela de tarefas em vez de falhar.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Webmail do domínio', 'url' => 'https://{host}:2083/webmail'],
             ],
         ],
 
@@ -910,6 +1178,10 @@ return [
                 ['icone' => 'fa-door-open', 'titulo' => 'Decida sobre o salt para fora', 'texto' => 'O link que leva o cliente ao financeiro para pagar é escolha sua: desligado, o pagamento continua sendo combinado com a equipe.'],
                 ['icone' => 'fa-user-check', 'titulo' => 'Pondere o espelho de cadastro e senha', 'texto' => 'Ligado, o que o cliente corrige no portal escreve no financeiro. É mão única: senha trocada lá não volta para cá.'],
                 ['icone' => 'fa-clock', 'titulo' => 'Dê prazo à janela de supervisão', 'texto' => 'O número de minutos que o botão "Ver a conta do cliente" fica aberto. Passou o prazo, a sessão de leitura cai sozinha.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Grupos de produtos no WHMCS', 'url' => '{whmcs}/admin/configproductgroups.php'],
+                ['rotulo' => 'Abrir portal do cliente', 'rota' => 'portal.inicio'],
             ],
             'nota' => 'Interruptor desligado não é botão escondido: a requisição nem é feita, e o item sai do menu do portal.',
         ],
@@ -945,6 +1217,9 @@ return [
                 ['icone' => 'fa-hourglass-half', 'titulo' => 'Suspenso e pendente continuam dentro', 'texto' => 'Desses o cliente ainda deve, e somá-los da lista seria esconder uma cobrança.'],
                 ['icone' => 'fa-toggle-on', 'titulo' => 'Ligue para virar histórico', 'texto' => 'Quem quer que o portal seja o arquivo completo do que já foi contratado liga este interruptor.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver serviços no portal do cliente', 'rota' => 'portal.servicos'],
+            ],
         ],
 
         'whmcs_veicula_faturas_pagas' => [
@@ -952,6 +1227,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-toggle-off', 'titulo' => 'Desligado, a tela é um lembrete de pagamento', 'texto' => 'Ficam as que ainda pedem algo — a lista mais curta é a que o cliente abre para resolver.'],
                 ['icone' => 'fa-archive', 'titulo' => 'Ligado, a tela é o histórico', 'texto' => 'Útil quando o cliente pede a relação do ano para a contabilidade e prefere buscá-la sozinho.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver faturas no portal do cliente', 'rota' => 'portal.faturas'],
             ],
         ],
 
@@ -974,6 +1252,10 @@ return [
                 ['icone' => 'fa-user-shield', 'titulo' => 'A conferência de dados continua valendo', 'texto' => 'A identidade é confirmada antes do envio, e o envio só acontece para o e-mail que já está na ficha.'],
                 ['icone' => 'fa-toggle-off', 'titulo' => 'Desligado, nenhuma chamada por causa do chat', 'texto' => 'O assunto volta a ser só o portal e a equipe: a máquina explica como pedir e escala para gente.'],
             ],
+            'links' => [
+                ['rotulo' => 'Tela de API do seu WHMCS', 'url' => '{whmcs}/admin/configapi.php'],
+                ['rotulo' => 'Ver conversas do assistente', 'rota' => 'admin.assistente.conversas.index'],
+            ],
             'nota' => 'Depende das três credenciais do WHMCS estarem preenchidas: sem conexão, a segunda via não tem de onde sair.',
         ],
 
@@ -984,6 +1266,10 @@ return [
                 ['icone' => 'fa-database', 'titulo' => 'A ficha do CRM é gravada de qualquer jeito', 'texto' => 'Este interruptor só manda a cópia para fora; o registro daqui não depende dele.'],
                 ['icone' => 'fa-hand', 'titulo' => 'Desligado, alguém digita lá', 'texto' => 'Quem mantém o financeiro à mão, por outro sistema, desliga para não ser sobrescrito.'],
             ],
+            'links' => [
+                ['rotulo' => 'Clientes no WHMCS', 'url' => '{whmcs}/admin/clients.php'],
+                ['rotulo' => 'Abrir portal do cliente', 'rota' => 'portal.inicio'],
+            ],
             'nota' => 'É mão única: o que muda no WHMCS não volta para cá, e a ficha do financeiro continua podendo ser editada lá.',
         ],
 
@@ -993,6 +1279,10 @@ return [
                 ['icone' => 'fa-toggle-on', 'titulo' => 'Ligado, uma senha só nos dois lugares', 'texto' => 'Quem recupera a senha no portal entra no financeiro com a mesma senha, sem recuperar de novo.'],
                 ['icone' => 'fa-key', 'titulo' => 'Desligado, são duas contas com duas senhas', 'texto' => 'O cliente passa a ter a senha do portal e a do site de pagamento — e é a equipe que ouve "não lembro a do financeiro".'],
                 ['icone' => 'fa-lock', 'titulo' => 'Nem uma opção grava a senha em lugar nenhum', 'texto' => 'O sistema nunca vê a senha: no espelho, o pedido de troca é enviado ao WHMCS com a senha nova que o próprio cliente digitou.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir portal do cliente', 'rota' => 'portal.inicio'],
+                ['rotulo' => 'Tela de API do seu WHMCS', 'url' => '{whmcs}/admin/configapi.php'],
             ],
         ],
 
@@ -1028,6 +1318,9 @@ return [
                 ['icone' => 'fa-hourglass', 'titulo' => 'Dez minutos chega para conferir uma tela', 'texto' => 'É o tempo de olhar fatura, serviço e chamado, e o fim da conversa "esqueci a conta do cliente aberta".'],
                 ['icone' => 'fa-stopwatch', 'titulo' => 'Vencido o prazo, a sessão sai', 'texto' => 'A tela do outro lado volta para a entrada do portal, e nada precisa ser encerrado à mão.'],
                 ['icone' => 'fa-arrows-rotate', 'titulo' => 'Precisa de mais? Entre de novo', 'texto' => 'A janela é reaberta com um clique na ficha — alongar o prazo não é o caminho.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir lista de clientes', 'rota' => 'admin.clientes.index'],
             ],
         ],
 
@@ -1268,6 +1561,9 @@ return [
                 ['icone' => 'fa-file-lines', 'titulo' => '"Só gravar em log" desliga de verdade', 'texto' => 'A mensagem é escrita em `storage/logs/email.log` e ninguém recebe nada. Útil para ensaiar sem incomodar cliente.'],
                 ['icone' => 'fa-terminal', 'titulo' => 'sendmail é para servidor com MTA local', 'texto' => 'Só escolha se a máquina tiver sendmail instalado — em hospedagem compartilhada, o SMTP do domínio é o caminho.'],
             ],
+            'links' => [
+                ['rotulo' => 'Contas de e-mail da hospedagem', 'url' => 'https://{host}:2083/email'],
+            ],
         ],
 
         'mail_host' => [
@@ -1301,6 +1597,9 @@ return [
                 ['icone' => 'fa-arrows-rotate', 'titulo' => 'Combine com a porta', 'texto' => 'STARTTLS com 587, SSL desde o abraço com 465. Par trocado é o erro de SMTP mais comum.'],
                 ['icone' => 'fa-eraser', 'titulo' => 'Em branco, decide a porta', 'texto' => 'Sem valor aqui nem no `.env`, o transporte deduz pela porta informada.'],
                 ['icone' => 'fa-bolt', 'titulo' => 'Confira na prova de disparo', 'texto' => 'A tela de teste mostra o transporte, o servidor, a porta e a criptografia antes de enviar — e o erro, se vier.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Configuração de criptografia (cPanel)', 'url' => 'https://{host}:2083/email/delivery-encryption'],
             ],
         ],
 
@@ -1350,6 +1649,9 @@ return [
                 ['icone' => 'fa-eraser', 'titulo' => 'Em branco, vale o nome do site', 'texto' => 'Este campo existe para quando o nome de quem envia precisa ser diferente do nome do site.'],
                 ['icone' => 'fa-reply', 'titulo' => 'Não coloque um e-mail aqui', 'texto' => 'Nome é texto simples; o endereço de responder fica no campo de remetente, acima.'],
             ],
+            'links' => [
+                ['rotulo' => 'Autenticação SPF/DKIM no cPanel', 'url' => 'https://{host}:2083/email/delivery-encryption'],
+            ],
             'nota' => 'O que decide se a mensagem cai no spam é o domínio autenticado (SPF, DKIM, DMARC) no DNS da hospedagem, não o nome escrito aqui.',
         ],
 
@@ -1388,6 +1690,9 @@ return [
                 ['icone' => 'fa-hourglass-half', 'titulo' => 'Janela curta castiga o script', 'texto' => 'Quinze minutos é o bastante para segurar quem tenta dezenas de senhas, e curto o bastante para quem errou por engano poder tentar de novo no café seguinte.'],
                 ['icone' => 'fa-arrows-left-right', 'titulo' => 'Ela manda no tamanho do bloqueio', 'texto' => 'O tempo de espera abaixo costuma ser do mesmo tamanho ou maior que a janela: fechar a porta por menos tempo do que ela leva para encher não segura ninguém.'],
                 ['icone' => 'fa-check-to-slot', 'titulo' => 'O contador envelhece sozinho', 'texto' => 'Ninguém limpa nada à mão: a cada batida o sistema descarta o que ficou para trás na janela.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver tentativas na tela de Segurança', 'rota' => 'admin.seguranca.index'],
             ],
         ],
 
@@ -1496,6 +1801,11 @@ return [
                 ['icone' => 'fa-brain', 'titulo' => 'Aprendizado usa o modelo de leitura', 'texto' => 'É o que resume as páginas permitidas em itens de conhecimento, na rodada agendada.'],
                 ['icone' => 'fa-circle-check', 'titulo' => 'Teste cada uma', 'texto' => 'Pergunte no site, mande um áudio e rode o aprendizado agora, na tela do assistente. As três têm log próprio.'],
             ],
+            'links' => [
+                ['rotulo' => 'Chaves e modelos no Google AI Studio', 'url' => 'https://aistudio.google.com/apikey'],
+                ['rotulo' => 'Modelos e chaves na OpenAI', 'url' => 'https://platform.openai.com/api-keys'],
+                ['rotulo' => 'Abrir ficha do assistente', 'rota' => 'admin.assistente.persona'],
+            ],
             'nota' => 'Uma capacidade sem modelo cai no padrão da casa. Nenhum seletor desta tela é obrigatório para o chat funcionar.',
         ],
 
@@ -1581,6 +1891,10 @@ return [
                 ['icone' => 'fa-gauge-high', 'titulo' => 'Ajuste o piso de confiança', 'texto' => 'Busca sem fonte acima do piso chama gente em vez de chutar. Suba o piso se a Ana responder demais sem saber.'],
                 ['icone' => 'fa-ruler-horizontal', 'titulo' => 'Dê o tamanho da resposta', 'texto' => 'O teto de caracteres e o histórico levado por chamada controlam o custo e a paciência do leitor.'],
             ],
+            'links' => [
+                ['rotulo' => 'Abrir ficha do assistente', 'rota' => 'admin.assistente.persona'],
+                ['rotulo' => 'Ver conversas no painel', 'rota' => 'admin.assistente.conversas.index'],
+            ],
         ],
 
         'assistente_pedir_nome' => [
@@ -1601,6 +1915,9 @@ return [
                 ['icone' => 'fa-shuffle', 'titulo' => 'Insistir demais faz a pessoa ir embora', 'texto' => 'Quem não quer dizer o nome tem o direito de seguir sendo atendido no assunto geral.'],
                 ['icone' => 'fa-eraser', 'titulo' => 'Esgotado o número, o atendimento continua', 'texto' => 'A máquina para de perguntar e responde normalmente — a conversa não é cortada.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver conversas registradas', 'rota' => 'admin.assistente.conversas.index'],
+            ],
         ],
 
         'assistente_pedir_email' => [
@@ -1608,6 +1925,10 @@ return [
             'passos' => [
                 ['icone' => 'fa-magnifying-glass', 'titulo' => 'É pelo e-mail que a conta aparece', 'texto' => 'Sem ele, nada de segunda via, fatura ou serviço: a consulta ao WHMCS começa pelo endereço.'],
                 ['icone' => 'fa-headset', 'titulo' => 'Desligado, o que é de conta vai para a equipe', 'texto' => 'A máquina atende o assunto geral e escala o resto, em vez de ficar pedindo dado.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver conversas registradas', 'rota' => 'admin.assistente.conversas.index'],
+                ['rotulo' => 'Clientes no WHMCS', 'url' => '{whmcs}/admin/clients.php'],
             ],
         ],
 
@@ -1617,6 +1938,9 @@ return [
                 ['icone' => 'fa-shuffle', 'titulo' => 'Passou daqui, segue sem e-mail', 'texto' => 'O pedido personalizado é escalado para gente em vez de virar formulário infinito.'],
                 ['icone' => 'fa-triangle-exclamation', 'titulo' => 'Endereço recusado é outra história', 'texto' => 'Um e-mail inválido digitado uma vez já consome uma das tentativas — é por isso que o número existe.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver conversas registradas', 'rota' => 'admin.assistente.conversas.index'],
+            ],
         ],
 
         'assistente_exigir_identificacao' => [
@@ -1625,6 +1949,10 @@ return [
                 ['icone' => 'fa-toggle-on', 'titulo' => 'Ligado, ação de conta só depois de se identificar', 'texto' => 'Segunda via e qualquer consulta à ficha só abrem quando a pessoa informou nome e e-mail; antes disso, o pedido fica na fila e retoma sozinho.'],
                 ['icone' => 'fa-shield-halved', 'titulo' => 'A conferência de dados é outra chave', 'texto' => 'Confirmar documento, nascimento ou placa antes de enviar algo não depende deste interruptor e continua valendo igual.'],
                 ['icone' => 'fa-toggle-off', 'titulo' => 'Desligado serve a quem testa', 'texto' => 'A máquina responde e age desde a primeira frase — útil para conferir o atendimento, não para deixar no ar.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar no chat do site', 'rota' => 'site.home'],
+                ['rotulo' => 'Ver conversas registradas', 'rota' => 'admin.assistente.conversas.index'],
             ],
             'nota' => 'Desligar não enfraquece a verificação de segurança: ela é outra chave, e continua conferindo os dados da ficha antes de qualquer envio.',
         ],
@@ -1647,6 +1975,9 @@ return [
                 ['icone' => 'fa-comment-slash', 'titulo' => 'Pesquisa no "oi" não é pesquisa', 'texto' => 'Quem trocou duas frases e foi embora não tem o que avaliar.'],
                 ['icone' => 'fa-sliders', 'titulo' => 'Aumente se a nota chega no meio do assunto', 'texto' => 'O pedido só acontece depois que a máquina respondeu o suficiente para a pessoa ter opinião.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver notas nas conversas', 'rota' => 'admin.assistente.conversas.index'],
+            ],
         ],
 
         'assistente_verificacao_campos' => [
@@ -1667,6 +1998,9 @@ return [
                 ['icone' => 'fa-balance-scale', 'titulo' => 'É o piso, não o pedido', 'texto' => 'Se a ficha só tem dois dos campos da lista, conferir dois é tudo o que existe.'],
                 ['icone' => 'fa-lock', 'titulo' => 'Um a menos entrega dado para quem não é dono', 'texto' => 'Um a mais custa fricção: a pessoa desiste no meio da conferência.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver fichas de clientes', 'rota' => 'admin.clientes.index'],
+            ],
         ],
 
         'assistente_verificacao_tentativas' => [
@@ -1675,6 +2009,9 @@ return [
                 ['icone' => 'fa-headset', 'titulo' => 'Passou daqui, a equipe assume', 'texto' => 'A conversa é escalada e nada é enviado — quem errou duas vezes pode ser alguém que não é o dono da conta.'],
                 ['icone' => 'fa-comment-dots', 'titulo' => 'A máquina não diz qual dado errou', 'texto' => 'Ela só repete a pergunta, de propósito: revelar o erro entrega informação a quem está tentando adivinhar.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver conversas escaladas', 'rota' => 'admin.assistente.conversas.index'],
+            ],
         ],
 
         'assistente_verificacao_minutos' => [
@@ -1682,6 +2019,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-hourglass-end', 'titulo' => 'Uma hora parada não é a pessoa no computador', 'texto' => 'Vencido o prazo, os acertos são esquecidos e a conferência recomeça do zero.'],
                 ['icone' => 'fa-shield-halved', 'titulo' => 'Encurte em dispositivo compartilhado', 'texto' => 'Tablet de escritório ou computador da frota: a janela curta evita que outra pessoa continue a conversa começada.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver conversas do chat', 'rota' => 'admin.assistente.conversas.index'],
             ],
         ],
 
@@ -1704,6 +2044,10 @@ return [
                 ['icone' => 'fa-file-audio', 'titulo' => 'A gravação respeita os limites de tamanho', 'texto' => 'Duração máxima e tamanho máximo estão nos campos de mídia, abaixo.'],
                 ['icone' => 'fa-mobile-screen', 'titulo' => 'Vale a pena no celular', 'texto' => 'Quem está no carro fala em vez de digitar — é o atalho mais usado por quem liga sobre o veículo.'],
             ],
+            'links' => [
+                ['rotulo' => 'Áudio no Gemini', 'url' => 'https://ai.google.dev/gemini-api/docs/audio'],
+                ['rotulo' => 'Testar no chat do site', 'rota' => 'site.home'],
+            ],
         ],
 
         'assistente_imagem' => [
@@ -1711,6 +2055,10 @@ return [
             'passos' => [
                 ['icone' => 'fa-eye', 'titulo' => 'Depende do modelo de visão', 'texto' => 'A imagem é lida pelo modelo escolhido no grupo de modelos; sem ele, o envio fica desligado.'],
                 ['icone' => 'fa-camera', 'titulo' => 'Bom para o que é difícil descrever', 'texto' => 'Luz acesa no rastreador, etiqueta do aparelho, tela com erro — tudo o que a pessoa não sabe escrever.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Visão computacional no Gemini', 'url' => 'https://ai.google.dev/gemini-api/docs/image-understanding'],
+                ['rotulo' => 'Testar no chat do site', 'rota' => 'site.home'],
             ],
         ],
 
@@ -1720,6 +2068,10 @@ return [
                 ['icone' => 'fa-file-pdf', 'titulo' => 'Só liga com um modelo de leitura de documento', 'texto' => 'Escolha a capacidade no grupo de modelos; sem isso, a tela avisa em vez de responder vazio.'],
                 ['icone' => 'fa-scissors', 'titulo' => 'Documento longo é cortado', 'texto' => 'O texto aproveitado é limitado em caracteres, e o modelo só responde com o que entrou.'],
             ],
+            'links' => [
+                ['rotulo' => 'Documentos e PDF no Gemini', 'url' => 'https://ai.google.dev/gemini-api/docs/document-processing'],
+                ['rotulo' => 'Testar no chat do site', 'rota' => 'site.home'],
+            ],
         ],
 
         'assistente_audio_saida' => [
@@ -1728,6 +2080,10 @@ return [
                 ['icone' => 'fa-coins', 'titulo' => 'Ligado custa por caractere', 'texto' => 'A resposta em texto continua vindo junto e não muda de preço; o áudio é o extra.'],
                 ['icone' => 'fa-volume-high', 'titulo' => 'Depende do modelo de voz', 'texto' => 'Sem capacidade de voz escolhida, nada é falado, mesmo com o interruptor ligado.'],
                 ['icone' => 'fa-ear-listen', 'titulo' => 'Deixe a pessoa escolher ouvir', 'texto' => 'O play aparece na mensagem: quem está em reunião não é obrigado a escutar.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Síntese de voz na OpenAI', 'url' => 'https://platform.openai.com/docs/guides/text-to-speech'],
+                ['rotulo' => 'Escolher voz na ficha do assistente', 'rota' => 'admin.assistente.persona'],
             ],
         ],
 
@@ -1749,6 +2105,9 @@ return [
                 ['icone' => 'fa-stopwatch', 'titulo' => 'Sessenta segundos chega para uma pergunta', 'texto' => 'Áudio mais longo é ditado, não pergunta — e ditado é o que estoura a transcrição.'],
                 ['icone' => 'fa-triangle-exclamation', 'titulo' => 'Passou do limite, a tela avisa', 'texto' => 'A mensagem volta com o motivo em português, em vez de transcrever um pedaço e responder torto.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver conversas do assistente', 'rota' => 'admin.assistente.conversas.index'],
+            ],
         ],
 
         'assistente_audio_mb' => [
@@ -1756,6 +2115,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-weight-hanging', 'titulo' => 'A moldura é de segurança, não de qualidade', 'texto' => 'Um arquivo enorme no chat não é conversa: é tráfego que custa e pode travar a fila.'],
                 ['icone' => 'fa-mobile', 'titulo' => 'Lembre da rede do cliente', 'texto' => 'Quem manda áudio de dentro do carro está em rede de celular; arquivo pesado demora e falha.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar envio de áudio no site', 'rota' => 'site.home'],
             ],
         ],
 
@@ -1765,6 +2127,9 @@ return [
                 ['icone' => 'fa-camera-retro', 'titulo' => 'Foto de celular hoje passa dos 5 MB', 'texto' => 'Um teto apertado demais recusa a foto que o cliente mais manda; meio caminho é o que cabe em rede de celular.'],
                 ['icone' => 'fa-compress', 'titulo' => 'A leitura não precisa de resolução de impressão', 'texto' => 'O modelo de visão trabalha com muito menos pixels do que a câmera entrega.'],
             ],
+            'links' => [
+                ['rotulo' => 'Testar envio de imagem no site', 'rota' => 'site.home'],
+            ],
         ],
 
         'assistente_documento_mb' => [
@@ -1772,6 +2137,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-file-lines', 'titulo' => 'Contrato e nota fiscal cabem em poucos megabytes', 'texto' => 'PDF escaneado em alta resolução é o que estoura: um limite baixo ensina o cliente a comprimir antes de mandar.'],
                 ['icone' => 'fa-scissors', 'titulo' => 'Combine com o texto aproveitado', 'texto' => 'Documento grande com pouco texto lido responde pior que documento pequeno bem lido.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Testar anexo no site', 'rota' => 'site.home'],
             ],
         ],
 
@@ -1782,6 +2150,9 @@ return [
                 ['icone' => 'fa-scissors', 'titulo' => 'O que passa do teto é omitido', 'texto' => 'A leitura para no limite e o modelo recebe um aviso de que o restante ficou de fora; ele deve dizer isso em vez de completar.'],
                 ['icone' => 'fa-coins', 'titulo' => 'Documento longo custa por chamada', 'texto' => 'Todo texto levado é cobrado como entrada. Um contrato de poucas páginas cabe folgado no padrão da casa.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver conversas com anexos', 'rota' => 'admin.assistente.conversas.index'],
+            ],
         ],
 
         'assistente_resposta_audio_mb' => [
@@ -1789,6 +2160,9 @@ return [
             'passos' => [
                 ['icone' => 'fa-file-audio', 'titulo' => 'É o freio do texto longo falado', 'texto' => 'Resposta grande demais vira arquivo que não abre no celular — e o cliente nem sabe que veio.'],
                 ['icone' => 'fa-align-left', 'titulo' => 'O texto continua vindo inteiro', 'texto' => 'Se o áudio estourar o teto, a resposta escrita chega do mesmo jeito.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver ficha do assistente', 'rota' => 'admin.assistente.persona'],
             ],
         ],
 
@@ -1799,6 +2173,9 @@ return [
                 ['icone' => 'fa-coins', 'titulo' => 'Custo acompanha o tamanho', 'texto' => 'Cada caractere de saída é cobrado; responder longo a toda pergunta multiplica a conta sem multiplicar a solução.'],
                 ['icone' => 'fa-eraser', 'titulo' => 'Em branco, vale o padrão da casa', 'texto' => 'Este campo é ajuste fino, não configuração obrigatória.'],
             ],
+            'links' => [
+                ['rotulo' => 'Ver respostas nas conversas', 'rota' => 'admin.assistente.conversas.index'],
+            ],
         ],
 
         'assistente_historico' => [
@@ -1807,6 +2184,9 @@ return [
                 ['icone' => 'fa-clock-rotate-left', 'titulo' => 'É memória de curto prazo, não arquivo', 'texto' => 'A conversa inteira continua gravada no painel; aqui se decide quanto dela vai junto na próxima pergunta.'],
                 ['icone' => 'fa-bullseye', 'titulo' => 'Pouco faz a máquina esquecer', 'texto' => 'Quem responde "como eu disse antes?" levou histórico de menos.'],
                 ['icone' => 'fa-coins', 'titulo' => 'Muito custa por chamada', 'texto' => 'Todo histórico levado é cobrado como entrada, mesmo o que não foi usado.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Ver histórico das conversas', 'rota' => 'admin.assistente.conversas.index'],
             ],
         ],
 
@@ -1829,6 +2209,9 @@ return [
                 ['icone' => 'fa-coins', 'titulo' => 'Muitos itens custam por chamada', 'texto' => 'Cada item levado é texto de entrada cobrado, e parte dele não será usado.'],
                 ['icone' => 'fa-sliders', 'titulo' => 'Ajuste pelo tipo de pergunta', 'texto' => 'Catálogo de produto pede mais itens que "qual o horário de atendimento".'],
             ],
+            'links' => [
+                ['rotulo' => 'Abrir base de conhecimento', 'rota' => 'admin.assistente.conhecimento.index'],
+            ],
         ],
 
         'assistente-aprendizado' => [
@@ -1838,6 +2221,10 @@ return [
                 ['icone' => 'fa-clock', 'titulo' => 'Dê a cadência', 'texto' => 'A cada quantos dias reler, quantas páginas por rodada e quantos caracteres aproveitar de cada página. Comece conservador.'],
                 ['icone' => 'fa-graduation-cap', 'titulo' => 'Rode a primeira leitura agora', 'texto' => 'Atendimento → Assistente virtual → conhecimento: "Aprender da internet" roda na hora, sem esperar o agendador.'],
                 ['icone' => 'fa-magnifying-glass', 'titulo' => 'Confira o que entrou', 'texto' => 'Cada item traz procedência, endereço de origem e data de leitura. O que não tem fonte não é respondido.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir base de conhecimento', 'rota' => 'admin.assistente.conhecimento.index'],
+                ['rotulo' => 'Ver site que será lido', 'rota' => 'site.home'],
             ],
             'nota' => 'O agendador da hospedagem precisa estar vivo para a releitura automática acontecer; sem cron, nada é lido sozinho.',
         ],
@@ -1886,6 +2273,9 @@ return [
                 ['icone' => 'fa-hourglass-half', 'titulo' => 'Site grande se lê em várias rodadas', 'texto' => 'O que coube na rodada de hoje é lido; o resto espera a próxima, sem perder o que já entrou.'],
                 ['icone' => 'fa-triangle-exclamation', 'titulo' => 'Rodada grande pesa no servidor', 'texto' => 'Cem páginas por vez é leitura longa e custo de modelo alto; comece com o que cabe numa tarde.'],
             ],
+            'links' => [
+                ['rotulo' => 'Abrir base de conhecimento', 'rota' => 'admin.assistente.conhecimento.index'],
+            ],
         ],
 
         'assistente_leitura_caracteres' => [
@@ -1894,6 +2284,9 @@ return [
                 ['icone' => 'fa-align-left', 'titulo' => 'É o corte do texto lido', 'texto' => 'Passou deste ponto, a página é resumida só com o que coube — e o que ficou de fora não é respondido.'],
                 ['icone' => 'fa-compress', 'titulo' => 'Página de catálogo rende mais que página de blog', 'texto' => 'O que importa costuma estar no começo; aumentar o teto serve a manual longo, não a página de vendas.'],
                 ['icone' => 'fa-coins', 'titulo' => 'O teto controla o custo', 'texto' => 'Cada caractere lido entra no resumo feito pelo modelo, e a cobrança é proporcional a isso.'],
+            ],
+            'links' => [
+                ['rotulo' => 'Abrir base de conhecimento', 'rota' => 'admin.assistente.conhecimento.index'],
             ],
         ],
     ],
