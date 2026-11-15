@@ -81,7 +81,7 @@ document.addEventListener('submit', function (evento) {
 });
 @endif
 
-@foreach (['success' => 'sucesso', 'status' => 'sucesso', 'info' => 'info', 'warning' => 'aviso', 'error' => 'erro'] as $chave => $metodo)
+@foreach (['success' => 'sucesso', 'sucesso' => 'sucesso', 'status' => 'sucesso', 'info' => 'info', 'warning' => 'aviso', 'aviso' => 'aviso', 'error' => 'erro', 'erro' => 'erro'] as $chave => $metodo)
     @if (session($chave))
         GoldenAvisos.{{ $metodo }}(@js(session($chave)));
     @endif

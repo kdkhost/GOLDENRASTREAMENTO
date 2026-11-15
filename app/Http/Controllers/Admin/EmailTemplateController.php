@@ -10,6 +10,7 @@ use App\Services\Mail\FilaDeEmailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -108,6 +109,12 @@ class EmailTemplateController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $chaveSanitizada = $this->sanitizarChave(
+            (string) $request->input('chave', ''),
+            (string) $request->input('nome', '')
+        );
+        $request->merge(['chave' => $chaveSanitizada]);
+
         $dados = $request->validate([
             'chave' => 'required|string|max:80|regex:/^[a-z0-9_-]+$/|unique:email_templates,chave',
             'nome' => 'required|string|max:140',
@@ -119,20 +126,22 @@ class EmailTemplateController extends Controller
             'corpo_texto' => 'nullable|string',
             'usar_layout' => 'nullable|boolean',
             'ativo' => 'nullable|boolean',
+            'variaveis_custom' => 'nullable|array',
+            'variaveis_custom.*' => 'nullable|string|max:160',
+            'salvar_layout_junto' => 'nullable|boolean',
+            'layout' => 'nullable|array',
         ]);
 
-        $textoTotal = $dados['assunto'].' '.($dados['pre_cabecalho'] ?? '').' '.$dados['corpo_html'];
-        preg_match_all('/\{\{\s*([a-z0-9_]+)\s*\}\}/i', $textoTotal, $matches);
-        $variaveis = ['cliente_nome' => 'Nome do destinatário', 'empresa_nome' => 'Nome da empresa'];
-        foreach ($matches[1] ?? [] as $token) {
-            $tokenLimpo = trim((string) $token);
-            if ($tokenLimpo !== '' && ! array_key_exists($tokenLimpo, $variaveis)) {
-                $variaveis[$tokenLimpo] = 'Variável personalizada '.$tokenLimpo;
-            }
-        }
+        $textoTotal = $dados['assunto'].' '.($dados['pre_cabecalho'] ?? '').' '.$dados['corpo_html'].' '.($dados['corpo_texto'] ?? '');
+        $variaveis = $this->montarVariaveisDoTemplate(
+            $textoTotal,
+            ['cliente_nome' => 'Nome do destinatário', 'empresa_nome' => 'Nome da empresa'],
+            $request->input('variaveis_custom', []),
+            $request->boolean('variaveis_custom_presente')
+        );
 
         $template = EmailTemplate::create([
-            'chave' => strtolower(trim($dados['chave'])),
+            'chave' => $dados['chave'],
             'nome' => $dados['nome'],
             'categoria' => $dados['categoria'],
             'descricao' => $dados['descricao'] ?? '',
@@ -141,10 +150,14 @@ class EmailTemplateController extends Controller
             'corpo_html' => $dados['corpo_html'],
             'corpo_texto' => $dados['corpo_texto'] ?? null,
             'variaveis' => $variaveis,
-            'rota_preview' => '/admin/templates-email/'.strtolower(trim($dados['chave'])),
+            'rota_preview' => '/admin/templates-email/'.$dados['chave'],
             'usar_layout' => $request->boolean('usar_layout', true),
             'ativo' => $request->boolean('ativo', true),
         ]);
+
+        if ($request->boolean('salvar_layout_junto') && is_array($request->input('layout'))) {
+            $this->templateService->salvarLayout($this->normalizarLayoutInline($request->input('layout')));
+        }
 
         return redirect()
             ->route('admin.templates-email.edit', $template->chave)
@@ -187,7 +200,20 @@ class EmailTemplateController extends Controller
             'corpo_texto' => 'nullable|string',
             'usar_layout' => 'nullable|boolean',
             'ativo' => 'nullable|boolean',
+            'variaveis_custom' => 'nullable|array',
+            'variaveis_custom.*' => 'nullable|string|max:160',
+            'salvar_layout_junto' => 'nullable|boolean',
+            'layout' => 'nullable|array',
         ]);
+
+        $textoTotal = $dados['assunto'].' '.($dados['pre_cabecalho'] ?? '').' '.$dados['corpo_html'].' '.($dados['corpo_texto'] ?? '');
+        $variaveisExistentes = is_array($template->variaveis) ? $template->variaveis : [];
+        $variaveisAtualizadas = $this->montarVariaveisDoTemplate(
+            $textoTotal,
+            $variaveisExistentes,
+            $request->input('variaveis_custom', []),
+            $request->boolean('variaveis_custom_presente')
+        );
 
         $atualizar = [
             'nome' => $dados['nome'],
@@ -195,6 +221,7 @@ class EmailTemplateController extends Controller
             'pre_cabecalho' => $dados['pre_cabecalho'] ?? '',
             'corpo_html' => $dados['corpo_html'],
             'corpo_texto' => $dados['corpo_texto'] ?? null,
+            'variaveis' => $variaveisAtualizadas,
             'usar_layout' => $request->boolean('usar_layout'),
             'ativo' => $request->boolean('ativo'),
         ];
@@ -207,6 +234,10 @@ class EmailTemplateController extends Controller
         }
 
         $template->update($atualizar);
+
+        if ($request->boolean('salvar_layout_junto') && is_array($request->input('layout'))) {
+            $this->templateService->salvarLayout($this->normalizarLayoutInline($request->input('layout')));
+        }
 
         return redirect()
             ->route('admin.templates-email.edit', $template->chave)
@@ -239,10 +270,13 @@ class EmailTemplateController extends Controller
             }
         }
 
+        $layoutBruto = $request->input('layout');
+        $layoutOverride = is_array($layoutBruto) ? $this->normalizarLayoutInline($layoutBruto) : null;
+
         $renderizado = $this->templateService->renderizarPorChave(
             $chave,
             $variaveis,
-            null,
+            $layoutOverride,
             $request->has('corpo_html') ? (string) $request->input('corpo_html') : null,
             $request->has('assunto') ? (string) $request->input('assunto') : null,
             $request->has('pre_cabecalho') ? (string) $request->input('pre_cabecalho') : null,
@@ -256,8 +290,88 @@ class EmailTemplateController extends Controller
             'pre_cabecalho' => $renderizado['pre_cabecalho'],
             'html' => $renderizado['html'],
             'corpo_html_resolvido' => $renderizado['corpo_html_resolvido'],
+            'texto' => $renderizado['texto'],
             'usar_layout' => $renderizado['usar_layout'],
         ]);
+    }
+
+    /**
+     * Higieniza a chave técnica do template preservando underscores e hifens.
+     */
+    private function sanitizarChave(string $valorBruto, string $fallbackNome): string
+    {
+        $base = trim($valorBruto) !== '' ? $valorBruto : $fallbackNome;
+        $ascii = Str::ascii(mb_strtolower(trim($base)));
+        $limpo = (string) preg_replace('/[^a-z0-9_-]+/', '_', $ascii);
+
+        return substr(trim($limpo, '_-'), 0, 80);
+    }
+
+    /**
+     * Mescla variáveis declaradas no editor com tokens {{chave}} detectados no texto.
+     *
+     * @param  array<string, string>  $base
+     * @return array<string, string>
+     */
+    private function montarVariaveisDoTemplate(
+        string $textoTotal,
+        array $base,
+        mixed $variaveisCustom,
+        bool $substituirMapaDeclarado
+    ): array {
+        $variaveis = $substituirMapaDeclarado ? [] : $base;
+
+        if (is_array($variaveisCustom)) {
+            foreach ($variaveisCustom as $chaveVar => $descVar) {
+                $token = trim((string) preg_replace('/[^a-z0-9_]+/', '_', Str::ascii(mb_strtolower((string) $chaveVar))), '_');
+                if ($token === '') {
+                    continue;
+                }
+                $descricaoLimpa = trim((string) $descVar);
+                $variaveis[$token] = $descricaoLimpa !== '' ? $descricaoLimpa : 'Variável personalizada '.$token;
+            }
+        }
+
+        preg_match_all('/\{\{\s*([a-z0-9_]+)\s*\}\}/i', $textoTotal, $matches);
+        foreach ($matches[1] ?? [] as $token) {
+            $tokenLimpo = trim((string) $token);
+            if ($tokenLimpo !== '' && ! array_key_exists($tokenLimpo, $variaveis)) {
+                $variaveis[$tokenLimpo] = $base[$tokenLimpo] ?? ('Variável personalizada '.$tokenLimpo);
+            }
+        }
+
+        return $variaveis;
+    }
+
+    /**
+     * Normaliza um array de layout enviado inline pela tela do template.
+     *
+     * @param  array<string, mixed>  $dados
+     * @return array<string, mixed>
+     */
+    private function normalizarLayoutInline(array $dados): array
+    {
+        $resultado = $this->templateService->layoutAtual();
+
+        foreach ($resultado as $chave => $valorAtual) {
+            if (! array_key_exists($chave, $dados)) {
+                continue;
+            }
+
+            if (is_bool($valorAtual)) {
+                $resultado[$chave] = filter_var($dados[$chave], FILTER_VALIDATE_BOOLEAN);
+            } elseif (is_int($valorAtual)) {
+                $numero = (int) $dados[$chave];
+                $resultado[$chave] = $chave === 'largura_maxima_px'
+                    ? max(440, min(720, $numero))
+                    : max(0, min(28, $numero));
+            } else {
+                $valor = (string) ($dados[$chave] ?? '');
+                $resultado[$chave] = $chave === 'css_adicional' ? golden_texto_puro($valor) : $valor;
+            }
+        }
+
+        return $resultado;
     }
 
     public function enviarTeste(Request $request, string $chave): RedirectResponse

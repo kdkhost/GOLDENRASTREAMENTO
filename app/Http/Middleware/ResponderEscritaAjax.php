@@ -31,10 +31,13 @@ class ResponderEscritaAjax
      */
     private const AVISOS = [
         'success' => 'sucesso',
+        'sucesso' => 'sucesso',
         'status' => 'sucesso',
         'info' => 'info',
         'warning' => 'aviso',
+        'aviso' => 'aviso',
         'error' => 'erro',
+        'erro' => 'erro',
     ];
 
     public function handle(Request $request, Closure $next): Response

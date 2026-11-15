@@ -465,6 +465,10 @@ class FaturaPdfService
             }
         }
 
+        $pagaEmBruto = ($bruta['paga_em'] ?? null) !== null && trim((string) $bruta['paga_em']) !== ''
+            ? $bruta['paga_em']
+            : ($bruta['pagamento_data'] ?? null);
+
         return [
             'id' => (int) ($bruta['id'] ?? $padrao['id']),
             'numero' => (string) ($bruta['numero'] ?? $bruta['id'] ?? $padrao['numero']),
@@ -472,7 +476,7 @@ class FaturaPdfService
             'status_rotulo' => (string) ($bruta['status_rotulo'] ?? $this->rotuloStatus((string) ($bruta['status'] ?? 'Unpaid'))),
             'emitida' => $this->formatarData($bruta['emitida'] ?? null),
             'vencimento' => $this->formatarData($bruta['vencimento'] ?? null),
-            'paga_em' => $this->formatarData($bruta['paga_em'] ?? null),
+            'paga_em' => $this->formatarData($pagaEmBruto),
             'subtotal_cents' => (int) ($bruta['subtotal_cents'] ?? $totalCents),
             'credito_cents' => (int) ($bruta['credito_cents'] ?? $bruta['credito_aplicado_cents'] ?? 0),
             'imposto_cents' => (int) ($bruta['imposto_cents'] ?? 0),

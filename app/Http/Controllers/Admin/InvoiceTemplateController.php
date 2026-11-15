@@ -119,6 +119,10 @@ class InvoiceTemplateController extends Controller
         $mesclada = array_merge($base, $sobrescrita);
         $mesclada['cliente'] = array_merge($clienteBase, $clienteNovo);
 
+        if (array_key_exists('pagamento_data', $sobrescrita) && ! array_key_exists('paga_em', $sobrescrita)) {
+            $mesclada['paga_em'] = $sobrescrita['pagamento_data'];
+        }
+
         if (isset($sobrescrita['status']) && ! array_key_exists('status_rotulo', $sobrescrita)) {
             unset($mesclada['status_rotulo']);
         }
@@ -295,7 +299,12 @@ class InvoiceTemplateController extends Controller
         ]);
 
         $faturaId = (int) ($dados['whmcs_invoice_id'] ?? 0);
-        $faturaBruta = $faturaId > 0 ? $this->whmcs->detalharFatura($faturaId) : null;
+        if ($faturaId > 0) {
+            $faturaBruta = $this->whmcs->detalharFatura($faturaId);
+        } else {
+            $estadoRascunho = $this->resolverEstadoPreview($request, true);
+            $faturaBruta = $estadoRascunho['fatura'] ?? null;
+        }
         $fatura = $this->pdfService->normalizarFatura($faturaBruta ?? $this->pdfService->faturaExemplo());
 
         $valorFormatado = 'R$ '.number_format($fatura['total_cents'] / 100, 2, ',', '.');

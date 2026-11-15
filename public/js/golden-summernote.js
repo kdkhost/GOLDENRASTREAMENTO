@@ -140,10 +140,16 @@
     }
 
     function editorDoTextarea(textarea) {
-        var proximo = textarea ? textarea.nextElementSibling : null;
+        var atual = textarea ? textarea.nextElementSibling : null;
 
-        if (proximo && proximo.classList && proximo.classList.contains('note-editor')) {
-            return proximo;
+        for (var passo = 0; passo < 4 && atual; passo++) {
+            if (atual.classList && atual.classList.contains('note-editor')) {
+                return atual;
+            }
+            if (!atual.classList || (!atual.classList.contains('invalid-feedback') && !atual.classList.contains('valid-feedback') && !atual.classList.contains('form-text'))) {
+                break;
+            }
+            atual = atual.nextElementSibling;
         }
 
         return null;
@@ -179,12 +185,13 @@
         }
 
         var valorFinal = obterHtmlDoEditor(textarea);
+        var mudou = textarea.value !== valorFinal;
 
-        if (textarea.value !== valorFinal) {
+        if (mudou) {
             textarea.value = valorFinal;
         }
 
-        if (dispararInput && !textarea._goldenSnSilencioso) {
+        if (dispararInput && (mudou || dispararChange) && !textarea._goldenSnSilencioso) {
             textarea._goldenSnSilencioso = true;
             try {
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
@@ -328,16 +335,22 @@
                         });
 
                         if (typeof MutationObserver !== 'undefined') {
+                            var frameObs = null;
                             var obsEditable = new MutationObserver(function () {
-                                if (!textarea._goldenSnSilencioso) {
-                                    sincronizarParaTextarea(textarea, true, false);
+                                if (textarea._goldenSnSilencioso || frameObs !== null) {
+                                    return;
                                 }
+                                frameObs = window.requestAnimationFrame(function () {
+                                    frameObs = null;
+                                    if (!textarea._goldenSnSilencioso) {
+                                        sincronizarParaTextarea(textarea, true, false);
+                                    }
+                                });
                             });
                             obsEditable.observe(editable, {
                                 childList: true,
                                 subtree: true,
-                                characterData: true,
-                                attributes: true
+                                characterData: true
                             });
                         }
                     }
@@ -454,6 +467,35 @@
         var $ta = window.jQuery(textarea);
         $ta.summernote('focus');
         $ta.summernote('insertText', texto);
+        sincronizarParaTextarea(textarea, true, false);
+    }
+
+    function inserirHtml(textarea, html) {
+        if (!textarea || !html) {
+            return;
+        }
+
+        if (!jqueryDisponivel() || !window.jQuery(textarea).data('summernote')) {
+            inserirTexto(textarea, html);
+            return;
+        }
+
+        var editor = editorDoTextarea(textarea);
+        var codable = editor ? editor.querySelector('.note-codable') : null;
+
+        if (editor && editor.classList.contains('codeview') && codable) {
+            var cInicio = codable.selectionStart != null ? codable.selectionStart : codable.value.length;
+            var cFim = codable.selectionEnd != null ? codable.selectionEnd : codable.value.length;
+            codable.value = codable.value.slice(0, cInicio) + html + codable.value.slice(cFim);
+            codable.focus();
+            codable.selectionStart = codable.selectionEnd = cInicio + html.length;
+            sincronizarParaTextarea(textarea, true, false);
+            return;
+        }
+
+        var $ta = window.jQuery(textarea);
+        $ta.summernote('focus');
+        $ta.summernote('pasteHTML', html);
         sincronizarParaTextarea(textarea, true, false);
     }
 
@@ -595,6 +637,7 @@
         sincronizarFormulario: sincronizarFormulario,
         sincronizarDoTextarea: sincronizarDoTextareaParaEditor,
         inserirTexto: inserirTexto,
+        inserirHtml: inserirHtml,
         aplicarTema: aplicarTemaNosEditores
     };
 })();

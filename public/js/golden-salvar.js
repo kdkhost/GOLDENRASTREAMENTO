@@ -106,6 +106,10 @@
         evento.preventDefault();
         limparErros(form);
 
+        if (window.GoldenSummernote && typeof window.GoldenSummernote.syncForm === 'function') {
+            window.GoldenSummernote.syncForm(form);
+        }
+
         var pedido = new AbortController();
         emVoo.set(form, pedido);
         controles.forEach(function (par) {
@@ -218,6 +222,16 @@
             || form.querySelector('[name="' + nome + '"]');
     }
 
+    function editorVisualDe(controle) {
+        var proximo = controle ? controle.nextElementSibling : null;
+
+        if (controle && controle.tagName === 'TEXTAREA' && proximo && proximo.classList && proximo.classList.contains('note-editor')) {
+            return proximo;
+        }
+
+        return null;
+    }
+
     function pintarErros(form, campos) {
         var primeiro = null;
 
@@ -229,11 +243,16 @@
             controle.classList.add('is-invalid');
             controle.setAttribute('aria-invalid', 'true');
 
+            var editorVisual = editorVisualDe(controle);
+            if (editorVisual) {
+                editorVisual.classList.add('is-invalid', 'border-danger');
+            }
+
             var caixa = irmaoDeErro(controle);
             caixa.textContent = (campos[nome] || [])[0] || '';
             caixa.hidden = false;
 
-            if (!primeiro) { primeiro = controle; }
+            if (!primeiro) { primeiro = editorVisual || controle; }
         });
 
         if (!primeiro) { return; }
@@ -241,17 +260,24 @@
         abrirAbaDe(primeiro);
         window.requestAnimationFrame(function () {
             primeiro.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            try { primeiro.focus({ preventScroll: true }); } catch (e) { primeiro.focus(); }
+            var editavel = primeiro.classList.contains('note-editor') ? primeiro.querySelector('.note-editable, .note-codable') : primeiro;
+            if (editavel && typeof editavel.focus === 'function') {
+                try { editavel.focus({ preventScroll: true }); } catch (e) { editavel.focus(); }
+            }
         });
     }
 
     function irmaoDeErro(controle) {
+        var editorVisual = editorVisualDe(controle);
+        var ancora = editorVisual || controle;
         var caixa = controle.parentNode.querySelector('.invalid-feedback');
 
         if (!caixa) {
             caixa = document.createElement('div');
             caixa.className = 'invalid-feedback d-block';
-            controle.parentNode.insertBefore(caixa, controle.nextSibling);
+            controle.parentNode.insertBefore(caixa, ancora.nextSibling);
+        } else if (editorVisual && caixa.previousElementSibling === controle) {
+            controle.parentNode.insertBefore(caixa, ancora.nextSibling);
         }
 
         return caixa;
@@ -259,7 +285,7 @@
 
     function limparErros(form) {
         Array.prototype.forEach.call(form.querySelectorAll('.is-invalid'), function (c) {
-            c.classList.remove('is-invalid');
+            c.classList.remove('is-invalid', 'border-danger');
             c.removeAttribute('aria-invalid');
         });
         Array.prototype.forEach.call(form.querySelectorAll('.invalid-feedback'), function (c) {
@@ -268,17 +294,27 @@
         });
     }
 
-    // O campo errado pode estar numa aba fechada: sem abrir a dela, a pessoa veria o vermelho
-    // borda de um painel que não está na tela.
+    // O campo errado pode estar numa aba ou <details> fechada: sem abrir, a pessoa veria
+    // a mensagem sem localizar o campo na tela.
     function abrirAbaDe(controle) {
+        var detalhe = controle.closest('details');
+        while (detalhe) {
+            detalhe.open = true;
+            detalhe = detalhe.parentElement ? detalhe.parentElement.closest('details') : null;
+        }
+
         var painel = controle.closest('[data-aba-painel]');
+        if (painel) {
+            var grupo = painel.closest('[data-abas]');
+            var botao = grupo && grupo.querySelector('[data-aba="' + painel.dataset.abaPainel + '"]');
+            if (botao) { botao.click(); }
+        }
 
-        if (!painel) { return; }
-
-        var grupo = painel.closest('[data-abas]');
-        var botao = grupo && grupo.querySelector('[data-aba="' + painel.dataset.abaPainel + '"]');
-
-        if (botao) { botao.click(); }
+        var tabPane = controle.closest('.tab-pane');
+        if (tabPane && tabPane.id) {
+            var bsBtn = document.querySelector('[data-bs-target="#' + tabPane.id + '"], [href="#' + tabPane.id + '"]');
+            if (bsBtn) { bsBtn.click(); }
+        }
     }
 
     /* ------------------------------------------------------- o que muda sem navegar */

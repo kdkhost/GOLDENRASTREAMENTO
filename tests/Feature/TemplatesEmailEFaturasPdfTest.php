@@ -688,4 +688,145 @@ class TemplatesEmailEFaturasPdfTest extends TestCase
         $this->assertTrue(Route::has('portal.faturas'));
         $this->assertTrue(Route::has('portal.chamados'));
     }
+
+    public function test_editor_template_salva_variaveis_custom_texto_puro_layout_inline_e_simula_cores_em_tempo_real(): void
+    {
+        $this->actingAs($this->admin);
+
+        // 1. Preview ao vivo aceita override inline de layout (cores, marca, HTML extra, switches)
+        $respPreviewInline = $this->postJson(route('admin.templates-email.preview-livre'), [
+            'nome' => 'Alerta Frota Online',
+            'assunto' => 'Placa {{placa}} em alerta',
+            'corpo_html' => '<p>Veículo <strong>{{placa}}</strong> monitorado.</p>',
+            'variaveis_preview' => ['placa' => 'ABC-1D23'],
+            'layout' => [
+                'marca_nome' => 'Golden Telemetria Inline',
+                'cor_botao_bg' => '#112233',
+                'cabecalho_extra_html' => '<span>Central 24h</span>',
+                'mostrar_whatsapp' => '0',
+            ],
+        ]);
+
+        $respPreviewInline->assertOk()
+            ->assertJsonPath('assunto', 'Placa ABC-1D23 em alerta');
+        $htmlInline = (string) $respPreviewInline->json('html');
+        $this->assertStringContainsString('Golden Telemetria Inline', $htmlInline);
+        $this->assertStringContainsString('Central 24h', $htmlInline);
+        $this->assertStringNotContainsString('WhatsApp:', $htmlInline);
+
+        // 2. Store sanitiza chave, salva variaveis_custom, corpo_texto e layout global quando solicitado
+        $respStore = $this->post(route('admin.templates-email.store'), [
+            'chave' => 'Alerta Frota 24h!',
+            'nome' => 'Alerta Frota 24h',
+            'categoria' => 'sistema',
+            'descricao' => 'Notificação de telemetria',
+            'assunto' => 'Alerta {{placa}} · {{rastreador_id}}',
+            'pre_cabecalho' => 'Evento registrado',
+            'corpo_html' => '<p>Placa {{placa}} / Rastreador {{rastreador_id}}</p>',
+            'corpo_texto' => 'Placa {{placa}} / Rastreador {{rastreador_id}} (texto puro)',
+            'variaveis_custom_presente' => '1',
+            'variaveis_custom' => [
+                'placa' => 'Placa do veículo',
+                'rastreador_id' => 'Serial do equipamento',
+            ],
+            'salvar_layout_junto' => '1',
+            'layout' => [
+                'marca_nome' => 'Golden Frota Online',
+                'texto_rodape' => 'Rodapé salvo junto.',
+            ],
+            'usar_layout' => '1',
+            'ativo' => '1',
+        ]);
+
+        $respStore->assertRedirect(route('admin.templates-email.edit', 'alerta_frota_24h'));
+
+        $salvo = EmailTemplate::where('chave', 'alerta_frota_24h')->firstOrFail();
+        $this->assertSame('Placa do veículo', $salvo->variaveis['placa'] ?? null);
+        $this->assertSame('Serial do equipamento', $salvo->variaveis['rastreador_id'] ?? null);
+        $this->assertSame('Placa {{placa}} / Rastreador {{rastreador_id}} (texto puro)', $salvo->corpo_texto);
+
+        $layoutSalvo = app(EmailTemplateService::class)->layoutAtual();
+        $this->assertSame('Golden Frota Online', $layoutSalvo['marca_nome']);
+        $this->assertSame('Rodapé salvo junto.', $layoutSalvo['texto_rodape']);
+
+        // 3. Salvamento AJAX retorna mensagem em português ('sucesso') sem recarregamento
+        $respAjax = $this->putJson(route('admin.templates-email.update', 'alerta_frota_24h'), [
+            'nome' => 'Alerta Frota Atualizado',
+            'categoria' => 'sistema',
+            'assunto' => 'Atualização {{placa}}',
+            'pre_cabecalho' => 'Preheader',
+            'corpo_html' => '<p>Corpo atualizado {{placa}}</p>',
+            'corpo_texto' => 'Corpo texto {{placa}}',
+            'variaveis_custom_presente' => '1',
+            'variaveis_custom' => ['placa' => 'Placa atualizada'],
+            'usar_layout' => '1',
+            'ativo' => '1',
+        ]);
+
+        $respAjax->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('mensagens.0.tipo', 'sucesso');
+
+        // 4. Layout global exibe cabecalho_extra_html e css_adicional sem interferência do Summernote
+        $this->get(route('admin.templates-email.layout'))
+            ->assertOk()
+            ->assertSee('cabecalho_extra_html', false)
+            ->assertSee('id="css_adicional" name="css_adicional" rows="3" data-summernote="false"', false);
+    }
+
+    public function test_estudio_faturas_envia_teste_com_rascunho_ao_vivo_pagamento_data_e_codigo_barras(): void
+    {
+        $this->actingAs($this->admin);
+
+        // Views expõem painéis data-aba-painel e campos pagamento_data / codigo_barras
+        $this->get(route('admin.faturas-modelo.index'))
+            ->assertOk()
+            ->assertSee('data-aba-painel="montador"', false)
+            ->assertSee('data-aba-painel="dados-fatura"', false)
+            ->assertSee('data-fatura-campo="pagamento_data"', false)
+            ->assertSee('data-fatura-campo="codigo_barras"', false);
+
+        $modelo = app(FaturaPdfService::class)->configuracaoAtual();
+        $faturaDraft = [
+            'numero' => 'GR-RASCUNHO-77',
+            'status' => 'Paid',
+            'emitida' => '15/11/2026',
+            'vencimento' => '20/11/2026',
+            'pagamento_data' => '15/11/2026',
+            'codigo_barras' => '23791999900000129903381260000000000000000040',
+            'credito_cents' => 0,
+            'imposto_cents' => 0,
+            'cliente' => [
+                'nome' => 'Cliente Draft AO VIVO',
+            ],
+            'itens' => [
+                [
+                    'descricao' => 'Plano Telemetria Draft',
+                    'quantidade' => 1,
+                    'valor_unitario_cents' => 9990,
+                    'valor_cents' => 9990,
+                ],
+            ],
+        ];
+
+        $this->postJson(route('admin.faturas-modelo.preview'), [
+            'modelo_json' => json_encode($modelo, JSON_THROW_ON_ERROR),
+            'fatura_json' => json_encode($faturaDraft, JSON_THROW_ON_ERROR),
+        ])->assertOk()
+            ->assertJsonPath('numero', 'GR-RASCUNHO-77');
+
+        // Sem whmcs_invoice_id, enviarTeste usa o rascunho em cache de sessão
+        $this->post(route('admin.faturas-modelo.enviar-teste'), [
+            'email_destino' => 'teste-rascunho@golden.com.br',
+        ])->assertRedirect();
+
+        $filaItem = EmailFila::where('destinatario_email', 'teste-rascunho@golden.com.br')
+            ->latest('id')
+            ->firstOrFail();
+
+        $dadosAnexo = $filaItem->anexos[0]['dados'] ?? [];
+        $this->assertSame('GR-RASCUNHO-77', $dadosAnexo['numero'] ?? null);
+        $this->assertSame('15/11/2026', $dadosAnexo['paga_em'] ?? null);
+        $this->assertSame('23791999900000129903381260000000000000000040', $dadosAnexo['codigo_barras'] ?? null);
+    }
 }

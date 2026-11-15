@@ -121,7 +121,7 @@
                                 </div>
                             @endif
                             @if(!empty($layout['cabecalho_extra_html']))
-                                <div style="margin-top:8px;font-size:12px;color:{{ $layout['cor_cabecalho_texto'] ?? '#cfd6dd' }};">
+                                <div data-email-cabecalho-extra-slot style="margin-top:8px;font-size:12px;color:{{ $layout['cor_cabecalho_texto'] ?? '#cfd6dd' }};">
                                     {!! $layout['cabecalho_extra_html'] !!}
                                 </div>
                             @endif

@@ -49,7 +49,7 @@
 
         <div class="tab-content">
             {{-- Aba 1: Arrasta e Solta --}}
-            <div class="tab-pane fade show active" id="aba-montador" role="tabpanel" aria-labelledby="aba-montador-btn">
+            <div class="tab-pane fade show active" id="aba-montador" data-aba-painel="montador" role="tabpanel" aria-labelledby="aba-montador-btn">
                 <x-admin.card title="Blocos da Fatura A4 (Arraste para Reordenar)" icon="fa-up-down-left-right"
                     descricao="A ordem, largura (50% lado a lado ou 100% linha inteira), cores e visibilidade são aplicadas 1:1 no espelho A4 ao lado e no PDF.">
                     <x-slot:actions>
@@ -84,8 +84,8 @@
             </div>
 
             {{-- Aba 2: Dados do Emitente, Margens Cirúrgicas e Paleta --}}
-            <div class="tab-pane fade" id="aba-identidade" role="tabpanel" aria-labelledby="aba-identidade-btn">
-                <form id="formIdentidadeFatura" method="POST" action="{{ route('admin.faturas-modelo.update') }}">
+            <div class="tab-pane fade" id="aba-identidade" data-aba-painel="identidade" role="tabpanel" aria-labelledby="aba-identidade-btn">
+                <form id="formIdentidadeFatura" method="POST" action="{{ route('admin.faturas-modelo.update') }}" data-salvar>
                     @csrf
                     @method('PUT')
                     <input type="hidden" name="gateway_padrao_modulo" value="{{ $estilo['gateway_padrao_modulo'] ?? '' }}" data-estilo-mirror="gateway_padrao_modulo">
@@ -146,7 +146,7 @@
             </div>
 
             {{-- Aba 3: Dados da Fatura · Edição / Criação em Tempo Real --}}
-            <div class="tab-pane fade" id="aba-dados-fatura" role="tabpanel" aria-labelledby="aba-dados-fatura-btn">
+            <div class="tab-pane fade" id="aba-dados-fatura" data-aba-painel="dados-fatura" role="tabpanel" aria-labelledby="aba-dados-fatura-btn">
                 <x-admin.card title="Dados da Fatura · Edição / Criação" icon="fa-file-invoice-dollar"
                     descricao="Edite qualquer campo ou crie uma fatura do zero e acompanhe a renderização em tempo real no arquivo A4 ao lado e no PDF.">
                     <x-slot:actions>
@@ -271,21 +271,41 @@
                                 <label class="form-label small fw-semibold mb-1">Linha Digitável do Boleto</label>
                                 <input type="text" class="form-control form-control-sm font-monospace" data-fatura-campo="linha_digitavel" value="{{ $faturaDemo['linha_digitavel'] }}">
                             </div>
+                            <div class="col-md-7">
+                                <label class="form-label small fw-semibold mb-1">Código de Barras Numérico (44 dígitos)</label>
+                                <input type="text" class="form-control form-control-sm font-monospace" data-fatura-campo="codigo_barras" value="{{ $faturaDemo['codigo_barras'] ?? '' }}" placeholder="23791999900000129903381260000000000000000040">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small fw-semibold mb-1">Data do Pagamento (opcional)</label>
+                                <input type="text" class="form-control form-control-sm" data-fatura-campo="pagamento_data" value="{{ $faturaDemo['paga_em'] ?? '' }}" placeholder="dd/mm/aaaa">
+                            </div>
                             <div class="col-12">
                                 <label class="form-label small fw-semibold mb-1">Observações e Instruções Legais (HTML / Texto)</label>
                                 <textarea id="faturaObservacoesLive" name="fatura_observacoes_live" class="form-control form-control-sm" rows="4"
                                     data-fatura-campo="observacoes" data-summernote-altura="140">{{ $faturaDemo['observacoes'] }}</textarea>
                             </div>
                         </div>
+
+                        <div class="d-flex flex-wrap gap-2 justify-content-end border-top pt-3 mt-3">
+                            <button type="button" id="btnAtualizarAbaDados" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-sync me-1" aria-hidden="true"></i> Aplicar no Espelho A4
+                            </button>
+                            <a href="{{ route('admin.faturas-modelo.imprimir', ['rascunho' => 1]) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-print me-1" aria-hidden="true"></i> Imprimir Rascunho A4
+                            </a>
+                            <a href="{{ route('admin.faturas-modelo.pdf', ['rascunho' => 1]) }}" class="btn btn-sm btn-golden">
+                                <i class="fas fa-file-pdf me-1" aria-hidden="true"></i> Baixar PDF do Rascunho
+                            </a>
+                        </div>
                     </div>
                 </x-admin.card>
             </div>
 
             {{-- Aba 4: Gateway de Pagamento do WHMCS & Plugin Instalável --}}
-            <div class="tab-pane fade" id="aba-whmcs" role="tabpanel" aria-labelledby="aba-whmcs-btn">
+            <div class="tab-pane fade" id="aba-whmcs" data-aba-painel="whmcs" role="tabpanel" aria-labelledby="aba-whmcs-btn">
                 <x-admin.card title="Preferência de Gateway & Chave PIX Fallback" icon="fa-qrcode" class="mb-3"
                     descricao="Alterações aqui refletem imediatamente no espelho A4 ao lado.">
-                    <form id="formWhmcsFatura" method="POST" action="{{ route('admin.faturas-modelo.update') }}" class="row g-3">
+                    <form id="formWhmcsFatura" method="POST" action="{{ route('admin.faturas-modelo.update') }}" class="row g-3" data-salvar>
                         @csrf
                         @method('PUT')
                         @foreach(['emitente_nome', 'emitente_documento', 'emitente_endereco', 'emitente_contato', 'logo_url', 'cor_primaria', 'cor_destaque', 'cor_fundo_bloco', 'cor_borda', 'cor_texto', 'margem_topo_mm', 'margem_lateral_mm', 'margem_inferior_mm', 'tamanho_fonte_pt', 'raio_borda_px', 'rodape_texto'] as $hk)
@@ -378,7 +398,7 @@
                 </x-admin.card>
 
                 <x-admin.card title="Disparar Fatura PDF pela Fila Anti-Spam" icon="fa-paper-plane">
-                    <form method="POST" action="{{ route('admin.faturas-modelo.enviar-teste') }}" class="row g-2">
+                    <form method="POST" action="{{ route('admin.faturas-modelo.enviar-teste') }}" class="row g-2" data-salvar>
                         @csrf
                         <div class="col-12">
                             <label class="form-label small fw-semibold">E-mail do destinatário</label>
@@ -501,8 +521,8 @@
             return;
         }
         el.value = valor || '';
-        if (window.jQuery && window.jQuery(el).data('goldenSummernoteIniciado')) {
-            window.jQuery(el).summernote('code', el.value);
+        if (window.GoldenSummernote && typeof window.GoldenSummernote.sincronizarDoTextarea === 'function') {
+            window.GoldenSummernote.sincronizarDoTextarea(el);
         }
     }
 
@@ -583,7 +603,7 @@
         }
         painelDadosFatura.querySelectorAll('[data-fatura-campo]').forEach((el) => {
             const campo = el.getAttribute('data-fatura-campo');
-            const valor = faturaDados[campo] ?? '';
+            const valor = faturaDados[campo] ?? (campo === 'pagamento_data' ? (faturaDados.paga_em ?? '') : '');
             if (el.tagName === 'TEXTAREA') {
                 definirValorTextareaComEditor(el, valor);
             } else {
@@ -708,7 +728,12 @@
 
         const obsTextarea = document.getElementById('faturaObservacoesLive');
         if (obsTextarea && faturaEditadaManual) {
-            faturaDados.observacoes = obsTextarea.value;
+            faturaDados.observacoes = (window.GoldenSummernote && typeof window.GoldenSummernote.obterHtml === 'function')
+                ? window.GoldenSummernote.obterHtml(obsTextarea)
+                : obsTextarea.value;
+        }
+        if (faturaDados.pagamento_data !== undefined) {
+            faturaDados.paga_em = faturaDados.pagamento_data;
         }
 
         coletarEstiloDeFormulario(formIdentidade);
@@ -1051,6 +1076,10 @@
     });
 
     document.getElementById('btnPreviewManualDnd')?.addEventListener('click', atualizarPreviewA4);
+    document.getElementById('btnAtualizarAbaDados')?.addEventListener('click', () => {
+        faturaEditadaManual = true;
+        atualizarPreviewA4();
+    });
 
     document.querySelectorAll('[data-a4-zoom]').forEach((btn) => {
         btn.addEventListener('click', () => {

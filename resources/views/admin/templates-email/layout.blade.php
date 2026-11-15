@@ -73,8 +73,13 @@
                     <x-admin.field name="rodape_legal" label="Assinatura Legal" :value="$layout['rodape_legal']" col="col-12" :opcional="true" />
 
                     <div class="col-12">
+                        <label for="cabecalho_extra_html" class="form-label small fw-semibold">HTML Extra no Cabeçalho (opcional)</label>
+                        <textarea id="cabecalho_extra_html" name="cabecalho_extra_html" rows="2" data-summernote="false" class="form-control font-monospace small" placeholder="Ex: Atendimento financeiro 24h">{{ $layout['cabecalho_extra_html'] ?? '' }}</textarea>
+                    </div>
+
+                    <div class="col-12">
                         <label for="css_adicional" class="form-label small fw-semibold">CSS Responsivo Extra (opcional)</label>
-                        <textarea id="css_adicional" name="css_adicional" rows="3" class="form-control font-monospace small">{{ $layout['css_adicional'] }}</textarea>
+                        <textarea id="css_adicional" name="css_adicional" rows="3" data-summernote="false" class="form-control font-monospace small">{{ $layout['css_adicional'] }}</textarea>
                     </div>
                 </div>
 
@@ -135,6 +140,7 @@
     if (!form || !iframe) return;
 
     let timer = null;
+    let frameLayoutRaf = null;
     let controller = null;
     let versaoEdicao = 0;
     let usuarioJaEditou = false;
@@ -202,6 +208,23 @@
             if (headerCell) {
                 headerCell.setAttribute('align', alinhamento);
                 if (corCabBg) headerCell.style.backgroundColor = corCabBg;
+
+                const extraHtml = valorCampo('cabecalho_extra_html').trim();
+                let cabExtraSlot = doc.querySelector('[data-email-cabecalho-extra-slot]');
+                if (extraHtml !== '') {
+                    if (!cabExtraSlot) {
+                        cabExtraSlot = doc.createElement('div');
+                        cabExtraSlot.setAttribute('data-email-cabecalho-extra-slot', '');
+                        cabExtraSlot.style.marginTop = '8px';
+                        cabExtraSlot.style.fontSize = '12px';
+                        headerCell.appendChild(cabExtraSlot);
+                    }
+                    cabExtraSlot.style.display = '';
+                    if (corCabTxt) cabExtraSlot.style.color = corCabTxt;
+                    cabExtraSlot.innerHTML = extraHtml;
+                } else if (cabExtraSlot) {
+                    cabExtraSlot.style.display = 'none';
+                }
             }
 
             const logoSlot = doc.querySelector('[data-email-logo-slot]');
@@ -330,10 +353,16 @@
     };
 
     function marcarEdicaoLayout() {
-        versaoEdicao++;
-        usuarioJaEditou = true;
-        atualizarLayoutInstantaneo();
-        agendar();
+        if (frameLayoutRaf !== null) {
+            return;
+        }
+        frameLayoutRaf = window.requestAnimationFrame(() => {
+            frameLayoutRaf = null;
+            versaoEdicao++;
+            usuarioJaEditou = true;
+            atualizarLayoutInstantaneo();
+            agendar();
+        });
     }
 
     iframe.addEventListener('load', () => {
@@ -342,38 +371,10 @@
         }
     });
 
-    ['input', 'keyup', 'paste', 'cut', 'golden:summernote-input'].forEach((ev) => {
+    ['input', 'change'].forEach((ev) => {
         form.addEventListener(ev, marcarEdicaoLayout);
     });
-    form.addEventListener('change', () => {
-        versaoEdicao++;
-        usuarioJaEditou = true;
-        atualizarLayoutInstantaneo();
-        renderizar();
-    });
     sel?.addEventListener('change', renderizar);
-
-    ['input', 'keyup', 'paste', 'cut'].forEach((ev) => {
-        document.addEventListener(ev, (evento) => {
-            const alvo = evento.target instanceof Element ? evento.target : null;
-            if (!alvo || !cssTextarea) return;
-            const editor = alvo.closest('.note-editor');
-            if (!editor) return;
-            if (editor.previousElementSibling === cssTextarea && (alvo.classList.contains('note-editable') || alvo.closest('.note-editable') || alvo.classList.contains('note-codable'))) {
-                if (ev === 'paste' || ev === 'cut') {
-                    window.setTimeout(marcarEdicaoLayout, 0);
-                } else {
-                    marcarEdicaoLayout();
-                }
-            }
-        }, true);
-    });
-
-    window.addEventListener('DOMContentLoaded', () => {
-        if (window.jQuery && cssTextarea) {
-            window.jQuery(cssTextarea).on('summernote.change summernote.keyup summernote.paste summernote.codeview.toggled', marcarEdicaoLayout);
-        }
-    });
 
     document.querySelectorAll('[data-layout-viewport]').forEach((btn) => {
         btn.addEventListener('click', () => {
