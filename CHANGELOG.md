@@ -3,6 +3,29 @@
 Todo o registro de mudanças notáveis deste projeto. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o projeto usa Versionamento Semântico.
 
+## [2.65.0] - 2026-11-15
+
+### Adicionado
+- Integração completa de frete via **Melhor Envio API v2** (cotação automática, ambiente sandbox/produção, dimensões e peso padrão, prazo e taxa adicionais, e seleção de transportadoras).
+- **Preloader personalizado Golden** com ativação/desativação independente para o site público e painel administrativo, escolha de estilo de animação, título e cor de destaque.
+- Tooltips globais modernos substituindo atributos `title` nativos no painel e site.
+- Botão no painel administrativo para **limpar cache do sistema** diretamente sem depender exclusivamente de cron.
+- Animações leves de scroll e otimização progressiva de seções e imagens no site público.
+- Exclusão de campanhas pausadas ou já removidas no Google Ads mantendo o histórico de leads.
+- Toast ao adicionar produto ao carrinho, cálculo de frete com retorno instantâneo da localidade do CEP e navegação/filtros da loja sem recarregamento completo.
+- Instruções de uso individuais (`?`) em todos os cartões e campos de configuração que ainda não possuíam guia em `config/guia_configuracao.php` (contato oficial, endereço, regras da loja, transportadoras, Melhor Envio, consentimento/medição, testes WHMCS/e-mail, ambiente do sistema e preloader).
+
+### Alterado
+- Reorganização da aba **Loja & Logística** (`/admin/configuracao#loja`) em sub-abas limpas e estruturadas.
+- Substituição das cores azuis padrão do Bootstrap pela paleta dourada Golden em todo o painel administrativo.
+- Personalização global das barras de rolagem (scrollbars) integradas à identidade visual da plataforma.
+
+### Corrigido
+- Loop infinito de carregamento na página `/admin/google-ads` ao filtrar campanhas com status `REMOVED` e atualizar cache sem travar a interface.
+- Erro 500 na view do dashboard Google Ads ao substituir `hasRole` por `isAdmin`.
+- Blocos com fundo claro hardcoded no modo escuro em páginas administrativas.
+- Botão de diminuir quantidade e fluxo AJAX do carrinho na loja sem exibir frete grátis antes da validação do CEP.
+
 ## [2.64.0] - 2026-11-12
 
 ### Adicionado

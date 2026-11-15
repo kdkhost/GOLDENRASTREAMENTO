@@ -371,6 +371,210 @@ return [
             ],
         ],
 
+        'contato_oficial' => [
+            'titulo' => 'Contato oficial da empresa',
+            'onde' => 'Define WhatsApp, telefone, e-mail e horário de atendimento exibidos no site e nos alertas.',
+            'passos' => [
+                ['icone' => 'fa-phone', 'titulo' => 'Padrão internacional no WhatsApp', 'texto' => 'Use DDI + DDD + número sem espaços (ex.: 5537999999999) para os links wa.me funcionarem.'],
+                ['icone' => 'fa-envelope', 'titulo' => 'E-mail institucional', 'texto' => 'Aparece no rodapé do site, formulários de contato e rodapé dos e-mails transacionais.'],
+            ],
+        ],
+
+        'endereco_empresa' => [
+            'titulo' => 'Endereço da empresa',
+            'onde' => 'Endereço exibido no rodapé, página de contato e opção de retirada presencial na loja.',
+            'passos' => [
+                ['icone' => 'fa-location-dot', 'titulo' => 'Preencha completo', 'texto' => 'Informe rua, número, bairro, cidade/UF e CEP para orientar clientes e coletas.'],
+            ],
+        ],
+
+        'loja_regras' => [
+            'titulo' => 'Regras Comerciais & Pagamento',
+            'onde' => 'Controla frete fixo padrão, meta de frete grátis, retirada na sede, chave Pix e alertas de venda.',
+            'passos' => [
+                ['icone' => 'fa-truck', 'titulo' => 'Frete grátis só após CEP', 'texto' => 'No carrinho, o sistema exibe "Calcule pelo CEP" até o cliente informar um CEP válido.'],
+                ['icone' => 'fa-qrcode', 'titulo' => 'Chave Pix', 'texto' => 'Exibida no checkout para pagamentos instantâneos; deixe vazio se usar apenas gateway.'],
+            ],
+        ],
+
+        'logistica_transportadoras' => [
+            'titulo' => 'Logística & Transportadoras',
+            'onde' => 'Centraliza as integrações de frete em tempo real (Correios, Melhor Envio e Mercado Envios).',
+            'passos' => [
+                ['icone' => 'fa-layer-group', 'titulo' => 'Sub-abas por transportadora', 'texto' => 'Alterne entre Correios, Melhor Envio e Mercado Envios, ajuste os parâmetros e salve tudo de uma vez no botão ao final.'],
+                ['icone' => 'fa-shield-halved', 'titulo' => 'Fallback automático', 'texto' => 'Se o Melhor Envio estiver ativo e falhar temporariamente, o sistema recorre automaticamente aos Correios.'],
+            ],
+        ],
+
+        'melhor_envio_ativo' => [
+            'titulo' => 'Ativar cálculo via Melhor Envio',
+            'onde' => 'Habilita cotações em tempo real pela API v2 do Melhor Envio no carrinho e checkout.',
+            'passos' => [
+                ['icone' => 'fa-toggle-on', 'titulo' => 'Como funciona', 'texto' => 'Consulta Correios, Jadlog, Azul Cargo e outras transportadoras habilitadas na sua conta Melhor Envio.'],
+            ],
+        ],
+
+        'melhor_envio_sandbox' => [
+            'titulo' => 'Modo Sandbox (Homologação)',
+            'onde' => 'Direciona as requisições para sandbox.melhorenvio.com.br em vez do ambiente de produção.',
+            'passos' => [
+                ['icone' => 'fa-flask', 'titulo' => 'Atenção ao token', 'texto' => 'Tokens de Sandbox só funcionam com esta chave ligada; tokens de Produção exigem ela desligada.'],
+            ],
+        ],
+
+        'melhor_envio_token' => [
+            'titulo' => 'Token de Acesso (API v2 Melhor Envio)',
+            'onde' => 'Bearer Token pessoal/aplicativo gerado no painel do Melhor Envio.',
+            'passos' => [
+                ['icone' => 'fa-key', 'titulo' => 'Onde gerar', 'texto' => 'No painel do Melhor Envio, acesse Integrações → Tokens de acesso e gere um token com permissão de cotação.'],
+                ['icone' => 'fa-lock', 'titulo' => 'Proteção ao salvar', 'texto' => 'Depois de salvo, o campo fica em branco por segurança — só preencha novamente se quiser trocar o token.'],
+            ],
+        ],
+
+        'melhor_envio_cep_origem' => [
+            'titulo' => 'CEP de Origem (Melhor Envio)',
+            'onde' => 'CEP de onde os pacotes da Golden Rastreamento saem para cálculo de distância e prazo.',
+            'passos' => [
+                ['icone' => 'fa-map-pin', 'titulo' => 'Fallback automático', 'texto' => 'Se ficar vazio, o sistema usa automaticamente o CEP de origem configurado nos Correios.'],
+            ],
+        ],
+
+        'melhor_envio_peso_kg' => [
+            'titulo' => 'Peso padrão por item (kg)',
+            'onde' => 'Peso médio utilizado na cotação da embalagem na API do Melhor Envio (ex.: 0.35 kg).',
+            'passos' => [
+                ['icone' => 'fa-weight-hanging', 'titulo' => 'Valor mínimo', 'texto' => 'Informe em quilogramas usando ponto decimal (mínimo 0.05 kg).'],
+            ],
+        ],
+
+        'melhor_envio_largura_cm' => [
+            'titulo' => 'Largura padrão da caixa (cm)',
+            'onde' => 'Largura mínima exigida pelas transportadoras (11 cm a 200 cm).',
+            'passos' => [
+                ['icone' => 'fa-ruler-horizontal', 'titulo' => 'Medida padrão', 'texto' => 'Recomendado 16 cm para caixas de rastreadores e chips M2M.'],
+            ],
+        ],
+
+        'melhor_envio_altura_cm' => [
+            'titulo' => 'Altura padrão da caixa (cm)',
+            'onde' => 'Altura do pacote para cubagem (2 cm a 200 cm).',
+            'passos' => [
+                ['icone' => 'fa-ruler-vertical', 'titulo' => 'Medida padrão', 'texto' => 'Recomendado 8 cm para embalagens compactas da loja.'],
+            ],
+        ],
+
+        'melhor_envio_comprimento_cm' => [
+            'titulo' => 'Comprimento padrão da caixa (cm)',
+            'onde' => 'Comprimento mínimo aceito pelos Correios/transportadoras (16 cm a 200 cm).',
+            'passos' => [
+                ['icone' => 'fa-ruler', 'titulo' => 'Medida padrão', 'texto' => 'Recomendado 22 cm para acomodar equipamento, chicote e manual.'],
+            ],
+        ],
+
+        'melhor_envio_prazo_adicional' => [
+            'titulo' => 'Prazo adicional (Melhor Envio)',
+            'onde' => 'Dias úteis somados ao prazo retornado pela transportadora (preparo, testes e postagem).',
+            'passos' => [
+                ['icone' => 'fa-calendar-plus', 'titulo' => 'Margem de segurança', 'texto' => 'Soma-se automaticamente ao prazo exibido ao cliente no carrinho e checkout.'],
+            ],
+        ],
+
+        'melhor_envio_taxa_adicional' => [
+            'titulo' => 'Taxa adicional / embalagem (Melhor Envio)',
+            'onde' => 'Valor fixo em reais somado ao frete cotado para cobrir caixa, plástico-bolha e coleta.',
+            'passos' => [
+                ['icone' => 'fa-box', 'titulo' => 'Opcional', 'texto' => 'Deixe 0,00 para repassar exatamente a tarifa retornada pelo Melhor Envio.'],
+            ],
+        ],
+
+        'melhor_envio_servicos' => [
+            'titulo' => 'IDs de serviços (Melhor Envio)',
+            'onde' => 'Lista opcional de IDs numéricos separados por vírgula para restringir modalidades.',
+            'passos' => [
+                ['icone' => 'fa-filter', 'titulo' => 'Exemplos comuns', 'texto' => '1 = PAC, 2 = SEDEX, 3 = Jadlog .Package, 4 = Jadlog .Com, 17 = Mini Envios. Deixe vazio para exibir todas.'],
+            ],
+        ],
+
+        'medicao_consentimento' => [
+            'titulo' => 'Medição, Pixels & Consentimento',
+            'onde' => 'Configura Google Tag Manager, GA4, Google Ads, Meta Pixel e banner LGPD de cookies.',
+            'passos' => [
+                ['icone' => 'fa-chart-line', 'titulo' => 'IDs oficiais', 'texto' => 'Informe apenas os IDs (GTM-..., G-..., AW-...) sem colar scripts HTML inteiros.'],
+            ],
+        ],
+
+        'whmcs_teste' => [
+            'titulo' => 'Testar conexão com WHMCS',
+            'onde' => 'Executa uma chamada real à API do WHMCS configurado para confirmar credenciais e IP liberado.',
+            'passos' => [
+                ['icone' => 'fa-satellite-dish', 'titulo' => 'Quando usar', 'texto' => 'Sempre que alterar URL, Identifier ou Secret do WHMCS, salve e clique em testar.'],
+            ],
+        ],
+
+        'email_teste' => [
+            'titulo' => 'Testar envio de e-mail',
+            'onde' => 'Envia um e-mail de diagnóstico imediato usando o remetente e SMTP salvos.',
+            'passos' => [
+                ['icone' => 'fa-paper-plane', 'titulo' => 'Validação', 'texto' => 'Confirma se o servidor SMTP aceita autenticação e entrega mensagens sem cair em erro.'],
+            ],
+        ],
+
+        'ambiente_sistema' => [
+            'titulo' => 'Ambiente & Limpeza de Cache',
+            'onde' => 'Mostra versão do PHP/Laravel, modo de execução e permite limpar caches direto pelo painel.',
+            'passos' => [
+                ['icone' => 'fa-broom', 'titulo' => 'Limpar cache', 'texto' => 'Use o botão "Limpar cache" no topo de Configurações ou no menu do usuário sempre que atualizar regras ou textos.'],
+            ],
+        ],
+
+        'preloader_config' => [
+            'titulo' => 'Preloader Personalizado Golden',
+            'onde' => 'Controla a animação de carregamento inicial no site público e no painel administrativo.',
+            'passos' => [
+                ['icone' => 'fa-sliders', 'titulo' => 'Controle independente', 'texto' => 'Ative ou desative separadamente para Site Público e Painel Admin conforme a preferência da equipe.'],
+            ],
+        ],
+
+        'preloader_site_ativo' => [
+            'titulo' => 'Preloader no Site Público',
+            'onde' => 'Exibe a animação Golden ao navegar entre páginas públicas; ações AJAX na loja/carrinho não disparam o preloader.',
+            'passos' => [
+                ['icone' => 'fa-globe', 'titulo' => 'Experiência fluida', 'texto' => 'Desligue aqui se quiser abertura imediata sem tela de transição nas páginas públicas.'],
+            ],
+        ],
+
+        'preloader_admin_ativo' => [
+            'titulo' => 'Preloader no Painel Admin',
+            'onde' => 'Exibe a animação de transição ao abrir ou recarregar páginas administrativas.',
+            'passos' => [
+                ['icone' => 'fa-user-shield', 'titulo' => 'Independente do site', 'texto' => 'Pode ficar desligado no painel mesmo enquanto permanece ativo para visitantes do site.'],
+            ],
+        ],
+
+        'preloader_estilo' => [
+            'titulo' => 'Estilo da animação do Preloader',
+            'onde' => 'Define o visual exibido durante o carregamento (Radar GPS, Órbita Dourada ou Pulso Minimalista).',
+            'passos' => [
+                ['icone' => 'fa-wand-magic-sparkles', 'titulo' => 'Identidade Golden', 'texto' => 'Escolha o estilo que melhor combina com a campanha ou momento da marca.'],
+            ],
+        ],
+
+        'preloader_titulo' => [
+            'titulo' => 'Título exibido no Preloader',
+            'onde' => 'Texto principal exibido abaixo da animação (padrão: Golden Rastreamento).',
+            'passos' => [
+                ['icone' => 'fa-font', 'titulo' => 'Curto e legível', 'texto' => 'Use o nome da empresa ou uma frase curta de até 80 caracteres.'],
+            ],
+        ],
+
+        'preloader_cor' => [
+            'titulo' => 'Cor de destaque do Preloader',
+            'onde' => 'Cor principal dos anéis, pulso e brilho da animação (padrão dourado #d4a017).',
+            'passos' => [
+                ['icone' => 'fa-palette', 'titulo' => 'Seletor visual', 'texto' => 'Clique na amostra de cor para ajustar exatamente ao tom desejado.'],
+            ],
+        ],
+
         'celular_ativo' => [
             'titulo' => 'Alertas Instantâneos no Celular',
             'onde' => 'Ativa o despacho de avisos em tempo real com som e vibração para o smartphone do administrador.',

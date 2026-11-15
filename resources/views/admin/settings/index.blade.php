@@ -116,7 +116,7 @@
                 <input type="hidden" name="_aba" value="contato">
                 <div class="row g-3">
                     <div class="col-xl-7">
-                        <x-admin.card title="Contato oficial" icon="fa-id-card" descricao="É o que aparece no rodapé, no formulário do site e nos e-mails.">
+                        <x-admin.card title="Contato oficial" icon="fa-id-card" ajuda="contato_oficial" descricao="É o que aparece no rodapé, no formulário do site e nos e-mails.">
                             <div class="row g-3">
                                 <x-admin.field name="site_nome" label="Nome do site" :value="$settings['site_nome'] ?? 'Golden Rastreamento'" col="col-12 col-md-6" :required="true" maxlength="120" />
                                 <x-admin.field name="contato_whatsapp" label="WhatsApp oficial" :value="$settings['contato_whatsapp'] ?? ''" col="col-12 col-md-6" :required="true" maxlength="32" placeholder="5519997101483" hint="DDI + DDD + número, só dígitos." />
@@ -126,7 +126,7 @@
                         </x-admin.card>
                     </div>
                     <div class="col-xl-5">
-                        <x-admin.card title="Endereço da empresa" icon="fa-location-dot">
+                        <x-admin.card title="Endereço da empresa" icon="fa-location-dot" ajuda="endereco_empresa">
                             <div class="row g-3">
                                 <x-admin.field name="empresa_endereco" label="Endereço" :value="$settings['empresa_endereco'] ?? ''" maxlength="255" :opcional="true" placeholder="R. Pref. Olinto Réis Campos, 104 - Centro" />
                                 <x-admin.field name="empresa_cidade" label="Cidade / UF" :value="$settings['empresa_cidade'] ?? ''" col="col-8" maxlength="120" :opcional="true" placeholder="Três Pontas - MG" />
@@ -227,7 +227,7 @@
                     <form method="POST" action="{{ route('admin.settings.loja-regras') }}" id="formLojaRegras" class="row g-3" data-atualiza=".app-content">
                         @csrf
                         <div class="col-12">
-                            <x-admin.card title="Regras Comerciais &amp; Pagamento" icon="fa-sliders" descricao="Frete base, retirada na empresa, chave Pix e e-mail de alertas.">
+                            <x-admin.card title="Regras Comerciais &amp; Pagamento" icon="fa-sliders" ajuda="loja_regras" descricao="Frete base, retirada na empresa, chave Pix e e-mail de alertas.">
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <x-admin.switch name="loja_livre" label="Frete combinado / a combinar" :checked="$livre" />
@@ -244,7 +244,7 @@
                         </div>
 
                         <div class="col-12">
-                    <x-admin.card title="Logística &amp; Transportadoras" icon="fa-truck-fast"
+                    <x-admin.card title="Logística &amp; Transportadoras" icon="fa-truck-fast" ajuda="logistica_transportadoras"
                         descricao="Configure cada modalidade de envio em sua respectiva aba e clique em salvar ao final.">
                         <ul class="nav nav-pills gap-2 mb-3 pb-2 border-bottom" id="lojaLogisticaTabs" role="tablist">
                             <li class="nav-item" role="presentation">
@@ -446,7 +446,7 @@
                 <input type="hidden" name="_aba" value="medicao">
                 <div class="row g-3">
                     <div class="col-xl-8">
-                        <x-admin.card title="Medição e consentimento" icon="fa-chart-area"
+                        <x-admin.card title="Medição e consentimento" icon="fa-chart-area" ajuda="medicao_consentimento"
                             descricao="Só habilite a coleta depois de publicar a Política de Privacidade e o banner de consentimento.">
                             <div class="row g-3">
                                 <x-admin.switch name="tracking_enabled" label="Ativar coleta de eventos (Google Ads, GA4, Meta Pixel, GTM)" :checked="($settings['tracking_enabled'] ?? '0') === '1'" />
@@ -499,7 +499,7 @@
                 </div>
 
                 <div class="col-xl-7">
-                    <x-admin.card title="Testar a conexão agora" icon="fa-satellite-dish"
+                    <x-admin.card title="Testar a conexão agora" icon="fa-satellite-dish" ajuda="whmcs_teste"
                         descricao="Uma chamada de verdade ao financeiro, na frente de quem aperta o botão.">
                         <form method="POST" action="{{ route('admin.settings.whmcs.sondar') }}" class="row g-3" data-atualiza=".app-content">
                             @csrf
@@ -602,7 +602,7 @@
                                  outras chaves se conferem usando a integração, e o SMTP não tem tela
                                  nenhuma para "usar" — só a mensagem que sai ou não sai. --}}
                             @if($id === 'email')
-                                <x-admin.card title="Testar o disparo agora" icon="fa-paper-plane" class="mt-3"
+                                <x-admin.card title="Testar o disparo agora" icon="fa-paper-plane" ajuda="email_teste" class="mt-3"
                                     :descricao="'Pelo transporte e pelo remetente abaixo, uma mensagem de verdade — o mesmo caminho do link de senha do portal e da segunda via da fatura.'">
                                     <dl class="defs mb-3">
                                         @foreach($correio['viagem'] as $rotulo => $valor)
@@ -649,7 +649,7 @@
                 </div>
             </div>
 
-            <x-admin.card title="Ambiente" icon="fa-circle-info" class="mt-3">
+            <x-admin.card title="Ambiente" icon="fa-circle-info" ajuda="ambiente_sistema" class="mt-3">
                 <dl class="defs mb-0">
                     <dt>Banco ativo</dt><dd>{{ config('database.default') }}@if(config('database.default') === 'sqlite') <span class="form-hint">(<code>database/database.sqlite</code>)</span>@endif</dd>
                     <dt>Módulos</dt><dd>CRM (leads, clientes, interações) · CMS (páginas, depoimentos, FAQs) · ERP (produtos, estoque, fornecedores, pedidos)</dd>
@@ -672,14 +672,15 @@
             <form method="POST" action="{{ route('admin.settings.update') }}" data-atualiza=".app-content">
                 @csrf
                 <input type="hidden" name="_aba" value="preloader">
-                <x-admin.card title="Preloader Personalizado Golden" icon="fa-spinner"
+                <x-admin.card title="Preloader Personalizado Golden" icon="fa-spinner" ajuda="preloader_config"
                     descricao="Animação de carregamento exibida na abertura das páginas. Ative ou desative individualmente para o site público e para o painel administrativo.">
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <div class="border rounded-3 p-3 h-100">
-                                <div class="form-check form-switch mb-1">
+                                <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
                                     <input class="form-check-input" type="checkbox" role="switch" id="preloader_site_ativo" name="preloader_site_ativo" value="1" @checked($preloaderSite)>
                                     <label class="form-check-label fw-semibold" for="preloader_site_ativo">Ativar no Site Público</label>
+                                    <x-admin.ajuda chave="preloader_site_ativo" />
                                 </div>
                                 <div class="form-hint mb-0">Exibe o preloader para visitantes em todas as páginas públicas e loja.</div>
                             </div>
@@ -687,16 +688,17 @@
 
                         <div class="col-12 col-md-6">
                             <div class="border rounded-3 p-3 h-100">
-                                <div class="form-check form-switch mb-1">
+                                <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
                                     <input class="form-check-input" type="checkbox" role="switch" id="preloader_admin_ativo" name="preloader_admin_ativo" value="1" @checked($preloaderAdmin)>
                                     <label class="form-check-label fw-semibold" for="preloader_admin_ativo">Ativar no Painel Admin</label>
+                                    <x-admin.ajuda chave="preloader_admin_ativo" />
                                 </div>
                                 <div class="form-hint mb-0">Exibe o preloader ao abrir ou recarregar telas administrativas.</div>
                             </div>
                         </div>
 
                         <div class="col-12 col-md-4">
-                            <label class="form-label" for="preloader_estilo">Estilo da animação</label>
+                            <label class="form-label" for="preloader_estilo">Estilo da animação <x-admin.ajuda chave="preloader_estilo" /></label>
                             <select class="form-select" id="preloader_estilo" name="preloader_estilo">
                                 <option value="radar" @selected($preloaderEstilo === 'radar')>Radar GPS Golden</option>
                                 <option value="orbita" @selected($preloaderEstilo === 'orbita')>Órbita Dourada</option>
@@ -705,12 +707,12 @@
                         </div>
 
                         <div class="col-12 col-md-4">
-                            <label class="form-label" for="preloader_titulo">Título exibido</label>
+                            <label class="form-label" for="preloader_titulo">Título exibido <x-admin.ajuda chave="preloader_titulo" /></label>
                             <input type="text" class="form-control" id="preloader_titulo" name="preloader_titulo" value="{{ $preloaderTitulo }}" maxlength="80">
                         </div>
 
                         <div class="col-12 col-md-4">
-                            <label class="form-label" for="preloader_cor">Cor de destaque</label>
+                            <label class="form-label" for="preloader_cor">Cor de destaque <x-admin.ajuda chave="preloader_cor" /></label>
                             <div class="d-flex align-items-center gap-2">
                                 <input type="color" class="form-control form-control-color" id="preloader_cor" name="preloader_cor" value="{{ $preloaderCor }}">
                                 <span class="small text-secondary font-monospace">{{ $preloaderCor }}</span>
