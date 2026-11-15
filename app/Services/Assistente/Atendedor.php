@@ -708,6 +708,8 @@ final class Atendedor
                 .'a pergunta que a pessoa acabou de responder ou o que você já disse.';
         }
 
+        $ordem[] = self::adaptacaoAoCliente($conversa);
+
         if (filled($conversa->nome)) {
             $ordem[] = 'A pessoa do outro lado se chama '.$conversa->nome.'. Trate-a pelo nome quando fizer sentido, sem repeti-lo em toda frase.';
         } elseif ($pedeONome) {
@@ -725,6 +727,45 @@ final class Atendedor
         }
 
         return $ordem;
+    }
+
+    /**
+     * Lê o tom e o momento das últimas falas do cliente para a Ana adaptar a própria postura
+     * entre espontaneidade descontraída e firmeza séria e profissional.
+     */
+    private static function adaptacaoAoCliente(Conversa $conversa): string
+    {
+        $falas = $conversa->mensagens()
+            ->where('autor', 'cliente')
+            ->reorder('id', 'desc')
+            ->limit(4)
+            ->pluck('corpo')
+            ->filter()
+            ->implode(' ');
+
+        $limpo = Str::ascii(Str::lower($falas));
+
+        if ($limpo === '') {
+            return 'Seja espontânea, próxima e natural nesta conversa, mantendo sempre postura profissional e séria.';
+        }
+
+        $urgentes = ['roub', 'furt', 'sumiu', 'bloque', 'emergenc', 'socorro', 'acidente', 'guincho', 'boletim'];
+
+        foreach ($urgentes as $termo) {
+            if (str_contains($limpo, $termo)) {
+                return 'Tom para esta conversa: o cliente relatou algo urgente ou sensível; seja acolhedora, calma, firme, séria e objetiva no que resolve, sem brincadeiras.';
+            }
+        }
+
+        $informais = ['oi', 'ola', 'e ai', 'blz', 'beleza', 'cara', 'mano', 'amig', 'valeu', 'show', 'top', 'kkk', 'haha', 'tudo bem', 'bom dia', 'boa tarde', 'boa noite', 'pfv', 'obg', 'vlw'];
+
+        foreach ($informais as $termo) {
+            if (preg_match('/\b'.preg_quote($termo, '/').'/u', $limpo) === 1) {
+                return 'Tom para esta conversa: o cliente está espontâneo e acessível; corresponda com leveza, simpatia e descontração equilibrada, mantendo sempre a seriedade e a postura profissional.';
+            }
+        }
+
+        return 'Tom para esta conversa: adapte-se ao ritmo do cliente de forma espontânea, humana e clara, variando o jeito de falar sem soar mecânica e mantendo postura séria e profissional.';
     }
 
     /**

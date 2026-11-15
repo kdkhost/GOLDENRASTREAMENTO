@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\ConversaEscalada;
 use App\Mail\SegundaViaFatura;
 use App\Models\Conversa;
+use App\Models\ConversaMensagem;
 use App\Models\Customer;
 use App\Models\Setting;
 use App\Services\Assistente\Verificacao;
@@ -13,6 +14,7 @@ use Illuminate\Http\Client\Request as RequisicaoHttp;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -630,5 +632,83 @@ class SegundaViaPeloAssistenteTest extends TestCase
         // O e-mail do cliente nunca é impresso no corpo: quem recebe a mensagem já sabe para onde ela
         // foi, e um dado de cadastro escrito num e-mail é dado que se espalha em cópia e encaminhamento.
         $this->assertStringNotContainsString('maria@exemplo.com.br', $html);
+    }
+
+    public function test_envia_a_fatura_em_pdf_no_chat_quando_o_cliente_solicita(): void
+    {
+        Storage::fake('public');
+        $this->ficha();
+        $this->ligaFinanceiro();
+        $this->fingirWhmcs($this->faturas());
+        Mail::fake();
+
+        $conversa = $this->conversa();
+        $this->identifica($conversa);
+
+        $this->diga($conversa, 'Quero a segunda via da fatura aqui no chat.');
+        $this->diga($conversa, '123.456.789-01');
+        $texto = $this->diga($conversa, '27/10/1990');
+
+        $this->assertStringContainsString('GR-501', $texto);
+        $this->assertStringContainsString('R$ 59,90', $texto);
+        $this->assertStringContainsString('10/10/2026', $texto);
+        $this->assertStringContainsString('aqui mesmo no chat', $texto);
+
+        Mail::assertNothingSent();
+
+        $anexo = ConversaMensagem::where('conversa_id', $conversa->id)
+            ->where('autor', 'assistente')
+            ->where('tipo', 'arquivo')
+            ->first();
+
+        $this->assertNotNull($anexo, 'O PDF da fatura não foi anexado no chat.');
+        $this->assertSame('Fatura-GR-501.pdf', $anexo->midia_nome);
+        $this->assertSame('application/pdf', $anexo->midia_mime);
+        $this->assertNotNull($anexo->midiaUrl());
+        $this->assertStringStartsWith('%PDF-1.4', (string) Storage::disk('public')->get((string) $anexo->midia));
+        $this->assertDatabaseHas('activities', ['action' => 'segunda_via_enviada_chat']);
+    }
+
+    public function test_permite_escolher_envio_no_chat_durante_a_conferencia(): void
+    {
+        Storage::fake('public');
+        $this->ficha();
+        $this->ligaFinanceiro();
+        $this->fingirWhmcs($this->faturas());
+        Mail::fake();
+
+        $conversa = $this->conversa();
+        $this->identifica($conversa);
+
+        $this->diga($conversa, 'segunda via da fatura');
+        $this->diga($conversa, '123.456.789-01, manda aqui no chat');
+        $texto = $this->diga($conversa, '27/10/1990');
+
+        $this->assertStringContainsString('GR-501', $texto);
+        $this->assertStringContainsString('aqui mesmo no chat', $texto);
+        Mail::assertNothingSent();
+        $this->assertSame(1, ConversaMensagem::where('conversa_id', $conversa->id)->where('tipo', 'arquivo')->count());
+    }
+
+    public function test_envia_no_chat_e_no_email_quando_o_cliente_escolhe_os_dois(): void
+    {
+        Storage::fake('public');
+        $this->ficha();
+        $this->ligaFinanceiro();
+        $this->fingirWhmcs($this->faturas());
+        Mail::fake();
+
+        $conversa = $this->conversa();
+        $this->identifica($conversa);
+
+        $this->diga($conversa, 'Me envia a fatura por aqui no chat e também no meu e-mail.');
+        $this->diga($conversa, '123.456.789-01');
+        $texto = $this->diga($conversa, '27/10/1990');
+
+        $this->assertStringContainsString('GR-501', $texto);
+        $this->assertStringContainsString('e-mail do seu cadastro', $texto);
+        $this->assertStringContainsString('anexado aqui no chat', $texto);
+        Mail::assertSent(SegundaViaFatura::class, fn (SegundaViaFatura $m): bool => $m->hasTo('maria@exemplo.com.br'));
+        $this->assertSame(1, ConversaMensagem::where('conversa_id', $conversa->id)->where('tipo', 'arquivo')->count());
     }
 }

@@ -274,6 +274,11 @@
         }
         mostraPesquisa(d);
         mostraFim(d);
+        if (d.encerrada || d.limpar_chat) {
+          limpaHistoricoVisual();
+          pinta((d.falas || []).filter(function (f) { return f && f.autor === 'assistente'; }));
+          return;
+        }
         pinta(d.falas);
       }).finally(function () {
         ocupado = false;
@@ -282,6 +287,15 @@
   });
 
   /* ---------- o fim da conversa ---------- */
+
+  function limpaHistoricoVisual() {
+    if (corpo) corpo.innerHTML = '';
+    de = 0;
+    guardadas = [];
+    if (digitando) digitando.hidden = true;
+    limpaAnexo();
+    if (anexar) anexar.classList.remove('pede');
+  }
 
   /* Encerrada a conversa, o campo de envio sai de cena e o balão mostra o convite a começar outra:
      reabrir sozinha seria a tela contrariando o fim que a pessoa pediu. A varredura para junto
@@ -305,7 +319,7 @@
 
     var aviso = window.GoldenAvisos;
     var pedido = aviso && aviso.confirmar
-      ? aviso.confirmar('A conversa será encerrada e o campo de mensagem será fechado. Você pode começar outra depois.', 'Encerrar a conversa?')
+      ? aviso.confirmar('A conversa será encerrada, o histórico desta janela será limpo e você poderá iniciar um novo atendimento quando quiser.', 'Encerrar a conversa?')
       : Promise.resolve(true);
 
     pedido.then(function (aceitou) {
@@ -320,8 +334,11 @@
         if (d.ativo === false) { desaparece(); return; }
         if (!d.falas) { mostraErros(d); return; }
         escalada = d.status === 'aguardando_equipe' || escalada;
+        limpaHistoricoVisual();
         mostraPesquisa(d);
-        pinta(d.falas);
+        if (d.avaliacao === true) {
+          pinta(d.falas.filter(function (f) { return f && f.autor === 'assistente'; }));
+        }
         mostraFim(d);
       }).finally(function () {
         ocupado = false;
@@ -345,9 +362,7 @@
       if (d.ativo === false) { desaparece(); return; }
       if (!d.falas) { mostraErros(d); return; }
 
-      corpo.innerHTML = '';
-      de = 0;
-      guardadas = [];
+      limpaHistoricoVisual();
       escalada = d.status === 'aguardando_equipe';
       encerrada = false;
       criada = true;
@@ -388,6 +403,7 @@
     obter_falas().then(function (d) {
       if (d.ativo === false) { desaparece(); return; }
       if (d.status === 'aguardando_equipe') escalada = true;
+      if (d.limpar_chat || d.encerrada) limpaHistoricoVisual();
       mostraPesquisa(d);
       mostraFim(d);
       pinta(d.falas);
@@ -435,6 +451,7 @@
         ocupado = false;
         digitando.hidden = true;
         if (!d.ativo) { desaparece(); return; }
+        if (d.limpar_chat) limpaHistoricoVisual();
         criada = true;
         escalada = d.status === 'aguardando_equipe';
         mostraPesquisa(d);

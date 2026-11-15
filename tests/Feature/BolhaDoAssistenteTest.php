@@ -517,6 +517,32 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertSame($nova->id, (int) session(Conversa::SESSAO));
     }
 
+    public function test_ao_encerrar_a_conversa_o_chat_sinaliza_limpeza_e_nao_reexibe_historico_antigo(): void
+    {
+        $this->postJson('/assistente/abrir')->assertOk();
+        $encerrada = Conversa::firstOrFail();
+        $this->postJson('/assistente/fala', ['texto' => 'Maria Compradora'])->assertOk();
+
+        $this->postJson('/assistente/encerrar')
+            ->assertOk()
+            ->assertJson(['encerrada' => true, 'limpar_chat' => true]);
+
+        $this->getJson('/assistente/falas?de=0')
+            ->assertOk()
+            ->assertJson(['encerrada' => true, 'limpar_chat' => true, 'falas' => []]);
+
+        $this->postJson('/assistente/avaliar', ['nota' => 5])
+            ->assertOk()
+            ->assertJson(['ativo' => true, 'avaliacao' => false, 'limpar_chat' => true]);
+
+        $reaberta = $this->postJson('/assistente/abrir')
+            ->assertOk()
+            ->assertJson(['encerrada' => false, 'limpar_chat' => true]);
+
+        $this->assertNotSame($encerrada->id, (int) $reaberta->json('conversa'));
+        $this->assertSame('fechada', $encerrada->refresh()->status);
+    }
+
     /** Desligado o documento na tela de chaves, o arquivo é recusado com frase — e sem gastar IA. */
     public function test_o_documento_nao_entra_com_a_permissao_desligada(): void
     {
@@ -640,7 +666,7 @@ class BolhaDoAssistenteTest extends TestCase
         $caminho = 'assistente/2026/10/contrato.docx';
         Storage::disk('public')->makeDirectory('assistente/2026/10');
 
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         $this->assertTrue($zip->open(Storage::disk('public')->path($caminho), \ZipArchive::CREATE));
         $zip->addFromString('word/document.xml',
             '<w:document xmlns:w="urn:w"><w:body><w:p><w:r><w:t>Cláusula 1</w:t></w:r><w:r><w:t> Objeto do contrato.</w:t></w:r></w:p></w:body></w:document>');
@@ -740,6 +766,40 @@ class BolhaDoAssistenteTest extends TestCase
 
         // E o que já foi dito vai junto: a Ana continua o fio em vez de recomeçar.
         $this->assertStringContainsString('O rastreador custa o valor publicado na loja.', $texto);
+    }
+
+    public function test_a_ana_adapta_o_tom_a_cada_conversa_entre_descontraida_e_seria(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Oi! Tudo certo por aqui, já te explico como funciona.']]]]]], 200)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Ligue imediatamente para a polícia e para o canal 24h da Golden.']]]]]], 200),
+        ]);
+
+        ConhecimentoItem::create([
+            'titulo' => 'Atendimento e emergência 24h',
+            'corpo' => 'Os planos da Golden incluem suporte e canal de emergência 24h para casos de roubo ou furto.',
+            'tags' => 'rastreador, roubo, furto, emergencia',
+            'origem' => 'painel',
+            'ativo' => '1',
+        ]);
+
+        $this->postJson('/assistente/fala', ['texto' => 'Oi! Tudo bem? Como funciona o rastreador?'])->assertOk();
+
+        $this->flushSession();
+        $this->postJson('/assistente/fala', ['texto' => 'Socorro, meu caminhão foi roubado agora, preciso de emergência!'])->assertOk();
+
+        $pedidos = Http::recorded();
+        $this->assertCount(2, $pedidos);
+
+        $ordemDescontraida = (string) data_get($pedidos[0][0]->data(), 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('espontânea', $ordemDescontraida);
+        $this->assertStringContainsString('descontração equilibrada', $ordemDescontraida);
+        $this->assertStringContainsString('postura profissional', $ordemDescontraida);
+
+        $ordemUrgente = (string) data_get($pedidos[1][0]->data(), 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('urgente', $ordemUrgente);
+        $this->assertStringContainsString('sem brincadeiras', $ordemUrgente);
     }
 
     /**

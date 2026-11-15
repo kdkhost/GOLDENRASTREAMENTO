@@ -47,6 +47,18 @@ class AssistenteController extends Controller
 
         $ficha = Assistente::paraABolha();
         $conversa = $this->conversa($request);
+        $limparChat = false;
+
+        if ($conversa->status === 'fechada') {
+            if (! Avaliacao::pedidaSemNota($conversa)) {
+                $request->session()->forget(Conversa::SESSAO);
+                $conversa = $this->conversa($request);
+                $limparChat = true;
+            } else {
+                return $this->resposta($conversa, [], ['limpar_chat' => true]);
+            }
+        }
+
         $novas = $conversa->mensagens()->where('id', '>', (int) $request->input('de', 0))->get();
 
         // A abertura é a primeira fala e só existe uma vez: voltar à página não pode repetir o
@@ -56,7 +68,7 @@ class AssistenteController extends Controller
             $novas = collect(Atendedor::abertura($conversa, $ficha));
         }
 
-        return $this->resposta($conversa, $novas);
+        return $this->resposta($conversa, $novas, $limparChat ? ['limpar_chat' => true] : []);
     }
 
     /** A fala do cliente entra, e a resposta do assistente volta no mesmo pedido. */
@@ -145,7 +157,11 @@ class AssistenteController extends Controller
 
         Atendedor::encerrar($conversa);
 
-        return $this->resposta($conversa->refresh(), $conversa->mensagens()->where('id', '>', $antes)->get());
+        return $this->resposta(
+            $conversa->refresh(),
+            $conversa->mensagens()->where('id', '>', $antes)->get(),
+            ['limpar_chat' => true]
+        );
     }
 
     /** Começar outra: a conversa anterior fica no histórico da equipe e a sessão aponta para a nova. */
@@ -160,7 +176,7 @@ class AssistenteController extends Controller
         $conversa = $this->conversa($request);
         $novas = collect(Atendedor::abertura($conversa, Assistente::paraABolha()));
 
-        return $this->resposta($conversa, $novas);
+        return $this->resposta($conversa, $novas, ['limpar_chat' => true]);
     }
 
     /** A varredura da bolha aberta: é por ela que a resposta da equipe chega ao cliente. */
@@ -170,6 +186,10 @@ class AssistenteController extends Controller
 
         if (! $conversa) {
             return response()->json(['ativo' => false]);
+        }
+
+        if ($conversa->status === 'fechada') {
+            return $this->resposta($conversa, [], ['limpar_chat' => true]);
         }
 
         return $this->novasFalas($conversa, (int) $request->input('de', 0));
@@ -206,20 +226,29 @@ class AssistenteController extends Controller
         Avaliacao::grave($conversa, (int) $dados['nota']);
         Atendedor::agradeceAValiacao($conversa);
 
-        return $this->resposta($conversa, $conversa->mensagens()->where('id', '>', $antes)->get());
+        return $this->resposta(
+            $conversa->refresh(),
+            $conversa->mensagens()->where('id', '>', $antes)->get(),
+            ['limpar_chat' => $conversa->status === 'fechada']
+        );
     }
 
-    /** O envelope dos endpoints da bolha: o que pintar, em que situação a conversa está. */
-    private function resposta(Conversa $conversa, iterable $falas): JsonResponse
+    /**
+     * O envelope dos endpoints da bolha: o que pintar, em que situação a conversa está.
+     *
+     * @param  iterable<ConversaMensagem>  $falas
+     * @param  array<string, mixed>  $extra
+     */
+    private function resposta(Conversa $conversa, iterable $falas, array $extra = []): JsonResponse
     {
-        return response()->json([
+        return response()->json(array_merge([
             'ativo' => true,
             'conversa' => (int) $conversa->id,
             'status' => $conversa->status,
             'encerrada' => $conversa->status === 'fechada',
             'avaliacao' => Avaliacao::pedidaSemNota($conversa),
             'falas' => $this->falasParaTela($falas),
-        ]);
+        ], $extra));
     }
 
     /**

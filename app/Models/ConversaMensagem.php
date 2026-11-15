@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Uma fala dentro de uma conversa do site ou do funil.
@@ -111,9 +112,14 @@ class ConversaMensagem extends Model
             return null;
         }
 
-        $publico = 'storage/'.ltrim((string) $caminho, '/');
+        $limpo = ltrim((string) $caminho, '/');
+        $publico = 'storage/'.$limpo;
 
-        return file_exists(public_path($publico)) ? asset($publico) : null;
+        if (file_exists(public_path($publico)) || Storage::disk('public')->exists($limpo)) {
+            return asset($publico);
+        }
+
+        return null;
     }
 
     /** O que a equipe precisa ler para conferir a resposta: o que a máquina usou como fonte. */

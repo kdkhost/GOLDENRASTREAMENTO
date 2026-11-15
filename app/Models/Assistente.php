@@ -280,6 +280,7 @@ class Assistente extends Model
         $linhas = [
             'Você é '.$this->nome.($this->cargo ? ' — '.$this->cargo : '').'.',
             'Tom de voz: '.mb_strtolower($this->tomLabel()).'.',
+            'Adapte-se a cada conversa com naturalidade: seja espontânea, leve e descontraída na medida certa, mantendo sempre a postura profissional, séria e confiável.',
         ];
 
         if (filled($this->regras)) {
