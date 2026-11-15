@@ -24,6 +24,20 @@ class EmailTemplateController extends Controller
         private FilaDeEmailService $filaService,
     ) {}
 
+    /**
+     * @return array<string, string>
+     */
+    private function categoriasDisponiveis(): array
+    {
+        return [
+            'financeiro' => 'Financeiro & Faturas',
+            'loja' => 'Loja & Rastreamento',
+            'portal' => 'Portal do Cliente',
+            'suporte' => 'Chamados & Suporte',
+            'sistema' => 'Sistema & Alertas',
+        ];
+    }
+
     public function index(Request $request): View
     {
         $templates = $this->templateService->garantirPadroes();
@@ -35,32 +49,118 @@ class EmailTemplateController extends Controller
 
         $estatisticasFila = $this->filaService->estatisticas();
         $layout = $this->templateService->layoutAtual();
-        $categorias = [
-            'financeiro' => 'Financeiro & Faturas',
-            'loja' => 'Loja & Rastreamento',
-            'portal' => 'Portal do Cliente',
-            'suporte' => 'Chamados & Suporte',
-            'sistema' => 'Sistema & Alertas',
-        ];
 
         return view('admin.templates-email.index', [
             'templates' => $templates,
-            'categorias' => $categorias,
+            'categorias' => $this->categoriasDisponiveis(),
             'categoriaAtual' => $categoria,
             'estatisticasFila' => $estatisticasFila,
             'layout' => $layout,
         ]);
     }
 
+    public function create(): View
+    {
+        $this->templateService->garantirPadroes();
+
+        $template = new EmailTemplate([
+            'chave' => 'novo_template',
+            'nome' => 'Novo Template Personalizado',
+            'categoria' => 'sistema',
+            'descricao' => '',
+            'assunto' => 'Comunicado importante · {{empresa_nome}}',
+            'pre_cabecalho' => 'Confira as atualizações para {{cliente_nome}}.',
+            'corpo_html' => '<h1 style="font-size:20px;margin:0 0 8px;">Olá, {{cliente_nome}}</h1><p>Escreva aqui o conteúdo do e-mail personalizado.</p>',
+            'variaveis' => [
+                'cliente_nome' => 'Nome do destinatário',
+                'empresa_nome' => 'Nome da empresa configurada',
+                'fatura_numero' => 'Número da fatura',
+                'fatura_valor' => 'Valor da fatura',
+                'pedido_numero' => 'Código do pedido',
+                'url_portal' => 'Link do portal do cliente',
+            ],
+            'usar_layout' => true,
+            'ativo' => true,
+        ]);
+
+        $exemplos = array_merge($this->templateService->variaveisEmpresa(), $this->templateService->exemplosVariaveis());
+        $previewInicial = $this->templateService->renderizarPorChave(
+            '__novo__',
+            $exemplos,
+            null,
+            $template->corpo_html,
+            $template->assunto,
+            $template->pre_cabecalho,
+            true
+        );
+
+        return view('admin.templates-email.edit', [
+            'template' => $template,
+            'modoCriacao' => true,
+            'categorias' => $this->categoriasDisponiveis(),
+            'todosTemplates' => EmailTemplate::orderBy('categoria')->orderBy('nome')->get(),
+            'exemplos' => $exemplos,
+            'previewInicial' => $previewInicial,
+            'layout' => $this->templateService->layoutAtual(),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $dados = $request->validate([
+            'chave' => 'required|string|max:80|regex:/^[a-z0-9_-]+$/|unique:email_templates,chave',
+            'nome' => 'required|string|max:140',
+            'categoria' => 'required|string|in:financeiro,loja,portal,suporte,sistema',
+            'descricao' => 'nullable|string|max:300',
+            'assunto' => 'required|string|max:220',
+            'pre_cabecalho' => 'nullable|string|max:220',
+            'corpo_html' => 'required|string',
+            'corpo_texto' => 'nullable|string',
+            'usar_layout' => 'nullable|boolean',
+            'ativo' => 'nullable|boolean',
+        ]);
+
+        $textoTotal = $dados['assunto'].' '.($dados['pre_cabecalho'] ?? '').' '.$dados['corpo_html'];
+        preg_match_all('/\{\{\s*([a-z0-9_]+)\s*\}\}/i', $textoTotal, $matches);
+        $variaveis = ['cliente_nome' => 'Nome do destinatário', 'empresa_nome' => 'Nome da empresa'];
+        foreach ($matches[1] ?? [] as $token) {
+            $tokenLimpo = trim((string) $token);
+            if ($tokenLimpo !== '' && ! array_key_exists($tokenLimpo, $variaveis)) {
+                $variaveis[$tokenLimpo] = 'Variável personalizada '.$tokenLimpo;
+            }
+        }
+
+        $template = EmailTemplate::create([
+            'chave' => strtolower(trim($dados['chave'])),
+            'nome' => $dados['nome'],
+            'categoria' => $dados['categoria'],
+            'descricao' => $dados['descricao'] ?? '',
+            'assunto' => $dados['assunto'],
+            'pre_cabecalho' => $dados['pre_cabecalho'] ?? '',
+            'corpo_html' => $dados['corpo_html'],
+            'corpo_texto' => $dados['corpo_texto'] ?? null,
+            'variaveis' => $variaveis,
+            'rota_preview' => '/admin/templates-email/'.strtolower(trim($dados['chave'])),
+            'usar_layout' => $request->boolean('usar_layout', true),
+            'ativo' => $request->boolean('ativo', true),
+        ]);
+
+        return redirect()
+            ->route('admin.templates-email.edit', $template->chave)
+            ->with('sucesso', "Template \"{$template->nome}\" criado com sucesso.");
+    }
+
     public function edit(string $chave): View
     {
         $this->templateService->garantirPadroes();
         $template = EmailTemplate::where('chave', $chave)->firstOrFail();
-        $exemplos = $this->templateService->exemplosVariaveis();
+        $exemplos = array_merge($this->templateService->variaveisEmpresa(), $this->templateService->exemplosVariaveis());
         $previewInicial = $this->templateService->renderizarPorChave($template->chave, $exemplos);
 
         return view('admin.templates-email.edit', [
             'template' => $template,
+            'modoCriacao' => false,
+            'categorias' => $this->categoriasDisponiveis(),
             'todosTemplates' => EmailTemplate::orderBy('categoria')->orderBy('nome')->get(),
             'exemplos' => $exemplos,
             'previewInicial' => $previewInicial,
@@ -74,6 +174,8 @@ class EmailTemplateController extends Controller
 
         $dados = $request->validate([
             'nome' => 'required|string|max:140',
+            'categoria' => 'nullable|string|in:financeiro,loja,portal,suporte,sistema',
+            'descricao' => 'nullable|string|max:300',
             'assunto' => 'required|string|max:220',
             'pre_cabecalho' => 'nullable|string|max:220',
             'corpo_html' => 'required|string',
@@ -82,7 +184,7 @@ class EmailTemplateController extends Controller
             'ativo' => 'nullable|boolean',
         ]);
 
-        $template->update([
+        $atualizar = [
             'nome' => $dados['nome'],
             'assunto' => $dados['assunto'],
             'pre_cabecalho' => $dados['pre_cabecalho'] ?? '',
@@ -90,7 +192,16 @@ class EmailTemplateController extends Controller
             'corpo_texto' => $dados['corpo_texto'] ?? null,
             'usar_layout' => $request->boolean('usar_layout'),
             'ativo' => $request->boolean('ativo'),
-        ]);
+        ];
+
+        if ($request->filled('categoria')) {
+            $atualizar['categoria'] = $dados['categoria'];
+        }
+        if ($request->has('descricao')) {
+            $atualizar['descricao'] = (string) ($dados['descricao'] ?? '');
+        }
+
+        $template->update($atualizar);
 
         return redirect()
             ->route('admin.templates-email.edit', $template->chave)
@@ -102,9 +213,30 @@ class EmailTemplateController extends Controller
         $this->templateService->garantirPadroes();
         $template = EmailTemplate::where('chave', $chave)->firstOrFail();
 
+        return $this->montarRespostaPreview($request, $template->chave, $template->nome);
+    }
+
+    public function previewLivre(Request $request): JsonResponse
+    {
+        return $this->montarRespostaPreview($request, '__novo__', 'Novo Template Personalizado');
+    }
+
+    private function montarRespostaPreview(Request $request, string $chave, string $nomePadrao): JsonResponse
+    {
+        $variaveis = array_merge($this->templateService->variaveisEmpresa(), $this->templateService->exemplosVariaveis());
+        $overrides = $request->input('variaveis_preview', []);
+
+        if (is_array($overrides)) {
+            foreach ($overrides as $k => $v) {
+                if (is_string($k) && $k !== '' && (is_string($v) || is_numeric($v))) {
+                    $variaveis[$k] = (string) $v;
+                }
+            }
+        }
+
         $renderizado = $this->templateService->renderizarPorChave(
-            $template->chave,
-            $this->templateService->exemplosVariaveis(),
+            $chave,
+            $variaveis,
             null,
             $request->has('corpo_html') ? (string) $request->input('corpo_html') : null,
             $request->has('assunto') ? (string) $request->input('assunto') : null,
@@ -113,7 +245,9 @@ class EmailTemplateController extends Controller
         );
 
         return response()->json([
+            'nome' => trim((string) $request->input('nome', '')) ?: $nomePadrao,
             'assunto' => $renderizado['assunto'],
+            'pre_cabecalho' => $renderizado['pre_cabecalho'],
             'html' => $renderizado['html'],
         ]);
     }

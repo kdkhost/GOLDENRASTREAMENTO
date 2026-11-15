@@ -456,4 +456,182 @@ class TemplatesEmailEFaturasPdfTest extends TestCase
         $this->assertStringContainsString('.preview-frame', $cssAdmin);
         $this->assertSame(0, preg_match('/#[0-9a-fA-F]{3,8}\b/', $cssAdmin));
     }
+
+    public function test_templates_de_email_criacao_edicao_e_layout_exibem_dados_digitados_no_preview_em_tempo_real(): void
+    {
+        $this->actingAs($this->admin);
+
+        // 1. Página de criação de template e rota de preview livre (em criação)
+        $this->get(route('admin.templates-email.create'))
+            ->assertOk()
+            ->assertSee('Novo Template de E-mail')
+            ->assertSee('Dados de Teste / Variáveis no Preview (Tempo Real)');
+
+        $respPreviewLivre = $this->postJson(route('admin.templates-email.preview-livre'), [
+            'nome' => 'Aviso Personalizado em Criação',
+            'assunto' => 'Olá {{cliente_nome}}, fatura #{{fatura_numero}}',
+            'pre_cabecalho' => 'Prévia ao vivo {{valor}}',
+            'corpo_html' => '<p>Prezado <strong>{{cliente_nome}}</strong>, vencimento {{vencimento}}.</p>',
+            'variaveis_preview' => [
+                'cliente_nome' => 'Empresa Alpha Logística',
+                'fatura_numero' => 'GR-7700',
+                'valor' => 'R$ 499,90',
+                'vencimento' => '30/11/2026',
+            ],
+        ]);
+
+        $respPreviewLivre->assertOk()
+            ->assertJsonPath('nome', 'Aviso Personalizado em Criação')
+            ->assertJsonPath('assunto', 'Olá Empresa Alpha Logística, fatura #GR-7700')
+            ->assertJsonPath('pre_cabecalho', 'Prévia ao vivo R$ 499,90');
+
+        $htmlLivre = (string) $respPreviewLivre->json('html');
+        $this->assertStringContainsString('Empresa Alpha Logística', $htmlLivre);
+        $this->assertStringContainsString('30/11/2026', $htmlLivre);
+
+        // 2. Salvar o novo template criado via POST /admin/templates-email
+        $respCreate = $this->post(route('admin.templates-email.store'), [
+            'chave' => 'aviso_personalizado_alpha',
+            'nome' => 'Aviso Personalizado em Criação',
+            'categoria' => 'financeiro',
+            'descricao' => 'Template criado via painel para testes ao vivo',
+            'assunto' => 'Olá {{cliente_nome}}, fatura #{{fatura_numero}}',
+            'pre_cabecalho' => 'Prévia {{valor}}',
+            'corpo_html' => '<p>Conteúdo salvo para {{cliente_nome}}</p>',
+            'ativo' => '1',
+        ]);
+        $respCreate->assertRedirect(route('admin.templates-email.edit', 'aviso_personalizado_alpha'));
+
+        // 3. Edição e preview em tempo real com variáveis customizadas
+        $this->get(route('admin.templates-email.edit', 'aviso_personalizado_alpha'))
+            ->assertOk()
+            ->assertSee('aviso_personalizado_alpha')
+            ->assertSee('Dados de Teste / Variáveis no Preview (Tempo Real)');
+
+        $respPreviewEdicao = $this->postJson(route('admin.templates-email.preview', 'aviso_personalizado_alpha'), [
+            'nome' => 'Aviso Editado Agora',
+            'assunto' => 'Atualização para {{cliente_nome}} · {{placa}}',
+            'pre_cabecalho' => 'Rastreamento {{codigo_rastreio}}',
+            'corpo_html' => '<p>Placa monitorada: <strong>{{placa}}</strong></p>',
+            'variaveis_preview' => [
+                'cliente_nome' => 'Transportadora Beta',
+                'placa' => 'XYZ-9988',
+                'codigo_rastreio' => 'BR99887766',
+            ],
+        ]);
+
+        $respPreviewEdicao->assertOk()
+            ->assertJsonPath('nome', 'Aviso Editado Agora')
+            ->assertJsonPath('assunto', 'Atualização para Transportadora Beta · XYZ-9988')
+            ->assertJsonPath('pre_cabecalho', 'Rastreamento BR99887766');
+        $this->assertStringContainsString('XYZ-9988', (string) $respPreviewEdicao->json('html'));
+
+        // 4. Layout global respeita alternância de WhatsApp e texto editado no preview em tempo real
+        $respLayoutComWpp = $this->postJson(route('admin.templates-email.layout.preview'), [
+            'marca_nome' => 'Golden Ao Vivo LTDA',
+            'texto_rodape' => 'Rodapé digitado em tempo real.',
+            'mostrar_whatsapp' => '1',
+        ]);
+        $respLayoutComWpp->assertOk();
+        $this->assertStringContainsString('Golden Ao Vivo LTDA', (string) $respLayoutComWpp->json('html'));
+        $this->assertStringContainsString('Rodapé digitado em tempo real.', (string) $respLayoutComWpp->json('html'));
+        $this->assertStringContainsString('WhatsApp', (string) $respLayoutComWpp->json('html'));
+
+        $respLayoutSemWpp = $this->postJson(route('admin.templates-email.layout.preview'), [
+            'marca_nome' => 'Golden Sem WPP LTDA',
+            'texto_rodape' => 'Rodapé sem link whatsapp.',
+            'mostrar_whatsapp' => '0',
+        ]);
+        $respLayoutSemWpp->assertOk();
+        $this->assertStringContainsString('Golden Sem WPP LTDA', (string) $respLayoutSemWpp->json('html'));
+        $this->assertStringContainsString('Rodapé sem link whatsapp.', (string) $respLayoutSemWpp->json('html'));
+        $this->assertStringNotContainsString('WhatsApp:', (string) $respLayoutSemWpp->json('html'));
+    }
+
+    public function test_estudio_faturas_reflete_dados_digitados_em_tempo_real_no_preview_impressao_e_pdf(): void
+    {
+        $this->actingAs($this->admin);
+
+        // Página inicial exibe aba de dados da fatura, espelho persistente e links com ?rascunho=1
+        $this->get(route('admin.faturas-modelo.index'))
+            ->assertOk()
+            ->assertSee('Dados da Fatura')
+            ->assertSee('Espelho Cirúrgico A4 (210mm × 297mm)')
+            ->assertSee('rascunho=1');
+
+        $modelo = app(FaturaPdfService::class)->configuracaoAtual();
+        $modelo['estilo']['emitente_nome'] = 'Golden Frota Pro LTDA';
+        $modelo['estilo']['pix_chave_fallback'] = 'pix-ao-vivo@goldenfrota.com.br';
+        $modelo['estilo']['gateway_padrao_modulo'] = 'efibankpix';
+
+        $faturaEditada = [
+            'numero' => 'GR-LIVE-9001',
+            'status' => 'Paid',
+            'emitida' => '15/11/2026',
+            'vencimento' => '25/11/2026',
+            'credito_cents' => 1500,
+            'imposto_cents' => 0,
+            'pix_copia_cola' => '',
+            'observacoes' => '<p>Observação HTML ao vivo do <strong>Summernote</strong>.</p>',
+            'cliente' => [
+                'nome' => 'Carlos Eduardo Tempo Real',
+                'empresa' => 'TransCar Cargo S/A',
+                'documento' => '11.222.333/0001-44',
+                'email' => 'carlos@transcar.com.br',
+            ],
+            'itens' => [
+                [
+                    'descricao' => 'Monitoramento Satelital 24h',
+                    'quantidade' => 2,
+                    'valor_unitario_cents' => 12000,
+                    'valor_cents' => 24000,
+                ],
+            ],
+        ];
+
+        $respPreview = $this->postJson(route('admin.faturas-modelo.preview'), [
+            'modelo_json' => json_encode($modelo, JSON_THROW_ON_ERROR),
+            'fatura_json' => json_encode($faturaEditada, JSON_THROW_ON_ERROR),
+        ]);
+
+        $respPreview->assertOk()
+            ->assertJsonPath('numero', 'GR-LIVE-9001')
+            ->assertJsonPath('total_formatado', 'R$ 225,00');
+
+        $htmlPreview = (string) $respPreview->json('html');
+        // emitente contendo 'Golden' não deve ser sobrescrito pelo fallback placeholder
+        $this->assertStringContainsString('Golden Frota Pro LTDA', $htmlPreview);
+        $this->assertStringContainsString('GR-LIVE-9001', $htmlPreview);
+        $this->assertStringContainsString('Carlos Eduardo Tempo Real', $htmlPreview);
+        $this->assertStringContainsString('Monitoramento Satelital 24h', $htmlPreview);
+        $this->assertStringContainsString('R$ 225,00', $htmlPreview);
+        $this->assertStringContainsString('Paga', $htmlPreview);
+        $this->assertStringContainsString('pix-ao-vivo@goldenfrota.com.br', $htmlPreview);
+        $this->assertStringContainsString('efibankpix', $htmlPreview);
+        $this->assertStringContainsString('Observação HTML ao vivo do', $htmlPreview);
+
+        // Impressão A4 e PDF (?rascunho=1) refletem exatamente os dados digitados em tempo real
+        $respImprimir = $this->get(route('admin.faturas-modelo.imprimir', ['rascunho' => 1]));
+        $respImprimir->assertOk();
+        $respImprimir->assertSee('Golden Frota Pro LTDA', false);
+        $respImprimir->assertSee('GR-LIVE-9001', false);
+        $respImprimir->assertSee('Carlos Eduardo Tempo Real', false);
+        $respImprimir->assertSee('R$ 225,00', false);
+
+        $respPdf = $this->get(route('admin.faturas-modelo.pdf', ['rascunho' => 1]));
+        $respPdf->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+        $pdfConteudo = $respPdf->getContent();
+        $this->assertStringStartsWith('%PDF-1.4', $pdfConteudo);
+        $this->assertStringContainsString('GR-LIVE-9001', $pdfConteudo);
+        $this->assertStringContainsString('Golden Frota Pro LTDA', $pdfConteudo);
+
+        // Restaurar limpa o cache de rascunho em tempo real
+        $this->post(route('admin.faturas-modelo.restaurar'))
+            ->assertRedirect(route('admin.faturas-modelo.index'));
+
+        $this->get(route('admin.faturas-modelo.imprimir', ['rascunho' => 1]))
+            ->assertOk()
+            ->assertDontSee('GR-LIVE-9001', false);
+    }
 }

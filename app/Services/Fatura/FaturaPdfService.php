@@ -265,7 +265,11 @@ class FaturaPdfService
             }
 
             foreach ($marcadores as $marcador) {
-                if (strcasecmp($atual, $marcador) === 0 || str_contains($atual, $marcador)) {
+                $ehMatch = $campo === 'emitente_nome'
+                    ? strcasecmp($atual, $marcador) === 0
+                    : (strcasecmp($atual, $marcador) === 0 || str_contains($atual, $marcador));
+
+                if ($ehMatch) {
                     $estilo[$campo] = $padrao;
 
                     break;
@@ -570,6 +574,42 @@ class FaturaPdfService
      * @param  array<string, mixed>|null  $faturaBruta
      * @param  array<string, mixed>|null  $configOverride
      */
+    /**
+     * Aplica preferências globais de gateway/PIX do estúdio quando a fatura ainda usa placeholders de demonstração.
+     *
+     * @param  array<string, mixed>  $fatura
+     * @param  array<string, mixed>  $estilo
+     * @return array<string, mixed>
+     */
+    private function aplicarPreferenciasEstiloNaFatura(array $fatura, array $estilo): array
+    {
+        $exemplo = $this->faturaExemplo();
+
+        $pixFallback = trim((string) ($estilo['pix_chave_fallback'] ?? ''));
+        $pixExemplo = trim((string) ($exemplo['pix_copia_cola'] ?? ''));
+        $pixAtual = trim((string) ($fatura['pix_copia_cola'] ?? ''));
+
+        if ($pixFallback !== '' && ($pixAtual === '' || $pixAtual === $pixExemplo)) {
+            $fatura['pix_copia_cola'] = $pixFallback;
+        }
+
+        $gatewayModulo = trim((string) ($estilo['gateway_padrao_modulo'] ?? ''));
+        $metodoExemplo = trim((string) ($exemplo['metodo_rotulo'] ?? ''));
+        $metodoAtual = trim((string) ($fatura['metodo_rotulo'] ?? ''));
+
+        if ($gatewayModulo !== '' && ($metodoAtual === '' || $metodoAtual === 'Gateway WHMCS' || $metodoAtual === $metodoExemplo)) {
+            $rotuloGateway = trim((string) ($estilo['gateway_padrao_rotulo'] ?? ''));
+            $fatura['metodo_rotulo'] = $rotuloGateway !== ''
+                ? $rotuloGateway
+                : 'Gateway WHMCS · '.$gatewayModulo;
+        }
+
+        return $fatura;
+    }
+
+    /**
+     * Renderiza HTML cirúrgico A4 1:1 para tela, impressão ou geração de PDF.
+     */
     public function renderizarHtmlCirurgico(
         ?array $faturaBruta = null,
         ?array $configOverride = null,
@@ -577,6 +617,7 @@ class FaturaPdfService
     ): string {
         $config = $configOverride ?? $this->configuracaoAtual();
         $fatura = $this->normalizarFatura($faturaBruta ?? $this->faturaExemplo());
+        $fatura = $this->aplicarPreferenciasEstiloNaFatura($fatura, $config['estilo']);
 
         $pixConteudo = $fatura['pix_copia_cola'] !== ''
             ? $fatura['pix_copia_cola']
@@ -612,6 +653,7 @@ class FaturaPdfService
         $config = $configOverride ?? $this->configuracaoAtual();
         $estilo = $config['estilo'];
         $fatura = $this->normalizarFatura($faturaBruta ?? $this->faturaExemplo());
+        $fatura = $this->aplicarPreferenciasEstiloNaFatura($fatura, $estilo);
         $blocos = collect($config['blocos'])->where('visivel', true)->sortBy('ordem')->values()->all();
 
         $empresa = golden_empresa();

@@ -173,6 +173,7 @@
             textarea._goldenSnSilencioso = true;
             try {
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.dispatchEvent(new CustomEvent('golden:summernote-input', { bubbles: true }));
                 if (dispararChange) {
                     textarea.dispatchEvent(new Event('change', { bubbles: true }));
                 }
@@ -290,12 +291,52 @@
                     aplicarTemaNosEditores();
 
                     var editor = editorDoTextarea(textarea);
+                    var editable = editor ? editor.querySelector('.note-editable') : null;
                     var codable = editor ? editor.querySelector('.note-codable') : null;
+
+                    if (editable) {
+                        editable.addEventListener('input', function () {
+                            sincronizarParaTextarea(textarea, true, false);
+                        });
+                        editable.addEventListener('keyup', function () {
+                            sincronizarParaTextarea(textarea, true, false);
+                        });
+                        editable.addEventListener('paste', function () {
+                            window.setTimeout(function () {
+                                sincronizarParaTextarea(textarea, true, false);
+                            }, 0);
+                        });
+                        editable.addEventListener('cut', function () {
+                            window.setTimeout(function () {
+                                sincronizarParaTextarea(textarea, true, false);
+                            }, 0);
+                        });
+                    }
+
+                    if (editor) {
+                        editor.addEventListener('click', function (ev) {
+                            var alvo = ev.target instanceof Element ? ev.target : null;
+                            if (alvo && alvo.closest('.note-toolbar, .note-popover')) {
+                                window.setTimeout(function () {
+                                    sincronizarParaTextarea(textarea, true, true);
+                                }, 15);
+                            }
+                        });
+                    }
+
                     if (codable) {
                         codable.setAttribute('data-summernote', 'false');
                         codable.dataset.summernoteAtivo = '1';
                         codable.addEventListener('input', function () {
                             sincronizarParaTextarea(textarea, true, false);
+                        });
+                        codable.addEventListener('keyup', function () {
+                            sincronizarParaTextarea(textarea, true, false);
+                        });
+                        codable.addEventListener('paste', function () {
+                            window.setTimeout(function () {
+                                sincronizarParaTextarea(textarea, true, false);
+                            }, 0);
                         });
                         codable.addEventListener('change', function () {
                             sincronizarParaTextarea(textarea, true, true);

@@ -674,6 +674,7 @@ HTML,
 
         return [
             'assunto' => $assunto,
+            'pre_cabecalho' => $preCabecalho,
             'html' => $html,
             'texto' => $textoLimpo,
             'usar_layout' => $usarLayout,

@@ -45,7 +45,7 @@
         }
         .golden-btn {
             display: inline-block;
-            background-color: {{ $layout['cor_botao_bg'] ?? '#e0a33e' }};
+            background-color: {{ $layout['cor_botao_bg'] ?? '#e0a33e' }} !important;
             color: {{ $layout['cor_botao_texto'] ?? '#12161a' }} !important;
             text-decoration: none !important;
             font-weight: 700;
@@ -150,7 +150,7 @@
                                 $linhaContatosEmpresa = implode(' · ', array_filter([
                                     !empty($empresaDados['endereco_completo']) ? $empresaDados['endereco_completo'] : '',
                                     !empty($empresaDados['telefone']) ? 'Tel: '.$empresaDados['telefone'] : '',
-                                    !empty($empresaDados['whatsapp']) ? 'WhatsApp: '.$empresaDados['whatsapp'] : '',
+                                    !empty($layout['mostrar_whatsapp']) && !empty($empresaDados['whatsapp']) ? 'WhatsApp: '.$empresaDados['whatsapp'] : '',
                                     !empty($empresaDados['email']) ? $empresaDados['email'] : '',
                                 ], static fn (string $v): bool => trim($v) !== ''));
                             @endphp

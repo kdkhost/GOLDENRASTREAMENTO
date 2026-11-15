@@ -134,7 +134,16 @@
     if (!form || !iframe) return;
 
     let timer = null;
+    let controller = null;
+
     async function renderizar() {
+        if (controller) controller.abort();
+        controller = new AbortController();
+
+        if (window.GoldenSummernote && typeof window.GoldenSummernote.syncForm === 'function') {
+            window.GoldenSummernote.syncForm(form);
+        }
+
         statusEl.textContent = 'Atualizando...';
         statusEl.className = 'badge-status tone-amber';
         const fd = new FormData(form);
@@ -148,26 +157,42 @@
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
                 body: fd,
+                signal: controller.signal,
             });
             const data = await resp.json();
-            if (typeof data.html === 'string') iframe.srcdoc = data.html;
+
+            let scrollAnterior = 0;
+            try {
+                scrollAnterior = iframe.contentWindow?.scrollY || iframe.contentDocument?.documentElement?.scrollTop || 0;
+            } catch {}
+
+            if (typeof data.html === 'string') {
+                if (scrollAnterior > 0) {
+                    iframe.addEventListener('load', () => {
+                        try { iframe.contentWindow?.scrollTo(0, scrollAnterior); } catch {}
+                    }, { once: true });
+                }
+                iframe.srcdoc = data.html;
+            }
             statusEl.textContent = 'Ao vivo';
             statusEl.className = 'badge-status tone-green';
-        } catch {
-            statusEl.textContent = 'Erro';
-            statusEl.className = 'badge-status tone-red';
+        } catch (err) {
+            if (err?.name !== 'AbortError') {
+                statusEl.textContent = 'Erro';
+                statusEl.className = 'badge-status tone-red';
+            }
         }
     }
 
     const agendar = () => {
         clearTimeout(timer);
-        timer = setTimeout(renderizar, 140);
+        timer = setTimeout(renderizar, 120);
     };
 
-    form.querySelectorAll('input, textarea, select').forEach((el) => {
-        el.addEventListener('input', agendar);
-        el.addEventListener('change', renderizar);
+    ['input', 'keyup', 'paste', 'cut', 'golden:summernote-input'].forEach((ev) => {
+        form.addEventListener(ev, agendar);
     });
+    form.addEventListener('change', renderizar);
     sel?.addEventListener('change', renderizar);
 
     document.querySelectorAll('[data-layout-viewport]').forEach((btn) => {

@@ -3,7 +3,10 @@
 @section('page_title', 'Templates de e-mail & layout responsivo')
 
 @section('page_actions')
-    <a href="{{ route('admin.templates-email.layout') }}" class="btn btn-sm btn-golden">
+    <a href="{{ route('admin.templates-email.create') }}" class="btn btn-sm btn-golden">
+        <i class="fas fa-plus" aria-hidden="true"></i> Novo Template
+    </a>
+    <a href="{{ route('admin.templates-email.layout') }}" class="btn btn-sm btn-outline-secondary">
         <i class="fas fa-palette" aria-hidden="true"></i> Configurar Layout Separado
     </a>
     <a href="{{ route('admin.templates-email.fila') }}" class="btn btn-sm btn-outline-secondary">

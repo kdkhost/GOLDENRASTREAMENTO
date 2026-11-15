@@ -744,6 +744,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
     */
     Route::prefix('templates-email')->name('templates-email.')->middleware('role:admin')->group(function () {
         Route::get('/', [EmailTemplateController::class, 'index'])->name('index');
+        Route::get('/novo', [EmailTemplateController::class, 'create'])->name('create');
+        Route::post('/', [EmailTemplateController::class, 'store'])->name('store');
+        Route::post('/preview-livre', [EmailTemplateController::class, 'previewLivre'])->name('preview-livre');
 
         Route::get('/layout', [EmailTemplateController::class, 'layout'])->name('layout');
         Route::put('/layout', [EmailTemplateController::class, 'salvarLayout'])->name('layout.update');

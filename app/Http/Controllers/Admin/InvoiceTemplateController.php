@@ -33,13 +33,14 @@ class InvoiceTemplateController extends Controller
         $statusWhmcs = $this->whmcs->statusPluginWhmcs();
         $segredoWebhook = $this->whmcsPlugin->obterOuGerarSegredo();
 
-        $faturaDemo = $this->pdfService->faturaExemplo();
+        $faturaDemo = $this->pdfService->normalizarFatura($this->pdfService->faturaExemplo());
         $htmlFolhaPreview = $this->pdfService->renderizarHtmlCirurgico($faturaDemo, $modelo, false);
 
         return view('admin.faturas-modelo.index', [
             'modelo' => $modelo,
             'estilo' => $modelo['estilo'],
             'blocos' => $modelo['blocos'],
+            'faturaDemo' => $faturaDemo,
             'gatewaysWhmcs' => $gatewaysWhmcs,
             'statusWhmcs' => $statusWhmcs,
             'webhookUrl' => url('/api/webhooks/whmcs'),
@@ -86,53 +87,187 @@ class InvoiceTemplateController extends Controller
             ]);
         }
 
+        cache()->forget($this->chaveCacheRascunho($request));
+
         return redirect()
             ->route('admin.faturas-modelo.index')
             ->with('sucesso', 'Modelo cirúrgico de fatura PDF A4 salvo com sucesso.');
     }
 
-    public function preview(Request $request): JsonResponse
+    /**
+     * Retorna a chave de cache do rascunho ao vivo do estúdio para o usuário atual.
+     */
+    private function chaveCacheRascunho(?Request $request = null): string
+    {
+        $usuarioId = auth()->id() ?? ($request?->user()?->getKey()) ?? 'guest';
+
+        return 'fatura_studio_draft_'.$usuarioId;
+    }
+
+    /**
+     * Mescla campos digitados/editados em tempo real sobre a fatura base sem perder estrutura aninhada.
+     *
+     * @param  array<string, mixed>  $base
+     * @param  array<string, mixed>  $sobrescrita
+     * @return array<string, mixed>
+     */
+    private function mesclarFaturaSobrescrita(array $base, array $sobrescrita): array
+    {
+        $clienteBase = is_array($base['cliente'] ?? null) ? $base['cliente'] : [];
+        $clienteNovo = is_array($sobrescrita['cliente'] ?? null) ? $sobrescrita['cliente'] : [];
+
+        $mesclada = array_merge($base, $sobrescrita);
+        $mesclada['cliente'] = array_merge($clienteBase, $clienteNovo);
+
+        if (isset($sobrescrita['status']) && ! array_key_exists('status_rotulo', $sobrescrita)) {
+            unset($mesclada['status_rotulo']);
+        }
+
+        if (array_key_exists('itens', $sobrescrita) && is_array($sobrescrita['itens'])) {
+            $subtotalCents = 0;
+            $itensNormalizados = [];
+
+            foreach ($sobrescrita['itens'] as $indice => $itemBruto) {
+                if (! is_array($itemBruto)) {
+                    continue;
+                }
+
+                $quantidade = max(1, (int) ($itemBruto['quantidade'] ?? 1));
+                $unitarioCents = max(0, (int) ($itemBruto['valor_unitario_cents'] ?? $itemBruto['valor_cents'] ?? 0));
+                $totalItemCents = array_key_exists('valor_cents', $itemBruto)
+                    ? max(0, (int) $itemBruto['valor_cents'])
+                    : ($quantidade * $unitarioCents);
+
+                $subtotalCents += $totalItemCents;
+                $itensNormalizados[] = [
+                    'id' => (string) ($itemBruto['id'] ?? 'item-'.($indice + 1)),
+                    'descricao' => (string) ($itemBruto['descricao'] ?? 'Item'),
+                    'tipo' => (string) ($itemBruto['tipo'] ?? 'servico'),
+                    'quantidade' => $quantidade,
+                    'valor_unitario_cents' => $unitarioCents,
+                    'valor_cents' => $totalItemCents,
+                ];
+            }
+
+            $mesclada['itens'] = $itensNormalizados;
+            $mesclada['subtotal_cents'] = $subtotalCents;
+            $credito = max(0, (int) ($mesclada['credito_cents'] ?? 0));
+            $imposto = max(0, (int) ($mesclada['imposto_cents'] ?? 0));
+            $totalCents = max(0, $subtotalCents - $credito + $imposto);
+            $mesclada['total_cents'] = $totalCents;
+            $mesclada['saldo_cents'] = (($mesclada['status'] ?? '') === 'Paid') ? 0 : $totalCents;
+        } elseif (array_key_exists('credito_cents', $sobrescrita) || array_key_exists('imposto_cents', $sobrescrita)) {
+            $subtotal = max(0, (int) ($mesclada['subtotal_cents'] ?? 0));
+            $credito = max(0, (int) ($mesclada['credito_cents'] ?? 0));
+            $imposto = max(0, (int) ($mesclada['imposto_cents'] ?? 0));
+            $totalCents = max(0, $subtotal - $credito + $imposto);
+            $mesclada['total_cents'] = $totalCents;
+            $mesclada['saldo_cents'] = (($mesclada['status'] ?? '') === 'Paid') ? 0 : $totalCents;
+        }
+
+        return $mesclada;
+    }
+
+    /**
+     * Resolve modelo e dados de fatura para preview ao vivo, impressão ou download PDF.
+     *
+     * @return array{modelo: array<string, mixed>, fatura: array<string, mixed>}
+     */
+    private function resolverEstadoPreview(Request $request, bool $usarRascunhoCache = false): array
     {
         $modelo = $this->pdfService->configuracaoAtual();
+        $rascunho = $usarRascunhoCache ? cache()->get($this->chaveCacheRascunho($request)) : null;
+
+        if (is_array($rascunho) && is_array($rascunho['modelo'] ?? null)) {
+            $modelo = [
+                'estilo' => array_merge(
+                    $modelo['estilo'],
+                    is_array($rascunho['modelo']['estilo'] ?? null) ? $rascunho['modelo']['estilo'] : []
+                ),
+                'blocos' => is_array($rascunho['modelo']['blocos'] ?? null)
+                    ? $rascunho['modelo']['blocos']
+                    : $modelo['blocos'],
+            ];
+        }
+
         $payloadJson = (string) $request->input('modelo_json', '');
 
         if ($payloadJson !== '') {
             $decodificado = json_decode($payloadJson, true);
             if (is_array($decodificado)) {
                 $modelo = [
-                    'estilo' => array_merge($modelo['estilo'], is_array($decodificado['estilo'] ?? null) ? $decodificado['estilo'] : []),
-                    'blocos' => is_array($decodificado['blocos'] ?? null) ? $decodificado['blocos'] : $modelo['blocos'],
+                    'estilo' => array_merge(
+                        $modelo['estilo'],
+                        is_array($decodificado['estilo'] ?? null) ? $decodificado['estilo'] : []
+                    ),
+                    'blocos' => is_array($decodificado['blocos'] ?? null)
+                        ? $decodificado['blocos']
+                        : $modelo['blocos'],
                 ];
             }
         }
 
-        $faturaId = (int) $request->input('whmcs_invoice_id', 0);
-        $fatura = $faturaId > 0 ? ($this->whmcs->detalharFatura($faturaId) ?? $this->pdfService->faturaExemplo()) : $this->pdfService->faturaExemplo();
+        $faturaId = (int) $request->input('whmcs_invoice_id', $request->query('fatura_id', 0));
+        $fatura = $faturaId > 0
+            ? ($this->whmcs->detalharFatura($faturaId) ?? $this->pdfService->faturaExemplo())
+            : $this->pdfService->faturaExemplo();
 
+        if ($faturaId <= 0 && is_array($rascunho) && is_array($rascunho['fatura'] ?? null)) {
+            $fatura = $this->mesclarFaturaSobrescrita($fatura, $rascunho['fatura']);
+        }
+
+        $faturaJson = (string) $request->input('fatura_json', '');
+
+        if ($faturaJson !== '') {
+            $decodificadoFatura = json_decode($faturaJson, true);
+            if (is_array($decodificadoFatura)) {
+                $fatura = $this->mesclarFaturaSobrescrita($fatura, $decodificadoFatura);
+            }
+        }
+
+        return [
+            'modelo' => $modelo,
+            'fatura' => $fatura,
+        ];
+    }
+
+    public function preview(Request $request): JsonResponse
+    {
+        $estado = $this->resolverEstadoPreview($request, false);
+        $modelo = $estado['modelo'];
+        $fatura = $estado['fatura'];
+
+        cache()->put($this->chaveCacheRascunho($request), [
+            'modelo' => $modelo,
+            'fatura' => $fatura,
+        ], now()->addHours(2));
+
+        $faturaNormalizada = $this->pdfService->normalizarFatura($fatura);
         $html = $this->pdfService->renderizarHtmlCirurgico($fatura, $modelo, false);
 
-        return response()->json(['html' => $html]);
+        return response()->json([
+            'html' => $html,
+            'numero' => $faturaNormalizada['numero'],
+            'total_formatado' => 'R$ '.number_format($faturaNormalizada['total_cents'] / 100, 2, ',', '.'),
+        ]);
     }
 
     public function imprimir(Request $request): Response
     {
-        $faturaId = (int) $request->query('fatura_id', 0);
-        $fatura = $faturaId > 0
-            ? ($this->whmcs->detalharFatura($faturaId) ?? $this->pdfService->faturaExemplo())
-            : $this->pdfService->faturaExemplo();
+        $usarRascunho = $request->boolean('rascunho') || $request->hasAny(['modelo_json', 'fatura_json']);
+        $estado = $this->resolverEstadoPreview($request, $usarRascunho);
 
-        return response($this->pdfService->renderizarHtmlCirurgico($fatura));
+        return response($this->pdfService->renderizarHtmlCirurgico($estado['fatura'], $estado['modelo']));
     }
 
     public function pdf(Request $request): Response
     {
-        $faturaId = (int) $request->query('fatura_id', 0);
-        $fatura = $faturaId > 0
-            ? ($this->whmcs->detalharFatura($faturaId) ?? $this->pdfService->faturaExemplo())
-            : $this->pdfService->faturaExemplo();
+        $usarRascunho = $request->boolean('rascunho') || $request->hasAny(['modelo_json', 'fatura_json']);
+        $estado = $this->resolverEstadoPreview($request, $usarRascunho);
+        $faturaNormalizada = $this->pdfService->normalizarFatura($estado['fatura']);
 
-        $binario = $this->pdfService->gerarPdfBinario($fatura);
-        $nomeArquivo = 'fatura-'.preg_replace('/[^A-Za-z0-9\-]/', '-', (string) ($fatura['numero'] ?? 'modelo')).'.pdf';
+        $binario = $this->pdfService->gerarPdfBinario($estado['fatura'], $estado['modelo']);
+        $nomeArquivo = 'fatura-'.preg_replace('/[^A-Za-z0-9\-]/', '-', (string) ($faturaNormalizada['numero'] ?? 'modelo')).'.pdf';
 
         return response($binario, 200, [
             'Content-Type' => 'application/pdf',
@@ -197,9 +332,10 @@ class InvoiceTemplateController extends Controller
         );
     }
 
-    public function restaurar(): RedirectResponse
+    public function restaurar(Request $request): RedirectResponse
     {
         $this->pdfService->restaurarConfiguracao();
+        cache()->forget($this->chaveCacheRascunho($request));
 
         return redirect()
             ->route('admin.faturas-modelo.index')
