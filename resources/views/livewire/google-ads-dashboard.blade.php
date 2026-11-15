@@ -293,7 +293,7 @@
                                     <i class="fas fa-{{ $pausar ? 'pause' : 'play' }}" aria-hidden="true"></i>
                                 </button>
                             </form>
-                            @if (! $pausar && auth()->user()?->hasRole('admin'))
+                            @if (! $pausar && auth()->user()?->isAdmin())
                                 <form method="POST" action="{{ route('admin.google-ads.campanhas.remover', ['campanha' => $c['id'], 'conta' => $conta->id]) }}"
                                     class="d-inline" data-sem-ajax
                                     data-confirmar="Excluir permanentemente a campanha '{{ $c['nome'] }}' do Google Ads e limpar os resíduos do painel? Os leads serão preservados.">
@@ -306,7 +306,7 @@
                                 </form>
                             @endif
                         @else
-                            @if (auth()->user()?->hasRole('admin'))
+                            @if (auth()->user()?->isAdmin())
                                 <form method="POST" action="{{ route('admin.google-ads.campanhas.remover', ['campanha' => $c['id'], 'conta' => $conta->id]) }}"
                                     class="d-inline" data-sem-ajax
                                     data-confirmar="Esta campanha não existe mais no Google Ads. Remover '{{ $c['nome'] }}' e todos os resíduos do painel? Os leads serão preservados.">
