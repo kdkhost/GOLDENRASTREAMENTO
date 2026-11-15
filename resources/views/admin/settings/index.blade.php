@@ -29,6 +29,12 @@
 @endphp
 
 @section('page_actions')
+<form method="POST" action="{{ route('admin.settings.limpar-cache') }}" class="d-inline" data-sem-ajax data-confirmar="Limpar todo o cache do sistema (aplicação, views, rotas e configurações)?">
+    @csrf
+    <button type="submit" class="btn btn-sm btn-outline-warning" title="Limpa cache da aplicação, views, rotas e configurações">
+        <i class="fas fa-broom me-1"></i> Limpar cache
+    </button>
+</form>
 @if($lojaAtiva)
     <a href="{{ route('site.loja.index') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="fas fa-up-right-from-square me-1"></i> Ver a loja no site</a>
 @endif

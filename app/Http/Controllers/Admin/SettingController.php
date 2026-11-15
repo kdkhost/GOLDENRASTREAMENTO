@@ -12,6 +12,8 @@ use App\Support\ChavesDeIntegracao;
 use App\Support\Fuso;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -412,5 +414,15 @@ class SettingController extends Controller
         $res = $melhorEnvio->testarConexao();
 
         return back()->with($res['ok'] ? 'success' : 'error', $res['mensagem']);
+    }
+
+    public function limparCache(): RedirectResponse
+    {
+        Artisan::call('optimize:clear');
+        Cache::flush();
+
+        Activity::log('sistema_cache_limpo', 'Cache do sistema (aplicação, views, rotas e configurações) limpo manualmente pelo painel.');
+
+        return back()->with('success', 'Cache do sistema limpo com sucesso (aplicação, views, rotas e configurações).');
     }
 }

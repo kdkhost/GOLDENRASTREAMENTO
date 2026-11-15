@@ -55,6 +55,11 @@
                         @can('admin')
                         <li><a class="dropdown-item" href="{{ route('admin.usuarios.index') }}"><i class="fas fa-user-shield me-2 text-gold"></i> Usuários &amp; permissões</a></li>
                         <li><a class="dropdown-item" href="{{ route('admin.settings.index') }}"><i class="fas fa-sliders me-2 text-gold"></i> Configurações</a></li>
+                        <li>
+                            <button type="submit" form="formLimparCache" class="dropdown-item">
+                                <i class="fas fa-broom me-2 text-gold"></i> Limpar cache do sistema
+                            </button>
+                        </li>
                         @endcan
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="event.preventDefault();document.getElementById('formLogout').submit();"><i class="fas fa-arrow-right-from-bracket me-2"></i> Encerrar sessão</a></li>
@@ -63,6 +68,9 @@
             </ul>
         </div>
     </nav>
+    @can('admin')
+    <form id="formLimparCache" action="{{ route('admin.settings.limpar-cache') }}" method="POST" class="d-none" data-sem-ajax data-confirmar="Limpar todo o cache do sistema (aplicação, views, rotas e configurações)?">@csrf</form>
+    @endcan
     <form id="formLogout" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
 
     {{-- SIDEBAR --}}

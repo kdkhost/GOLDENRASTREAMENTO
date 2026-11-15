@@ -672,6 +672,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::post('/loja', [SettingController::class, 'loja'])->name('loja');
         Route::post('/loja-regras', [SettingController::class, 'regras'])->name('loja-regras');
         Route::post('/melhor-envio/testar', [SettingController::class, 'testarMelhorEnvio'])->name('melhor-envio.testar');
+        Route::post('/limpar-cache', [SettingController::class, 'limparCache'])->name('limpar-cache');
         Route::post('/whatsapp', [SettingController::class, 'whatsapp'])->name('whatsapp');
         Route::post('/chaves', [SettingController::class, 'chaves'])->name('chaves');
         Route::post('/whmcs-sondar', [SettingController::class, 'sondarWhmcs'])->name('whmcs.sondar');
