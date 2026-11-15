@@ -84,10 +84,17 @@
                             <p class="cep-hint" id="cepHint"><i class="fa-solid fa-location-crosshairs"></i> Digite o CEP e preenchemos o endereço.</p>
                         </div>
                     </div>
-                    <div class="field">
-                        <label for="coEndereco">Rua / avenida e número</label>
-                        <input id="coEndereco" name="endereco" type="text" maxlength="160" value="{{ old('endereco') }}" autocomplete="street-address" placeholder="Av. Brasil, 1200">
-                        @error('endereco')<span class="form-err">{{ $message }}</span>@enderror
+                    <div class="row-2" style="grid-template-columns:minmax(0,1fr) 140px">
+                        <div class="field">
+                            <label for="coRua">Rua / avenida</label>
+                            <input id="coRua" type="text" maxlength="130" value="{{ old('endereco') }}" autocomplete="street-address" placeholder="Av. Brasil">
+                            <input id="coEndereco" name="endereco" type="hidden" value="{{ old('endereco') }}">
+                            @error('endereco')<span class="form-err">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="field">
+                            <label for="coNumero">Número</label>
+                            <input id="coNumero" type="text" maxlength="25" placeholder="1200" autocomplete="address-line2">
+                        </div>
                     </div>
                     <div class="row-2">
                         <div class="field">
@@ -333,27 +340,67 @@ document.addEventListener('DOMContentLoaded',function(){
     .catch(function(){});
   }
 
-  // ViaCEP: preenchimento do endereço a partir do CEP + Cálculo Correios.
+  // Sincroniza Rua + Número no campo oculto `endereco` enviado ao backend.
+  var ruaInp=document.getElementById('coRua');
+  var numInp=document.getElementById('coNumero');
+  var endHidden=document.getElementById('coEndereco');
+  function sincronizarEndereco(){
+    if(!endHidden || !ruaInp)return;
+    var r=(ruaInp.value||'').trim();
+    var n=numInp ? (numInp.value||'').trim() : '';
+    endHidden.value = n ? (r ? r+', '+n : n) : r;
+  }
+  if(ruaInp)ruaInp.addEventListener('input', sincronizarEndereco);
+  if(numInp)numInp.addEventListener('input', sincronizarEndereco);
+  form.addEventListener('submit', sincronizarEndereco);
+
+  // ViaCEP: preenchimento automático ao digitar 8 dígitos + foco automático no campo Número + Cálculo Correios.
   var cep=document.getElementById('coCep');
+  var ultimoCepBuscado='';
+  function consultarCepCheckout(d, moverFoco){
+    if(d.length!==8)return;
+    carregarFreteCorreios(d);
+    fetch('https://viacep.com.br/ws/'+d+'/json/').then(function(r){return r.json();}).then(function(j){
+      if(j.erro)return;
+      if(ruaInp && j.logradouro){
+        ruaInp.value=j.logradouro;
+      }
+      var set=function(n,v){var e=form.querySelector('[name="'+n+'"]');if(e&&v)e.value=v;};
+      set('bairro',j.bairro||'');
+      set('cidade',j.localidade||'');
+      set('uf',j.uf||'');
+      sincronizarEndereco();
+      var hint=document.getElementById('cepHint');
+      var resumo=[j.logradouro,j.bairro].filter(Boolean).join(', ');
+      var cidadeUf=(j.localidade||'')+(j.uf?'/'+j.uf:'');
+      var textoLocal=resumo ? (resumo+' — '+cidadeUf) : cidadeUf;
+      if(hint)hint.innerHTML='<i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> '+textoLocal;
+      if(moverFoco && numInp){
+        numInp.focus();
+      }
+    }).catch(function(){});
+  }
   if(cep){
+    cep.addEventListener('input',function(){
+      var d=(cep.value||'').replace(/\D/g,'').slice(0,8);
+      if(d.length===8 && d!==ultimoCepBuscado){
+        ultimoCepBuscado=d;
+        consultarCepCheckout(d, true);
+      } else if(d.length<8){
+        ultimoCepBuscado='';
+      }
+    });
     cep.addEventListener('blur',function(){
       var d=(cep.value||'').replace(/\D/g,'');
-      if(d.length!==8)return;
-      carregarFreteCorreios(d);
-      fetch('https://viacep.com.br/ws/'+d+'/json/').then(function(r){return r.json();}).then(function(j){
-        if(j.erro)return;
-        var set=function(n,v){var e=form.querySelector('[name="'+n+'"]');if(e&&!e.value&&v)e.value=v;};
-        set('endereco',j.logradouro?j.logradouro+', ':'');
-        set('bairro',j.bairro||'');
-        set('cidade',j.localidade||'');
-        set('uf',j.uf||'');
-        var hint=document.getElementById('cepHint');
-        if(hint)hint.innerHTML='<i class="fa-solid fa-circle-check"></i> '+(j.localidade||'')+'/'+(j.uf||'');
-      }).catch(function(){});
+      if(d.length===8 && d!==ultimoCepBuscado){
+        ultimoCepBuscado=d;
+        consultarCepCheckout(d, false);
+      }
     });
 
     var inicialCep=(cep.value||'').replace(/\D/g,'');
     if(inicialCep.length===8){
+      ultimoCepBuscado=inicialCep;
       carregarFreteCorreios(inicialCep);
     }
   }

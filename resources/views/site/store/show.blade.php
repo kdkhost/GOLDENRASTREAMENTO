@@ -526,6 +526,50 @@ document.addEventListener('DOMContentLoaded',function(){
     if(form.querySelector('.qplus')) form.querySelector('.qplus').addEventListener('click',function(){inp.value=Math.min(teto,(parseInt(inp.value,10)||1)+1);recalc();});
   }
 
+  // 1b. Adicionar ao carrinho sem refresh e sem preloader (só "Comprar agora" navega)
+  var btnAddCart = form ? form.querySelector('button[name="ir"][value="carrinho"]') : null;
+  if (form && btnAddCart) {
+    btnAddCart.addEventListener('click', function (e) {
+      e.preventDefault();
+      var textoOriginal = btnAddCart.innerHTML;
+      btnAddCart.disabled = true;
+      btnAddCart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Adicionando...';
+
+      fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          produto: {{ (int) $produto['id'] }},
+          quantidade: inp ? Math.max(1, parseInt(inp.value, 10) || 1) : 1,
+          ir: 'carrinho'
+        })
+      })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        btnAddCart.disabled = false;
+        if (!res.ok || !res.data.sucesso) {
+          btnAddCart.innerHTML = textoOriginal;
+          alert((res.data && res.data.mensagem) || 'Não foi possível adicionar ao carrinho.');
+          return;
+        }
+        document.querySelectorAll('[data-cart-count]').forEach(function (el) {
+          el.textContent = res.data.carrinho_itens;
+          el.hidden = res.data.carrinho_itens <= 0;
+        });
+        btnAddCart.innerHTML = '<i class="fa-solid fa-check"></i> Adicionado ao carrinho!';
+        setTimeout(function () { btnAddCart.innerHTML = textoOriginal; }, 2400);
+      })
+      .catch(function () {
+        btnAddCart.disabled = false;
+        btnAddCart.innerHTML = textoOriginal;
+      });
+    });
+  }
+
   // 2. Galeria de fotos, Zoom no hover e Lightbox ao clicar
   var mediaBox=document.getElementById('pdpMediaBox');
   var mainImg=document.getElementById('prodMainImg');
@@ -681,7 +725,8 @@ document.addEventListener('DOMContentLoaded',function(){
           return;
         }
 
-        statusBox.innerHTML='<span style="color:var(--teal)"><i class="fa-solid fa-circle-check"></i> Opções disponíveis para o CEP '+res.cep+':</span>';
+        var localTexto = (res.endereco_cep && res.endereco_cep.resumo) ? (' · <strong>' + res.endereco_cep.resumo + '</strong>') : '';
+        statusBox.innerHTML='<span style="color:var(--teal)"><i class="fa-solid fa-location-dot"></i> CEP '+res.cep+localTexto+'</span>';
         resBox.style.display='flex';
         resBox.innerHTML='';
 
@@ -704,8 +749,18 @@ document.addEventListener('DOMContentLoaded',function(){
       });
     }
 
-    btnFrete.addEventListener('click',simularFrete);
-    cepInp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();simularFrete();}});
+    var ultimoCepSimulado = '';
+    cepInp.addEventListener('input', function () {
+      var raw = cepInp.value.replace(/\D/g, '').slice(0, 8);
+      if (raw.length === 8 && raw !== ultimoCepSimulado) {
+        ultimoCepSimulado = raw;
+        simularFrete();
+      } else if (raw.length < 8) {
+        ultimoCepSimulado = '';
+      }
+    });
+    btnFrete.addEventListener('click', function () { ultimoCepSimulado = cepInp.value.replace(/\D/g, ''); simularFrete(); });
+    cepInp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();ultimoCepSimulado=cepInp.value.replace(/\D/g,'');simularFrete();}});
   }
 });
 </script>

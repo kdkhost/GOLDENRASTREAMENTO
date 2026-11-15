@@ -21,7 +21,9 @@ use App\Support\Notifica;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -120,7 +122,7 @@ class StoreController extends Controller
         return back()->with('success', 'Cupom removido do carrinho.');
     }
 
-    public function adicionar(Request $request): RedirectResponse
+    public function adicionar(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'produto' => ['required', 'integer'],
@@ -131,14 +133,34 @@ class StoreController extends Controller
         $produto = Product::doCatalogo((int) $data['produto']);
 
         if ($produto === null) {
+            if ($request->expectsJson()) {
+                return response()->json(['sucesso' => false, 'mensagem' => 'Este produto não está disponível.'], 404);
+            }
+
             return back()->with('error', 'Este produto não está disponível.');
         }
 
         if (! $produto['disponivel']) {
-            return back()->with('error', "O {$produto['nome']} está esgotado. Fale no WhatsApp para encomendar a reposição.");
+            $msgEsgotado = "O {$produto['nome']} está esgotado. Fale no WhatsApp para encomendar a reposição.";
+            if ($request->expectsJson()) {
+                return response()->json(['sucesso' => false, 'mensagem' => $msgEsgotado], 422);
+            }
+
+            return back()->with('error', $msgEsgotado);
         }
 
-        Carrinho::daSessao()->adicionar((int) $produto['id'], (int) ($data['quantidade'] ?? 1));
+        $carrinho = Carrinho::daSessao();
+        $carrinho->adicionar((int) $produto['id'], (int) ($data['quantidade'] ?? 1));
+
+        if ($request->expectsJson()) {
+            $totalItens = array_sum(array_column($carrinho->linhas(), 'quantidade'));
+
+            return response()->json([
+                'sucesso' => true,
+                'mensagem' => "{$produto['nome']} adicionado ao carrinho.",
+                'carrinho_itens' => $totalItens,
+            ]);
+        }
 
         $destino = ($data['ir'] ?? 'carrinho') === 'checkout'
             ? route('site.loja.checkout')
@@ -233,12 +255,63 @@ class StoreController extends Controller
             ]);
         }
 
+        $cepLimpo = preg_replace('/\D/', '', (string) $data['cep']);
+        $enderecoCep = $this->consultarLocalidadeCep($cepLimpo);
+
         return response()->json([
             'sucesso' => true,
-            'cep' => preg_replace('/(\d{5})(\d{3})/', '$1-$2', preg_replace('/\D/', '', $data['cep'])),
+            'cep' => preg_replace('/(\d{5})(\d{3})/', '$1-$2', $cepLimpo),
             'subtotal' => $subtotal,
             'opcoes' => $opcoes,
+            'endereco_cep' => $enderecoCep,
         ]);
+    }
+
+    /**
+     * Consulta logradouro, bairro, cidade e UF de um CEP via ViaCEP com cache de 24h.
+     *
+     * @return array{logradouro:string, bairro:string, cidade:string, uf:string, resumo:string}|null
+     */
+    private function consultarLocalidadeCep(string $cepLimpo): ?array
+    {
+        if (strlen($cepLimpo) !== 8) {
+            return null;
+        }
+
+        return Cache::remember('viacep_'.$cepLimpo, 86400, function () use ($cepLimpo): ?array {
+            try {
+                $resp = Http::timeout(4)->get("https://viacep.com.br/ws/{$cepLimpo}/json/");
+                if (! $resp->ok()) {
+                    return null;
+                }
+                $json = $resp->json();
+                if (! is_array($json) || ! empty($json['erro'])) {
+                    return null;
+                }
+
+                $logradouro = trim((string) ($json['logradouro'] ?? ''));
+                $bairro = trim((string) ($json['bairro'] ?? ''));
+                $cidade = trim((string) ($json['localidade'] ?? ''));
+                $uf = trim((string) ($json['uf'] ?? ''));
+
+                $partes = array_filter([$logradouro, $bairro]);
+                $local = trim($cidade.($uf !== '' ? '/'.$uf : ''));
+                $resumo = implode(', ', $partes);
+                if ($local !== '') {
+                    $resumo = $resumo !== '' ? "{$resumo} — {$local}" : $local;
+                }
+
+                return [
+                    'logradouro' => $logradouro,
+                    'bairro' => $bairro,
+                    'cidade' => $cidade,
+                    'uf' => $uf,
+                    'resumo' => $resumo,
+                ];
+            } catch (\Throwable) {
+                return null;
+            }
+        });
     }
 
     /**

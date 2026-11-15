@@ -145,12 +145,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!inputCep || !btnCalc || !boxResultados) return;
 
-    inputCep.addEventListener('input', function () {
-        let v = inputCep.value.replace(/\D/g, '').slice(0, 8);
-        inputCep.value = v.replace(/^(\d{5})(\d)/, '$1-$2');
-    });
+    let ultimoCepCart = '';
 
-    btnCalc.addEventListener('click', function () {
+    function consultarFreteCart() {
         const rawCep = inputCep.value.replace(/\D/g, '');
         if (rawCep.length !== 8) {
             boxResultados.style.display = 'block';
@@ -161,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnCalc.disabled = true;
         btnCalc.textContent = 'Calculando...';
         boxResultados.style.display = 'block';
-        boxResultados.innerHTML = '<span style="color:#64748b"><i class="fa-solid fa-spinner fa-spin"></i> Consultando Correios...</span>';
+        boxResultados.innerHTML = '<span style="color:#64748b"><i class="fa-solid fa-spinner fa-spin"></i> Consultando CEP e Correios...</span>';
 
         fetch("{{ route('site.loja.frete.calcular') }}", {
             method: 'POST',
@@ -182,7 +179,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            let html = '<ul style="list-style:none;padding:0;margin:4px 0 0;display:flex;flex-direction:column;gap:6px">';
+            let html = '';
+            if (data.endereco_cep && data.endereco_cep.resumo) {
+                html += '<div style="margin-bottom:8px;padding:6px 8px;border-radius:6px;background:rgba(15,118,110,.08);color:var(--teal);font-weight:600">';
+                html += '<i class="fa-solid fa-location-dot" style="margin-right:4px"></i> ' + data.endereco_cep.resumo;
+                html += '</div>';
+            }
+
+            html += '<ul style="list-style:none;padding:0;margin:4px 0 0;display:flex;flex-direction:column;gap:6px">';
             data.opcoes.forEach(op => {
                 const prazo = op.prazo_dias ? (op.prazo_dias + ' ' + (op.prazo_dias > 1 ? 'dias úteis' : 'dia útil')) : '';
                 html += '<li style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:#fff;border:1px solid #e2e8f0;border-radius:6px">';
@@ -198,6 +202,22 @@ document.addEventListener('DOMContentLoaded', function () {
             btnCalc.textContent = 'Calcular';
             boxResultados.innerHTML = '<span style="color:#dc2626">Erro ao conectar ao serviço de frete.</span>';
         });
+    }
+
+    inputCep.addEventListener('input', function () {
+        let v = inputCep.value.replace(/\D/g, '').slice(0, 8);
+        inputCep.value = v.replace(/^(\d{5})(\d)/, '$1-$2');
+        if (v.length === 8 && v !== ultimoCepCart) {
+            ultimoCepCart = v;
+            consultarFreteCart();
+        } else if (v.length < 8) {
+            ultimoCepCart = '';
+        }
+    });
+
+    btnCalc.addEventListener('click', function () {
+        ultimoCepCart = inputCep.value.replace(/\D/g, '');
+        consultarFreteCart();
     });
 });
 </script>

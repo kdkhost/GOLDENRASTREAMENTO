@@ -14,6 +14,7 @@ use App\Support\Carrinho;
 use Database\Seeders\OrdersSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -291,5 +292,40 @@ class FluxoDaLojaTest extends TestCase
             $this->assertSame($status, OrderHistory::latest('id')->firstOrFail()->status);
             $this->assertNotSame('', $pedido->statusLabel());
         }
+    }
+
+    public function test_adicionar_no_carrinho_via_ajax_retorna_json_sem_redirect_e_frete_retorna_localidade(): void
+    {
+        $produto = Product::where('ativo', true)->firstOrFail();
+
+        $this->postJson(route('site.loja.carrinho.adicionar'), [
+            'produto' => $produto->id,
+            'quantidade' => 2,
+            'ir' => 'carrinho',
+        ])
+            ->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'carrinho_itens' => 2,
+            ]);
+
+        Http::fake([
+            'https://viacep.com.br/ws/01001000/json/' => Http::response([
+                'cep' => '01001-000',
+                'logradouro' => 'Praça da Sé',
+                'bairro' => 'Sé',
+                'localidade' => 'São Paulo',
+                'uf' => 'SP',
+            ]),
+        ]);
+
+        $this->postJson(route('site.loja.frete.calcular'), [
+            'cep' => '01001-000',
+            'produto_id' => $produto->id,
+            'quantidade' => 1,
+        ])
+            ->assertOk()
+            ->assertJsonPath('sucesso', true)
+            ->assertJsonPath('endereco_cep.resumo', 'Praça da Sé, Sé — São Paulo/SP');
     }
 }
