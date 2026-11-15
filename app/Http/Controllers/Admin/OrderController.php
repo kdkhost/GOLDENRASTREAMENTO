@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Setting;
 use App\Services\Correios\CorreiosService;
 use App\Services\RastreioEncomendaService;
 use App\Support\Envio;
@@ -147,8 +148,17 @@ class OrderController extends Controller
             'codigo_rastreio' => $codigo ?: null,
         ]);
 
-        if ($request->boolean('marcar_enviado') && in_array($pedido->status, ['pendente', 'pago'], true)) {
+        if ($request->boolean('marcar_enviado') && in_array($pedido->status, ['pendente', 'pago', 'separando'], true)) {
             $pedido->registrarStatus('enviado', 'Objeto despachado via '.($pedido->transportadoraLabel()).($codigo ? ' (código '.$codigo.')' : ''), $request->user()->id);
+        } elseif ($codigo !== '') {
+            $origemEmpresa = trim((string) Setting::get('empresa_cidade', 'Central Golden Rastreamento'));
+            $destinoPedido = $pedido->cidade ? trim("{$pedido->cidade}/{$pedido->uf}") : 'Endereço do destinatário';
+            $pedido->registrarMovimentacaoRastreio(
+                "Etiqueta / Código vinculado ({$pedido->transportadoraLabel()})",
+                $origemEmpresa,
+                "Código de rastreamento {$codigo} vinculado ao pedido para entrega em {$destinoPedido}.",
+                $pedido->transportadoraLabel()
+            );
         }
 
         $notificado = false;
@@ -195,6 +205,14 @@ class OrderController extends Controller
             auth()->id()
         );
 
+        $origemEmpresa = trim((string) Setting::get('empresa_cidade', 'Três Pontas/MG'));
+        $pedido->registrarMovimentacaoRastreio(
+            'Coleta agendada na expedição Golden Rastreamento',
+            $origemEmpresa,
+            "Encomenda conferida e aguardando retirada pela transportadora ({$pedido->transportadoraLabel()}).",
+            'Expedição Golden Rastreamento'
+        );
+
         Notifica::disparar(
             'coleta_solicitada',
             "Nova coleta solicitada · Pedido {$pedido->numero}",
@@ -236,6 +254,85 @@ class OrderController extends Controller
         }
 
         return back()->with('error', 'Não foi possível enviar o e-mail de rastreamento.');
+    }
+
+    /**
+     * Registra manualmente uma parada ou movimentação intermediária da transportadora no rastreamento do pedido.
+     */
+    public function adicionarMovimentacaoRastreio(Request $request, Order $pedido): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'string', 'max:140'],
+            'unidade' => ['nullable', 'string', 'max:140'],
+            'local' => ['required', 'string', 'max:140'],
+            'detalhe' => ['nullable', 'string', 'max:500'],
+            'data' => ['nullable', 'string', 'max:20'],
+            'hora' => ['nullable', 'string', 'max:10'],
+            'atualizar_status_pedido' => ['nullable', 'in:nenhum,separando,enviado,entregue'],
+        ]);
+
+        $pedido->registrarMovimentacaoRastreio(
+            $data['status'],
+            $data['local'],
+            $data['detalhe'] ?? '',
+            $data['unidade'] ?? $pedido->transportadoraLabel(),
+            $data['data'] ?? null,
+            $data['hora'] ?? null
+        );
+
+        $novoStatus = (string) ($data['atualizar_status_pedido'] ?? 'nenhum');
+        if (in_array($novoStatus, ['separando', 'enviado', 'entregue'], true) && $pedido->status !== $novoStatus) {
+            $pedido->registrarStatus(
+                $novoStatus,
+                "{$data['status']} — {$data['local']}",
+                $request->user()?->id
+            );
+        }
+
+        $dataHora = trim(($data['data'] ?? now()->format('d/m/Y')).' '.($data['hora'] ?? now()->format('H:i')));
+        Notifica::disparar(
+            'entrega_atualizada',
+            "Nova parada · Pedido {$pedido->numero} ({$data['status']})",
+            "Parada registrada em {$data['local']} ({$dataHora}): ".($data['detalhe'] ?? $data['status']),
+            (string) $pedido->id,
+            [
+                'pedido_numero' => $pedido->numero,
+                'codigo_rastreio' => $pedido->codigo_rastreio,
+                'etapa' => $data['status'],
+                'local' => $data['local'],
+                'unidade' => $data['unidade'] ?? $pedido->transportadoraLabel(),
+                'descricao' => $data['detalhe'] ?? '',
+                'data_hora' => $dataHora,
+            ],
+            "parada:{$pedido->id}:".md5($data['status'].$data['local'].$dataHora)
+        );
+
+        Activity::log(
+            'pedido_rastreio_movimentacao',
+            "Pedido {$pedido->numero}: parada '{$data['status']}' em {$data['local']}.",
+            $pedido
+        );
+
+        return back()->with('success', 'Parada / movimentação registrada com sucesso no rastreamento.');
+    }
+
+    /**
+     * Remove uma parada específica do histórico de rastreio do pedido.
+     */
+    public function removerMovimentacaoRastreio(Order $pedido, int $indice): RedirectResponse
+    {
+        $historico = is_array($pedido->rastreio_historico) ? $pedido->rastreio_historico : [];
+        if (array_key_exists($indice, $historico)) {
+            unset($historico[$indice]);
+            $pedido->rastreio_historico = array_values($historico);
+            $pedido->save();
+
+            Activity::log('pedido_rastreio_movimentacao_removida', "Pedido {$pedido->numero}: parada #{$indice} removida.", $pedido);
+
+            return back()->with('success', 'Parada removida do histórico de rastreamento.');
+        }
+
+        return back()->with('error', 'Parada não encontrada no histórico deste pedido.');
     }
 
     /**

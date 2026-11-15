@@ -517,6 +517,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::get('/{pedido}', [OrderController::class, 'show'])->name('show');
         Route::post('/{pedido}/status', [OrderController::class, 'atualizarStatus'])->name('status');
         Route::post('/{pedido}/rastreio', [OrderController::class, 'salvarRastreio'])->name('rastreio');
+        Route::post('/{pedido}/rastreio/movimentacao', [OrderController::class, 'adicionarMovimentacaoRastreio'])->name('rastreio.movimentacao');
+        Route::delete('/{pedido}/rastreio/movimentacao/{indice}', [OrderController::class, 'removerMovimentacaoRastreio'])->name('rastreio.movimentacao.remover');
         Route::post('/{pedido}/rastreio/notificar', [OrderController::class, 'notificarRastreio'])->name('rastreio.notificar');
         Route::post('/{pedido}/rastreio/coleta', [OrderController::class, 'solicitarColeta'])->name('rastreio.coleta');
         Route::get('/{pedido}/rastreio/consultar', [OrderController::class, 'consultarRastreio'])->name('rastreio.consultar');

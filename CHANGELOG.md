@@ -18,6 +18,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Integração opcional com a **API Universal de Rastreamento Wonca / Seu Rastreio** (`rastreio_wonca_token`) em `/admin/configuracao#loja` (com guia passo a passo `?` e links oficiais) para consulta de movimentações reais em `/rastreamento` mesmo sem contrato CWS dos Correios.
 - Integração com a **API Oficial de Shipments do Mercado Livre (Mercado Envios)** (`mercado_livre_access_token`) em `/admin/configuracao#loja` (com guia `?` e links do DevCenter) para consulta de histórico real de remessas quando o Mercado Envios estiver ativo.
 - Novo layout moderno em **duas colunas** para todas as telas de autenticação (login administrativo, verificação em duas etapas, login do portal, cadastro e recuperação/redefinição de senha), com alternância de exibição de senha, alternância de tema e exibição da **versão do sistema** no rodapé (`config('golden.versao')`).
+- Registro completo e detalhado de **paradas e movimentações de entrega** por transportadora em pedidos (`Order::registrarMovimentacaoRastreio`, atalhos rápidos + formulário de paradas em `/admin/pedidos/{pedido}` com gravação automática em mudanças de status, despacho e coleta, e exibição parada a parada com unidade, cidade/UF, selo de verificação, próxima parada/destino final e histórico completo em `/rastreamento`).
 
 ### Alterado
 - Reorganização da aba **Loja & Logística** (`/admin/configuracao#loja`) em sub-abas limpas e estruturadas.
@@ -34,6 +35,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Corrigida a chave de cache do token CWS dos Correios em `CorreiosService::consultarSroCws()` para incluir o token de acesso e não armazenar resposta vazia em cache quando a autenticação falhar.
 - Ajustado o layout das páginas de erro (`resources/views/errors/layout.blade.php`) para se adaptar proporcionalmente à altura da janela (`vh`/`dvh`) com ícone e código HTTP lado a lado, evitando a necessidade de rolagem vertical para visualizar o conteúdo completo.
 - Atualizada a página de manutenção (`resources/views/errors/503.blade.php`) com layout proporcional à altura da janela (`vh`/`dvh`) sem rolagem vertical e corrigida a malha viária do canvas para que todos os veículos trafeguem exclusivamente dentro das faixas asfaltadas das ruas (nunca sobre as calçadas).
+- Corrigido o fluxo completo de rastreamento de encomendas: adicionado cast `'rastreio_historico' => 'array'` em `Order`, corrigida a ordem de despacho de APIs e transportadoras em `RastreioEncomendaService::consultarAgora()` para não interceptar pedidos de outras transportadoras pelos Correios, unificado e deduplicado o histórico de paradas (API + `rastreio_historico` + `OrderHistory`) e invalidado o cache automaticamente ao registrar novas movimentações.
 
 ## [2.64.0] - 2026-11-12
 

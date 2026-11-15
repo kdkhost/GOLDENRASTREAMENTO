@@ -67,6 +67,7 @@ class Order extends Model
         'pago_em' => 'datetime',
         'enviado_em' => 'datetime',
         'rastreio_notificado_em' => 'datetime',
+        'rastreio_historico' => 'array',
     ];
 
     /** O token nunca sai do modelo: só a rota pública montada pelo controlador. */
@@ -146,6 +147,82 @@ class Order extends Model
                 'user_id' => $userId,
             ]);
         }
+
+        if ($anterior !== $status && in_array($status, ['pago', 'separando', 'enviado', 'entregue'], true)) {
+            $origemEmpresa = trim((string) Setting::get('empresa_cidade', 'Central Golden Rastreamento'));
+            $destinoPedido = $this->cidade ? trim("{$this->cidade}/{$this->uf}") : 'Endereço do destinatário';
+            $transp = $this->transportadoraLabel();
+
+            [$tituloParada, $localParada, $unidadeParada, $detalheParada] = match ($status) {
+                'pago' => [
+                    'Pagamento confirmado — pedido liberado',
+                    $origemEmpresa,
+                    'Central Golden Rastreamento',
+                    $observacao ?: 'Pagamento aprovado. Pedido encaminhado para conferência e separação do equipamento.',
+                ],
+                'separando' => [
+                    'Em separação e testes na bancada',
+                    $origemEmpresa,
+                    'Expedição Golden Rastreamento',
+                    $observacao ?: "Equipamento em preparação, embalagem e emissão de etiqueta ({$transp}).",
+                ],
+                'enviado' => [
+                    "Objeto despachado via {$transp}",
+                    $origemEmpresa,
+                    $transp,
+                    $observacao ?: ($this->codigo_rastreio
+                        ? "Objeto postado/coletado com código {$this->codigo_rastreio} em rota para {$destinoPedido}."
+                        : "Encomenda despachada para {$destinoPedido}."),
+                ],
+                'entregue' => [
+                    $this->entrega === 'retira' ? 'Pedido retirado pelo cliente' : 'Objeto entregue ao destinatário',
+                    $this->entrega === 'retira' ? $origemEmpresa : $destinoPedido,
+                    $transp,
+                    $observacao ?: 'Entrega finalizada com sucesso.',
+                ],
+            };
+
+            $this->registrarMovimentacaoRastreio($tituloParada, $localParada, $detalheParada, $unidadeParada);
+        }
+    }
+
+    /**
+     * Registra uma nova parada/movimentação detalhada no histórico de rastreio do pedido.
+     */
+    public function registrarMovimentacaoRastreio(
+        string $status,
+        string $local,
+        ?string $detalhe = null,
+        ?string $unidade = null,
+        ?string $data = null,
+        ?string $hora = null
+    ): void {
+        $historico = is_array($this->rastreio_historico) ? $this->rastreio_historico : [];
+
+        $novoEvento = [
+            'data' => trim((string) $data) !== '' ? trim((string) $data) : now()->format('d/m/Y'),
+            'hora' => trim((string) $hora) !== '' ? trim((string) $hora) : now()->format('H:i'),
+            'local' => trim($local) !== '' ? trim($local) : 'Central Golden Rastreamento',
+            'unidade' => trim((string) $unidade) !== '' ? trim((string) $unidade) : $this->transportadoraLabel(),
+            'status' => trim($status),
+            'detalhe' => trim((string) $detalhe),
+            'transportadora' => $this->transportadoraLabel(),
+        ];
+
+        $ultimo = $historico[0] ?? null;
+        if (
+            is_array($ultimo)
+            && ($ultimo['status'] ?? '') === $novoEvento['status']
+            && ($ultimo['local'] ?? '') === $novoEvento['local']
+            && ($ultimo['data'] ?? '') === $novoEvento['data']
+            && ($ultimo['hora'] ?? '') === $novoEvento['hora']
+        ) {
+            return;
+        }
+
+        array_unshift($historico, $novoEvento);
+        $this->rastreio_historico = array_values($historico);
+        $this->save();
     }
 
     /**

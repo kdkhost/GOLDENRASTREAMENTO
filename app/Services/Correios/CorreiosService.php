@@ -302,7 +302,7 @@ class CorreiosService
      *
      * @return array<int, array<string, mixed>>
      */
-    private function consultarSroCws(string $codigo): array
+    public function consultarSroCws(string $codigo): array
     {
         $usuario = trim((string) Setting::get('correios_usuario', ''));
         $tokenAcesso = trim((string) Setting::get('correios_senha', ''));
@@ -367,6 +367,7 @@ class CorreiosService
                     'data' => $carbon->format('d/m/Y'),
                     'hora' => $carbon->format('H:i'),
                     'local' => $local,
+                    'unidade' => $unidadeTipo !== '' ? $unidadeTipo : 'Unidade dos Correios',
                     'status' => (string) ($ev['descricao'] ?? 'Movimentação'),
                     'detalhe' => trim((string) ($ev['detalhe'] ?? '')),
                     'destaque' => $idx === 0,

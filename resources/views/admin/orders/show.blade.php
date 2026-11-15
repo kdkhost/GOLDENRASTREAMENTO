@@ -157,6 +157,117 @@
                 </form>
             @endif
 
+            {{-- Registro de cada parada / movimentação da transportadora --}}
+            <div class="border-top mt-3 pt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-bold text-secondary text-uppercase">
+                        <i class="fas fa-route me-1"></i> Registrar Parada / Movimentação
+                    </span>
+                    <span class="badge text-bg-light border">
+                        {{ count(is_array($pedido->rastreio_historico) ? $pedido->rastreio_historico : []) }} parada(s)
+                    </span>
+                </div>
+
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                    @php
+                        $destinoSugestao = $pedido->cidade ? "{$pedido->cidade}/{$pedido->uf}" : 'Cidade do destinatário';
+                        $origemSugestao = \App\Models\Setting::get('empresa_cidade', 'Três Pontas/MG');
+                        $atalhosParada = [
+                            ['rotulo' => 'Coletado/Postado', 'status' => 'Objeto postado / coletado pela transportadora', 'unidade' => $pedido->transportadoraLabel(), 'local' => $origemSugestao, 'detalhe' => 'Encomenda conferida, lacrada e coletada com sucesso na origem.', 'atualizar' => 'enviado'],
+                            ['rotulo' => 'Em Trânsito / Hub', 'status' => 'Objeto em trânsito para centro de distribuição', 'unidade' => 'Hub Logístico / Unidade de Tratamento', 'local' => 'Em rota interestadual', 'detalhe' => 'Pacote encaminhado com segurança pela malha da transportadora.', 'atualizar' => 'nenhum'],
+                            ['rotulo' => 'Unidade da Cidade', 'status' => 'Objeto recebido na unidade de distribuição local', 'unidade' => 'Unidade de Entrega Local', 'local' => $destinoSugestao, 'detalhe' => 'Encomenda chegou à cidade de destino e está em triagem para entrega.', 'atualizar' => 'nenhum'],
+                            ['rotulo' => 'Saiu p/ Entrega', 'status' => 'Objeto saiu para entrega ao destinatário', 'unidade' => 'Entregador / Motorista em Rota', 'local' => $destinoSugestao, 'detalhe' => 'O pedido está a caminho do endereço informado. Acompanhe o recebimento.', 'atualizar' => 'nenhum'],
+                            ['rotulo' => 'Entregue', 'status' => 'Objeto entregue ao destinatário', 'unidade' => $pedido->transportadoraLabel(), 'local' => $destinoSugestao, 'detalhe' => 'Entrega confirmada com sucesso ao recebedor no endereço de destino.', 'atualizar' => 'entregue'],
+                        ];
+                    @endphp
+                    @foreach($atalhosParada as $at)
+                        <button type="button"
+                            class="btn btn-outline-secondary btn-sm py-0 px-2 btn-atalho-parada"
+                            style="font-size: 0.72rem;"
+                            data-status="{{ $at['status'] }}"
+                            data-unidade="{{ $at['unidade'] }}"
+                            data-local="{{ $at['local'] }}"
+                            data-detalhe="{{ $at['detalhe'] }}"
+                            data-atualizar="{{ $at['atualizar'] }}">
+                            + {{ $at['rotulo'] }}
+                        </button>
+                    @endforeach
+                </div>
+
+                <form method="POST" action="{{ route('admin.pedidos.rastreio.movimentacao', $pedido) }}" class="row g-2">
+                    @csrf
+                    <div class="col-12">
+                        <input type="text" name="status" id="paradaStatus" class="form-control form-control-sm" required maxlength="140"
+                            placeholder="Status da parada (ex.: Objeto recebido na unidade de tratamento)">
+                    </div>
+                    <div class="col-6">
+                        <input type="text" name="unidade" id="paradaUnidade" class="form-control form-control-sm" maxlength="140"
+                            value="{{ $pedido->transportadoraLabel() }}" placeholder="Unidade / Hub / Transportadora">
+                    </div>
+                    <div class="col-6">
+                        <input type="text" name="local" id="paradaLocal" class="form-control form-control-sm" required maxlength="140"
+                            value="{{ $destinoSugestao }}" placeholder="Cidade / UF da parada">
+                    </div>
+                    <div class="col-12">
+                        <textarea name="detalhe" id="paradaDetalhe" rows="2" class="form-control form-control-sm" maxlength="500"
+                            placeholder="Detalhes da parada exibidos ao cliente (ex.: Conferido e liberado para entrega)..."></textarea>
+                    </div>
+                    <div class="col-4">
+                        <input type="text" name="data" class="form-control form-control-sm" maxlength="20" value="{{ now()->format('d/m/Y') }}" placeholder="dd/mm/aaaa">
+                    </div>
+                    <div class="col-3">
+                        <input type="text" name="hora" class="form-control form-control-sm" maxlength="10" value="{{ now()->format('H:i') }}" placeholder="HH:mm">
+                    </div>
+                    <div class="col-5">
+                        <select name="atualizar_status_pedido" id="paradaAtualizarStatus" class="form-select form-select-sm">
+                            <option value="nenhum">Manter status atual</option>
+                            <option value="separando">Status → Em separação</option>
+                            <option value="enviado">Status → Enviado</option>
+                            <option value="entregue">Status → Entregue</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-golden btn-sm w-100">
+                            <i class="fas fa-location-dot me-1"></i> Gravar parada no rastreamento
+                        </button>
+                    </div>
+                </form>
+
+                @php $paradasSalvas = is_array($pedido->rastreio_historico) ? $pedido->rastreio_historico : []; @endphp
+                @if(!empty($paradasSalvas))
+                    <div class="mt-3">
+                        <div class="small fw-semibold text-secondary mb-1">Paradas registradas no rastreamento:</div>
+                        <div class="list-group list-group-flush border rounded overflow-hidden">
+                            @foreach($paradasSalvas as $idx => $parada)
+                                <div class="list-group-item py-2 px-2 d-flex justify-content-between align-items-start gap-2 bg-body-tertiary">
+                                    <div class="small lh-sm">
+                                        <div class="fw-semibold">{{ $parada['status'] ?? 'Movimentação' }}</div>
+                                        <div class="text-secondary" style="font-size: 0.76rem;">
+                                            @if(!empty($parada['unidade']))
+                                                <span class="me-1"><i class="fas fa-building"></i> {{ $parada['unidade'] }}</span> ·
+                                            @endif
+                                            <i class="fas fa-location-dot"></i> {{ $parada['local'] ?? 'Em trânsito' }}
+                                            · {{ $parada['data'] ?? '' }} {{ $parada['hora'] ?? '' }}
+                                        </div>
+                                        @if(!empty($parada['detalhe']))
+                                            <div class="text-muted mt-1" style="font-size: 0.76rem;">{{ $parada['detalhe'] }}</div>
+                                        @endif
+                                    </div>
+                                    <form method="POST" action="{{ route('admin.pedidos.rastreio.movimentacao.remover', [$pedido, $idx]) }}"
+                                          onsubmit="return confirm('Remover esta parada do rastreamento?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Remover parada">
+                                            <i class="fas fa-trash" style="font-size: 0.7rem;"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+
             @if($pedido->possuiRastreio())
                 <div class="border-top mt-3 pt-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -239,6 +350,21 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.btn-atalho-parada').forEach(function (btnAtalho) {
+        btnAtalho.addEventListener('click', function () {
+            const st = document.getElementById('paradaStatus');
+            const un = document.getElementById('paradaUnidade');
+            const lc = document.getElementById('paradaLocal');
+            const dt = document.getElementById('paradaDetalhe');
+            const sel = document.getElementById('paradaAtualizarStatus');
+            if (st) st.value = btnAtalho.dataset.status || '';
+            if (un) un.value = btnAtalho.dataset.unidade || '';
+            if (lc) lc.value = btnAtalho.dataset.local || '';
+            if (dt) dt.value = btnAtalho.dataset.detalhe || '';
+            if (sel && btnAtalho.dataset.atualizar) sel.value = btnAtalho.dataset.atualizar;
+        });
+    });
+
     const btnConsultar = document.getElementById('btnConsultarRastreio');
     const containerConteudo = document.getElementById('detalhesRastreioConteudo');
     const iconConsultar = document.getElementById('iconConsultar');
