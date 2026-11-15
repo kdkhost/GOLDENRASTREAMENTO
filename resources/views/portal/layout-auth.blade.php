@@ -1,9 +1,3 @@
-{{--
-    Carcaça das telas de acesso do portal (entrar, criar conta, recuperar e redefinir senha):
-    o mesmo formulário de entrada do painel administrativo (auth/login.blade.php) — a mesma
-    folha golden-login.css, a mesma marca, os mesmos avisos de sessão e o tema gravado no mesmo
-    endereço do localStorage. O cliente entra por aqui e acorda no painel que já conhece.
---}}
 <!doctype html>
 <html lang="pt-BR" data-bs-theme="light">
 <head>
@@ -19,18 +13,39 @@
     <link rel="stylesheet" href="{{ asset('css/golden-login.css') }}?v={{ filemtime(public_path('css/golden-login.css')) }}">
 </head>
 <body>
-<button type="button" class="troca-tema" id="portalTema" aria-label="Alternar tema claro e escuro"><i class="fas fa-moon" id="portalTemaIcone"></i></button>
+<button type="button" class="troca-tema" id="portalTema" aria-label="Alternar tema claro e escuro">
+    <i class="fas fa-moon" id="portalTemaIcone"></i>
+</button>
 
-<div class="box @yield('box')">
-    <div class="brand">
-        <x-site.img imagem="marca_logo" alt="Golden" :largura="false" :altura="false" :lazy="false" />
-        <span><b>GOLDEN</b><small>@yield('marca', 'Portal do cliente')</small></span>
-    </div>
+<main class="auth-shell">
+    <aside class="auth-showcase">
+        <div>
+            <div class="auth-brand">
+                <x-site.img imagem="marca_logo" alt="{{ $golden['marca']['nome'] }}" :largura="false" :altura="false" :lazy="false" />
+                <span>
+                    <b>GOLDEN</b>
+                    <small>@yield('marca', 'Portal do cliente')</small>
+                </span>
+            </div>
 
-    @yield('content')
+            @yield('showcase')
+        </div>
+    </aside>
 
-    <div class="back"><a href="{{ route('site.home') }}">← Voltar ao site</a></div>
-</div>
+    <section class="auth-panel">
+        @yield('content')
+    </section>
+
+    <footer class="auth-footer">
+        <a href="{{ route('site.home') }}">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar ao site
+        </a>
+        <span class="auth-version">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            {{ $golden['marca']['nome'] }} · Versão {{ config('golden.versao', '2.65.0') }}
+        </span>
+    </footer>
+</main>
 
 <script>
 (function () {
@@ -43,6 +58,17 @@
         pintar(tema);
     });
     pintar(localStorage.getItem('golden_admin_theme') || 'light');
+
+    document.querySelectorAll('[data-toggle-pass]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = document.getElementById(btn.getAttribute('data-toggle-pass'));
+            if (!input) return;
+            var visivel = input.type === 'text';
+            input.type = visivel ? 'password' : 'text';
+            var ico = btn.querySelector('i');
+            if (ico) ico.className = 'fa-regular ' + (visivel ? 'fa-eye' : 'fa-eye-slash');
+        });
+    });
 })();
 </script>
 @include('partials.avisos')

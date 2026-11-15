@@ -17,6 +17,7 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 - Instruções de uso individuais (`?`) com passo a passo completo e links exatos (externos e internos) em todos os **175 itens e cartões** de configuração em `config/guia_configuracao.php` (contato oficial, endereço, regras da loja, transportadoras, Correios, Melhor Envio, Mercado Envios, medição/consentimento, testes WHMCS/e-mail, notificações, ambiente do sistema, assistente e preloader).
 - Integração opcional com a **API Universal de Rastreamento Wonca / Seu Rastreio** (`rastreio_wonca_token`) em `/admin/configuracao#loja` (com guia passo a passo `?` e links oficiais) para consulta de movimentações reais em `/rastreamento` mesmo sem contrato CWS dos Correios.
 - Integração com a **API Oficial de Shipments do Mercado Livre (Mercado Envios)** (`mercado_livre_access_token`) em `/admin/configuracao#loja` (com guia `?` e links do DevCenter) para consulta de histórico real de remessas quando o Mercado Envios estiver ativo.
+- Novo layout moderno em **duas colunas** para todas as telas de autenticação (login administrativo, verificação em duas etapas, login do portal, cadastro e recuperação/redefinição de senha), com alternância de exibição de senha, alternância de tema e exibição da **versão do sistema** no rodapé (`config('golden.versao')`).
 
 ### Alterado
 - Reorganização da aba **Loja & Logística** (`/admin/configuracao#loja`) em sub-abas limpas e estruturadas.

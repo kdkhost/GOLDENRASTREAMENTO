@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'versao' => '2.65.0',
+
     'marca' => [
         'nome' => 'Golden Rastreamento',
         'slogan' => 'Rastreamento e monitoramento veicular, sua segurança nossa prioridade',
