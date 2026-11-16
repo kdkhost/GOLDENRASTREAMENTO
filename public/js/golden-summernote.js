@@ -4,6 +4,12 @@
 (function () {
     'use strict';
 
+    // O editor Summernote é restrito exclusivamente ao painel administrativo (/admin*).
+    // Nenhuma página pública, funil ou portal do cliente inicializa o Summernote.
+    if (typeof window !== 'undefined' && window.location && !window.location.pathname.startsWith('/admin')) {
+        return;
+    }
+
     var SELETOR_ALVOS = 'textarea:not([readonly]):not([disabled]):not([data-summernote="false"]):not([data-summernote-ativo="1"]):not(.note-codable):not(#iaTexto)';
     var ENTIDADE_TAG_REGEX = /&lt;\s*\/?(?:p|br|strong|b|em|i|u|s|strike|ul|ol|li|a|span|div|h[1-6]|blockquote|table|hr|font)\b/i;
 

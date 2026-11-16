@@ -22,8 +22,6 @@
     <link rel="stylesheet" href="{{ asset('css/golden-preloader.css') }}?v={{ filemtime(public_path('css/golden-preloader.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-tooltips.css') }}?v={{ filemtime(public_path('css/golden-tooltips.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css">
-    <link rel="stylesheet" href="{{ asset('css/golden-summernote.css') }}?v={{ filemtime(public_path('css/golden-summernote.css')) }}">
     {{-- O assistente é um dos atendentes da caixa do WhatsApp: folha e script só pesam quando
          existe caixa (ou quando ele é o único atendente) e ele atende neste canal. --}}
     @php $bolha = $golden['assistente_na_caixa'] && \App\Models\Assistente::atendeVisitante('site'); @endphp
@@ -176,9 +174,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 @include('site.partials.cookie-bar')
 
 @include('partials.avisos', ['confirmacoes' => false])
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/lang/summernote-pt-BR.min.js"></script>
-<script src="{{ asset('js/golden-summernote.js') }}?v={{ filemtime(public_path('js/golden-summernote.js')) }}"></script>
 @php
     $medicaoSite = [
         'tracking' => (bool) $golden['tracking'],

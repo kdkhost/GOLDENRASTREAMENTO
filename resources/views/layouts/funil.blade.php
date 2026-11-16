@@ -48,8 +48,6 @@
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-funil.css') }}?v={{ filemtime(public_path('css/golden-funil.css')) }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css">
-    <link rel="stylesheet" href="{{ asset('css/golden-summernote.css') }}?v={{ filemtime(public_path('css/golden-summernote.css')) }}">
     {{-- O assistente é um dos atendentes da caixa do WhatsApp: a folha e o script dele só
          pesam quando existe caixa (ou quando ele é o único atendente) e ele atende aqui. --}}
     @php $bolha = $golden['assistente_na_caixa'] && \App\Models\Assistente::atendeVisitante('funil'); @endphp
@@ -113,9 +111,6 @@
 @include('partials.to-top')
 @include('site.partials.cookie-bar')
 @include('partials.avisos', ['confirmacoes' => false])
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/lang/summernote-pt-BR.min.js"></script>
-<script src="{{ asset('js/golden-summernote.js') }}?v={{ filemtime(public_path('js/golden-summernote.js')) }}"></script>
 {{-- Sem o modal de vídeo da galeria: aqui o player toca na própria faixa (bloco de vídeo),
      então não há nada que abra em cima da página. --}}
 

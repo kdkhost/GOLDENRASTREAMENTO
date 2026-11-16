@@ -109,7 +109,7 @@ class SummernoteEditorETemaTest extends TestCase
         $this->assertStringNotContainsString('<p>', $binario);
     }
 
-    public function test_layouts_admin_portal_site_e_funil_carregam_summernote_e_css_dark_light(): void
+    public function test_summernote_restrito_ao_painel_admin_e_ausente_no_site_funil_e_portal(): void
     {
         $this->actingAs($this->admin)
             ->get(route('admin.templates-email.edit', 'segunda_via_fatura'))
@@ -139,16 +139,15 @@ class SummernoteEditorETemaTest extends TestCase
         $this->actingAs($cliente, 'cliente')
             ->get(route('portal.chamados.criar'))
             ->assertOk()
-            ->assertSee('summernote-lite.min.css', false)
-            ->assertSee('golden-summernote.css', false)
-            ->assertSee('golden-summernote.js', false)
-            ->assertSee('data-summernote="true"', false);
+            ->assertDontSee('summernote-lite.min.css', false)
+            ->assertDontSee('golden-summernote.css', false)
+            ->assertDontSee('golden-summernote.js', false);
 
         $this->get(route('site.contato'))
             ->assertOk()
-            ->assertSee('summernote-lite.min.css', false)
-            ->assertSee('golden-summernote.css', false)
-            ->assertSee('golden-summernote.js', false);
+            ->assertDontSee('summernote-lite.min.css', false)
+            ->assertDontSee('golden-summernote.css', false)
+            ->assertDontSee('golden-summernote.js', false);
 
         $funil = FunnelPage::create([
             'nome' => 'Campanha Frota',
@@ -165,8 +164,8 @@ class SummernoteEditorETemaTest extends TestCase
 
         $this->get('/c/campanha-frota-sn')
             ->assertOk()
-            ->assertSee('golden-summernote.css', false)
-            ->assertSee('golden-summernote.js', false);
+            ->assertDontSee('golden-summernote.css', false)
+            ->assertDontSee('golden-summernote.js', false);
 
         $cssConteudo = file_get_contents(public_path('css/golden-summernote.css')) ?: '';
         $this->assertStringContainsString('[data-bs-theme="dark"]', $cssConteudo);
