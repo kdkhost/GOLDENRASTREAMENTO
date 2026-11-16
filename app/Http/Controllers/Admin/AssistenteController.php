@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Assistente;
+use App\Models\Setting;
 use App\Services\Assistente\Provedores\Fabrica;
 use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
@@ -34,6 +35,12 @@ class AssistenteController extends Controller
             'icones' => (array) config('assistente.icones_bolha'),
             'faltando' => Fabrica::faltando(),
             'ligado' => Fabrica::ligado(),
+            'contato_whatsapp' => (string) Setting::get('contato_whatsapp', config('golden.whatsapp')),
+            'contato_telefone' => (string) Setting::get('contato_telefone', implode(' · ', (array) config('golden.contato.telefones'))),
+            'contato_email' => (string) Setting::get('contato_email', config('golden.email')),
+            'assistente_destino_humano' => (string) Setting::get('assistente_destino_humano', 'whatsapp'),
+            'assistente_msg_humano' => (string) Setting::get('assistente_msg_humano', 'Olá! Estava conversando com a :assistente no site e gostaria de falar com um atendente humano.'),
+            'assistente_horario_humano' => (string) Setting::get('assistente_horario_humano', 'Segunda a Sexta das 08h às 18h'),
         ]);
     }
 
@@ -46,6 +53,38 @@ class AssistenteController extends Controller
             $data[$canal] = $request->boolean($canal);
         }
 
+        // Salva os dados de contato do atendimento humanizado nas configurações gerais do sistema
+        if ($request->has('contato_whatsapp')) {
+            $whatsLimpo = preg_replace('/\D/', '', (string) $request->input('contato_whatsapp'));
+            Setting::set('contato_whatsapp', $whatsLimpo);
+        }
+
+        if ($request->has('contato_telefone')) {
+            Setting::set('contato_telefone', trim((string) $request->input('contato_telefone')));
+        }
+
+        if ($request->has('contato_email')) {
+            Setting::set('contato_email', trim((string) $request->input('contato_email')));
+        }
+
+        if ($request->has('assistente_destino_humano')) {
+            Setting::set('assistente_destino_humano', (string) $request->input('assistente_destino_humano'));
+        }
+
+        if ($request->has('assistente_msg_humano')) {
+            Setting::set('assistente_msg_humano', trim((string) $request->input('assistente_msg_humano')));
+        }
+
+        if ($request->has('assistente_horario_humano')) {
+            Setting::set('assistente_horario_humano', trim((string) $request->input('assistente_horario_humano')));
+        }
+
+        // Remove chaves de Setting do array que vai para a tabela assistente
+        $chavesSettings = ['contato_whatsapp', 'contato_telefone', 'contato_email', 'assistente_destino_humano', 'assistente_msg_humano', 'assistente_horario_humano'];
+        foreach ($chavesSettings as $sKey) {
+            unset($data[$sKey]);
+        }
+
         $anterior = $ficha->avatar;
         $ficha->update($data);
 
@@ -53,9 +92,9 @@ class AssistenteController extends Controller
             Envio::remover($anterior, Assistente::CAMPO_ENVIO);
         }
 
-        Activity::log('assistente_atualizado', 'A ficha do assistente foi atualizada.', $ficha);
+        Activity::log('assistente_atualizado', 'A ficha do assistente e os dados de atendimento humanizado foram atualizados.', $ficha);
 
-        return redirect()->route('admin.assistente.persona')->with('success', 'Ficha do assistente salva.');
+        return redirect()->route('admin.assistente.persona')->with('success', 'Ficha do assistente e dados do atendimento humanizado salvos com sucesso.');
     }
 
     private function validar(Request $request): array
@@ -82,9 +121,16 @@ class AssistenteController extends Controller
             'humano' => ['nullable', 'string', 'max:120'],
             'icone' => ['nullable', 'string', 'max:60'],
             'voz' => ['nullable', 'string', empty(Fabrica::opcoesDeVoz()) ? 'nullable' : 'in:'.implode(',', array_keys(Fabrica::opcoesDeVoz()))],
+            'contato_whatsapp' => ['nullable', 'string', 'max:32'],
+            'contato_telefone' => ['nullable', 'string', 'max:60'],
+            'contato_email' => ['nullable', 'email', 'max:160'],
+            'assistente_destino_humano' => ['nullable', 'string', 'in:whatsapp,contato,portal'],
+            'assistente_msg_humano' => ['nullable', 'string', 'max:500'],
+            'assistente_horario_humano' => ['nullable', 'string', 'max:120'],
         ], [
             'tom.in' => 'O tom escolhido não está na lista da ficha.',
             'voz.in' => 'A voz escolhida não está na lista dos provedores ligados.',
+            'assistente_destino_humano.in' => 'A ação de destino do atendimento humano selecionada é inválida.',
         ], [
             'nome' => 'nome',
             'cargo' => 'cargo',
@@ -107,6 +153,12 @@ class AssistenteController extends Controller
             'humano' => 'link para falar com uma pessoa',
             'icone' => 'ícone da bolha',
             'voz' => 'voz das respostas',
+            'contato_whatsapp' => 'WhatsApp do atendimento humanizado',
+            'contato_telefone' => 'telefone de suporte',
+            'contato_email' => 'e-mail de suporte',
+            'assistente_destino_humano' => 'ação ao clicar no atendimento humano',
+            'assistente_msg_humano' => 'mensagem do WhatsApp',
+            'assistente_horario_humano' => 'horário de atendimento',
         ]);
 
         // Chave ausente no POST é "não mexi no rosto", não "apague o rosto": o dropzone só emite

@@ -6,6 +6,7 @@ use App\Models\Assistente;
 use App\Models\ConhecimentoItem;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\Assistente\Provedores\Fabrica;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,6 +72,33 @@ class AssistenteDoPainelTest extends TestCase
         $this->assertFalse($ficha->no_chamado);
 
         $this->get(route('admin.assistente.persona'))->assertSee('Beatriz')->assertSee('Não peça documento pelo chat.');
+    }
+
+    public function test_o_painel_salva_os_dados_do_atendimento_humanizado_e_exibe_na_tela(): void
+    {
+        $this->post(route('admin.assistente.persona.update'), [
+            'nome' => 'Ana',
+            'tom' => 'amigavel',
+            'humano' => 'Falar com suporte humano →',
+            'assistente_destino_humano' => 'whatsapp',
+            'contato_whatsapp' => '(19) 99710-1483',
+            'contato_telefone' => '(19) 3000-0000',
+            'contato_email' => 'suporte@goldenrastreamento.com.br',
+            'assistente_horario_humano' => 'Segunda a Sexta das 08h às 18h',
+            'assistente_msg_humano' => 'Olá! Preciso de atendimento humano.',
+        ])->assertRedirect(route('admin.assistente.persona'))->assertSessionHasNoErrors();
+
+        $this->assertSame('19997101483', Setting::get('contato_whatsapp'));
+        $this->assertSame('(19) 3000-0000', Setting::get('contato_telefone'));
+        $this->assertSame('suporte@goldenrastreamento.com.br', Setting::get('contato_email'));
+        $this->assertSame('whatsapp', Setting::get('assistente_destino_humano'));
+        $this->assertSame('Falar com suporte humano →', Assistente::sole()->humano);
+
+        $this->get(route('admin.assistente.persona'))
+            ->assertOk()
+            ->assertSee('19997101483')
+            ->assertSee('Falar com suporte humano →')
+            ->assertSee('Salvar dados do atendimento');
     }
 
     /** A ordem que o provedor recebe traz as regras na linha nova que o administrador digitou. */

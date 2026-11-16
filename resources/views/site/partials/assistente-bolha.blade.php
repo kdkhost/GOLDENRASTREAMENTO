@@ -38,6 +38,13 @@
         // aparece no atendente da caixa e na cabeça do balão, para a conversa continuar com a
         // cara de quem abriu a porta.
         $avatar = $ficha->avatarUrl();
+        $whatsappHumano = preg_replace('/\D/', '', (string) \App\Models\Setting::get('contato_whatsapp', config('golden.whatsapp')));
+        $destinoHumano = (string) \App\Models\Setting::get('assistente_destino_humano', 'whatsapp');
+        $msgHumano = str_replace(':assistente', (string) $ficha->nome, (string) \App\Models\Setting::get('assistente_msg_humano', 'Olá! Estava conversando com a :assistente no site e gostaria de falar com um atendente humano.'));
+        $urlWhatsappHumano = $whatsappHumano ? 'https://wa.me/'.$whatsappHumano.'?text='.rawurlencode($msgHumano) : null;
+        $hrefHumano = ($destinoHumano === 'whatsapp' && $urlWhatsappHumano) ? $urlWhatsappHumano : route('site.contato');
+        $targetHumano = ($destinoHumano === 'whatsapp' && $urlWhatsappHumano) ? '_blank' : '_self';
+
         $rosto = [
             'abrir' => route('site.assistente.abrir'),
             'fala' => route('site.assistente.fala'),
@@ -49,6 +56,10 @@
             'contato' => route('site.contato'),
             'canal' => $canal,
             'nome' => (string) $ficha->nome,
+            'whatsapp_humano' => $whatsappHumano,
+            'destino_humano' => $destinoHumano,
+            'msg_humano' => $msgHumano,
+            'url_whatsapp_humano' => $urlWhatsappHumano,
         ];
     @endphp
 
@@ -122,7 +133,7 @@
             <button type="button" class="ia-nova" data-ia-nova>Começar uma nova conversa</button>
         </div>
 
-        <a class="ia-humano" href="{{ route('site.contato') }}" data-ia-humano>{{ $ficha->textoHumano() }}</a>
+        <a class="ia-humano" href="{{ $hrefHumano }}" target="{{ $targetHumano }}" rel="noopener noreferrer" data-ia-humano>{{ $ficha->textoHumano() }}</a>
     </div>
 
     <script>window.GOLDEN_IA = @json($rosto);</script>

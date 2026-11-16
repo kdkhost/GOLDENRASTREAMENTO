@@ -79,6 +79,15 @@
         var alvo = submitter instanceof HTMLElement ? submitter : form.querySelector('[type="submit"]:not(.note-btn)');
         var lista = Array.prototype.slice.call(form.querySelectorAll('button, input[type="submit"]'));
 
+        if (form.id) {
+            var externos = Array.prototype.slice.call(document.querySelectorAll('button[form="' + form.id + '"], input[type="submit"][form="' + form.id + '"]'));
+            externos.forEach(function (btn) {
+                if (lista.indexOf(btn) === -1) {
+                    lista.push(btn);
+                }
+            });
+        }
+
         return lista.filter(function (b) { return b.type !== 'button' && !b.closest('.note-editor'); }).map(function (b) {
             return { botao: b, principal: b === alvo };
         });

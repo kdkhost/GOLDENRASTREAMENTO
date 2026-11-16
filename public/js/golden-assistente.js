@@ -1156,6 +1156,16 @@
   }
 
   saida.addEventListener('click', function (e) {
+    if (cfg.destino_humano === 'whatsapp' && cfg.whatsapp_humano) {
+      e.preventDefault();
+      var baseMsg = cfg.msg_humano || 'Olá! Gostaria de falar com um atendente humano.';
+      var conversaResumo = resumo();
+      var textoFinal = baseMsg + (conversaResumo ? '\n\n' + conversaResumo : '');
+      var urlWhats = 'https://wa.me/' + cfg.whatsapp_humano + '?text=' + encodeURIComponent(textoFinal);
+      window.open(urlWhats, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     var alvo = temFormulario();
 
     if (!alvo) {

@@ -52,8 +52,13 @@
     @endif
 
     @if($type === 'textarea')
-        <textarea id="{{ $id }}" name="{{ $name }}" rows="{{ $rows }}" data-summernote="true" class="{{ $classe }} {{ $attributes->get('class') }}"
-            @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required && !$travado) required @endif @if($travado) disabled @endif {!! $extra !!}>{{ $atual }}</textarea>
+        @php
+            $snAttr = $attributes->get('data-summernote');
+            $snVal = ($snAttr === 'false' || $snAttr === false) ? 'false' : 'true';
+            $extraTa = $attributes->except(['class', 'data-summernote']);
+        @endphp
+        <textarea id="{{ $id }}" name="{{ $name }}" rows="{{ $rows }}" data-summernote="{{ $snVal }}" class="{{ $classe }} {{ $attributes->get('class') }}"
+            @if($placeholder) placeholder="{{ $placeholder }}" @endif @if($required && !$travado) required @endif @if($travado) disabled @endif {!! $extraTa !!}>{{ $atual }}</textarea>
     @elseif($type === 'select')
         <select id="{{ $id }}" name="{{ $name }}" class="{{ $classe }} {{ $attributes->get('class') }}"
             @if($required && !$travado) required @endif @if($travado) disabled @endif {!! $extra !!}>
