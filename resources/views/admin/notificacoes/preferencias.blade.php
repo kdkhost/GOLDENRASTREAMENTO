@@ -32,6 +32,17 @@
                 @endforeach
 
                 @can('admin')
+                    <div class="col-12"><div class="zone-title mt-3"><i class="fab fa-slack me-1 text-golden"></i> Alertas no Slack (Workspace e Canais da Equipe)</div></div>
+
+                    <x-admin.switch name="slack_ativo" label="Ativar envio de alertas e notificações em tempo real no Slack" :checked="$slack_ativo"
+                        hint="Notifique canais e membros da sua equipe no Slack sempre que novas vendas, leads, chamados ou coletas ocorrerem." />
+
+                    <x-admin.field name="slack_webhook" type="url" label="URL do Webhook do Slack (Incoming Webhook)" :value="$slack_webhook" col="col-md-8"
+                        placeholder="https://hooks.slack.com/services/seu-webhook-aqui" hint="Crie no Slack em Apps > Incoming Webhooks e copie a URL gerada para o seu canal." />
+
+                    <x-admin.field name="slack_canal" type="text" label="Canal do Slack (opcional)" :value="$slack_canal" col="col-md-4"
+                        placeholder="Ex: #alertas-golden ou #comercial" hint="Opcional. Se vazio, utiliza o canal padrão definido no Webhook." />
+
                     <div class="col-12"><div class="zone-title mt-3"><i class="fas fa-mobile-screen me-1 text-golden"></i> Alertas Direto no Celular (Telegram / WhatsApp / Push)</div></div>
 
                     <x-admin.switch name="celular_ativo" label="Ativar envio de alertas instantâneos direto no celular do administrador" :checked="$celular_ativo"
@@ -72,6 +83,12 @@
             @can('admin')
                 <div class="border-top pt-3 mt-4">
                     <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <form method="POST" action="{{ route('admin.notificacoes.testar.slack') }}">
+                            @csrf
+                            <button class="btn btn-sm btn-outline-warning" type="submit" title="Dispara uma notificação de teste para o Webhook do Slack">
+                                <i class="fab fa-slack me-1"></i> ⚡ Testar Alerta no Slack Agora
+                            </button>
+                        </form>
                         <form method="POST" action="{{ route('admin.notificacoes.testar.celular') }}">
                             @csrf
                             <button class="btn btn-sm btn-outline-primary" type="submit" title="Dispara uma notificação de teste para o Telegram / Webhook móvel">
@@ -91,6 +108,34 @@
     </div>
 
     <div class="col-lg-4">
+        <x-admin.card title="Aplicativo Slack (Download)" icon="fab fa-slack" class="mb-3">
+            <p class="small text-secondary mb-3">
+                Baixe o aplicativo oficial do Slack no seu computador e celular para receber notificações e gerenciar sua equipe:
+            </p>
+            <div class="d-grid gap-2 mb-3">
+                <a href="https://slack.com/ssb/download-win64" target="_blank" rel="noopener" class="btn btn-golden btn-sm d-flex align-items-center justify-content-center gap-2">
+                    <i class="fab fa-windows"></i> <span>Baixar para <strong>Windows (64-bit)</strong></span>
+                </a>
+                <a href="https://slack.com/ssb/download-mac" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-2">
+                    <i class="fab fa-apple"></i> <span>Baixar para <strong>macOS</strong></span>
+                </a>
+                <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalSlackDownload">
+                    <i class="fas fa-download me-1"></i> Ver todas as opções (Android / iOS / Web)
+                </button>
+            </div>
+        </x-admin.card>
+
+        <x-admin.card title="Como Configurar o Slack (1 Min)" icon="fab fa-slack" class="mb-3">
+            <ol class="small text-secondary ps-3 mb-0" style="line-height:1.7">
+                <li>Abra o Slack (no app ou navegador).</li>
+                <li>Acesse <strong>api.slack.com/apps</strong> e crie um App (<em>From scratch</em>).</li>
+                <li>Ative <strong>Incoming Webhooks</strong>.</li>
+                <li>Clique em <strong>Add New Webhook to Workspace</strong> e selecione o canal (ex: <em>#alertas-golden</em>).</li>
+                <li>Copie a <strong>Webhook URL</strong>, cole no formulário e salve.</li>
+                <li>Clique no botão <strong>⚡ Testar Alerta no Slack Agora</strong>.</li>
+            </ol>
+        </x-admin.card>
+
         <x-admin.card title="Notificações Push no Celular" icon="fa-mobile-screen" class="mb-3">
             <p class="small text-secondary mb-3">
                 Ative as notificações nativas no navegador do seu smartphone para receber alertas na tela de bloqueio e avisos sonoros instantâneos.

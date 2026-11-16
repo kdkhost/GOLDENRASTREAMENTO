@@ -147,6 +147,9 @@ class NotificacaoController extends Controller
             'telegram_token' => Setting::get('notificacoes_telegram_token', ''),
             'telegram_chat_id' => Setting::get('notificacoes_telegram_chat_id', ''),
             'webhook_celular' => Setting::get('notificacoes_webhook_celular', ''),
+            'slack_ativo' => Setting::get('notificacoes_slack_ativo', '1') === '1',
+            'slack_webhook' => Setting::get('notificacoes_slack_webhook', ''),
+            'slack_canal' => Setting::get('notificacoes_slack_canal', ''),
         ]);
     }
 
@@ -167,10 +170,14 @@ class NotificacaoController extends Controller
             'telegram_token' => ['nullable', 'string', 'max:255'],
             'telegram_chat_id' => ['nullable', 'string', 'max:255'],
             'webhook_celular' => ['nullable', 'url', 'max:500'],
+            'slack_ativo' => ['nullable', 'boolean'],
+            'slack_webhook' => ['nullable', 'url', 'max:500'],
+            'slack_canal' => ['nullable', 'string', 'max:100'],
         ], [
             'retencao.between' => 'A retenção fica entre 1 e 365 dias.',
             'expiracao.between' => 'O prazo de uma notificação não lida fica entre 1 e 365 dias.',
             'webhook_celular.url' => 'O endereço do webhook móvel deve ser uma URL válida (ex: https://...).',
+            'slack_webhook.url' => 'O endereço do webhook do Slack deve ser uma URL válida (ex: https://hooks.slack.com/...).',
         ]);
 
         $catalogo = array_keys(Notificacao::catalogo());
@@ -201,11 +208,14 @@ class NotificacaoController extends Controller
             Setting::set('notificacoes_telegram_token', trim((string) ($dados['telegram_token'] ?? '')));
             Setting::set('notificacoes_telegram_chat_id', trim((string) ($dados['telegram_chat_id'] ?? '')));
             Setting::set('notificacoes_webhook_celular', trim((string) ($dados['webhook_celular'] ?? '')));
+            Setting::set('notificacoes_slack_ativo', $request->boolean('slack_ativo') ? '1' : '0');
+            Setting::set('notificacoes_slack_webhook', trim((string) ($dados['slack_webhook'] ?? '')));
+            Setting::set('notificacoes_slack_canal', trim((string) ($dados['slack_canal'] ?? '')));
 
-            Activity::log('notificacoes_preferencias', 'Canais de notificação (E-mail e Celular) e prazos atualizados.');
+            Activity::log('notificacoes_preferencias', 'Canais de notificação (E-mail, Celular e Slack) e prazos atualizados.');
         }
 
-        return back()->with('success', 'Preferências de notificação e canais de celular/e-mail salvos com sucesso.');
+        return back()->with('success', 'Preferências de notificação e canais de alerta (Slack, Celular e E-mail) salvos com sucesso.');
     }
 
     /**
@@ -253,6 +263,41 @@ class NotificacaoController extends Controller
         }
 
         return back()->with('error', 'Não foi possível entregar a notificação de teste no celular. Verifique o Token e Chat ID informados.');
+    }
+
+    /**
+     * Dispara uma notificação de teste para o canal ou workspace do Slack.
+     */
+    public function testarSlack(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $webhook = trim((string) Setting::get('notificacoes_slack_webhook', ''));
+        $canal = trim((string) Setting::get('notificacoes_slack_canal', ''));
+
+        if ($webhook === '') {
+            return back()->with('error', 'Preencha a URL do Webhook do Slack antes de disparar o teste.');
+        }
+
+        $enviou = Notifica::enviarSlack(
+            $webhook,
+            'lead_novo',
+            '⚡ Teste de Notificação Slack - Golden Rastreamento',
+            'Parabéns! Sua integração do Slack está conectada com sucesso ao painel da Golden Rastreamento. Alertas de novos leads, pedidos pagos, coletas e chamados serão entregues instantaneamente neste canal.',
+            route('admin.notificacoes.index'),
+            [
+                'status' => 'Conexão Bem-Sucedida',
+                'canal' => $canal !== '' ? $canal : 'Padrão do Webhook',
+                'solicitante' => $request->user()->name,
+            ],
+            $canal !== '' ? $canal : null
+        );
+
+        if ($enviou) {
+            return back()->with('success', 'Mensagem de teste enviada com sucesso para o Slack! Verifique seu canal no aplicativo.');
+        }
+
+        return back()->with('error', 'Falha ao entregar alerta no Slack. Verifique se a URL do Webhook está correta e ativa.');
     }
 
     /**

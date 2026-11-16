@@ -10,6 +10,7 @@ use App\Services\MelhorEnvio\MelhorEnvioService;
 use App\Services\Whmcs\Cliente as Financeiro;
 use App\Support\ChavesDeIntegracao;
 use App\Support\Fuso;
+use App\Support\Notifica;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -313,6 +314,39 @@ class SettingController extends Controller
         Activity::log('email_sondado', "Disparo de e-mail testado ({$resultado['estado']}).");
 
         return back()->with('sonda_email', $resultado)->with($tom, $resultado['titulo'].' '.$resultado['texto']);
+    }
+
+    /** Dispara mensagem de teste real para o Webhook do Slack. */
+    public function sondarSlack(Request $request): RedirectResponse
+    {
+        $webhook = trim((string) (Setting::get('notificacoes_slack_webhook') ?: config('services.slack.webhook_url', '')));
+        $canal = trim((string) (Setting::get('notificacoes_slack_canal') ?: config('services.slack.notifications.channel', '')));
+
+        if ($webhook === '') {
+            return back()->with('error', 'Preencha e salve a URL do Webhook do Slack antes de realizar o teste.');
+        }
+
+        $ok = Notifica::enviarSlack(
+            $webhook,
+            'lead_novo',
+            '⚡ Sonda de Conexão Slack — Golden Rastreamento',
+            'Parabéns! Teste de conexão disparado pelas Configurações do Painel. A integração está pronta para despachar alertas em tempo real.',
+            route('admin.settings.index').'#aba-chaves',
+            [
+                'status' => 'Conectado com sucesso',
+                'canal' => $canal !== '' ? $canal : 'Padrão do Webhook',
+                'solicitado_por' => $request->user()->name,
+            ],
+            $canal !== '' ? $canal : null
+        );
+
+        Activity::log('slack_sondado', 'Conexão com o Webhook do Slack testada ('.($ok ? 'ok' : 'falha').').');
+
+        if ($ok) {
+            return back()->with('success', 'Mensagem de teste enviada com sucesso para o Slack! Verifique seu canal no aplicativo.');
+        }
+
+        return back()->with('error', 'Não foi possível entregar a mensagem no Slack. Verifique se a URL do Webhook está correta e com permissão de envio.');
     }
 
     /** Liga/desliga a loja virtual imediatamente, sem recarregar o formulário. */

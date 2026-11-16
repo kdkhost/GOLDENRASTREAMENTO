@@ -6,6 +6,11 @@ Todo o registro de mudanças notáveis deste projeto. O formato segue
 ## [2.65.0] - 2026-11-15
 
 ### Adicionado
+- **Integração Completa com o Aplicativo Slack & Centro de Download para Administradores**:
+  - Despacho em tempo real de notificações corporativas para workspaces e canais do Slack via Incoming Webhooks (`Notifica::enviarSlack()`), com cartões formatados em Block Kit, código de cores por tipo de evento, tabela estruturada de detalhes do evento, timestamp formatado e botão de ação direta para abrir no Painel Administrativo.
+  - Suporte completo a canais de Slack opcionais (`notificacoes_slack_canal`), ativação independente (`notificacoes_slack_ativo`) e URL de Webhook (`notificacoes_slack_webhook`), sincronizado com `services.slack.webhook_url` e `.env`.
+  - Configuração visual e botão de disparo imediato de teste (*⚡ Testar Alerta no Slack Agora*) em **Notificações → Preferências** (`/admin/notificacoes/preferencias`) e em **Configurações → Chaves de Integração → Slack** (`/admin/configuracao#aba-chaves-slack` com método sonda `sondarSlack()`).
+  - **Centro de Download do Aplicativo Slack** no painel administrativo com instaladores oficiais diretos para Windows 64-bit (`.exe`), macOS (`.dmg`), links para smartphones Android (Google Play) e iPhone/iPad (App Store), além de atalho para o Slack Web no navegador. Acessível via modal global em qualquer tela do painel (`#modalSlackDownload` no menu do usuário), na central de notificações e na tela de configurações.
 - Integração completa de frete via **Melhor Envio API v2** (cotação automática, ambiente sandbox/produção, dimensões e peso padrão, prazo e taxa adicionais, e seleção de transportadoras).
 - **Preloader personalizado Golden** com ativação/desativação independente para o site público e painel administrativo, escolha de estilo de animação, título e cor de destaque.
 - Tooltips globais modernos substituindo atributos `title` nativos no painel e site.

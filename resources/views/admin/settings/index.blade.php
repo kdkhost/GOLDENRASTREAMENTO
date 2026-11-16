@@ -600,6 +600,19 @@
                                         </div>
                                     </div>
                                 @endif
+                                @if($id === 'slack')
+                                    <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 py-2 px-3 small">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fab fa-slack fa-lg text-warning" aria-hidden="true"></i>
+                                            <div>
+                                                Para gerenciar quais eventos (vendas, leads, coletas, entregas) tocam no Slack ou ativar notificações push, acesse <a href="{{ route('admin.notificacoes.preferencias') }}" class="alert-link text-decoration-underline">Preferências de Notificações</a>.
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-golden" data-bs-toggle="modal" data-bs-target="#modalSlackDownload">
+                                            <i class="fas fa-download me-1"></i> Baixar Aplicativo Slack
+                                        </button>
+                                    </div>
+                                @endif
                                 <form method="POST" action="{{ route('admin.settings.chaves') }}" class="row g-3" data-atualiza=".app-content">
                                     @csrf
                                     <input type="hidden" name="grupo" value="{{ $id }}">
@@ -656,6 +669,43 @@
                                             </div>
                                         @endif
                                     </form>
+                                </x-admin.card>
+                            @endif
+
+                            @if($id === 'slack')
+                                <x-admin.card title="Testar Envio & Baixar Aplicativo Slack" icon="fab fa-slack" class="mt-3"
+                                    :descricao="'Dispare um alerta de prova diretamente no canal do Slack para verificar a conexão do Webhook, ou baixe o aplicativo oficial para computador e smartphone.'">
+                                    <div class="row g-3 align-items-center">
+                                        <div class="col-lg-6 border-end-lg">
+                                            <h6 class="fw-bold mb-2"><i class="fas fa-bolt text-golden me-1"></i> Disparar mensagem de teste</h6>
+                                            <p class="small text-secondary mb-3">
+                                                Envia uma mensagem de teste imediata com a marca da Golden Rastreamento para a URL do Webhook gravada acima.
+                                            </p>
+                                            <form method="POST" action="{{ route('admin.settings.slack.sondar') }}" data-atualiza=".app-content">
+                                                @csrf
+                                                <button class="btn btn-outline-warning">
+                                                    <i class="fab fa-slack me-1"></i> Disparar teste agora
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <div class="col-lg-6 ps-lg-4">
+                                            <h6 class="fw-bold mb-2"><i class="fas fa-download text-golden me-1"></i> Aplicativo para a Equipe</h6>
+                                            <p class="small text-secondary mb-3">
+                                                Disponível oficialmente para Windows, Mac, Android e iPhone.
+                                            </p>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <a href="https://slack.com/ssb/download-win64" target="_blank" rel="noopener" class="btn btn-sm btn-golden">
+                                                    <i class="fab fa-windows me-1"></i> Windows (64-bit)
+                                                </a>
+                                                <a href="https://slack.com/ssb/download-mac" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fab fa-apple me-1"></i> macOS
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalSlackDownload">
+                                                    <i class="fas fa-mobile-screen me-1"></i> Todas as opções
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </x-admin.card>
                             @endif
                         </div>

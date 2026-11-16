@@ -199,9 +199,10 @@ class Notifica
     }
 
     /**
-     * Envia notificação instantânea para o celular do administrador.
+     * Envia notificação instantânea para o celular e computador do administrador e equipe.
      * Suporta:
      * - Telegram Bot (notificação push nativa com som e vibração no smartphone)
+     * - Slack (Incoming Webhooks para canais e workspaces corporativos)
      * - Webhook Móvel (WhatsApp / Gateway / N8N / Zapier)
      */
     public static function enviarNotificacaoCelular(
@@ -223,7 +224,15 @@ class Notifica
             static::enviarTelegram($telegramToken, $telegramChatId, $tipo, $titulo, $texto, $url, $dados);
         }
 
-        // 2. Envio para Webhook Móvel / WhatsApp
+        // 2. Envio para Slack (Alertas da Equipe / Canais / Workspaces)
+        $slackWebhook = trim((string) Setting::get('notificacoes_slack_webhook', ''));
+        $slackAtivo = Setting::get('notificacoes_slack_ativo', '1') === '1';
+        $slackCanal = trim((string) Setting::get('notificacoes_slack_canal', ''));
+        if ($slackAtivo && $slackWebhook !== '' && filter_var($slackWebhook, FILTER_VALIDATE_URL)) {
+            static::enviarSlack($slackWebhook, $tipo, $titulo, $texto, $url, $dados, $slackCanal !== '' ? $slackCanal : null);
+        }
+
+        // 3. Envio para Webhook Móvel / WhatsApp
         $webhookUrl = trim((string) Setting::get('notificacoes_webhook_celular', ''));
         if ($webhookUrl !== '' && filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
             static::enviarWebhookCelular($webhookUrl, $tipo, $titulo, $texto, $url, $dados);
@@ -316,6 +325,140 @@ class Notifica
             return $res->successful();
         } catch (\Throwable $e) {
             Log::warning('Erro ao enviar webhook móvel.', ['erro' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Envia alerta estruturado para canal ou workspace do Slack via Incoming Webhook.
+     */
+    public static function enviarSlack(
+        string $webhookUrl,
+        string $tipo,
+        string $titulo,
+        ?string $texto = null,
+        ?string $url = null,
+        array $dados = [],
+        ?string $canal = null
+    ): bool {
+        $icone = match ($tipo) {
+            'lead_novo' => '🎯',
+            'pedido_novo' => '💰',
+            'depoimento_novo' => '⭐',
+            'coleta_solicitada' => '🚚',
+            'entrega_atualizada' => '📦',
+            'chamado_aberto', 'chamado_respondido' => '🎫',
+            'acesso_suspeito' => '🛡️',
+            'cron_falhou' => '⚠️',
+            default => '🔔',
+        };
+
+        $cor = match ($tipo) {
+            'lead_novo', 'pedido_novo' => '#10B981',
+            'acesso_suspeito', 'cron_falhou' => '#EF4444',
+            'coleta_solicitada', 'entrega_atualizada' => '#3B82F6',
+            default => '#EAB308',
+        };
+
+        $fallback = "[Golden Rastreamento] {$icone} {$titulo}".($texto ? " - {$texto}" : '');
+
+        $blocks = [];
+
+        // Cabeçalho com ícone e título
+        $blocks[] = [
+            'type' => 'header',
+            'text' => [
+                'type' => 'plain_text',
+                'text' => "{$icone} {$titulo}",
+                'emoji' => true,
+            ],
+        ];
+
+        // Descrição textual
+        if (! empty($texto)) {
+            $blocks[] = [
+                'type' => 'section',
+                'text' => [
+                    'type' => 'mrkdwn',
+                    'text' => $texto,
+                ],
+            ];
+        }
+
+        // Campos com dados detalhados formatados
+        $fields = [];
+        if (! empty($dados)) {
+            foreach ($dados as $k => $v) {
+                if (is_scalar($v) && $v !== '' && ! in_array($k, ['lead_id', 'pedido_id', 'depoimento_id'], true)) {
+                    $rotulo = ucwords(str_replace('_', ' ', (string) $k));
+                    $fields[] = [
+                        'type' => 'mrkdwn',
+                        'text' => "*{$rotulo}:*\n".htmlspecialchars((string) $v),
+                    ];
+                }
+            }
+        }
+
+        if (! empty($fields)) {
+            foreach (array_chunk($fields, 10) as $chunk) {
+                $blocks[] = [
+                    'type' => 'section',
+                    'fields' => $chunk,
+                ];
+            }
+        }
+
+        // Botão de acesso direto ao painel administrativo
+        if ($url) {
+            $blocks[] = [
+                'type' => 'actions',
+                'elements' => [
+                    [
+                        'type' => 'button',
+                        'text' => [
+                            'type' => 'plain_text',
+                            'text' => '👉 Abrir no Painel Administrativo',
+                            'emoji' => true,
+                        ],
+                        'url' => $url,
+                        'style' => 'primary',
+                    ],
+                ],
+            ];
+        }
+
+        // Rodapé informativo com data e hora
+        $blocks[] = [
+            'type' => 'context',
+            'elements' => [
+                [
+                    'type' => 'mrkdwn',
+                    'text' => '⏱ *Golden Rastreamento* • '.now()->format('d/m/Y H:i:s'),
+                ],
+            ],
+        ];
+
+        $payload = [
+            'text' => $fallback,
+            'attachments' => [
+                [
+                    'color' => $cor,
+                    'blocks' => $blocks,
+                ],
+            ],
+        ];
+
+        if ($canal !== null && trim($canal) !== '') {
+            $payload['channel'] = trim($canal);
+        }
+
+        try {
+            $res = Http::timeout(5)->post($webhookUrl, $payload);
+
+            return $res->successful();
+        } catch (\Throwable $e) {
+            Log::warning('Erro ao enviar alerta para o Slack.', ['erro' => $e->getMessage()]);
 
             return false;
         }

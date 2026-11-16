@@ -58,6 +58,11 @@
                         <li><a class="dropdown-item" href="{{ route('admin.usuarios.index') }}"><i class="fas fa-user-shield me-2 text-gold"></i> Usuários &amp; permissões</a></li>
                         <li><a class="dropdown-item" href="{{ route('admin.settings.index') }}"><i class="fas fa-sliders me-2 text-gold"></i> Configurações</a></li>
                         <li>
+                            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalSlackDownload">
+                                <i class="fab fa-slack me-2 text-warning"></i> Baixar aplicativo Slack
+                            </button>
+                        </li>
+                        <li>
                             <button type="submit" form="formLimparCache" class="dropdown-item">
                                 <i class="fas fa-broom me-2 text-gold"></i> Limpar cache do sistema
                             </button>
@@ -128,6 +133,7 @@
 
 @include('partials.to-top')
 @include('admin.partials.ajuda-gaveta')
+@include('admin.partials.modal-slack-download')
 
 @include('admin.partials.scripts')
 <script src="{{ asset('js/admin-abas.js') }}?v={{ filemtime(public_path('js/admin-abas.js')) }}"></script>

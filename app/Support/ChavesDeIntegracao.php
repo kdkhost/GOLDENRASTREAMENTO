@@ -295,6 +295,34 @@ class ChavesDeIntegracao
                 ],
             ],
 
+            'slack' => [
+                'rotulo' => 'Slack (Comunicação e Alertas)',
+                'icone' => 'fa-brands fa-slack',
+                'descricao' => 'Conecta o painel ao workspace e canais do Slack via Incoming Webhooks. Despacha alertas instantâneos de novos leads, vendas pagas, coletas e chamados para a equipe.',
+                'campos' => [
+                    [
+                        'chave' => 'notificacoes_slack_webhook',
+                        'config' => 'services.slack.webhook_url',
+                        'ambiente' => 'SLACK_WEBHOOK_URL',
+                        'label' => 'URL do Webhook do Slack (Incoming Webhook)',
+                        'opcional' => true,
+                        'regras' => ['url', 'max:500'],
+                        'placeholder' => 'https://hooks.slack.com/services/seu-webhook-aqui',
+                        'dica' => 'Crie um Incoming Webhook no seu workspace Slack e cole o endereço gerado aqui.',
+                    ],
+                    [
+                        'chave' => 'notificacoes_slack_canal',
+                        'config' => 'services.slack.notifications.channel',
+                        'ambiente' => 'SLACK_BOT_USER_DEFAULT_CHANNEL',
+                        'label' => 'Canal do Slack (opcional)',
+                        'opcional' => true,
+                        'regras' => ['max:100'],
+                        'placeholder' => '#alertas-golden',
+                        'dica' => 'Deixe vazio para usar o canal padrão já associado ao seu Webhook.',
+                    ],
+                ],
+            ],
+
             'seguranca' => [
                 'rotulo' => 'Segurança do acesso',
                 'icone' => 'fa-shield-halved',

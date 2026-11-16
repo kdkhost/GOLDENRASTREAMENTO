@@ -390,4 +390,99 @@ class CentralDeNotificacoesTest extends TestCase
             'user_id' => $this->admin->id,
         ]);
     }
+
+    public function test_disparo_envia_alerta_para_o_slack_via_webhook(): void
+    {
+        Http::fake([
+            'https://hooks.slack.com/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        Setting::set('notificacoes_celular_ativo', '1');
+        Setting::set('notificacoes_slack_ativo', '1');
+        Setting::set('notificacoes_slack_webhook', 'https://hooks.slack.com/services/teste/notificacao/webhook');
+        Setting::set('notificacoes_slack_canal', '#alertas-golden');
+
+        Notifica::disparar('lead_novo', 'Novo Lead Capturado', 'Chegou pela página inicial', '1', [
+            'nome' => 'Carlos Silva',
+            'telefone' => '31988887777',
+        ]);
+
+        Http::assertSent(function (Request $request) {
+            $data = $request->data();
+
+            return str_contains($request->url(), 'hooks.slack.com')
+                && str_contains($data['text'], 'Novo Lead Capturado')
+                && ($data['channel'] ?? '') === '#alertas-golden'
+                && isset($data['attachments'][0]['blocks']);
+        });
+    }
+
+    public function test_admin_dispara_teste_de_notificacao_para_o_slack(): void
+    {
+        Http::fake([
+            'https://hooks.slack.com/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        Setting::set('notificacoes_slack_webhook', 'https://hooks.slack.com/services/teste/notificacao/webhook');
+        Setting::set('notificacoes_slack_canal', '#comercial');
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.notificacoes.testar.slack'));
+
+        $response->assertRedirect()->assertSessionHas('success');
+
+        Http::assertSent(function (Request $request) {
+            return str_contains($request->url(), 'hooks.slack.com')
+                && str_contains($request['text'], 'Teste de Notificação Slack');
+        });
+    }
+
+    public function test_admin_salva_preferencias_incluindo_slack(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.notificacoes.preferencias.salvar'), [
+                'tipos' => ['lead_novo', 'pedido_novo'],
+                'retencao' => 30,
+                'expiracao' => 15,
+                'slack_ativo' => '1',
+                'slack_webhook' => 'https://hooks.slack.com/services/teste/preferencias/webhook',
+                'slack_canal' => '#equipe-vendas',
+            ]);
+
+        $response->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame('1', Setting::get('notificacoes_slack_ativo'));
+        $this->assertSame('https://hooks.slack.com/services/teste/preferencias/webhook', Setting::get('notificacoes_slack_webhook'));
+        $this->assertSame('#equipe-vendas', Setting::get('notificacoes_slack_canal'));
+    }
+
+    public function test_sonda_slack_em_configuracoes(): void
+    {
+        Http::fake([
+            'https://hooks.slack.com/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        Setting::set('notificacoes_slack_webhook', 'https://hooks.slack.com/services/teste/notificacao/webhook');
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.settings.slack.sondar'));
+
+        $response->assertRedirect()->assertSessionHas('success');
+
+        Http::assertSent(function (Request $request) {
+            return str_contains($request->url(), 'hooks.slack.com')
+                && str_contains($request['text'], 'Sonda de Conexão Slack');
+        });
+    }
+
+    public function test_admin_visualiza_opcoes_de_download_do_slack(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.notificacoes.preferencias'));
+
+        $response->assertOk()
+            ->assertSee('Baixar Aplicativo Slack')
+            ->assertSee('https://slack.com/ssb/download-win64')
+            ->assertSee('https://slack.com/ssb/download-mac');
+    }
 }

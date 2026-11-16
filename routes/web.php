@@ -316,6 +316,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::get('/preferencias', [NotificacaoController::class, 'preferencias'])->name('preferencias');
         Route::post('/preferencias', [NotificacaoController::class, 'salvarPreferencias'])->name('preferencias.salvar');
         Route::post('/testar-celular', [NotificacaoController::class, 'testarCelular'])->name('testar.celular');
+        Route::post('/testar-slack', [NotificacaoController::class, 'testarSlack'])->name('testar.slack');
         Route::post('/testar-email', [NotificacaoController::class, 'testarEmail'])->name('testar.email');
         // Antes do {notificacao}: "sino" é um segmento só e cairia no parâmetro do id.
         Route::get('/sino', [NotificacaoController::class, 'sino'])->middleware('throttle:60,1')->name('sino');
@@ -690,6 +691,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
         Route::post('/chaves', [SettingController::class, 'chaves'])->name('chaves');
         Route::post('/whmcs-sondar', [SettingController::class, 'sondarWhmcs'])->name('whmcs.sondar');
         Route::post('/email-sondar', [SettingController::class, 'sondarEmail'])->name('email.sondar');
+        Route::post('/slack-sondar', [SettingController::class, 'sondarSlack'])->name('slack.sondar');
     });
 
     /*
