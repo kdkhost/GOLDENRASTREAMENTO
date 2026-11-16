@@ -14,7 +14,6 @@ use App\Services\LeadService;
 use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -24,10 +23,10 @@ class LeadController extends Controller
     {
         $leads = $this->query($request)->paginate(itens_por_pagina())->withQueryString();
 
-        $campanhas = Cache::remember('filtro_leads_campanhas', 60, fn () => Campaign::orderBy('name')->pluck('name', 'id'));
-        $paginasFunil = Cache::remember('filtro_leads_paginas_funil', 60, fn () => FunnelPage::orderBy('nome')->pluck('nome', 'id'));
-        $responsaveis = Cache::remember('filtro_leads_responsaveis', 60, fn () => User::whereIn('role', ['admin', 'vendedor'])->orderBy('name')->pluck('name', 'id'));
-        $contagem = Cache::remember('filtro_leads_contagem', 30, fn () => Lead::selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status'));
+        $campanhas = Campaign::orderBy('name')->pluck('name', 'id');
+        $paginasFunil = FunnelPage::orderBy('nome')->pluck('nome', 'id');
+        $responsaveis = User::whereIn('role', ['admin', 'vendedor'])->orderBy('name')->pluck('name', 'id');
+        $contagem = Lead::selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status');
 
         return view('admin.leads.index', [
             'leads' => $leads,

@@ -434,6 +434,9 @@ class AtribuicaoDeOrigemTest extends TestCase
             'message' => '<p>Preciso rastrear 5 veículos</p>',
             'consent' => '1',
         ])->assertCreated()->assertJsonPath('success', true);
+
+        $admin = User::first() ?? User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin)->get('/admin/leads')->assertOk();
     }
 
     /**
