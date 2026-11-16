@@ -199,26 +199,142 @@
     corpo.scrollTop = corpo.scrollHeight;
   }
 
-  /* Toda fala nova leva a conversa ao fim: a mensagem mais recente é a que a pessoa precisa ler, e
-     ela nunca deve puxar a rolagem para encontrá-la. Fechado o balão, nada se mexe. */
+  var filaDigitacao = [];
+  var digitandoTimer = null;
+  var emDigitacao = false;
+
+  function criaBalaoDigitando() {
+    var balao = document.createElement('div');
+    balao.className = 'ia-fala assistente ia-fala-digitando';
+    balao.setAttribute('data-ia-balao-digitando', '');
+
+    var quem = document.createElement('b');
+    quem.textContent = cfg.nome || 'Ana';
+    balao.appendChild(quem);
+
+    var pontos = document.createElement('span');
+    pontos.className = 'ia-pontos-animados';
+    pontos.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < 3; i++) {
+      pontos.appendChild(document.createElement('i'));
+    }
+    balao.appendChild(pontos);
+
+    return balao;
+  }
+
+  function mostraDigitandoBalao() {
+    removeDigitandoBalao();
+    corpo.appendChild(criaBalaoDigitando());
+    if (digitando) digitando.hidden = false;
+    if (aberto) rolar();
+  }
+
+  function removeDigitandoBalao() {
+    var balao = corpo.querySelector('[data-ia-balao-digitando]');
+    if (balao) balao.remove();
+  }
+
+  function cancelaDigitacao() {
+    if (digitandoTimer) {
+      clearTimeout(digitandoTimer);
+      digitandoTimer = null;
+    }
+    removeDigitandoBalao();
+    filaDigitacao = [];
+    emDigitacao = false;
+  }
+
+  function travaEnvioParaAbertura() {
+    if (campo) {
+      campo.disabled = true;
+      campo.setAttribute('placeholder', (cfg.nome || 'Ana') + ' está iniciando o atendimento…');
+    }
+    if (envio) envio.disabled = true;
+    if (anexar) anexar.disabled = true;
+  }
+
+  function liberaEnvioAposAbertura() {
+    if (campo) {
+      campo.disabled = false;
+      campo.setAttribute('placeholder', placeholderOriginal);
+      if (aberto && !encerrada && window.matchMedia('(min-width: 900px)').matches) {
+        campo.focus();
+      }
+    }
+    if (envio) envio.disabled = false;
+    if (anexar) anexar.disabled = false;
+  }
+
+  function pintaUma(fala) {
+    if (!fala || fala.id <= de) return false;
+    de = fala.id;
+    // A fala do cliente volta do servidor com o texto aparado: é ela que fica na tela,
+    // no lugar do balão provisório pintado no momento do envio.
+    if (fala.autor === 'cliente') limpaPendente();
+    corpo.appendChild(pintura(fala));
+    guardadas.push(fala);
+    if (fala.autor === 'equipe' && !aberto) marcaAviso();
+    if (aberto) rolar();
+    return true;
+  }
+
+  /* Pinta imediatamente (para histórico existente e varredura de fundo). */
   function pinta(falas) {
     var trouxe = false;
 
     (falas || []).forEach(function (fala) {
-      if (!fala || fala.id <= de) return;
-      de = fala.id;
-      // A fala do cliente volta do servidor com o texto aparado: é ela que fica na tela,
-      // no lugar do balão provisório pintado no momento do envio.
-      if (fala.autor === 'cliente') limpaPendente();
-      corpo.appendChild(pintura(fala));
-      guardadas.push(fala);
-      if (fala.autor === 'equipe' && !aberto) marcaAviso();
-      trouxe = true;
+      if (pintaUma(fala)) trouxe = true;
     });
 
-    if (trouxe && aberto) rolar();
-
     return trouxe;
+  }
+
+  /* Entrega sequencial com simulação realista e humana de digitação da Ana. */
+  function processaFilaDigitacao(fila, animar, aoFinal) {
+    if (!fila || !fila.length) {
+      emDigitacao = false;
+      removeDigitandoBalao();
+      if (digitando) digitando.hidden = true;
+      if (typeof aoFinal === 'function') aoFinal();
+      return;
+    }
+
+    emDigitacao = true;
+    var item = fila.shift();
+    var fala = item.fala;
+
+    if (!fala || fala.id <= de) {
+      processaFilaDigitacao(fila, animar, aoFinal);
+      return;
+    }
+
+    // Cliente e notas do sistema entram sem simulação de digitação da Ana
+    if (fala.autor === 'cliente' || fala.autor === 'sistema' || !animar) {
+      pintaUma(fala);
+      processaFilaDigitacao(fila, animar, aoFinal);
+      return;
+    }
+
+    mostraDigitandoBalao();
+
+    var tempo = item.tempo != null
+      ? item.tempo
+      : Math.min(1800, Math.max(900, Math.round(String(fala.texto || '').length * 12)));
+
+    digitandoTimer = setTimeout(function () {
+      removeDigitandoBalao();
+      pintaUma(fala);
+
+      if (fila.length && (fila[0].fala.autor === 'assistente' || fila[0].fala.autor === 'equipe')) {
+        mostraDigitandoBalao();
+        digitandoTimer = setTimeout(function () {
+          processaFilaDigitacao(fila, animar, aoFinal);
+        }, 360);
+      } else {
+        processaFilaDigitacao(fila, animar, aoFinal);
+      }
+    }, tempo);
   }
 
   // O balão desenhado no clique, antes de o servidor confirmar a fala.
@@ -289,6 +405,7 @@
   /* ---------- o fim da conversa ---------- */
 
   function limpaHistoricoVisual() {
+    cancelaDigitacao();
     if (corpo) corpo.innerHTML = '';
     de = 0;
     guardadas = [];
@@ -308,6 +425,7 @@
     if (fim) fim.hidden = !encerrada;
 
     if (encerrada) {
+      cancelaDigitacao();
       limpaAnexo();
       if (anexar) anexar.classList.remove('pede');
       paraVarredura();
@@ -350,17 +468,28 @@
   }
 
   /* A conversa nova limpa a tela inteira: o id das falas não se mistura com o da anterior, e a
-     saudação da casa é pintada de novo no balão vazio. A limpeza só acontece com a resposta na
-     mão — se o servidor não criar a conversa, a anterior continua na tela em vez de sumir. */
+     saudação da casa é digitada e iniciada do zero no balão vazio. */
   function comecarNova() {
     if (ocupado) return;
 
     ocupado = true;
-    digitando.hidden = false;
+    cancelaDigitacao();
+    travaEnvioParaAbertura();
+    mostraDigitandoBalao();
 
     enviar_post(cfg.nova, {}).then(function (d) {
-      if (d.ativo === false) { desaparece(); return; }
-      if (!d.falas) { mostraErros(d); return; }
+      if (d.ativo === false) {
+        removeDigitandoBalao();
+        liberaEnvioAposAbertura();
+        desaparece();
+        return;
+      }
+      if (!d.falas) {
+        removeDigitandoBalao();
+        liberaEnvioAposAbertura();
+        mostraErros(d);
+        return;
+      }
 
       limpaHistoricoVisual();
       escalada = d.status === 'aguardando_equipe';
@@ -370,12 +499,25 @@
       pintaEstrelas(0);
       mostraPesquisa(d);
       mostraFim(d);
-      pinta(d.falas);
-      if (aberto && !encerrada) campo.focus();
-    }).finally(function () {
+
+      var novasFalas = (d.falas || []).filter(function (f) { return f && f.id > de; });
+      var fila = novasFalas.map(function (f, idx) {
+        return {
+          fala: f,
+          tempo: idx === 0 ? 1200 : 1300
+        };
+      });
+
+      processaFilaDigitacao(fila, !semMovimento, function () {
+        ocupado = false;
+        liberaEnvioAposAbertura();
+        ajustaVarredura();
+      });
+    }).catch(function () {
       ocupado = false;
-      digitando.hidden = true;
-      ajustaVarredura();
+      removeDigitandoBalao();
+      liberaEnvioAposAbertura();
+      if (digitando) digitando.hidden = true;
     });
   }
 
@@ -398,7 +540,7 @@
   /* ---------- a varredura ---------- */
 
   function varre() {
-    if (ocupado || !criada) return;
+    if (ocupado || !criada || emDigitacao) return;
 
     obter_falas().then(function (d) {
       if (d.ativo === false) { desaparece(); return; }
@@ -444,26 +586,59 @@
       varre();
       // A conversa já estava pintada de outra vez: o balão abre no fim do fio, não no começo.
       rolar();
+      if (!encerrada && !emDigitacao && window.matchMedia('(min-width: 900px)').matches) {
+        campo.focus();
+      }
     } else {
       ocupado = true;
-      digitando.hidden = false;
+      travaEnvioParaAbertura();
+      mostraDigitandoBalao();
+
       enviar_post(cfg.abrir, { de: de }).then(function (d) {
         ocupado = false;
-        digitando.hidden = true;
-        if (!d.ativo) { desaparece(); return; }
+        if (!d.ativo) {
+          removeDigitandoBalao();
+          liberaEnvioAposAbertura();
+          desaparece();
+          return;
+        }
         if (d.limpar_chat) limpaHistoricoVisual();
         criada = true;
         escalada = d.status === 'aguardando_equipe';
         mostraPesquisa(d);
         mostraFim(d);
-        pinta(d.falas);
-        rolar();
-        ajustaVarredura();
+
+        var novasFalas = (d.falas || []).filter(function (f) { return f && f.id > de; });
+
+        if (d.abertura && novasFalas.length > 0) {
+          // Abertura inicial da Ana: digita primeiro a saudação, depois a pergunta pelo nome
+          var fila = novasFalas.map(function (f, idx) {
+            return {
+              fala: f,
+              tempo: idx === 0 ? 1200 : 1300
+            };
+          });
+
+          processaFilaDigitacao(fila, !semMovimento, function () {
+            liberaEnvioAposAbertura();
+            ajustaVarredura();
+          });
+        } else {
+          // Conversa pré-existente
+          removeDigitandoBalao();
+          if (digitando) digitando.hidden = true;
+          pinta(novasFalas);
+          liberaEnvioAposAbertura();
+          rolar();
+          ajustaVarredura();
+        }
+      }).catch(function () {
+        ocupado = false;
+        removeDigitandoBalao();
+        liberaEnvioAposAbertura();
+        if (digitando) digitando.hidden = true;
       });
     }
-
-    // O teclado só sobe em tela larga: no celular ele cobriria o balão recém-aberto.
-    if (!encerrada && window.matchMedia('(min-width: 900px)').matches) campo.focus();
   }
 
   function fecha() {
@@ -541,7 +716,7 @@
     ocupado = true;
     envio.disabled = true;
     if (anexar) anexar.disabled = true;
-    digitando.hidden = false;
+    mostraDigitandoBalao();
 
     // O balão do cliente entra na hora; quando a resposta voltar, a fala real do servidor
     // ocupa o lugar dele. Sem isso, dez segundos de IA pareceriam nada acontecendo.
@@ -562,28 +737,49 @@
       // e precisa continuar na tela, com a frase da regra que foi quebrada.
       if (d.ativo === false) {
         limpaPendente();
+        removeDigitandoBalao();
         desaparece();
         return;
       }
 
       if (!d.falas) {
         limpaPendente();
+        removeDigitandoBalao();
         mostraErros(d);
         if (texto !== '') campo.value = texto;
+        ocupado = false;
+        envio.disabled = false;
+        if (anexar) anexar.disabled = false;
+        if (digitando) digitando.hidden = true;
         return;
       }
 
       escalada = d.status === 'aguardando_equipe' || escalada;
       mostraPesquisa(d);
       mostraFim(d);
-      pinta(d.falas);
-    }).finally(function () {
+
+      var novasFalas = (d.falas || []).filter(function (f) { return f && f.id > de; });
+      var fila = novasFalas.map(function (f) {
+        return {
+          fala: f,
+          tempo: f.autor === 'cliente' ? 0 : Math.min(1800, Math.max(900, Math.round(String(f.texto || '').length * 12)))
+        };
+      });
+
+      processaFilaDigitacao(fila, !semMovimento, function () {
+        ocupado = false;
+        envio.disabled = false;
+        if (anexar) anexar.disabled = false;
+        if (aberto && !encerrada && window.matchMedia('(min-width: 900px)').matches) campo.focus();
+        ajustaVarredura();
+      });
+    }).catch(function () {
+      limpaPendente();
+      removeDigitandoBalao();
+      if (digitando) digitando.hidden = true;
       ocupado = false;
       envio.disabled = false;
       if (anexar) anexar.disabled = false;
-      digitando.hidden = true;
-      if (aberto && !encerrada) campo.focus();
-      ajustaVarredura();
     });
   });
 

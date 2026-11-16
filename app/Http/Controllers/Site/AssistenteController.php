@@ -60,15 +60,25 @@ class AssistenteController extends Controller
         }
 
         $novas = $conversa->mensagens()->where('id', '>', (int) $request->input('de', 0))->get();
+        $abertura = false;
 
         // A abertura é a primeira fala e só existe uma vez: voltar à página não pode repetir o
         // "olá" na tela de quem já está no meio de uma conversa. Ela sai pela boca do atendedor
         // porque é ele quem tem a régua do nome — a saudação e o pedido vêm juntos daqui.
         if ($novas->isEmpty() && $conversa->mensagens()->count() === 0) {
             $novas = collect(Atendedor::abertura($conversa, $ficha));
+            $abertura = true;
         }
 
-        return $this->resposta($conversa, $novas, $limparChat ? ['limpar_chat' => true] : []);
+        $extra = [];
+        if ($limparChat) {
+            $extra['limpar_chat'] = true;
+        }
+        if ($abertura) {
+            $extra['abertura'] = true;
+        }
+
+        return $this->resposta($conversa, $novas, $extra);
     }
 
     /** A fala do cliente entra, e a resposta do assistente volta no mesmo pedido. */
@@ -176,7 +186,7 @@ class AssistenteController extends Controller
         $conversa = $this->conversa($request);
         $novas = collect(Atendedor::abertura($conversa, Assistente::paraABolha()));
 
-        return $this->resposta($conversa, $novas, ['limpar_chat' => true]);
+        return $this->resposta($conversa, $novas, ['limpar_chat' => true, 'abertura' => true]);
     }
 
     /** A varredura da bolha aberta: é por ela que a resposta da equipe chega ao cliente. */
