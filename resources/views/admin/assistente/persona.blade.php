@@ -6,10 +6,11 @@
 @section('page_actions')
 <a href="{{ route('admin.assistente.conhecimento.index') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-book-open me-1"></i> O que ele sabe</a>
 <a href="{{ route('admin.assistente.conversas.index') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-comments me-1"></i> Conversas</a>
+<button type="submit" form="formAssistente" class="btn btn-sm btn-golden"><i class="fas fa-save me-1"></i> Salvar alterações</button>
 @endsection
 
 @section('content')
-<form method="POST" action="{{ route('admin.assistente.persona.update') }}">
+<form method="POST" action="{{ route('admin.assistente.persona.update') }}" id="formAssistente">
     @csrf
     <div class="row g-3">
         <div class="col-lg-8">
@@ -53,8 +54,9 @@
                     <x-admin.switch name="no_chamado" label="No chat do chamado" :checked="$assistente->no_chamado" col="col-12 col-md-3" />
                 </div>
 
-                <div class="mt-3">
-                    <button class="btn btn-golden"><i class="fas fa-save me-1"></i> Salvar ficha</button>
+                <div class="mt-4 pt-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <span class="text-secondary small"><i class="fas fa-robot me-1"></i> Identidade, tom de fala e regras de atendimento.</span>
+                    <button type="submit" class="btn btn-golden"><i class="fas fa-save me-1"></i> Salvar alterações</button>
                 </div>
             </x-admin.card>
 
@@ -71,6 +73,28 @@
                         placeholder="Escreva sua mensagem…" />
                     <x-admin.field name="humano" label="Link para falar com uma pessoa" :value="$assistente->humano" col="col-12" maxlength="120" :opcional="true"
                         placeholder="Prefiro falar com uma pessoa →" hint="Abre o formulário da própria página ou a página de contato, com o resumo da conversa." />
+
+                    <div class="col-12 mt-2">
+                        <div class="p-3 rounded-3 bg-body-tertiary border border-secondary border-opacity-25 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge rounded-circle bg-success bg-opacity-10 text-success p-2 fs-5">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </span>
+                                <div>
+                                    <strong class="d-block text-body fs-6">Canal WhatsApp Oficial da Golden</strong>
+                                    <small class="text-secondary">Número usado pelo assistente para encaminhamentos e atendimento direto: <strong class="text-body font-monospace">{{ \App\Models\Setting::get('contato_whatsapp', config('golden.whatsapp')) }}</strong></small>
+                                </div>
+                            </div>
+                            <a href="{{ route('admin.settings.index') }}#contato" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-phone me-1"></i> Gerenciar telefones da casa
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <span class="text-secondary small"><i class="fas fa-comment-dots text-gold me-1"></i> Salva os dados de contato e textos visíveis na bolha do site.</span>
+                    <button type="submit" class="btn btn-golden"><i class="fas fa-save me-1"></i> Salvar alterações</button>
                 </div>
             </x-admin.card>
         </div>

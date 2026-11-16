@@ -80,11 +80,10 @@ class AssistenteController extends Controller
             'status' => ['nullable', 'string', 'max:60'],
             'placeholder' => ['nullable', 'string', 'max:120'],
             'humano' => ['nullable', 'string', 'max:120'],
-            'icone' => ['nullable', 'string', 'in:'.implode(',', array_keys((array) config('assistente.icones_bolha')))],
-            'voz' => ['nullable', 'string', 'in:'.implode(',', array_keys(Fabrica::opcoesDeVoz()))],
+            'icone' => ['nullable', 'string', 'max:60'],
+            'voz' => ['nullable', 'string', empty(Fabrica::opcoesDeVoz()) ? 'nullable' : 'in:'.implode(',', array_keys(Fabrica::opcoesDeVoz()))],
         ], [
             'tom.in' => 'O tom escolhido não está na lista da ficha.',
-            'icone.in' => 'O ícone escolhido não está na lista da bolha.',
             'voz.in' => 'A voz escolhida não está na lista dos provedores ligados.',
         ], [
             'nome' => 'nome',

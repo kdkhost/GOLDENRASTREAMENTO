@@ -65,7 +65,8 @@
 .ia-fala.sistema{align-self:center;max-width:100%;background:none;border:0;padding:2px 6px;text-align:center;
   font-size:.74rem;color:#8d99a6}
 .ia-fala audio{display:block;width:100%;margin-top:6px}
-.ia-fala a{color:var(--gold-soft,#f4d9a6)}
+.ia-fala a{color:var(--gold-soft,#f4d9a6);text-decoration:underline;text-underline-offset:2px}
+.ia-fala a:hover{color:#fff}
 .ia-fala img.ia-midia{display:block;max-width:100%;border-radius:10px;margin:4px 0 6px;
   border:1px solid rgba(255,255,255,.1)}
 .ia-fala .ia-arquivo{display:inline-flex;align-items:center;gap:8px;margin:4px 0;padding:8px 10px;
@@ -74,6 +75,33 @@
 .ia-fala .ia-arquivo i{color:var(--gold);flex-shrink:0}
 .ia-fala .ia-arquivo:hover{background:rgba(255,255,255,.12);color:#fff}
 .ia-hora{display:block;font-size:.66rem;color:#7f8b98;margin-top:4px}
+
+/* Cursor sutil de digitação em tempo real */
+.ia-cursor{display:inline-block;width:2px;height:.95em;background:var(--gold,#e0a33e);margin-left:2px;vertical-align:-1px;animation:ia-cursor-pisca .75s infinite ease-in-out}
+@keyframes ia-cursor-pisca{0%,100%{opacity:1}50%{opacity:0}}
+
+/* Botão interativo do WhatsApp dentro das falas da Ana */
+.ia-btn-whatsapp{display:flex;align-items:center;gap:12px;margin:10px 0 6px;padding:10px 14px;border-radius:14px;text-decoration:none !important;
+  background:linear-gradient(135deg,rgba(37,211,102,.22),rgba(37,211,102,.09));border:1px solid rgba(37,211,102,.45);
+  color:#fff !important;box-shadow:0 4px 14px -4px rgba(37,211,102,.35);cursor:pointer;
+  transition:transform .22s cubic-bezier(.22,.61,.36,1),background .2s ease,border-color .2s ease,box-shadow .24s ease;
+  animation:ia-btn-entra .28s cubic-bezier(.22,.61,.36,1) both}
+.ia-btn-whatsapp:hover{background:linear-gradient(135deg,rgba(37,211,102,.35),rgba(37,211,102,.18));border-color:#25d366;color:#fff !important;
+  transform:translateY(-2px) scale(1.02);box-shadow:0 8px 22px -6px rgba(37,211,102,.55)}
+.ia-btn-whatsapp:active{transform:translateY(0) scale(.99)}
+.ia-btn-whatsapp-icone{flex-shrink:0;width:38px;height:38px;border-radius:50%;background:#25d366;color:#fff;display:grid;place-items:center;
+  font-size:1.3rem;box-shadow:0 4px 12px -2px rgba(37,211,102,.6)}
+.ia-btn-whatsapp-info{flex:1;min-width:0;display:flex;flex-direction:column}
+.ia-btn-whatsapp-titulo{font-size:.84rem;font-weight:700;color:#25d366;line-height:1.25}
+.ia-btn-whatsapp-numero{font-size:.78rem;color:#eef2f6;margin-top:2px;font-family:var(--font-mono,monospace,sans-serif);letter-spacing:.02em}
+.ia-btn-whatsapp-seta{flex-shrink:0;font-size:.8rem;color:#25d366;opacity:.85;transition:transform .2s ease,opacity .2s ease}
+.ia-btn-whatsapp:hover .ia-btn-whatsapp-seta{opacity:1;transform:translate(2px,-2px)}
+@keyframes ia-btn-entra{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Links externos gerais dentro da conversa */
+.ia-link-externo{display:inline-flex;align-items:center;gap:4px;color:var(--gold-soft,#f4d9a6) !important;text-decoration:underline;text-underline-offset:3px;word-break:break-all;font-weight:500}
+.ia-link-externo:hover{color:#fff !important}
+.ia-link-externo i{font-size:.72rem;opacity:.8}
 
 .ia-digitando{margin:0;padding:0 12px 4px;font-size:.78rem;color:#9aa7b4;display:flex;align-items:center;gap:8px}
 .ia-digitando[hidden]{display:none}
@@ -178,5 +206,5 @@ body.nav-open .ia-painel{opacity:0;pointer-events:none}
 }
 
 @media(prefers-reduced-motion:reduce){
-  .ia-painel,.ia-enviar,.ia-fechar,.ia-pontos i,.ia-pontos-animados i,.ia-fala,.ia-estrela,.ia-anexar,.ia-nova,.ia-encerrar{transition:none;animation:none}
+  .ia-painel,.ia-enviar,.ia-fechar,.ia-pontos i,.ia-pontos-animados i,.ia-fala,.ia-estrela,.ia-anexar,.ia-nova,.ia-encerrar,.ia-cursor,.ia-btn-whatsapp{transition:none;animation:none}
 }

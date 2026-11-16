@@ -112,7 +112,146 @@
     }
   }
 
-  function pintura(fala) {
+  /* ---------- formatação de links e botões de contato ---------- */
+
+  function formataTelefone(num) {
+    if (!num) return '';
+    var limpo = String(num).replace(/\D/g, '');
+    if (limpo.startsWith('55') && limpo.length >= 12) {
+      limpo = limpo.slice(2);
+    }
+    if (limpo.length === 11) {
+      return '(' + limpo.slice(0, 2) + ') ' + limpo.slice(2, 7) + '-' + limpo.slice(7);
+    }
+    if (limpo.length === 10) {
+      return '(' + limpo.slice(0, 2) + ') ' + limpo.slice(2, 6) + '-' + limpo.slice(6);
+    }
+    return num;
+  }
+
+  function separaUrlEPontuacao(urlBruta) {
+    var pontuacao = '';
+    while (/[.,!?;:)\]]$/.test(urlBruta)) {
+      pontuacao = urlBruta.slice(-1) + pontuacao;
+      urlBruta = urlBruta.slice(0, -1);
+    }
+    return { url: urlBruta, sobra: pontuacao };
+  }
+
+  function criaBotaoWhatsapp(url, numeroTexto) {
+    var link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'ia-btn-whatsapp';
+    link.setAttribute('aria-label', 'Abrir conversa no WhatsApp ' + (numeroTexto || ''));
+    link.setAttribute('title', 'Abrir conversa no WhatsApp (abre em nova aba)');
+
+    var iconeSpan = document.createElement('span');
+    iconeSpan.className = 'ia-btn-whatsapp-icone';
+    var iconeWhats = document.createElement('i');
+    iconeWhats.className = 'fa-brands fa-whatsapp';
+    iconeSpan.appendChild(iconeWhats);
+    link.appendChild(iconeSpan);
+
+    var infoSpan = document.createElement('span');
+    infoSpan.className = 'ia-btn-whatsapp-info';
+
+    var titulo = document.createElement('span');
+    titulo.className = 'ia-btn-whatsapp-titulo';
+    titulo.textContent = 'Conversar no WhatsApp';
+    infoSpan.appendChild(titulo);
+
+    if (numeroTexto) {
+      var numEl = document.createElement('span');
+      numEl.className = 'ia-btn-whatsapp-numero';
+      numEl.textContent = numeroTexto;
+      infoSpan.appendChild(numEl);
+    }
+    link.appendChild(infoSpan);
+
+    var seta = document.createElement('i');
+    seta.className = 'fa-solid fa-arrow-up-right-from-square ia-btn-whatsapp-seta';
+    seta.setAttribute('aria-hidden', 'true');
+    link.appendChild(seta);
+
+    return link;
+  }
+
+  function criaLinkExterno(url, label) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'ia-link-externo';
+    a.textContent = label || url;
+
+    var icone = document.createElement('i');
+    icone.className = 'fa-solid fa-arrow-up-right-from-square';
+    icone.setAttribute('aria-hidden', 'true');
+    a.appendChild(icone);
+
+    return a;
+  }
+
+  function analisaSegmentosTexto(textoBruto) {
+    var segmentos = [];
+    var regexUrl = /(https?:\/\/[^\s<]+)/gi;
+    var cursor = 0;
+    var match;
+
+    while ((match = regexUrl.exec(textoBruto)) !== null) {
+      var inicio = match.index;
+      if (inicio > cursor) {
+        segmentos.push({ tipo: 'texto', valor: textoBruto.slice(cursor, inicio) });
+      }
+
+      var limpa = separaUrlEPontuacao(match[0]);
+      var url = limpa.url;
+      var sobra = limpa.sobra;
+
+      var ehWa = /(?:wa\.me|api\.whatsapp\.com|whatsapp\.com\/send)/i.test(url);
+      if (ehWa) {
+        var numMatch = url.match(/(?:wa\.me\/|phone=)(\d+)/);
+        var numero = numMatch ? formataTelefone(numMatch[1]) : '';
+        segmentos.push({ tipo: 'whatsapp', url: url, numero: numero });
+      } else {
+        segmentos.push({ tipo: 'link', url: url, label: url });
+      }
+
+      if (sobra) {
+        segmentos.push({ tipo: 'texto', valor: sobra });
+      }
+
+      cursor = inicio + match[0].length;
+    }
+
+    if (cursor < textoBruto.length) {
+      segmentos.push({ tipo: 'texto', valor: textoBruto.slice(cursor) });
+    }
+
+    return segmentos;
+  }
+
+  function montaConteudoMensagem(textoBruto) {
+    var container = document.createElement('span');
+    container.className = 'ia-conteudo-texto';
+    var segmentos = analisaSegmentosTexto(textoBruto);
+
+    segmentos.forEach(function (seg) {
+      if (seg.tipo === 'texto') {
+        container.appendChild(document.createTextNode(seg.valor));
+      } else if (seg.tipo === 'whatsapp') {
+        container.appendChild(criaBotaoWhatsapp(seg.url, seg.numero));
+      } else if (seg.tipo === 'link') {
+        container.appendChild(criaLinkExterno(seg.url, seg.label));
+      }
+    });
+
+    return container;
+  }
+
+  function pintura(fala, emDigitacao) {
     var balao = document.createElement('div');
     balao.className = 'ia-fala ' + fala.autor;
 
@@ -171,10 +310,13 @@
 
     // A imagem sem legenda já se explica: o nome do arquivo não é fala e não vai para a tela.
     if (legenda !== '' && !(semLegenda && fala.tipo !== 'audio')) {
-      var texto = document.createElement('span');
-      // textContent, sempre: é o que o visitante escreveu, e nunca vira HTML na tela.
-      texto.textContent = legenda;
-      balao.appendChild(texto);
+      if (emDigitacao) {
+        var container = document.createElement('span');
+        container.className = 'ia-conteudo-texto';
+        balao.appendChild(container);
+      } else {
+        balao.appendChild(montaConteudoMensagem(legenda));
+      }
     }
 
     if (fala.audio) {
@@ -202,6 +344,25 @@
   var filaDigitacao = [];
   var digitandoTimer = null;
   var emDigitacao = false;
+  var digitacaoAtiva = null;
+
+  function cancelaDigitacaoAtiva() {
+    if (digitacaoAtiva) {
+      if (typeof digitacaoAtiva.parar === 'function') {
+        digitacaoAtiva.parar();
+      }
+      digitacaoAtiva = null;
+    }
+  }
+
+  function pulaDigitacaoAtiva() {
+    if (digitacaoAtiva) {
+      if (typeof digitacaoAtiva.pular === 'function') {
+        digitacaoAtiva.pular();
+      }
+      digitacaoAtiva = null;
+    }
+  }
 
   function criaBalaoDigitando() {
     var balao = document.createElement('div');
@@ -236,6 +397,7 @@
   }
 
   function cancelaDigitacao() {
+    cancelaDigitacaoAtiva();
     if (digitandoTimer) {
       clearTimeout(digitandoTimer);
       digitandoTimer = null;
@@ -272,7 +434,7 @@
     // A fala do cliente volta do servidor com o texto aparado: é ela que fica na tela,
     // no lugar do balão provisório pintado no momento do envio.
     if (fala.autor === 'cliente') limpaPendente();
-    corpo.appendChild(pintura(fala));
+    corpo.appendChild(pintura(fala, false));
     guardadas.push(fala);
     if (fala.autor === 'equipe' && !aberto) marcaAviso();
     if (aberto) rolar();
@@ -288,6 +450,148 @@
     });
 
     return trouxe;
+  }
+
+  /* Simula a digitação natural, fluida e humanizada de um texto na tela */
+  function digitaSegmentosNaTela(container, segmentos, animar, aoConcluir) {
+    if (!animar || !segmentos || !segmentos.length) {
+      segmentos.forEach(function (seg) {
+        if (seg.tipo === 'texto') {
+          container.appendChild(document.createTextNode(seg.valor));
+        } else if (seg.tipo === 'whatsapp') {
+          container.appendChild(criaBotaoWhatsapp(seg.url, seg.numero));
+        } else if (seg.tipo === 'link') {
+          container.appendChild(criaLinkExterno(seg.url, seg.label));
+        }
+      });
+      if (aberto) rolar();
+      if (typeof aoConcluir === 'function') aoConcluir();
+      return;
+    }
+
+    var cursorEl = document.createElement('span');
+    cursorEl.className = 'ia-cursor';
+    cursorEl.setAttribute('aria-hidden', 'true');
+    container.appendChild(cursorEl);
+
+    var segIdx = 0;
+    var charIdx = 0;
+    var timer = null;
+    var noTextoAtual = null;
+    var finalizado = false;
+
+    var tamanhoTotal = segmentos.reduce(function (tot, s) { return tot + (s.valor ? s.valor.length : 12); }, 0);
+    var cadenciaBase = tamanhoTotal > 240 ? 14 : (tamanhoTotal > 90 ? 18 : 22);
+
+    function finaliza() {
+      if (finalizado) return;
+      finalizado = true;
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (cursorEl && cursorEl.parentNode) cursorEl.remove();
+      digitacaoAtiva = null;
+      if (aberto) rolar();
+      if (typeof aoConcluir === 'function') aoConcluir();
+    }
+
+    function pular() {
+      if (finalizado) return;
+      if (timer) { clearTimeout(timer); timer = null; }
+      while (segIdx < segmentos.length) {
+        var seg = segmentos[segIdx];
+        if (seg.tipo === 'texto') {
+          var restante = charIdx > 0 ? seg.valor.slice(charIdx) : seg.valor;
+          if (noTextoAtual) {
+            noTextoAtual.nodeValue += restante;
+            noTextoAtual = null;
+          } else {
+            container.insertBefore(document.createTextNode(restante), cursorEl);
+          }
+        } else if (seg.tipo === 'whatsapp') {
+          container.insertBefore(criaBotaoWhatsapp(seg.url, seg.numero), cursorEl);
+        } else if (seg.tipo === 'link') {
+          container.insertBefore(criaLinkExterno(seg.url, seg.label), cursorEl);
+        }
+        segIdx++;
+        charIdx = 0;
+      }
+      finaliza();
+    }
+
+    function parar() {
+      if (finalizado) return;
+      finalizado = true;
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (cursorEl && cursorEl.parentNode) cursorEl.remove();
+      digitacaoAtiva = null;
+    }
+
+    digitacaoAtiva = { pular: pular, parar: parar };
+
+    function passo() {
+      if (finalizado) return;
+
+      if (segIdx >= segmentos.length) {
+        finaliza();
+        return;
+      }
+
+      var seg = segmentos[segIdx];
+
+      if (seg.tipo === 'whatsapp') {
+        container.insertBefore(criaBotaoWhatsapp(seg.url, seg.numero), cursorEl);
+        segIdx++;
+        charIdx = 0;
+        noTextoAtual = null;
+        if (aberto) rolar();
+        timer = setTimeout(passo, 140);
+        return;
+      }
+
+      if (seg.tipo === 'link') {
+        container.insertBefore(criaLinkExterno(seg.url, seg.label), cursorEl);
+        segIdx++;
+        charIdx = 0;
+        noTextoAtual = null;
+        if (aberto) rolar();
+        timer = setTimeout(passo, 100);
+        return;
+      }
+
+      var texto = seg.valor || '';
+      if (charIdx >= texto.length) {
+        segIdx++;
+        charIdx = 0;
+        noTextoAtual = null;
+        passo();
+        return;
+      }
+
+      if (!noTextoAtual) {
+        noTextoAtual = document.createTextNode('');
+        container.insertBefore(noTextoAtual, cursorEl);
+      }
+
+      var char = texto[charIdx];
+      noTextoAtual.nodeValue += char;
+      charIdx++;
+
+      if (aberto) rolar();
+
+      var delay = cadenciaBase + Math.floor(Math.random() * 8) - 4;
+      if (delay < 10) delay = 10;
+
+      if (char === '.' || char === '!' || char === '?') {
+        delay += 180;
+      } else if (char === ',' || char === ':' || char === ';' || char === '—') {
+        delay += 95;
+      } else if (char === '\n') {
+        delay += 150;
+      }
+
+      timer = setTimeout(passo, delay);
+    }
+
+    passo();
   }
 
   /* Entrega sequencial com simulação realista e humana de digitação da Ana. */
@@ -310,7 +614,7 @@
     }
 
     // Cliente e notas do sistema entram sem simulação de digitação da Ana
-    if (fala.autor === 'cliente' || fala.autor === 'sistema' || !animar) {
+    if (fala.autor === 'cliente' || fala.autor === 'sistema' || !animar || semMovimento) {
       pintaUma(fala);
       processaFilaDigitacao(fila, animar, aoFinal);
       return;
@@ -318,23 +622,31 @@
 
     mostraDigitandoBalao();
 
-    var tempo = item.tempo != null
-      ? item.tempo
-      : Math.min(1800, Math.max(900, Math.round(String(fala.texto || '').length * 12)));
+    var tempoPensando = item.tempoPensando != null ? item.tempoPensando : (fila.length ? 450 : 500);
 
     digitandoTimer = setTimeout(function () {
       removeDigitandoBalao();
-      pintaUma(fala);
 
-      if (fila.length && (fila[0].fala.autor === 'assistente' || fila[0].fala.autor === 'equipe')) {
-        mostraDigitandoBalao();
-        digitandoTimer = setTimeout(function () {
+      de = fala.id;
+      var balao = pintura(fala, true);
+      corpo.appendChild(balao);
+      guardadas.push(fala);
+      if (fala.autor === 'equipe' && !aberto) marcaAviso();
+      if (aberto) rolar();
+
+      var container = balao.querySelector('.ia-conteudo-texto');
+      var segmentos = analisaSegmentosTexto(fala.texto || '');
+
+      digitaSegmentosNaTela(container || balao, segmentos, animar && !semMovimento, function () {
+        if (fila.length && (fila[0].fala.autor === 'assistente' || fila[0].fala.autor === 'equipe')) {
+          digitandoTimer = setTimeout(function () {
+            processaFilaDigitacao(fila, animar, aoFinal);
+          }, 450);
+        } else {
           processaFilaDigitacao(fila, animar, aoFinal);
-        }, 360);
-      } else {
-        processaFilaDigitacao(fila, animar, aoFinal);
-      }
-    }, tempo);
+        }
+      });
+    }, tempoPensando);
   }
 
   // O balão desenhado no clique, antes de o servidor confirmar a fala.
@@ -685,6 +997,17 @@
   if (chipLimpar) chipLimpar.addEventListener('click', limpaAnexo);
   if (botaoEncerrar) botaoEncerrar.addEventListener('click', confirmaEncerrar);
   if (botaoNova) botaoNova.addEventListener('click', comecarNova);
+
+  if (corpo) {
+    corpo.addEventListener('click', function (e) {
+      if (e.target && e.target.closest('a, button, input, textarea')) return;
+      pulaDigitacaoAtiva();
+    });
+    corpo.addEventListener('touchstart', function (e) {
+      if (e.target && e.target.closest('a, button, input, textarea')) return;
+      pulaDigitacaoAtiva();
+    }, { passive: true });
+  }
 
   /* ---------- a fala do cliente ---------- */
 
