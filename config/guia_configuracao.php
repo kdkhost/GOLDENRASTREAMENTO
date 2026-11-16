@@ -750,10 +750,11 @@ return [
 
         'preloader_config' => [
             'titulo' => 'Preloader Personalizado Golden',
-            'onde' => 'Controla a animação de carregamento inicial no site público e no painel administrativo.',
+            'onde' => 'Controla a animação de carregamento inicial e transição visual no site público, painel administrativo e portal do cliente.',
             'passos' => [
-                ['icone' => 'fa-sliders', 'titulo' => '1. Ative ou desative por ambiente', 'texto' => 'Use os interruptores independentes para Site Público e Painel Admin.'],
-                ['icone' => 'fa-palette', 'titulo' => '2. Personalize estilo, título e cor', 'texto' => 'Escolha entre Radar GPS, Órbita Dourada ou Pulso Minimalista, ajuste o texto e salve.'],
+                ['icone' => 'fa-sliders', 'titulo' => '1. Ative ou desative por ambiente', 'texto' => 'Controle cirúrgico e independente para Site Público, Painel Admin e Portal do Cliente.'],
+                ['icone' => 'fa-wand-magic-sparkles', 'titulo' => '2. Escolha entre 7 temas animados', 'texto' => 'Radar GPS, Órbita Cósmica, Satélite Orbital, HUD Militar, Circuito Neon, Fluxo Holográfico e Pulso.'],
+                ['icone' => 'fa-desktop', 'titulo' => '3. Acompanhe no Live Preview ao vivo', 'texto' => 'O simulador lateral reflete as cores, temas, ícones e textos instantaneamente em tempo real.'],
             ],
             'links' => [
                 ['rotulo' => 'Visualizar no Site Público', 'rota' => 'site.home'],
@@ -787,10 +788,10 @@ return [
 
         'preloader_estilo' => [
             'titulo' => 'Estilo da animação do Preloader',
-            'onde' => 'Define o visual exibido durante o carregamento (Radar GPS, Órbita Dourada ou Pulso Minimalista).',
+            'onde' => 'Define a identidade gráfica e dinâmica da animação durante o carregamento.',
             'passos' => [
-                ['icone' => 'fa-wand-magic-sparkles', 'titulo' => '1. Selecione o estilo desejado', 'texto' => 'Radar GPS traz leitura de rastreamento; Órbita Dourada e Pulso são ainda mais minimalistas.'],
-                ['icone' => 'fa-eye', 'titulo' => '2. Teste ao vivo', 'texto' => 'Salve e navegue para outra página para ver a animação aplicada.'],
+                ['icone' => 'fa-wand-magic-sparkles', 'titulo' => '1. Selecione o estilo desejado', 'texto' => 'Disponível em 7 variações: Radar GPS, Órbita Cósmica, Satélite Orbital, HUD Militar, Circuito Neon, Fluxo Holográfico e Pulso.'],
+                ['icone' => 'fa-eye', 'titulo' => '2. Teste no simulador ao lado', 'texto' => 'Use o simulador em tempo real ou o botão Testar em Tela Cheia para validar a experiência.'],
             ],
             'links' => [
                 ['rotulo' => 'Ver resultado no site', 'rota' => 'site.home'],
@@ -813,7 +814,7 @@ return [
             'titulo' => 'Cor de destaque do Preloader',
             'onde' => 'Cor principal dos anéis, pulso e brilho da animação (padrão dourado #d4a017).',
             'passos' => [
-                ['icone' => 'fa-palette', 'titulo' => '1. Escolha no seletor de cor', 'texto' => 'Clique na amostra de cor para ajustar ao tom desejado ou mantenha #d4a017.'],
+                ['icone' => 'fa-palette', 'titulo' => '1. Escolha no seletor de cor', 'texto' => 'Clique na amostra de cor para ajustar ao tom desejado ou escolha nas paletas rápidas.'],
                 ['icone' => 'fa-floppy-disk', 'titulo' => '2. Salve para aplicar', 'texto' => 'A cor atualiza tanto os anéis animados quanto o destaque visual da tela de carregamento.'],
             ],
             'links' => [

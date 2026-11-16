@@ -96,10 +96,22 @@ class SettingController extends Controller
             'gtm_id' => ['nullable', 'string', 'max:60'],
             'preloader_site_ativo' => ['nullable', 'boolean'],
             'preloader_admin_ativo' => ['nullable', 'boolean'],
-            'preloader_estilo' => ['nullable', 'string', 'in:radar,orbita,pulso'],
+            'preloader_portal_ativo' => ['nullable', 'boolean'],
+            'preloader_estilo' => ['nullable', 'string', 'in:radar,orbita,pulso,satelite,telemetria,circuito,fluxo'],
+            'preloader_fundo' => ['nullable', 'string', 'in:radial_dark,oled_black,glass_blur,aurora_gold'],
             'preloader_titulo' => ['nullable', 'string', 'max:80'],
             'preloader_subtitulo' => ['nullable', 'string', 'max:120'],
             'preloader_cor' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'preloader_cor_secundaria' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'preloader_icone_tipo' => ['nullable', 'string', 'in:icone,logo'],
+            'preloader_icone' => ['nullable', 'string', 'max:60'],
+            'preloader_badge_ativo' => ['nullable', 'boolean'],
+            'preloader_badge_texto' => ['nullable', 'string', 'max:60'],
+            'preloader_barra_ativa' => ['nullable', 'boolean'],
+            'preloader_barra_estilo' => ['nullable', 'string', 'in:shimmer,pulso,laser'],
+            'preloader_velocidade' => ['nullable', 'string', 'in:rapida,normal,suave'],
+            'preloader_tempo_saida' => ['nullable', 'string', 'in:suave,cinema,instantaneo'],
+            'preloader_timeout_max' => ['nullable', 'integer', 'between:1000,10000'],
         ]);
 
         if (isset($data['contato_whatsapp'])) {
@@ -113,6 +125,9 @@ class SettingController extends Controller
         if ($aba === 'preloader') {
             $data['preloader_site_ativo'] = $request->boolean('preloader_site_ativo') ? '1' : '0';
             $data['preloader_admin_ativo'] = $request->boolean('preloader_admin_ativo') ? '1' : '0';
+            $data['preloader_portal_ativo'] = $request->boolean('preloader_portal_ativo') ? '1' : '0';
+            $data['preloader_badge_ativo'] = $request->boolean('preloader_badge_ativo') ? '1' : '0';
+            $data['preloader_barra_ativa'] = $request->boolean('preloader_barra_ativa') ? '1' : '0';
         }
 
         foreach ($data as $chave => $valor) {

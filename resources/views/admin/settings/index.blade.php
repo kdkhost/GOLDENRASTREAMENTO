@@ -723,80 +723,500 @@
             </x-admin.card>
         </div>
 
-        {{-- 8. Preloader personalizado (Site Público e Painel Admin) --}}
+        {{-- 8. Preloader personalizado (Site Público, Painel Admin e Portal do Cliente) --}}
         <div class="tab-pane fade" id="aba-preloader" data-aba-painel="preloader" role="tabpanel" aria-labelledby="aba-preloader-botao" tabindex="0">
             @php
                 $preloaderSite = ($settings['preloader_site_ativo'] ?? '1') === '1';
                 $preloaderAdmin = ($settings['preloader_admin_ativo'] ?? '1') === '1';
+                $preloaderPortal = ($settings['preloader_portal_ativo'] ?? '1') === '1';
                 $preloaderEstilo = $settings['preloader_estilo'] ?? 'radar';
+                $preloaderFundo = $settings['preloader_fundo'] ?? 'radial_dark';
                 $preloaderTitulo = $settings['preloader_titulo'] ?? ($golden['marca']['nome'] ?? 'Golden Rastreamento');
                 $preloaderSubtitulo = $settings['preloader_subtitulo'] ?? 'Proteção e monitoramento 24h';
                 $preloaderCor = $settings['preloader_cor'] ?? '#d4a017';
+                $preloaderCorSecundaria = $settings['preloader_cor_secundaria'] ?? '#f59e0b';
+                $preloaderIconeTipo = $settings['preloader_icone_tipo'] ?? 'icone';
+                $preloaderIcone = $settings['preloader_icone'] ?? 'fa-location-crosshairs';
+                $preloaderBadgeAtivo = ($settings['preloader_badge_ativo'] ?? '1') === '1';
+                $preloaderBadgeTexto = $settings['preloader_badge_texto'] ?? 'Sinal GPS Ativo • 24h';
+                $preloaderBarraAtiva = ($settings['preloader_barra_ativa'] ?? '1') === '1';
+                $preloaderBarraEstilo = $settings['preloader_barra_estilo'] ?? 'shimmer';
+                $preloaderVelocidade = $settings['preloader_velocidade'] ?? 'normal';
+                $preloaderTempoSaida = $settings['preloader_tempo_saida'] ?? 'suave';
+                $preloaderTimeoutMax = (int) ($settings['preloader_timeout_max'] ?? 2400);
             @endphp
-            <form method="POST" action="{{ route('admin.settings.update') }}" data-atualiza=".app-content">
-                @csrf
-                <input type="hidden" name="_aba" value="preloader">
-                <x-admin.card title="Preloader Personalizado Golden" icon="fa-spinner" ajuda="preloader_config"
-                    descricao="Animação de carregamento exibida na abertura das páginas. Ative ou desative individualmente para o site público e para o painel administrativo.">
-                    <div class="row g-3">
-                        <div class="col-12 col-md-6">
-                            <div class="border rounded-3 p-3 h-100">
-                                <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="preloader_site_ativo" name="preloader_site_ativo" value="1" @checked($preloaderSite)>
-                                    <label class="form-check-label fw-semibold" for="preloader_site_ativo">Ativar no Site Público</label>
-                                    <x-admin.ajuda chave="preloader_site_ativo" />
+
+            <div class="row g-4">
+                {{-- Coluna 1: Formulário Cirúrgico de Configuração --}}
+                <div class="col-xl-7">
+                    <form method="POST" action="{{ route('admin.settings.update') }}" id="formPreloaderConfig" data-atualiza=".app-content">
+                        @csrf
+                        <input type="hidden" name="_aba" value="preloader">
+
+                        {{-- Bloco 1: Áreas de Ativação --}}
+                        <x-admin.card title="Onde o Preloader Atua" icon="fa-toggle-on" ajuda="preloader_config" class="mb-3"
+                            descricao="Controle cirúrgico e independente de exibição para visitantes, administradores e clientes.">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="border rounded-3 p-3 h-100 bg-body-tertiary">
+                                        <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="preloader_site_ativo" name="preloader_site_ativo" value="1" @checked($preloaderSite)>
+                                            <label class="form-check-label fw-semibold" for="preloader_site_ativo">Site Público</label>
+                                            <x-admin.ajuda chave="preloader_site_ativo" />
+                                        </div>
+                                        <small class="text-secondary d-block">Páginas públicas e vitrine da loja.</small>
+                                    </div>
                                 </div>
-                                <div class="form-hint mb-0">Exibe o preloader para visitantes em todas as páginas públicas e loja.</div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <div class="border rounded-3 p-3 h-100">
-                                <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="preloader_admin_ativo" name="preloader_admin_ativo" value="1" @checked($preloaderAdmin)>
-                                    <label class="form-check-label fw-semibold" for="preloader_admin_ativo">Ativar no Painel Admin</label>
-                                    <x-admin.ajuda chave="preloader_admin_ativo" />
+                                <div class="col-md-4">
+                                    <div class="border rounded-3 p-3 h-100 bg-body-tertiary">
+                                        <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="preloader_admin_ativo" name="preloader_admin_ativo" value="1" @checked($preloaderAdmin)>
+                                            <label class="form-check-label fw-semibold" for="preloader_admin_ativo">Painel Admin</label>
+                                            <x-admin.ajuda chave="preloader_admin_ativo" />
+                                        </div>
+                                        <small class="text-secondary d-block">Abertura e troca de módulos administrativos.</small>
+                                    </div>
                                 </div>
-                                <div class="form-hint mb-0">Exibe o preloader ao abrir ou recarregar telas administrativas.</div>
+                                <div class="col-md-4">
+                                    <div class="border rounded-3 p-3 h-100 bg-body-tertiary">
+                                        <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="preloader_portal_ativo" name="preloader_portal_ativo" value="1" @checked($preloaderPortal)>
+                                            <label class="form-check-label fw-semibold" for="preloader_portal_ativo">Portal do Cliente</label>
+                                        </div>
+                                        <small class="text-secondary d-block">Acesso de clientes a faturas e serviços.</small>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </x-admin.card>
 
-                        <div class="col-12 col-md-4">
-                            <label class="form-label" for="preloader_estilo">Estilo da animação <x-admin.ajuda chave="preloader_estilo" /></label>
-                            <select class="form-select" id="preloader_estilo" name="preloader_estilo">
-                                <option value="radar" @selected($preloaderEstilo === 'radar')>Radar GPS Golden</option>
-                                <option value="orbita" @selected($preloaderEstilo === 'orbita')>Órbita Dourada</option>
-                                <option value="pulso" @selected($preloaderEstilo === 'pulso')>Pulso Minimalista</option>
-                            </select>
-                        </div>
+                        {{-- Bloco 2: Estilo Visual & Atmosfera da Animação --}}
+                        <x-admin.card title="Estilo Visual & Atmosfera da Animação" icon="fa-wand-magic-sparkles" class="mb-3"
+                            descricao="Escolha entre 7 temas visuais modernos desenhados para rastreamento, alta tecnologia e segurança militar.">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="preloader_estilo">Estilo da Animação <x-admin.ajuda chave="preloader_estilo" /></label>
+                                    <select class="form-select" id="preloader_estilo" name="preloader_estilo">
+                                        <option value="radar" @selected($preloaderEstilo === 'radar')>📡 Radar GPS Tático (Varredura 360° & Sonar)</option>
+                                        <option value="orbita" @selected($preloaderEstilo === 'orbita')>🪐 Órbita Dupla Cósmica (Anéis 3D Concêntricos)</option>
+                                        <option value="satelite" @selected($preloaderEstilo === 'satelite')>🛰️ Satélite & Varredura Orbital (Laser de Busca)</option>
+                                        <option value="telemetria" @selected($preloaderEstilo === 'telemetria')>🎯 HUD Militar & Telemetria Tática (Mira Digital)</option>
+                                        <option value="circuito" @selected($preloaderEstilo === 'circuito')>⚡ Circuito Cibernético Neon (Hexágono Laser)</option>
+                                        <option value="fluxo" @selected($preloaderEstilo === 'fluxo')>💎 Fluxo Holográfico 3D (Diamante Geométrico)</option>
+                                        <option value="pulso" @selected($preloaderEstilo === 'pulso')>✨ Pulso Minimalista & Halo Respiratório (Discreto)</option>
+                                    </select>
+                                    <small class="text-secondary d-block mt-1">O preview ao lado atualiza imediatamente ao alterar.</small>
+                                </div>
 
-                        <div class="col-12 col-md-4">
-                            <label class="form-label" for="preloader_titulo">Título exibido <x-admin.ajuda chave="preloader_titulo" /></label>
-                            <input type="text" class="form-control" id="preloader_titulo" name="preloader_titulo" value="{{ $preloaderTitulo }}" maxlength="80">
-                        </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="preloader_fundo">Tema de Fundo & Atmosfera</label>
+                                    <select class="form-select" id="preloader_fundo" name="preloader_fundo">
+                                        <option value="radial_dark" @selected($preloaderFundo === 'radial_dark')>Escuro Profundo (Degradê Radial Noturno)</option>
+                                        <option value="oled_black" @selected($preloaderFundo === 'oled_black')>Preto Absoluto OLED (#000000 - Contraste Máximo)</option>
+                                        <option value="glass_blur" @selected($preloaderFundo === 'glass_blur')>Vidro Fosco Translúcido (Glassmorphism Blur)</option>
+                                        <option value="aurora_gold" @selected($preloaderFundo === 'aurora_gold')>Aurora Dourada (Nébula Ouro & Âmbar)</option>
+                                    </select>
+                                </div>
 
-                        <div class="col-12 col-md-4">
-                            <label class="form-label" for="preloader_cor">Cor de destaque <x-admin.ajuda chave="preloader_cor" /></label>
-                            <div class="d-flex align-items-center gap-2">
-                                <input type="color" class="form-control form-control-color" id="preloader_cor" name="preloader_cor" value="{{ $preloaderCor }}">
-                                <span class="small text-secondary font-monospace">{{ $preloaderCor }}</span>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="preloader_cor">Cor Principal de Destaque <x-admin.ajuda chave="preloader_cor" /></label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="color" class="form-control form-control-color" id="preloader_cor" name="preloader_cor" value="{{ $preloaderCor }}">
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="preloader_cor_hex" value="{{ $preloaderCor }}" maxlength="7">
+                                    </div>
+                                    <div class="d-flex gap-1 mt-1 flex-wrap">
+                                        <button type="button" class="badge border-0 p-1 btn-paleta" style="background:#d4a017;color:#000" data-cor="#d4a017">Golden</button>
+                                        <button type="button" class="badge border-0 p-1 btn-paleta" style="background:#f59e0b;color:#000" data-cor="#f59e0b">Âmbar</button>
+                                        <button type="button" class="badge border-0 p-1 btn-paleta" style="background:#06b6d4;color:#000" data-cor="#06b6d4">Ciano</button>
+                                        <button type="button" class="badge border-0 p-1 btn-paleta" style="background:#10b981;color:#000" data-cor="#10b981">Esmeralda</button>
+                                        <button type="button" class="badge border-0 p-1 btn-paleta" style="background:#ef4444;color:#fff" data-cor="#ef4444">Rubi</button>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="preloader_cor_secundaria">Cor Secundária (Contraste e Anéis)</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="color" class="form-control form-control-color" id="preloader_cor_secundaria" name="preloader_cor_secundaria" value="{{ $preloaderCorSecundaria }}">
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="preloader_cor_sec_hex" value="{{ $preloaderCorSecundaria }}" maxlength="7">
+                                    </div>
+                                    <small class="text-secondary d-block mt-1">Usada para anéis concêntricos, esferas orbitais e degradês.</small>
+                                </div>
                             </div>
-                        </div>
+                        </x-admin.card>
 
-                        <div class="col-12">
-                            <label class="form-label" for="preloader_subtitulo">Subtítulo</label>
-                            <input type="text" class="form-control" id="preloader_subtitulo" name="preloader_subtitulo" value="{{ $preloaderSubtitulo }}" maxlength="120" placeholder="Proteção e monitoramento 24h">
-                        </div>
+                        {{-- Bloco 3: Elemento Central (Ícone ou Logo da Marca) --}}
+                        <x-admin.card title="Coração do Preloader (Ícone ou Logo)" icon="fa-icons" class="mb-3"
+                            descricao="Defina se o centro exibe um ícone vetorial de alta definição ou a logomarca oficial da empresa.">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="preloader_icone_tipo" id="tipo_icone" value="icone" @checked($preloaderIconeTipo === 'icone')>
+                                        <label class="btn btn-outline-secondary" for="tipo_icone"><i class="fas fa-icons me-1"></i> Ícone Vetorial FontAwesome</label>
 
-                        <div class="col-12 d-flex flex-wrap gap-2 align-items-center pt-2">
-                            <button type="submit" class="btn btn-golden">
-                                <i class="fas fa-save me-1" aria-hidden="true"></i> Salvar preloader
+                                        <input type="radio" class="btn-check" name="preloader_icone_tipo" id="tipo_logo" value="logo" @checked($preloaderIconeTipo === 'logo')>
+                                        <label class="btn btn-outline-secondary" for="tipo_logo"><i class="fas fa-shield-alt me-1"></i> Logomarca Oficial Golden</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-12" id="boxSeletorIcone">
+                                    <label class="form-label fw-semibold" for="preloader_icone">Ícone Central</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas {{ $preloaderIcone }}" id="iconePreviaCentral"></i></span>
+                                        <input type="text" class="form-control" id="preloader_icone" name="preloader_icone" value="{{ $preloaderIcone }}" placeholder="fa-location-crosshairs">
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 mt-2">
+                                        <span class="small text-secondary me-2">Atalhos rápidos:</span>
+                                        @foreach(['fa-location-crosshairs' => 'Mira GPS', 'fa-satellite' => 'Satélite', 'fa-satellite-dish' => 'Antena', 'fa-shield-halved' => 'Escudo', 'fa-car-side' => 'Veículo', 'fa-truck-fast' => 'Caminhão', 'fa-compass' => 'Bússola', 'fa-radar' => 'Radar', 'fa-bolt' => 'Raio'] as $icoClass => $icoNome)
+                                            <button type="button" class="btn btn-xs btn-outline-secondary btn-atalho-icone" data-icone="{{ $icoClass }}">
+                                                <i class="fas {{ $icoClass }} me-1"></i> {{ $icoNome }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </x-admin.card>
+
+                        {{-- Bloco 4: Textos, Telemetria & Barra de Progresso --}}
+                        <x-admin.card title="Textos, Telemetria & Barra" icon="fa-font" class="mb-3"
+                            descricao="Ajuste os textos exibidos, a etiqueta de status em tempo real e a barra de progresso.">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="preloader_titulo">Título Principal <x-admin.ajuda chave="preloader_titulo" /></label>
+                                    <input type="text" class="form-control" id="preloader_titulo" name="preloader_titulo" value="{{ $preloaderTitulo }}" maxlength="80">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold" for="preloader_subtitulo">Subtítulo Explicativo</label>
+                                    <input type="text" class="form-control" id="preloader_subtitulo" name="preloader_subtitulo" value="{{ $preloaderSubtitulo }}" maxlength="120" placeholder="Proteção e monitoramento 24h">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="border rounded-3 p-3 h-100 bg-body-tertiary">
+                                        <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="preloader_badge_ativo" name="preloader_badge_ativo" value="1" @checked($preloaderBadgeAtivo)>
+                                            <label class="form-check-label fw-semibold" for="preloader_badge_ativo">Badge de Status / Telemetria</label>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm mt-2" id="preloader_badge_texto" name="preloader_badge_texto" value="{{ $preloaderBadgeTexto }}" maxlength="60" placeholder="Sinal GPS Ativo • 24h">
+                                        <small class="text-secondary d-block mt-1">Exibe pílula com ponto verde pulsante de status operacional.</small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="border rounded-3 p-3 h-100 bg-body-tertiary">
+                                        <div class="form-check form-switch mb-1 d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="preloader_barra_ativa" name="preloader_barra_ativa" value="1" @checked($preloaderBarraAtiva)>
+                                            <label class="form-check-label fw-semibold" for="preloader_barra_ativa">Barra de Progresso</label>
+                                        </div>
+                                        <select class="form-select form-select-sm mt-2" id="preloader_barra_estilo" name="preloader_barra_estilo">
+                                            <option value="shimmer" @selected($preloaderBarraEstilo === 'shimmer')>Brilho Deslizante (Shimmer)</option>
+                                            <option value="pulso" @selected($preloaderBarraEstilo === 'pulso')>Pulsação Viva de Preenchimento</option>
+                                            <option value="laser" @selected($preloaderBarraEstilo === 'laser')>Laser Tático Alta Frequência</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </x-admin.card>
+
+                        {{-- Bloco 5: Dinâmica Temporal & Transição --}}
+                        <x-admin.card title="Velocidade, Saída & Tempo Limite" icon="fa-gauge-high" class="mb-3"
+                            descricao="Ajuste o ritmo das animações, a suavidade do desaparecimento e o tempo limite de segurança.">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold" for="preloader_velocidade">Ritmo da Animação</label>
+                                    <select class="form-select" id="preloader_velocidade" name="preloader_velocidade">
+                                        <option value="rapida" @selected($preloaderVelocidade === 'rapida')>⚡ Rápida e Ágil (0.7s)</option>
+                                        <option value="normal" @selected($preloaderVelocidade === 'normal')>⚖️ Equilibrada (Padrão 1.0s)</option>
+                                        <option value="suave" @selected($preloaderVelocidade === 'suave')>🌊 Suave e Fluida (1.5s)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold" for="preloader_tempo_saida">Efeito de Desaparecimento</label>
+                                    <select class="form-select" id="preloader_tempo_saida" name="preloader_tempo_saida">
+                                        <option value="suave" @selected($preloaderTempoSaida === 'suave')>Fade Suave com Leve Zoom (420ms)</option>
+                                        <option value="cinema" @selected($preloaderTempoSaida === 'cinema')>Dissolve Cinematográfico (700ms)</option>
+                                        <option value="instantaneo" @selected($preloaderTempoSaida === 'instantaneo')>Instantâneo / Ultrarrápido (180ms)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold" for="preloader_timeout_max">Timeout Máximo de Segurança</label>
+                                    <select class="form-select" id="preloader_timeout_max" name="preloader_timeout_max">
+                                        <option value="1800" @selected($preloaderTimeoutMax == 1800)>1.8 segundos (Super Rápido)</option>
+                                        <option value="2400" @selected($preloaderTimeoutMax == 2400)>2.4 segundos (Recomendado)</option>
+                                        <option value="3500" @selected($preloaderTimeoutMax == 3500)>3.5 segundos (Conexões instáveis)</option>
+                                        <option value="5000" @selected($preloaderTimeoutMax == 5000)>5.0 segundos (Máximo)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </x-admin.card>
+
+                        <div class="d-flex flex-wrap gap-2 align-items-center pt-2">
+                            <button type="submit" class="btn btn-golden btn-lg px-4 shadow-sm">
+                                <i class="fas fa-save me-1" aria-hidden="true"></i> Salvar configurações do preloader
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" id="btnTestarPreloaderTelaCheia">
+                                <i class="fas fa-expand me-1"></i> ⚡ Testar em Tela Cheia (3s)
                             </button>
                         </div>
+                    </form>
+                </div>
+
+                {{-- Coluna 2: Simulador em Tempo Real (Live Preview) --}}
+                <div class="col-xl-5">
+                    <div class="sticky-top" style="top: 80px; z-index: 10;">
+                        <x-admin.card title="Simulador Ao Vivo (Live Preview)" icon="fa-desktop"
+                            descricao="Veja as alterações visuais em tempo real antes de salvar.">
+                            
+                            {{-- Moldura do Dispositivo / Viewport --}}
+                            <div class="border rounded-4 overflow-hidden shadow-lg position-relative" style="background:#0b0d12; min-height: 440px;">
+                                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom border-dark bg-dark text-white-50 small">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="rounded-circle bg-danger d-inline-block" style="width:10px;height:10px;"></span>
+                                        <span class="rounded-circle bg-warning d-inline-block" style="width:10px;height:10px;"></span>
+                                        <span class="rounded-circle bg-success d-inline-block" style="width:10px;height:10px;"></span>
+                                    </div>
+                                    <span class="small font-monospace text-secondary" id="previewLabelEstilo">Radar GPS Tático</span>
+                                    <span class="badge bg-secondary" id="previewBadgeRes">Ao vivo</span>
+                                </div>
+
+                                {{-- Palco da Simulação --}}
+                                <div id="gpPreviewContainer" class="golden-preloader golden-preloader--{{ $preloaderEstilo }} golden-preloader--fundo-{{ $preloaderFundo }} golden-preloader--vel-{{ $preloaderVelocidade }}"
+                                    style="position: relative; height: 380px; inset: auto; --gp-accent: {{ $preloaderCor }}; --gp-accent-secondary: {{ $preloaderCorSecundaria }};">
+                                    <div class="golden-preloader__inner">
+                                        <div class="golden-preloader__stage" id="previewStage" aria-hidden="true">
+                                            {{-- Elementos injetados dinamicamente via JS --}}
+                                        </div>
+
+                                        <div class="golden-preloader__title" id="previewTitulo">{{ $preloaderTitulo }}</div>
+                                        <div class="golden-preloader__subtitle" id="previewSubtitulo">{{ $preloaderSubtitulo }}</div>
+
+                                        <div class="golden-preloader__badge" id="previewBadge" style="{{ $preloaderBadgeAtivo ? '' : 'display:none !important;' }}">
+                                            <span class="golden-preloader__badge-dot"></span>
+                                            <span id="previewBadgeTexto">{{ $preloaderBadgeTexto }}</span>
+                                        </div>
+
+                                        <div class="golden-preloader__bar golden-preloader__bar--{{ $preloaderBarraEstilo }}" id="previewBarra" style="{{ $preloaderBarraAtiva ? '' : 'display:none !important;' }}">
+                                            <div class="golden-preloader__bar-fill"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                <small class="text-secondary">
+                                    <i class="fas fa-check-circle text-success me-1"></i> Renderizado em CSS nativo 60 FPS
+                                </small>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnReiniciarPreview">
+                                    <i class="fas fa-rotate me-1"></i> Reiniciar Animação
+                                </button>
+                            </div>
+                        </x-admin.card>
                     </div>
-                </x-admin.card>
-            </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+{{-- Script de Sincronização em Tempo Real (Live Preview) --}}
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('gpPreviewContainer');
+    if (!container) return;
+
+    var elEstilo = document.getElementById('preloader_estilo');
+    var elFundo = document.getElementById('preloader_fundo');
+    var elCor = document.getElementById('preloader_cor');
+    var elCorHex = document.getElementById('preloader_cor_hex');
+    var elCorSec = document.getElementById('preloader_cor_secundaria');
+    var elCorSecHex = document.getElementById('preloader_cor_sec_hex');
+    var elTitulo = document.getElementById('preloader_titulo');
+    var elSubtitulo = document.getElementById('preloader_subtitulo');
+    var elIcone = document.getElementById('preloader_icone');
+    var elBadgeAtivo = document.getElementById('preloader_badge_ativo');
+    var elBadgeTexto = document.getElementById('preloader_badge_texto');
+    var elBarraAtiva = document.getElementById('preloader_barra_ativa');
+    var elBarraEstilo = document.getElementById('preloader_barra_estilo');
+    var elVelocidade = document.getElementById('preloader_velocidade');
+
+    var previewStage = document.getElementById('previewStage');
+    var previewTitulo = document.getElementById('previewTitulo');
+    var previewSubtitulo = document.getElementById('previewSubtitulo');
+    var previewBadge = document.getElementById('previewBadge');
+    var previewBadgeTexto = document.getElementById('previewBadgeTexto');
+    var previewBarra = document.getElementById('previewBarra');
+    var previewLabelEstilo = document.getElementById('previewLabelEstilo');
+
+    function obterTipoIcone() {
+        var rad = document.querySelector('input[name="preloader_icone_tipo"]:checked');
+        return rad ? rad.value : 'icone';
+    }
+
+    function renderizarStage() {
+        var estilo = elEstilo.value;
+        var tipo = obterTipoIcone();
+        var icone = elIcone.value || 'fa-location-crosshairs';
+        var html = '';
+
+        if (estilo === 'radar') {
+            html += '<span class="gp-ring gp-ring--1"></span><span class="gp-ring gp-ring--2"></span><span class="gp-ring gp-ring--3"></span><span class="gp-sweep"></span><span class="gp-blip gp-blip--1"></span><span class="gp-blip gp-blip--2"></span>';
+        } else if (estilo === 'orbita') {
+            html += '<span class="gp-orbit"><span class="gp-satellite-node"></span></span><span class="gp-orbit gp-orbit--inner"><span class="gp-satellite-node"></span></span>';
+        } else if (estilo === 'pulso') {
+            html += '<span class="gp-halo"></span><span class="gp-halo gp-halo--outer"></span>';
+        } else if (estilo === 'satelite') {
+            html += '<span class="gp-sat-track"><span class="gp-sat-dish"><i class="fas fa-satellite"></i></span></span><span class="gp-sat-beam"></span>';
+        } else if (estilo === 'telemetria') {
+            html += '<span class="gp-hud-bracket gp-hud-bracket--tl"></span><span class="gp-hud-bracket gp-hud-bracket--tr"></span><span class="gp-hud-bracket gp-hud-bracket--bl"></span><span class="gp-hud-bracket gp-hud-bracket--br"></span><span class="gp-reticle"></span><span class="gp-crosshair-h"></span><span class="gp-crosshair-v"></span>';
+        } else if (estilo === 'circuito') {
+            html += '<span class="gp-circuit-ring"></span><span class="gp-circuit-ring gp-circuit-ring--outer"></span>';
+        } else if (estilo === 'fluxo') {
+            html += '<span class="gp-diamond"></span><span class="gp-diamond gp-diamond--inner"></span>';
+        }
+
+        html += '<div class="golden-preloader__core">';
+        if (tipo === 'logo') {
+            html += '<i class="fas fa-shield-alt text-dark fs-3"></i>';
+        } else {
+            html += '<i class="fas ' + icone + '" aria-hidden="true"></i>';
+        }
+        html += '</div>';
+
+        previewStage.innerHTML = html;
+        if (previewLabelEstilo && elEstilo.options[elEstilo.selectedIndex]) {
+            previewLabelEstilo.textContent = elEstilo.options[elEstilo.selectedIndex].text.replace(/^.*?\s/, '');
+        }
+    }
+
+    function sincronizar() {
+        container.className = 'golden-preloader golden-preloader--' + elEstilo.value +
+                              ' golden-preloader--fundo-' + elFundo.value +
+                              ' golden-preloader--vel-' + elVelocidade.value;
+
+        container.style.setProperty('--gp-accent', elCor.value);
+        container.style.setProperty('--gp-accent-secondary', elCorSec.value);
+
+        if (elCorHex) elCorHex.value = elCor.value;
+        if (elCorSecHex) elCorSecHex.value = elCorSec.value;
+
+        previewTitulo.textContent = elTitulo.value;
+        previewSubtitulo.textContent = elSubtitulo.value;
+
+        if (elBadgeAtivo.checked && elBadgeTexto.value.trim() !== '') {
+            previewBadge.style.display = 'inline-flex';
+            previewBadgeTexto.textContent = elBadgeTexto.value;
+        } else {
+            previewBadge.style.display = 'none';
+        }
+
+        if (elBarraAtiva.checked) {
+            previewBarra.style.display = 'block';
+            previewBarra.className = 'golden-preloader__bar golden-preloader__bar--' + elBarraEstilo.value;
+        } else {
+            previewBarra.style.display = 'none';
+        }
+
+        var iconePrevia = document.getElementById('iconePreviaCentral');
+        if (iconePrevia) iconePrevia.className = 'fas ' + (elIcone.value || 'fa-location-crosshairs');
+
+        renderizarStage();
+    }
+
+    [elEstilo, elFundo, elCor, elCorSec, elTitulo, elSubtitulo, elIcone, elBadgeAtivo, elBadgeTexto, elBarraAtiva, elBarraEstilo, elVelocidade].forEach(function (el) {
+        if (el) {
+            el.addEventListener('input', sincronizar);
+            el.addEventListener('change', sincronizar);
+        }
+    });
+
+    document.querySelectorAll('input[name="preloader_icone_tipo"]').forEach(function (rad) {
+        rad.addEventListener('change', function () {
+            var box = document.getElementById('boxSeletorIcone');
+            if (box) box.style.display = this.value === 'logo' ? 'none' : 'block';
+            sincronizar();
+        });
+    });
+
+    document.querySelectorAll('.btn-paleta').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var cor = this.getAttribute('data-cor');
+            if (cor && elCor) {
+                elCor.value = cor;
+                sincronizar();
+            }
+        });
+    });
+
+    document.querySelectorAll('.btn-atalho-icone').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var ico = this.getAttribute('data-icone');
+            if (ico && elIcone) {
+                elIcone.value = ico;
+                sincronizar();
+            }
+        });
+    });
+
+    if (elCorHex) {
+        elCorHex.addEventListener('input', function () {
+            if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
+                elCor.value = this.value;
+                sincronizar();
+            }
+        });
+    }
+    if (elCorSecHex) {
+        elCorSecHex.addEventListener('input', function () {
+            if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
+                elCorSec.value = this.value;
+                sincronizar();
+            }
+        });
+    }
+
+    var btnReiniciar = document.getElementById('btnReiniciarPreview');
+    if (btnReiniciar) {
+        btnReiniciar.addEventListener('click', function () {
+            container.style.opacity = '0';
+            setTimeout(function () {
+                renderizarStage();
+                container.style.opacity = '1';
+            }, 120);
+        });
+    }
+
+    var btnTestar = document.getElementById('btnTestarPreloaderTelaCheia');
+    if (btnTestar) {
+        btnTestar.addEventListener('click', function () {
+            var existing = document.getElementById('gp-fullscreen-test');
+            if (existing) existing.remove();
+
+            var fs = container.cloneNode(true);
+            fs.id = 'gp-fullscreen-test';
+            fs.style.position = 'fixed';
+            fs.style.inset = '0';
+            fs.style.height = '100vh';
+            fs.style.zIndex = '999999';
+            fs.style.opacity = '0';
+            fs.style.transition = 'opacity 0.3s ease';
+
+            document.body.appendChild(fs);
+            requestAnimationFrame(function () {
+                fs.style.opacity = '1';
+            });
+
+            setTimeout(function () {
+                fs.classList.add('is-hidden');
+                setTimeout(function () {
+                    fs.remove();
+                }, 500);
+            }, 3000);
+        });
+    }
+
+    // Inicializa preview
+    sincronizar();
+});
+</script>
+@endpush
 @endsection

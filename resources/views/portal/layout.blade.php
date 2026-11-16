@@ -21,10 +21,12 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/golden-preloader.css') }}?v={{ filemtime(public_path('css/golden-preloader.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/admin-golden.css') }}?v={{ filemtime(public_path('css/admin-golden.css')) }}">
     @yield('styles')
 </head>
 <body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
+@include('partials.preloader', ['area' => 'portal'])
 @php $cliente = auth()->guard('cliente')->user(); @endphp
 <div class="app-wrapper">
 

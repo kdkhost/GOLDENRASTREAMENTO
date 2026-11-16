@@ -47,6 +47,7 @@
     <link rel="stylesheet" href="{{ asset('css/golden-to-top.css') }}?v={{ filemtime(public_path('css/golden-to-top.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-theme.css') }}?v={{ filemtime(public_path('css/golden-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-site.css') }}?v={{ filemtime(public_path('css/golden-site.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/golden-preloader.css') }}?v={{ filemtime(public_path('css/golden-preloader.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/golden-funil.css') }}?v={{ filemtime(public_path('css/golden-funil.css')) }}">
     {{-- O assistente é um dos atendentes da caixa do WhatsApp: a folha e o script dele só
          pesam quando existe caixa (ou quando ele é o único atendente) e ele atende aqui. --}}
@@ -76,6 +77,7 @@
     {!! $pagina->codigo_head !!}
 </head>
 <body class="funil pele-{{ $pagina->pele }}">
+@include('partials.preloader', ['area' => 'site'])
 <header class="f-topo">
     <div class="wrap">
         <a class="brand" href="{{ $pagina->url() }}">
