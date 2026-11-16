@@ -85,7 +85,7 @@
         </div>
 
         <form method="POST" action="{{ route('admin.manutencao.toggle') }}" class="m-0"
-            data-atualiza=".app-content, .page-actions"
+            data-atualiza=".app-content, .app-content-header"
             data-confirmar="{{ $ativa ? 'Deseja realmente desativar o modo de manutenção e liberar o site ao público?' : 'Deseja ativar o modo de manutenção agora? O site público passará a exibir a tela personalizada 503.' }}">
             @csrf
             <button type="submit" class="btn {{ $ativa ? 'btn-success' : 'btn-danger' }} fw-bold px-4 py-2">
@@ -97,7 +97,7 @@
 </x-admin.card>
 
 {{-- Formulário Unificado em Abas --}}
-<form id="formManutencaoConfig" method="POST" action="{{ route('admin.manutencao.update') }}" data-atualiza=".app-content, .page-actions">
+<form id="formManutencaoConfig" method="POST" action="{{ route('admin.manutencao.update') }}" data-atualiza=".app-content, .app-content-header">
     @csrf
     @method('PUT')
     <input type="hidden" name="ativa" value="{{ $ativa ? '1' : '0' }}">
@@ -384,7 +384,7 @@
 </form>
 
 <form id="formGerarTokenBypass" method="POST" action="{{ route('admin.manutencao.gerar-token') }}" class="d-none"
-    data-atualiza=".app-content, .page-actions"
+    data-atualiza=".app-content, .app-content-header"
     data-confirmar="Deseja gerar uma nova chave secreta? O link anterior deixará de funcionar imediatamente.">
     @csrf
 </form>

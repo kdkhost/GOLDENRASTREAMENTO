@@ -165,7 +165,7 @@
                     </form>
 
                     <form method="POST" action="{{ route('admin.seguranca-militar.logs.limpar') }}"
-                        onsubmit="return confirm('Deseja limpar logs de auditoria com mais de 30 dias?');">
+                        data-confirmar="Deseja limpar logs de auditoria com mais de 30 dias?">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -320,7 +320,7 @@
                                             <td class="text-secondary">{{ $b->expira_em ? $b->expira_em->format('d/m/Y H:i') : 'Permanente' }}</td>
                                             <td class="text-end">
                                                 <form method="POST" action="{{ route('admin.seguranca-militar.ips.remover', $b->id) }}" class="d-inline"
-                                                    onsubmit="return confirm('Remover o bloqueio deste IP?');">
+                                                    data-confirmar="Remover o bloqueio deste IP?">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Desbloquear IP">
@@ -357,7 +357,7 @@
                                             <td class="text-secondary">{{ $w->created_at?->format('d/m/Y') }}</td>
                                             <td class="text-end">
                                                 <form method="POST" action="{{ route('admin.seguranca-militar.ips.remover', $w->id) }}" class="d-inline"
-                                                    onsubmit="return confirm('Remover este IP da lista branca?');">
+                                                    data-confirmar="Remover este IP da lista branca?">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-secondary" title="Remover da Whitelist">

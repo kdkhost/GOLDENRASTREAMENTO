@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Campaign;
 use App\Models\Lead;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Visit;
 use App\Models\VisitEvent;
@@ -405,6 +406,34 @@ class AtribuicaoDeOrigemTest extends TestCase
         $this->assertSame(1, Visit::count(), 'A visita fora da retenção tinha de sair.');
         $this->assertSame($nova->id, Visit::firstOrFail()->id);
         $this->assertSame(0, VisitEvent::where('visit_id', $velha->id)->count(), 'Os eventos não podem ficar órfãos.');
+    }
+
+    public function test_snippet_meta_pixel_e_farol_nao_quebram_submissao_do_formulario_de_contato(): void
+    {
+        Setting::set('tracking_enabled', '1', 'boolean', 'tracking');
+        Setting::set('meta_pixel_id', '1137761705529036', 'string', 'tracking');
+
+        $html = $this->get('/contato')->assertOk()->getContent();
+        $this->assertStringContainsString('n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)', $html);
+        $this->assertStringNotContainsString('b.parentNode.insertBefore', $html);
+
+        $funilLayout = file_get_contents(resource_path('views/layouts/funil.blade.php'));
+        $this->assertStringContainsString('n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)', $funilLayout);
+        $this->assertStringNotContainsString('b.parentNode.insertBefore', $funilLayout);
+
+        $js = file_get_contents(public_path('js/golden-site.js'));
+        $this->assertStringContainsString("alvo.tagName === 'BUTTON' && caixa && caixa !== alvo", $js);
+        $this->assertStringContainsString("try { if (window.fbq) window.fbq('track', event, params); } catch (e) {}", $js);
+
+        $this->postJson('/leads', [
+            'name' => 'Maria Contato Teste',
+            'phone' => '(11) 98888-7777',
+            'email' => 'maria@teste.com.br',
+            'fleet_size' => '5',
+            'profile' => 'frota',
+            'message' => '<p>Preciso rastrear 5 veículos</p>',
+            'consent' => '1',
+        ])->assertCreated()->assertJsonPath('success', true);
     }
 
     /**

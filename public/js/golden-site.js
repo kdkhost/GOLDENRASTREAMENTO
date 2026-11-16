@@ -36,8 +36,8 @@
   function track(event, params) {
     params = params || {};
     if (trackingOn) {
-      if (window.gtag) window.gtag('event', event, params);
-      if (window.fbq) window.fbq('track', event, params);
+      try { if (window.gtag) window.gtag('event', event, params); } catch (e) {}
+      try { if (window.fbq) window.fbq('track', event, params); } catch (e) {}
     } else {
       // Modo local: imprime no console enquanto a coleta está desativada.
       console.log('[golden:track]', event, params);
@@ -60,14 +60,16 @@
       if (sendTo.indexOf('/') === -1 && adsTag) {
         sendTo = adsTag + '/' + sendTo;
       }
-      window.gtag('event', 'conversion', {
-        send_to: sendTo,
-        value: f.preco_cents ? f.preco_cents / 100 : 1,
-        currency: 'BRL'
-      });
+      try {
+        window.gtag('event', 'conversion', {
+          send_to: sendTo,
+          value: f.preco_cents ? f.preco_cents / 100 : 1,
+          currency: 'BRL'
+        });
+      } catch (e) {}
     }
-    if (window.fbq) window.fbq('track', 'Lead');
-    if (window.ttq) window.ttq.track('Lead');
+    try { if (window.fbq) window.fbq('track', 'Lead'); } catch (e) {}
+    try { if (window.ttq) window.ttq.track('Lead'); } catch (e) {}
   }
 
   /* ---------- Farol próprio (primeira mão, sem third party) ---------- */
@@ -114,10 +116,10 @@
       // O passo declarado no próprio elemento vence o do formulário; assim "Comprar agora"
       // conta checkout e "Adicionar" conta sacola na mesma form.
       var caixa = alvo.closest('[data-farol]');
-      var tipo = alvo.getAttribute('data-farol') || (alvo.tagName === 'BUTTON' && caixa !== alvo ? caixa.getAttribute('data-farol') : null);
+      var tipo = alvo.getAttribute('data-farol') || (alvo.tagName === 'BUTTON' && caixa && caixa !== alvo ? caixa.getAttribute('data-farol') : null);
 
       if (tipo) {
-        farol(tipo, location.pathname, alvo.getAttribute('data-detalhe') || caixa.getAttribute('data-detalhe') || null);
+        farol(tipo, location.pathname, alvo.getAttribute('data-detalhe') || (caixa ? caixa.getAttribute('data-detalhe') : null) || null);
         return;
       }
 
@@ -169,7 +171,11 @@
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        var btn = form.querySelector('button[type="submit"]');
+        var btn = e.submitter || form.querySelector('button[type="submit"]:not(.note-btn)') || form.querySelector('button[type="submit"]');
+
+        if (window.GoldenSummernote && typeof window.GoldenSummernote.sincronizarFormulario === 'function') {
+          window.GoldenSummernote.sincronizarFormulario(form);
+        }
 
         // injeta atribuição de campanha nos campos ocultos
         var attr = getAttribution();
@@ -208,6 +214,11 @@
                 res.d.whatsapp_url ? { url: res.d.whatsapp_url, rotulo: 'Continuar no WhatsApp ↗' } : null
               );
               form.reset();
+              form.querySelectorAll('textarea[data-summernote-ativo="1"]').forEach(function (ta) {
+                if (window.GoldenSummernote && typeof window.GoldenSummernote.sincronizarDoTextarea === 'function') {
+                  window.GoldenSummernote.sincronizarDoTextarea(ta);
+                }
+              });
               track('lead_success', {});
               // O eco para a plataforma de anúncio só acontece com o cadastro gravado:
               // é este o evento que o Google, o Meta e o TikTok usam para otimizar o leilão.

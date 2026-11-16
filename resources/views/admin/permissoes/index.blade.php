@@ -8,7 +8,7 @@
         <i class="fas fa-users me-1"></i> Gerenciar Usuários
     </a>
     <form method="POST" action="{{ route('admin.permissoes.restaurar') }}" class="d-inline"
-        onsubmit="return confirm('Deseja restaurar as permissões de todos os perfis para o padrão de fábrica?');">
+        data-confirmar="Deseja restaurar as permissões de todos os perfis para o padrão de fábrica?">
         @csrf
         <button type="submit" class="btn btn-sm btn-outline-warning">
             <i class="fas fa-rotate-left me-1"></i> Restaurar Padrões
@@ -24,7 +24,7 @@
             <p class="small mb-0">Para assumir o controle máximo do sistema e proteger esta conta contra alterações de terceiros, promova sua conta agora. O sistema permite no máximo <strong>2 Super Administradores</strong>.</p>
         </div>
         <form method="POST" action="{{ route('admin.usuarios.promover-superadmin', auth()->user()) }}"
-            onsubmit="return confirm('Deseja promover sua conta atual ({{ auth()->user()->name }}) para Super Administrador?');">
+            data-confirmar="Deseja promover sua conta atual ({{ auth()->user()->name }}) para Super Administrador?">
             @csrf
             <button type="submit" class="btn btn-dark btn-sm fw-bold">
                 <i class="fas fa-crown text-warning me-1"></i> Tornar-me Super Administrador

@@ -289,7 +289,7 @@
                 </p>
             </div>
             <form method="POST" action="{{ route('admin.usuarios.promover-superadmin', $usuario) }}"
-                onsubmit="return confirm('Confirmar promoção de {{ $usuario->name }} para Super Administrador?');">
+                data-confirmar="Confirmar promoção de {{ $usuario->name }} para Super Administrador?">
                 @csrf
                 <button type="submit" class="btn btn-warning btn-sm fw-bold">
                     <i class="fas fa-crown me-1"></i> Tornar Super Administrador

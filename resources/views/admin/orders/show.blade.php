@@ -254,7 +254,7 @@
                                         @endif
                                     </div>
                                     <form method="POST" action="{{ route('admin.pedidos.rastreio.movimentacao.remover', [$pedido, $idx]) }}"
-                                          onsubmit="return confirm('Remover esta parada do rastreamento?');">
+                                          data-confirmar="Remover esta parada do rastreamento?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Remover parada">

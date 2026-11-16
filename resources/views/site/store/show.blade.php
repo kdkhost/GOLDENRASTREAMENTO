@@ -554,10 +554,10 @@ document.addEventListener('DOMContentLoaded',function(){
         if (!res.ok || !res.data.sucesso) {
           btnAddCart.innerHTML = textoOriginal;
           var erroMsg = (res.data && res.data.mensagem) || 'Não foi possível adicionar ao carrinho.';
-          if (typeof window.goldenSiteToast === 'function') {
+          if (window.GoldenAvisos && typeof window.GoldenAvisos.erro === 'function') {
+            window.GoldenAvisos.erro(erroMsg);
+          } else if (typeof window.goldenSiteToast === 'function') {
             window.goldenSiteToast(erroMsg, { type: 'error' });
-          } else {
-            alert(erroMsg);
           }
           return;
         }

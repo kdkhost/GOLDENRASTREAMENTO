@@ -76,10 +76,10 @@
     // O botão que disparou o envio é o que mostra o trabalho; os irmãos dele ficam quietos para
     // ninguém gravar duas vezes o mesmo formulário sem querer.
     function botoesDo(form, submitter) {
-        var alvo = submitter instanceof HTMLElement ? submitter : form.querySelector('[type="submit"]');
+        var alvo = submitter instanceof HTMLElement ? submitter : form.querySelector('[type="submit"]:not(.note-btn)');
         var lista = Array.prototype.slice.call(form.querySelectorAll('button, input[type="submit"]'));
 
-        return lista.filter(function (b) { return b.type !== 'button'; }).map(function (b) {
+        return lista.filter(function (b) { return b.type !== 'button' && !b.closest('.note-editor'); }).map(function (b) {
             return { botao: b, principal: b === alvo };
         });
     }

@@ -316,6 +316,15 @@
                     var editable = editor ? editor.querySelector('.note-editable') : null;
                     var codable = editor ? editor.querySelector('.note-codable') : null;
 
+                    if (editor) {
+                        editor.querySelectorAll('button:not([type="button"])').forEach(function (btn) {
+                            btn.setAttribute('type', 'button');
+                        });
+                        editor.querySelectorAll('.note-modal input[name], .note-dialog input[name]').forEach(function (inp) {
+                            inp.removeAttribute('name');
+                        });
+                    }
+
                     if (editable) {
                         editable.addEventListener('input', function () {
                             sincronizarParaTextarea(textarea, true, false);

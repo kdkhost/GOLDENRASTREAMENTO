@@ -111,7 +111,7 @@
                 Quer desfazer todas as alterações e retornar aos textos originais empacotados pela Golden Rastreamento?
             </p>
             <form method="POST" action="{{ route('admin.erros.restaurar', $code) }}"
-                onsubmit="return confirm('Tem certeza que deseja restaurar os textos padrão de fábrica desta página de erro?');">
+                data-confirmar="Tem certeza que deseja restaurar os textos padrão de fábrica desta página de erro?">
                 @csrf
                 <button type="submit" class="btn btn-outline-danger btn-sm w-100">
                     <i class="fas fa-rotate-left me-1"></i> Restaurar Padrão de Fábrica
