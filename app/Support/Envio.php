@@ -188,12 +188,24 @@ class Envio
             return false;
         }
 
+        $caminho = trim($caminho);
+
+        if (Str::startsWith($caminho, ['http://', 'https://'])) {
+            return (bool) filter_var($caminho, FILTER_VALIDATE_URL);
+        }
+
+        $caminho = ltrim($caminho, '/');
+
+        if (Str::startsWith($caminho, 'storage/')) {
+            $caminho = substr($caminho, 8);
+        }
+
         if (str_contains($caminho, '..') || ! preg_match('#^[\w./-]+$#', $caminho)) {
             return false;
         }
 
-        if (Str::startsWith($caminho, 'img/') && is_file(public_path($caminho))) {
-            return true;
+        if (Str::startsWith($caminho, 'img/')) {
+            return is_file(public_path($caminho));
         }
 
         $pasta = self::regra($campo)['pasta'];
@@ -202,7 +214,7 @@ class Envio
             return false;
         }
 
-        return Storage::disk('public')->exists($caminho);
+        return Storage::disk('public')->exists($caminho) || is_file(public_path('storage/'.$caminho));
     }
 
     /** Apaga um caminho de envio, se ele existir e pertencer àquele campo (nunca apaga assets em public/img). */

@@ -82,7 +82,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $produto): RedirectResponse
     {
         $estoqueAnterior = $produto->estoque;
-        $data = $this->validateProduct($request);
+        $data = $this->validateProduct($request, $produto);
         $this->descartarSubstituidos($produto, $data);
         $produto->update($data);
 
@@ -140,11 +140,28 @@ class ProductController extends Controller
         return back()->with('success', 'Estoque atualizado.');
     }
 
-    private function validateProduct(Request $request): array
+    private function validateProduct(Request $request, ?Product $produto = null): array
     {
+        // Normaliza valores monetários digitados com vírgula (padrão brasileiro) ou prefixo monetário
+        $precoNormalizado = $this->normalizarPreco($request->input('preco'));
+        $precoPromocionalNormalizado = $this->normalizarPreco($request->input('preco_promocional'));
+        $mensalidadeNormalizada = $this->normalizarPreco($request->input('mensalidade'));
+
+        $categoriaId = $request->input('category_id');
+        if ($categoriaId === '' || $categoriaId === '0') {
+            $categoriaId = null;
+        }
+
+        $request->merge([
+            'preco' => $precoNormalizado,
+            'preco_promocional' => $precoPromocionalNormalizado,
+            'mensalidade' => $mensalidadeNormalizada,
+            'category_id' => $categoriaId,
+        ]);
+
         $data = $request->validate([
             'nome' => ['required', 'string', 'max:190'],
-            'category_id' => ['nullable', 'integer'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'sku' => ['nullable', 'string', 'max:64'],
             'resumo' => ['nullable', 'string', 'max:255'],
             'descricao' => ['nullable', 'string'],
@@ -164,50 +181,106 @@ class ProductController extends Controller
             'video' => ['nullable', 'string', 'max:255'],
         ]);
 
-        // Só se aceita arquivo que esteja de fato na pasta do campo (caminho vem do dropzone).
+        // Validação e normalização dos campos de mídia única (imagem e vídeo)
         foreach (self::MIDIAS as $campo => $envio) {
             $caminho = $data[$campo] ?? null;
 
-            if ($caminho !== null && ! Envio::caminhoConfere($caminho, $envio)) {
-                throw ValidationException::withMessages([
-                    $campo => 'Este arquivo não foi carregado por aqui. Solte-o no campo de novo.',
-                ]);
-            }
+            if ($caminho !== null && $caminho !== '') {
+                $caminhoNormalizado = ltrim(trim($caminho), '/');
+                if (str_starts_with($caminhoNormalizado, 'storage/')) {
+                    $caminhoNormalizado = substr($caminhoNormalizado, 8);
+                }
 
-            $data[$campo] = $caminho;
+                $ehAtual = $produto && ($produto->{$campo} === $caminho || $produto->{$campo} === $caminhoNormalizado);
+                $ehPadrao = $produto && $caminhoNormalizado === Product::imagemPadraoPorSlug($produto->slug, $produto->category?->slug);
+
+                if (! $ehAtual && ! $ehPadrao && ! Envio::caminhoConfere($caminhoNormalizado, $envio)) {
+                    throw ValidationException::withMessages([
+                        $campo => 'Este arquivo não foi carregado por aqui. Solte-o no campo de novo.',
+                    ]);
+                }
+
+                $data[$campo] = $caminhoNormalizado;
+            } else {
+                $data[$campo] = null;
+            }
         }
 
         // Validação dos caminhos das fotos da galeria
         $galeria = array_values(array_unique(array_filter((array) ($data['galeria'] ?? []))));
+        $galeriaProcessada = [];
+        $galeriaExistente = (array) ($produto?->galeria ?? []);
+
         foreach ($galeria as $foto) {
-            if (! is_string($foto) || (! Envio::caminhoConfere($foto, 'produto_galeria') && ! Envio::caminhoConfere($foto, 'produto_imagem'))) {
+            if (! is_string($foto)) {
+                continue;
+            }
+
+            $fotoNormalizada = ltrim(trim($foto), '/');
+            if (str_starts_with($fotoNormalizada, 'storage/')) {
+                $fotoNormalizada = substr($fotoNormalizada, 8);
+            }
+
+            $ehExistente = in_array($foto, $galeriaExistente, true) || in_array($fotoNormalizada, $galeriaExistente, true);
+
+            if (! $ehExistente && ! Envio::caminhoConfere($fotoNormalizada, 'produto_galeria') && ! Envio::caminhoConfere($fotoNormalizada, 'produto_imagem')) {
                 throw ValidationException::withMessages([
                     'galeria' => 'Uma das fotos da galeria não foi carregada por aqui. Solte-a novamente no campo.',
                 ]);
             }
+
+            $galeriaProcessada[] = $fotoNormalizada;
         }
 
         $sobConsulta = $request->boolean('sob_consulta');
 
         return [
-            'nome' => $data['nome'],
-            'category_id' => $data['category_id'] ?? null,
-            'sku' => $data['sku'] ?? null,
-            'resumo' => $data['resumo'] ?? null,
+            'nome' => trim($data['nome']),
+            'category_id' => $data['category_id'] ?: null,
+            'sku' => ! empty($data['sku']) ? trim($data['sku']) : null,
+            'resumo' => ! empty($data['resumo']) ? trim($data['resumo']) : null,
             'descricao' => $data['descricao'] ?? null,
-            'preco_cents' => $sobConsulta ? 0 : (isset($data['preco']) && $data['preco'] !== '' ? $this->paraCentavos($data['preco']) : 0),
+            'preco_cents' => $sobConsulta ? 0 : (isset($data['preco']) && $data['preco'] !== null && $data['preco'] !== '' ? $this->paraCentavos($data['preco']) : 0),
             'preco_promocional_cents' => ! $sobConsulta && isset($data['preco_promocional']) && $data['preco_promocional'] > 0 ? $this->paraCentavos($data['preco_promocional']) : null,
             'mensalidade_cents' => ! $sobConsulta && isset($data['mensalidade']) && $data['mensalidade'] > 0 ? $this->paraCentavos($data['mensalidade']) : null,
-            'estoque' => $data['estoque'] ?? 0,
-            'estoque_minimo' => $data['estoque_minimo'] ?? 0,
-            'ordem' => $data['ordem'] ?? 0,
+            'estoque' => isset($data['estoque']) ? (int) $data['estoque'] : 0,
+            'estoque_minimo' => isset($data['estoque_minimo']) ? (int) $data['estoque_minimo'] : 0,
+            'ordem' => isset($data['ordem']) ? (int) $data['ordem'] : 0,
             'imagem' => $data['imagem'],
-            'galeria' => $galeria ?: null,
+            'galeria' => ! empty($galeriaProcessada) ? $galeriaProcessada : null,
             'video' => $data['video'],
             'destaque' => $request->boolean('destaque'),
-            'ativo' => $request->boolean('ativo', true),
-            'controle_estoque' => $request->boolean('controle_estoque', true),
+            'ativo' => $produto ? $request->boolean('ativo') : $request->boolean('ativo', true),
+            'controle_estoque' => $produto ? $request->boolean('controle_estoque') : $request->boolean('controle_estoque', true),
         ];
+    }
+
+    private function normalizarPreco(mixed $valor): ?float
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        if (is_numeric($valor)) {
+            return (float) $valor;
+        }
+
+        if (is_string($valor)) {
+            $limpo = trim(str_ireplace(['r$', ' '], '', $valor));
+
+            if (str_contains($limpo, ',') && str_contains($limpo, '.')) {
+                $limpo = str_replace('.', '', $limpo);
+                $limpo = str_replace(',', '.', $limpo);
+            } elseif (str_contains($limpo, ',')) {
+                $limpo = str_replace(',', '.', $limpo);
+            }
+
+            if (is_numeric($limpo)) {
+                return (float) $limpo;
+            }
+        }
+
+        return null;
     }
 
     /** Tira do disco o arquivo que o operador acabou de substituir ou remover. */

@@ -185,6 +185,21 @@
         avisar(resposta.mensagens || []);
 
         if (resposta.campos && Object.keys(resposta.campos).length) {
+            var listaErros = [];
+            Object.keys(resposta.campos).forEach(function (k) {
+                var msgs = resposta.campos[k];
+                if (Array.isArray(msgs)) {
+                    msgs.forEach(function (m) { if (m) listaErros.push(m); });
+                } else if (typeof msgs === 'string' && msgs) {
+                    listaErros.push(msgs);
+                }
+            });
+            if (listaErros.length && window.GoldenAvisos && typeof window.GoldenAvisos.erros === 'function') {
+                window.GoldenAvisos.erros(listaErros);
+            } else if (listaErros.length && window.GoldenAvisos && typeof window.GoldenAvisos.erro === 'function') {
+                window.GoldenAvisos.erro(listaErros[0]);
+            }
+
             pintarErros(form, resposta.campos);
 
             return;
@@ -228,7 +243,10 @@
 
         return form.querySelector('[name="' + seletor + '"]')
             || form.querySelector('[name="' + seletor + '[]"]')
-            || form.querySelector('[name="' + nome + '"]');
+            || form.querySelector('[name="' + nome + '"]')
+            || form.querySelector('[data-nome="' + nome + '"]')
+            || form.querySelector('[data-campo="' + nome + '"]')
+            || form.querySelector('[data-upload][data-nome="' + nome + '"]');
     }
 
     function editorVisualDe(controle) {
@@ -252,6 +270,16 @@
             controle.classList.add('is-invalid');
             controle.setAttribute('aria-invalid', 'true');
 
+            // Se for campo de upload arrastar e soltar (partials/upload)
+            var containerUpload = controle.hasAttribute('data-upload') ? controle : controle.closest('[data-upload]');
+            if (containerUpload) {
+                containerUpload.classList.add('com-erro');
+                var estadoUpload = containerUpload.querySelector('[data-upload-estado]');
+                if (estadoUpload) {
+                    estadoUpload.textContent = (campos[nome] || [])[0] || 'Arquivo inválido.';
+                }
+            }
+
             var editorVisual = editorVisualDe(controle);
             if (editorVisual) {
                 editorVisual.classList.add('is-invalid', 'border-danger');
@@ -261,7 +289,7 @@
             caixa.textContent = (campos[nome] || [])[0] || '';
             caixa.hidden = false;
 
-            if (!primeiro) { primeiro = editorVisual || controle; }
+            if (!primeiro) { primeiro = containerUpload || editorVisual || controle; }
         });
 
         if (!primeiro) { return; }
@@ -270,7 +298,7 @@
         window.requestAnimationFrame(function () {
             primeiro.scrollIntoView({ block: 'center', behavior: 'smooth' });
             var editavel = primeiro.classList.contains('note-editor') ? primeiro.querySelector('.note-editable, .note-codable') : primeiro;
-            if (editavel && typeof editavel.focus === 'function') {
+            if (editavel && typeof editavel.focus === 'function' && editavel.type !== 'hidden') {
                 try { editavel.focus({ preventScroll: true }); } catch (e) { editavel.focus(); }
             }
         });

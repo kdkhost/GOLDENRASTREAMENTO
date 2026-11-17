@@ -12,6 +12,16 @@
 @endsection
 
 @section('content')
+@if($errors->any())
+    <div class="alert alert-danger mb-3" role="alert">
+        <h6 class="alert-heading fw-bold mb-1"><i class="fas fa-triangle-exclamation me-1"></i> Não foi possível salvar o produto:</h6>
+        <ul class="mb-0 ps-3">
+            @foreach($errors->all() as $erro)
+                <li>{{ $erro }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 <form method="POST" action="{{ $editando ? route('admin.catalogo.produtos.update', $produto) : route('admin.catalogo.produtos.store') }}">
     @csrf
     <div class="row g-3">
