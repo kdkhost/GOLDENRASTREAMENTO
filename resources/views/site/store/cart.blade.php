@@ -4,10 +4,24 @@
 @section('meta_description', 'Revise os equipamentos e chips antes de finalizar o pedido na loja Golden.')
 
 @section('content')
+@php
+    $totalProdutos = count($linhas);
+    $totalUnidades = array_sum(array_column($linhas, 'quantidade'));
+@endphp
 <section class="sec-light">
     <div class="wrap">
         <span class="eyebrow">Carrinho</span>
-        <h1 id="cartHeadingCount" style="font-size:1.9rem;margin:.2rem 0">{{ count($linhas) }} {{ count($linhas) === 1 ? 'item' : 'itens' }} na sua sacola.</h1>
+        <h1 id="cartHeadingCount" style="font-size:1.9rem;margin:.2rem 0">
+            @if($totalProdutos === 0)
+                Sua sacola está vazia.
+            @elseif($totalProdutos === 1 && $totalUnidades === 1)
+                1 produto na sua sacola (1 unidade).
+            @elseif($totalProdutos === 1)
+                1 produto na sua sacola ({{ $totalUnidades }} unidades).
+            @else
+                {{ $totalProdutos }} produtos na sua sacola ({{ $totalUnidades }} unidades no total).
+            @endif
+        </h1>
         <p class="lead-sub">Ajuste as quantidades quando quiser — nada é cobrado antes de você escolher a entrega e o pagamento.</p>
 
         <div id="cartEmptyState" class="cart-empty" @if($linhas !== []) hidden @endif>
@@ -50,7 +64,7 @@
 
         <aside class="cart-summary" data-total-sem-frete="{{ max(0, $subtotal - ($descontoCents ?? 0)) }}">
             <h2>Resumo</h2>
-            <div class="sum-line"><span id="cartSummaryUnitsLabel">Subtotal ({{ array_sum(array_column($linhas, 'quantidade')) }} itens)</span><b id="cartSubtotalDisplay">{{ brl($subtotal) }}</b></div>
+            <div class="sum-line"><span id="cartSummaryUnitsLabel">Subtotal ({{ $totalUnidades }} {{ $totalUnidades === 1 ? 'unidade' : 'unidades' }})</span><b id="cartSubtotalDisplay">{{ brl($subtotal) }}</b></div>
             <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">Calcule pelo CEP</b></div>
             <div class="sum-line" id="cartCupomSummaryRow" style="color:var(--teal)" @if(empty($cupom)) hidden @endif>
                 <span id="cartCupomSummaryLabel">@if(!empty($cupom))Cupom <b>{{ $cupom->codigo }}</b> ({{ $cupom->rotuloDesconto() }})@endif</span>
@@ -95,7 +109,7 @@
                 <div id="cartFreteResultados" style="margin-top:10px;font-size:.82rem;display:none"></div>
             </div>
 
-            <a href="{{ route('site.loja.checkout') }}" class="btn btn-gold" data-farol="checkout" style="width:100%;margin-top:14px">Finalizar pedido →</a>
+            <button type="submit" form="cartForm" name="ir" value="checkout" class="btn btn-gold" data-farol="checkout" style="width:100%;margin-top:14px;border:0;cursor:pointer;display:block;text-align:center">Finalizar pedido →</button>
             <p class="fine">Pagamento na etapa seguinte: Pix, cartão ou boleto. Retirada na loja quando disponível.</p>
         </aside>
         </div>
@@ -322,8 +336,17 @@ document.addEventListener('DOMContentLoaded', function () {
         atualizarBadgesCabecalho(data.total_unidades || 0);
 
         if (headingCount) {
-            const n = data.itens_count || 0;
-            headingCount.textContent = n + ' ' + (n === 1 ? 'item' : 'itens') + ' na sua sacola.';
+            const p = data.itens_count || 0;
+            const u = data.total_unidades || 0;
+            if (p === 0) {
+                headingCount.textContent = 'Sua sacola está vazia.';
+            } else if (p === 1 && u === 1) {
+                headingCount.textContent = '1 produto na sua sacola (1 unidade).';
+            } else if (p === 1) {
+                headingCount.textContent = '1 produto na sua sacola (' + u + ' unidades).';
+            } else {
+                headingCount.textContent = p + ' produtos na sua sacola (' + u + ' unidades no total).';
+            }
         }
 
         if (data.vazio) {
@@ -349,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (unitsLabel) {
             const u = data.total_unidades || 0;
-            unitsLabel.textContent = 'Subtotal (' + u + ' ' + (u === 1 ? 'item' : 'itens') + ')';
+            unitsLabel.textContent = 'Subtotal (' + u + ' ' + (u === 1 ? 'unidade' : 'unidades') + ')';
         }
         if (subtotalEl) subtotalEl.textContent = data.subtotal_formatado;
         if (typeof window.goldenSetTotalSemFreteCents === 'function' && typeof data.total_sem_frete_cents !== 'undefined') {
@@ -449,6 +472,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     cartForm.addEventListener('submit', function (e) {
+        if (e.submitter && e.submitter.value === 'checkout') {
+            // Permite submit tradicional direto para checkout salvando quantidades
+            return;
+        }
         e.preventDefault();
         enviarQuantidades();
     });
@@ -512,6 +539,13 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(() => {});
         });
     }
+
+    // Se o usuário navegou com botão Voltar/Avançar (bfcache), recarrega para manter consistência
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) {
+            window.location.reload();
+        }
+    });
 });
 </script>
 @endpush

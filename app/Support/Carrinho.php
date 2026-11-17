@@ -37,6 +37,26 @@ class Carrinho
         $this->gravar($produtoId, $atual + max(1, $quantidade));
     }
 
+    public function definir(int $produtoId, int $quantidade): void
+    {
+        $this->ajustar($produtoId, $quantidade);
+    }
+
+    public function quantidadeDoProduto(int $produtoId): int
+    {
+        return (int) ($this->itens[$produtoId] ?? 0);
+    }
+
+    public function temProduto(int $produtoId): bool
+    {
+        return $this->quantidadeDoProduto($produtoId) > 0;
+    }
+
+    public function totalProdutosDiferentes(): int
+    {
+        return count($this->itens);
+    }
+
     public function ajustar(int $produtoId, int $quantidade): void
     {
         $quantidade <= 0 ? $this->remover($produtoId) : $this->gravar($produtoId, $quantidade);

@@ -1,6 +1,7 @@
 @php
     $fotos = !empty($p['imagens']) ? $p['imagens'] : (!empty($p['imagem']) ? [$p['imagem']] : []);
     $totalFotos = count($fotos);
+    $qtdNoCarrinho = \App\Support\Carrinho::daSessao()->quantidadeDoProduto((int) $p['id']);
 @endphp
 <article class="prod-card" data-card-prod>
     <div class="prod-thumb" data-prod-thumb>
@@ -25,6 +26,7 @@
         @endif
         @if(!empty($p['promocao']))<span class="prod-badge">Promoção</span>@endif
         @if(!empty($p['destaque']))<span class="prod-badge feat">Destaque</span>@endif
+        @if($qtdNoCarrinho > 0)<span class="prod-badge in-cart"><i class="fa-solid fa-cart-shopping"></i> {{ $qtdNoCarrinho }} no carrinho</span>@endif
     </div>
 
     <div class="prod-body">
@@ -65,7 +67,13 @@
                     @csrf
                     <input type="hidden" name="produto" value="{{ $p['id'] }}">
                     <input type="hidden" name="quantidade" value="1">
-                    <button type="submit" class="prod-buy-btn">Comprar</button>
+                    @if($qtdNoCarrinho > 0)
+                        <button type="submit" class="prod-buy-btn prod-buy-btn-added" title="Já no carrinho ({{ $qtdNoCarrinho }} {{ $qtdNoCarrinho === 1 ? 'unidade' : 'unidades' }}). Clique para adicionar mais 1.">
+                            <i class="fa-solid fa-cart-shopping"></i> No carrinho (+1)
+                        </button>
+                    @else
+                        <button type="submit" class="prod-buy-btn">Comprar</button>
+                    @endif
                 </form>
             @else
                 <a href="{{ $golden['whatsapp_url'] }}?text={{ urlencode('Olá! Quero encomendar o ' . $p['nome'] . ' da loja Golden.') }}" target="_blank" rel="noopener" class="prod-buy-btn prod-buy-wa">

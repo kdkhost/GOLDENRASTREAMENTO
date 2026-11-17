@@ -432,4 +432,98 @@ class FluxoDaLojaTest extends TestCase
             ->assertJsonPath('sucesso', true)
             ->assertJsonFragment(['id' => 'correios_sedex']);
     }
+
+    public function test_fluxo_adicionar_multiplos_produtos_mantem_consistencia_e_quantidades(): void
+    {
+        $produtos = Product::where('ativo', true)->take(2)->get();
+        $this->assertCount(2, $produtos);
+        $p1 = $produtos[0];
+        $p2 = $produtos[1];
+
+        // 1. Visitante entra no produto 1 e adiciona 2 unidades via AJAX
+        $res1 = $this->postJson(route('site.loja.carrinho.adicionar'), [
+            'produto' => $p1->id,
+            'quantidade' => 2,
+            'modo' => 'somar',
+            'ir' => 'carrinho',
+        ]);
+
+        $res1->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'carrinho_itens' => 2,
+                'itens_count' => 1,
+                'produto_id' => $p1->id,
+                'produto_quantidade_carrinho' => 2,
+            ]);
+
+        // 2. Visita a página do produto 1: deve informar que já tem 2 no carrinho
+        $resShowP1 = $this->get(route('site.loja.produto', $p1->slug));
+        $resShowP1->assertOk();
+        $this->assertEquals(2, $resShowP1->viewData('quantidadeNoCarrinho'));
+        $resShowP1->assertSee('Item já adicionado na sua sacola:');
+        $resShowP1->assertSee('value="2"', false);
+
+        // 3. Navega para o produto 2 e adiciona 3 unidades
+        $res2 = $this->postJson(route('site.loja.carrinho.adicionar'), [
+            'produto' => $p2->id,
+            'quantidade' => 3,
+            'modo' => 'somar',
+            'ir' => 'carrinho',
+        ]);
+
+        $res2->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'carrinho_itens' => 5, // 2 do p1 + 3 do p2
+                'itens_count' => 2,
+                'produto_id' => $p2->id,
+                'produto_quantidade_carrinho' => 3,
+            ]);
+
+        // 4. Volta na página do produto 1: a quantidade no carrinho continua 2
+        $resShowP1Novamente = $this->get(route('site.loja.produto', $p1->slug));
+        $resShowP1Novamente->assertOk();
+        $this->assertEquals(2, $resShowP1Novamente->viewData('quantidadeNoCarrinho'));
+
+        // 5. Atualiza a quantidade do produto 1 usando modo 'definir' para 4 unidades
+        $resUpdateP1 = $this->postJson(route('site.loja.carrinho.adicionar'), [
+            'produto' => $p1->id,
+            'quantidade' => 4,
+            'modo' => 'definir',
+            'ir' => 'carrinho',
+        ]);
+
+        $resUpdateP1->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'carrinho_itens' => 7, // 4 do p1 + 3 do p2
+                'itens_count' => 2,
+                'produto_id' => $p1->id,
+                'produto_quantidade_carrinho' => 4,
+            ]);
+
+        // Verifica que o produto 2 não foi alterado indevidamente
+        $carrinho = session(Carrinho::CHAVE);
+        $this->assertEquals(4, $carrinho[$p1->id]);
+        $this->assertEquals(3, $carrinho[$p2->id]);
+
+        // 6. Visita a página do carrinho
+        $resCart = $this->get(route('site.loja.carrinho'));
+        $resCart->assertOk();
+        $this->assertStringContainsString('no-store', (string) $resCart->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-cache', (string) $resCart->headers->get('Cache-Control'));
+        $resCart->assertSee('2 produtos na sua sacola (7 unidades no total).');
+        $resCart->assertSee('Subtotal (7 unidades)');
+
+        // 7. Envia atualização de carrinho indo para checkout (ir=checkout)
+        $resFinalizar = $this->post(route('site.loja.carrinho.atualizar'), [
+            'quantidades' => [
+                $p1->id => 4,
+                $p2->id => 3,
+            ],
+            'ir' => 'checkout',
+        ]);
+        $resFinalizar->assertRedirect(route('site.loja.checkout'));
+    }
 }

@@ -864,6 +864,20 @@ main>section:nth-child(n+4){animation-delay:.14s}
   background:var(--gold);
   color:#1a1a1a;
 }
+.prod-badge.in-cart{
+  top:14px;
+  right:14px;
+  left:auto;
+  background:#0f766e;
+  color:#fff;
+  box-shadow:0 4px 10px rgba(15,118,110,.3);
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.prod-badge.feat + .prod-badge.in-cart{
+  top:44px;
+}
 .prod-count-badge{
   position:absolute;
   bottom:10px;
@@ -1013,6 +1027,16 @@ main>section:nth-child(n+4){animation-delay:.14s}
   background:#272b30;
   color:#fff;
   transform:translateY(-1px);
+}
+.prod-buy-btn.prod-buy-btn-added{
+  background:#0f766e;
+  color:#fff;
+  font-size:.82rem;
+  padding:8px 14px;
+}
+.prod-buy-btn.prod-buy-btn-added:hover{
+  background:#115e59;
+  color:#fff;
 }
 @media(max-width:600px){
   .prod-card{border-radius:22px}

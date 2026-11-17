@@ -140,21 +140,32 @@
                     @php
                         $precoBase = $produto['preco'] > 0 ? $produto['preco'] : ($produto['mensalidade'] ?? 0);
                         $ehMensal = ($produto['preco'] == 0 && ($produto['mensalidade'] ?? 0) > 0);
+                        $noCarrinho = (int) ($quantidadeNoCarrinho ?? 0);
+                        $qtdInicial = $noCarrinho > 0 ? $noCarrinho : 1;
                     @endphp
                     <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}" class="pdp-buy-card buy-form" data-unit="{{ $precoBase }}" data-monthly="{{ $ehMensal ? '1' : '0' }}" data-farol="sacola" data-detalhe="{{ $produto['slug'] }}">
                         @csrf
                         <input type="hidden" name="produto" value="{{ $produto['id'] }}">
+                        <input type="hidden" name="modo" id="pdpModoOperacao" value="{{ $noCarrinho > 0 ? 'definir' : 'somar' }}">
+
+                        <div class="pdp-in-cart-alert" id="pdpInCartAlert" @if($noCarrinho <= 0) style="display:none" @endif>
+                            <i class="fa-solid fa-circle-check"></i>
+                            <div class="pdp-in-cart-text">
+                                <span>Item já adicionado na sua sacola: <strong id="pdpInCartQty">{{ $noCarrinho }}</strong> <span id="pdpInCartWord">{{ $noCarrinho === 1 ? 'unidade' : 'unidades' }}</span>.</span>
+                                <a href="{{ route('site.loja.carrinho') }}" class="pdp-in-cart-link">Ver carrinho completo →</a>
+                            </div>
+                        </div>
 
                         <div class="quantity-row">
                             <span class="qty-label">Quantidade</span>
                             <div class="qty">
                                 <button type="button" class="qminus" aria-label="Diminuir">−</button>
-                                <input type="number" name="quantidade" min="1" max="{{ $produto['controle_estoque'] ? max(1, $produto['estoque']) : 999 }}" value="1" required>
+                                <input type="number" name="quantidade" min="1" max="{{ $produto['controle_estoque'] ? max(1, $produto['estoque']) : 999 }}" value="{{ $qtdInicial }}" required>
                                 <button type="button" class="qplus" aria-label="Aumentar">+</button>
                             </div>
                             <div class="qty-total-wrap">
                                 <small>Subtotal</small>
-                                <strong class="line-total">{{ brl($precoBase) }}{{ $ehMensal ? '/mês' : '' }}</strong>
+                                <strong class="line-total">{{ brl($precoBase * $qtdInicial) }}{{ $ehMensal ? '/mês' : '' }}</strong>
                             </div>
                         </div>
 
@@ -162,8 +173,9 @@
                             <button type="submit" name="ir" value="checkout" class="pdp-btn-primary" data-track="generate_lead" data-cta="buy" data-farol="checkout">
                                 <i class="fa-solid fa-bolt"></i> Comprar agora →
                             </button>
-                            <button type="submit" name="ir" value="carrinho" class="pdp-btn-secondary">
-                                <i class="fa-solid fa-cart-plus"></i> Adicionar ao carrinho
+                            <button type="submit" name="ir" value="carrinho" class="pdp-btn-secondary" id="btnAddCart">
+                                <i class="fa-solid {{ $noCarrinho > 0 ? 'fa-rotate' : 'fa-cart-plus' }}" id="btnAddCartIcon"></i>
+                                <span id="btnAddCartLabel">{{ $noCarrinho > 0 ? 'Atualizar quantidade no carrinho' : 'Adicionar ao carrinho' }}</span>
                             </button>
                         </div>
 
@@ -432,6 +444,12 @@
 .pdp-pay-methods i{color:var(--teal);margin-right:4px}
 
 .pdp-buy-card{background:#fff;border:1px solid rgba(15,23,42,.07);border-radius:22px;padding:20px 22px;box-shadow:0 12px 30px rgba(15,23,42,.06)}
+.pdp-in-cart-alert{display:flex;align-items:center;gap:12px;background:rgba(31,158,134,.1);border:1px solid rgba(31,158,134,.32);border-radius:14px;padding:12px 14px;margin-bottom:16px;color:#0f766e;font-size:.88rem}
+.pdp-in-cart-alert i{font-size:1.2rem;color:var(--teal);flex-shrink:0}
+.pdp-in-cart-text{display:flex;flex-direction:column;gap:2px}
+.pdp-in-cart-text strong{color:#0f766e;font-weight:700}
+.pdp-in-cart-link{color:var(--ink);font-weight:600;font-size:.8rem;text-decoration:underline;margin-top:2px}
+.pdp-in-cart-link:hover{color:var(--teal)}
 .quantity-row{display:flex;align-items:center;gap:14px;padding-bottom:16px;border-bottom:1px solid rgba(15,23,42,.06)}
 .qty-label{color:#374151;font-size:.9rem;font-weight:600}
 .qty{display:flex;align-items:center;background:#f8fafc;border:1px solid rgba(15,23,42,.12);border-radius:9999px;overflow:hidden}
@@ -533,7 +551,10 @@ document.addEventListener('DOMContentLoaded',function(){
       e.preventDefault();
       var textoOriginal = btnAddCart.innerHTML;
       btnAddCart.disabled = true;
-      btnAddCart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Adicionando...';
+      btnAddCart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+
+      var modoInput = document.getElementById('pdpModoOperacao');
+      var modo = modoInput ? modoInput.value : 'somar';
 
       fetch(form.action, {
         method: 'POST',
@@ -545,6 +566,7 @@ document.addEventListener('DOMContentLoaded',function(){
         body: JSON.stringify({
           produto: {{ (int) $produto['id'] }},
           quantidade: inp ? Math.max(1, parseInt(inp.value, 10) || 1) : 1,
+          modo: modo,
           ir: 'carrinho'
         })
       })
@@ -565,15 +587,31 @@ document.addEventListener('DOMContentLoaded',function(){
           el.textContent = res.data.carrinho_itens;
           el.hidden = res.data.carrinho_itens <= 0;
         });
-        btnAddCart.innerHTML = '<i class="fa-solid fa-check"></i> Adicionado ao carrinho!';
+
+        // Atualiza aviso de item já adicionado no carrinho e botão para modo "definir"
+        var alertEl = document.getElementById('pdpInCartAlert');
+        var qtyEl = document.getElementById('pdpInCartQty');
+        var wordEl = document.getElementById('pdpInCartWord');
+        var qtdAtual = res.data.produto_quantidade_carrinho || (inp ? parseInt(inp.value, 10) : 1);
+
+        if (alertEl && qtyEl) {
+          qtyEl.textContent = String(qtdAtual);
+          if (wordEl) wordEl.textContent = qtdAtual === 1 ? 'unidade' : 'unidades';
+          alertEl.style.display = 'flex';
+        }
+        if (modoInput) modoInput.value = 'definir';
+
+        var btnPadraoHTML = '<i class="fa-solid fa-rotate"></i> <span>Atualizar quantidade no carrinho</span>';
+        btnAddCart.innerHTML = '<i class="fa-solid fa-check"></i> ' + (qtdAtual > 1 ? 'Quantidade atualizada!' : 'Adicionado ao carrinho!');
+
         if (typeof window.goldenSiteToast === 'function') {
-          window.goldenSiteToast(res.data.mensagem || 'Produto adicionado ao carrinho!', {
+          window.goldenSiteToast(res.data.mensagem || 'Carrinho atualizado!', {
             type: 'success',
             actionText: 'Ver carrinho →',
             actionUrl: '{{ route('site.loja.carrinho') }}'
           });
         }
-        setTimeout(function () { btnAddCart.innerHTML = textoOriginal; }, 2400);
+        setTimeout(function () { btnAddCart.innerHTML = btnPadraoHTML; }, 2200);
       })
       .catch(function () {
         btnAddCart.disabled = false;

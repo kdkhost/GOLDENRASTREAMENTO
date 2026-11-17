@@ -22,6 +22,7 @@ use App\Support\Notifica;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -69,28 +70,36 @@ class StoreController extends Controller
             ->take(3)
             ->values();
 
+        $carrinho = Carrinho::daSessao();
+        $quantidadeNoCarrinho = $carrinho->quantidadeDoProduto((int) $produto['id']);
+
         return view('site.store.show', [
             'produto' => $produto,
             'relacionados' => $relacionados,
+            'quantidadeNoCarrinho' => $quantidadeNoCarrinho,
         ]);
     }
 
-    public function carrinho(): View
+    public function carrinho(): Response|View
     {
         $carrinho = Carrinho::daSessao();
         $linhas = $carrinho->linhas();
         $subtotal = array_sum(array_column($linhas, 'subtotal'));
         $desc = $carrinho->resumoDesconto($subtotal);
 
-        return view('site.store.cart', [
-            'linhas' => $linhas,
-            'subtotal' => $subtotal,
-            'frete' => 0,
-            'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
-            'cupom' => $desc['cupom'],
-            'descontoCents' => $desc['desconto_cents'],
-            'freteGratisCupom' => $desc['frete_gratis'],
-        ]);
+        return response()
+            ->view('site.store.cart', [
+                'linhas' => $linhas,
+                'subtotal' => $subtotal,
+                'frete' => 0,
+                'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
+                'cupom' => $desc['cupom'],
+                'descontoCents' => $desc['desconto_cents'],
+                'freteGratisCupom' => $desc['frete_gratis'],
+            ])
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function aplicarCupom(Request $request): RedirectResponse|JsonResponse
@@ -148,6 +157,7 @@ class StoreController extends Controller
             'produto' => ['required', 'integer'],
             'quantidade' => ['nullable', 'integer', 'min:1', 'max:999'],
             'ir' => ['nullable', 'in:carrinho,checkout'],
+            'modo' => ['nullable', 'in:somar,definir'],
         ]);
 
         $produto = Product::doCatalogo((int) $data['produto']);
@@ -170,15 +180,34 @@ class StoreController extends Controller
         }
 
         $carrinho = Carrinho::daSessao();
-        $carrinho->adicionar((int) $produto['id'], (int) ($data['quantidade'] ?? 1));
+        $qtdPedida = max(1, (int) ($data['quantidade'] ?? 1));
+        $qtdAnterior = $carrinho->quantidadeDoProduto((int) $produto['id']);
+        $modo = $data['modo'] ?? 'somar';
+
+        if ($modo === 'definir') {
+            $carrinho->ajustar((int) $produto['id'], $qtdPedida);
+            $qtdAtual = $carrinho->quantidadeDoProduto((int) $produto['id']);
+            $mensagem = "Quantidade de {$produto['nome']} atualizada para {$qtdAtual} no carrinho.";
+        } else {
+            $carrinho->adicionar((int) $produto['id'], $qtdPedida);
+            $qtdAtual = $carrinho->quantidadeDoProduto((int) $produto['id']);
+            $mensagem = $qtdAnterior > 0
+                ? "Mais {$qtdPedida} unidade(s) de {$produto['nome']} adicionada(s) ao carrinho (total: {$qtdAtual})."
+                : "{$produto['nome']} adicionado ao carrinho ({$qtdAtual} ".($qtdAtual === 1 ? 'unidade' : 'unidades').').';
+        }
+
+        $linhas = $carrinho->linhas();
+        $totalUnidades = array_sum(array_column($linhas, 'quantidade'));
+        $totalProdutos = count($linhas);
 
         if ($request->expectsJson()) {
-            $totalItens = array_sum(array_column($carrinho->linhas(), 'quantidade'));
-
             return response()->json([
                 'sucesso' => true,
-                'mensagem' => "{$produto['nome']} adicionado ao carrinho.",
-                'carrinho_itens' => $totalItens,
+                'mensagem' => $mensagem,
+                'carrinho_itens' => $totalUnidades,
+                'itens_count' => $totalProdutos,
+                'produto_id' => (int) $produto['id'],
+                'produto_quantidade_carrinho' => $qtdAtual,
             ]);
         }
 
@@ -186,7 +215,7 @@ class StoreController extends Controller
             ? route('site.loja.checkout')
             : route('site.loja.carrinho');
 
-        return redirect()->to($destino)->with('success', "{$produto['nome']} adicionado ao carrinho.");
+        return redirect()->to($destino)->with('success', $mensagem);
     }
 
     public function atualizar(Request $request): RedirectResponse|JsonResponse
@@ -194,6 +223,7 @@ class StoreController extends Controller
         $data = $request->validate([
             'quantidades' => ['required', 'array'],
             'quantidades.*' => ['integer', 'min:0', 'max:999'],
+            'ir' => ['nullable', 'in:carrinho,checkout'],
         ]);
 
         $carrinho = Carrinho::daSessao();
@@ -204,6 +234,10 @@ class StoreController extends Controller
 
         if ($request->expectsJson()) {
             return $this->resumoCarrinhoJson($carrinho, 'Carrinho atualizado.');
+        }
+
+        if (($data['ir'] ?? '') === 'checkout') {
+            return redirect()->route('site.loja.checkout');
         }
 
         return back()->with('success', 'Carrinho atualizado.');
