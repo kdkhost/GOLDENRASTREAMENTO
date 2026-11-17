@@ -252,6 +252,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 // Recuperação de senha do painel corporativo
 Route::get('/esqueci-senha', [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
 Route::post('/esqueci-senha', [PasswordResetController::class, 'sendResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
+Route::post('/esqueci-senha/celular', [PasswordResetController::class, 'recoverByPhone'])->middleware('throttle:5,1')->name('password.phone');
 Route::get('/redefinir-senha/{user}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
 Route::post('/redefinir-senha/{user}', [PasswordResetController::class, 'reset'])->middleware('throttle:5,1')->name('password.update');
 

@@ -51,6 +51,16 @@
         <h2>Definir nova senha</h2>
         <p class="panel-sub">Escolha uma nova senha forte para acessar o painel administrativo.</p>
 
+        @if (session('info_email'))
+            <div style="padding:14px 16px;border-radius:12px;background:rgba(31,158,134,0.14);border:1px solid rgba(31,158,134,0.35);color:var(--login-text);font-size:.88rem;line-height:1.5;margin-bottom:20px;display:flex;align-items:flex-start;gap:10px">
+                <i class="fa-solid fa-shield-halved" style="color:#1f9e86;margin-top:3px;font-size:1.1rem"></i>
+                <div>
+                    <strong style="display:block;color:#1f9e86;margin-bottom:2px">Identidade confirmada pelo 2FA!</strong>
+                    <span>{{ session('info_email') }}</span>
+                </div>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div style="padding:14px 16px;border-radius:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:var(--login-text);font-size:.88rem;line-height:1.5;margin-bottom:20px">
                 <strong style="color:#ef4444;display:block;margin-bottom:4px"><i class="fa-solid fa-triangle-exclamation me-1"></i> Não foi possível salvar:</strong>

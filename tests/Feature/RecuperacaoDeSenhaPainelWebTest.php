@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
+use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 class RecuperacaoDeSenhaPainelWebTest extends TestCase
@@ -128,5 +129,146 @@ class RecuperacaoDeSenhaPainelWebTest extends TestCase
 
         $admin->refresh();
         $this->assertSame($senhaAnterior, $admin->password);
+    }
+
+    public function test_tela_de_recuperacao_exibe_opcao_de_recuperar_por_celular_e_2fa(): void
+    {
+        $this->get(route('password.request'))
+            ->assertOk()
+            ->assertSee('Por E-mail')
+            ->assertSee('Celular / 2FA')
+            ->assertSee('Celular cadastrado na equipe')
+            ->assertSee('Código de segurança do 2FA');
+    }
+
+    public function test_recuperar_por_celular_com_2fa_ativo_e_codigo_valido_redireciona_direto_para_redefinicao_e_informa_email(): void
+    {
+        $admin = User::where('email', 'admin@golden.com.br')->firstOrFail();
+        $g2fa = new Google2FA;
+        $secret = $g2fa->generateSecretKey(32);
+
+        $admin->forceFill([
+            'telefone' => '(11) 98888-7777',
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
+        $codigo = $g2fa->getCurrentOtp($secret);
+
+        $response = $this->from(route('password.request'))->post(route('password.phone'), [
+            'identificador' => '11988887777',
+            'codigo_2fa' => $codigo,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('redefinir-senha/'.$admin->id, (string) $response->headers->get('Location'));
+        $this->assertStringContainsString('signature=', (string) $response->headers->get('Location'));
+        $response->assertSessionHas('info_email', "Identidade confirmada com sucesso pelo seu 2FA! O e-mail de login da sua conta é: {$admin->email}.");
+
+        $this->assertDatabaseHas('activities', [
+            'action' => 'recuperacao_senha_2fa',
+            'subject_type' => class_basename($admin),
+            'subject_id' => $admin->id,
+        ]);
+    }
+
+    public function test_recuperar_por_celular_com_codigo_de_recuperacao_do_2fa_valido_queima_codigo_e_autoriza(): void
+    {
+        $admin = User::where('email', 'admin@golden.com.br')->firstOrFail();
+        $g2fa = new Google2FA;
+        $secret = $g2fa->generateSecretKey(32);
+
+        $admin->forceFill([
+            'telefone' => '(11) 97777-6666',
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => now(),
+            'two_factor_recovery_codes' => ['ABCDE-12345', 'FGHIJ-67890'],
+        ])->save();
+
+        $response = $this->from(route('password.request'))->post(route('password.phone'), [
+            'identificador' => '(11) 97777-6666',
+            'codigo_2fa' => 'ABCDE-12345',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('redefinir-senha/'.$admin->id, (string) $response->headers->get('Location'));
+
+        $admin->refresh();
+        $this->assertSame(['FGHIJ-67890'], $admin->two_factor_recovery_codes);
+
+        $this->assertDatabaseHas('activities', [
+            'action' => 'recuperacao_senha_codigo_reserva',
+            'subject_type' => class_basename($admin),
+            'subject_id' => $admin->id,
+        ]);
+    }
+
+    public function test_recuperar_por_celular_com_2fa_ativo_mas_sem_codigo_retorna_erro_especifico(): void
+    {
+        $admin = User::where('email', 'admin@golden.com.br')->firstOrFail();
+        $g2fa = new Google2FA;
+
+        $admin->forceFill([
+            'telefone' => '(11) 96666-5555',
+            'two_factor_secret' => $g2fa->generateSecretKey(32),
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
+        $this->from(route('password.request'))->post(route('password.phone'), [
+            'identificador' => '11966665555',
+            'codigo_2fa' => '',
+        ])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors('codigo_2fa');
+    }
+
+    public function test_recuperar_por_celular_com_2fa_invalido_registra_falha(): void
+    {
+        $admin = User::where('email', 'admin@golden.com.br')->firstOrFail();
+        $g2fa = new Google2FA;
+
+        $admin->forceFill([
+            'telefone' => '(11) 95555-4444',
+            'two_factor_secret' => $g2fa->generateSecretKey(32),
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
+        $this->from(route('password.request'))->post(route('password.phone'), [
+            'identificador' => '11955554444',
+            'codigo_2fa' => '999999',
+        ])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors('codigo_2fa');
+
+        $this->assertDatabaseHas('activities', [
+            'action' => 'dois_fatores_falhou',
+            'subject_type' => class_basename($admin),
+            'subject_id' => $admin->id,
+        ]);
+    }
+
+    public function test_recuperar_por_celular_sem_2fa_ativo_dispara_email_e_exibe_pista_com_email_mascarado(): void
+    {
+        Mail::fake();
+
+        $admin = User::where('email', 'admin@golden.com.br')->firstOrFail();
+        $admin->forceFill([
+            'telefone' => '(11) 94444-3333',
+            'two_factor_secret' => null,
+            'two_factor_confirmed_at' => null,
+        ])->save();
+
+        $response = $this->from(route('password.request'))->post(route('password.phone'), [
+            'identificador' => '(11) 94444-3333',
+        ]);
+
+        $response->assertRedirect(route('password.request'))
+            ->assertSessionHas('status');
+
+        $this->assertStringContainsString('a***n@g****n.com.br', session('status'));
+
+        Mail::assertQueued(RedefinirSenhaEquipe::class, function (RedefinirSenhaEquipe $mail) use ($admin): bool {
+            return $mail->user->id === $admin->id;
+        });
     }
 }
