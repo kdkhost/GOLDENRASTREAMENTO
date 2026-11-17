@@ -77,7 +77,7 @@
         </div>
         <div class="seg-grid">
             @foreach($segmentos as $s)
-            <a href="{{ route('site.segmentos') }}" class="seg-foto" data-track="internal_link" data-cta="home_segmento">
+            <a href="{{ route('site.segmento', $s['slug']) }}" class="seg-foto" data-track="internal_link" data-cta="home_segmento_{{ $s['slug'] }}">
                 <x-site.img :imagem="$s['slot']" class="foto" />
                 <i class="fa-solid {{ $s['icone'] }}" aria-hidden="true"></i>
                 <h4>{{ $s['titulo'] }}</h4>

@@ -55,6 +55,20 @@
         <h2>Acessar o painel</h2>
         <p class="panel-sub">Entre com seu e-mail e senha corporativa para continuar.</p>
 
+        @if (session('success'))
+            <div style="padding:14px 16px;border-radius:12px;background:rgba(212,168,67,0.12);border:1px solid rgba(212,168,67,0.3);color:var(--login-text);font-size:.88rem;line-height:1.5;margin-bottom:20px;display:flex;align-items:flex-start;gap:10px">
+                <i class="fa-solid fa-circle-check" style="color:var(--brand-gold);margin-top:3px;font-size:1.05rem"></i>
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div style="padding:14px 16px;border-radius:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:var(--login-text);font-size:.88rem;line-height:1.5;margin-bottom:20px;display:flex;align-items:flex-start;gap:10px">
+                <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;margin-top:3px;font-size:1.05rem"></i>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('login.post') }}">
             @csrf
             <div class="field">
@@ -83,6 +97,7 @@
                     <input type="checkbox" name="remember" value="1">
                     <span>Manter conectado</span>
                 </label>
+                <a href="{{ route('password.request') }}">Esqueci minha senha</a>
             </div>
 
             <button type="submit" class="auth-submit"><i class="fa-solid fa-right-to-bracket"></i> Entrar no painel</button>

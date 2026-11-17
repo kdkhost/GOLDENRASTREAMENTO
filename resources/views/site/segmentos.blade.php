@@ -9,11 +9,12 @@
     <div class="wrap">
         <div class="seg-grid" style="margin-top:0">
             @foreach($segmentos as $s)
-            <div class="seg">
-                <i class="fa-solid {{ $s['icone'] }}"></i>
+            <a href="{{ route('site.segmento', $s['slug']) }}" class="seg-foto" data-track="internal_link" data-cta="segmentos_card_{{ $s['slug'] }}">
+                <x-site.img :imagem="$s['slot']" class="foto" />
+                <i class="fa-solid {{ $s['icone'] }}" aria-hidden="true"></i>
                 <h4>{{ $s['titulo'] }}</h4>
                 <p>{{ $s['texto'] }}</p>
-            </div>
+            </a>
             @endforeach
         </div>
     </div>

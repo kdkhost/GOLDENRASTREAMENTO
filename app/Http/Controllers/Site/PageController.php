@@ -7,8 +7,8 @@ use App\Models\Faq;
 use App\Models\Page;
 use App\Models\Testimonial;
 use App\Models\Video;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class PageController extends Controller
@@ -38,6 +38,25 @@ class PageController extends Controller
     {
         return view('site.segmentos', [
             'segmentos' => config('golden.segmentos'),
+        ]);
+    }
+
+    public function segmento(string $slug): View
+    {
+        $segmentos = (array) config('golden.segmentos', []);
+        $segmento = collect($segmentos)->firstWhere('slug', $slug);
+
+        if (! is_array($segmento)) {
+            abort(404);
+        }
+
+        $outrosSegmentos = collect($segmentos)->where('slug', '!=', $slug)->values()->all();
+
+        return view('site.segmento-detalhe', [
+            'segmento' => $segmento,
+            'outrosSegmentos' => $outrosSegmentos,
+            'kits' => config('golden.kits'),
+            'equipamento' => config('golden.equipamento_info'),
         ]);
     }
 

@@ -42,6 +42,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VideoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\DoisFatoresController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalChamadoController;
 use App\Http\Controllers\Portal\PortalContaController;
@@ -73,6 +74,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PageController::class, 'home'])->name('site.home');
 Route::get('/solucoes', [PageController::class, 'solucoes'])->name('site.solucoes');
 Route::get('/para-quem', [PageController::class, 'segmentos'])->name('site.segmentos');
+Route::get('/para-quem/{slug}', [PageController::class, 'segmento'])->name('site.segmento');
 Route::get('/planos', [PageController::class, 'planos'])->name('site.planos');
 Route::get('/como-funciona', [PageController::class, 'comoFunciona'])->name('site.como-funciona');
 Route::get('/faq', [PageController::class, 'faq'])->name('site.faq');
@@ -246,6 +248,12 @@ Route::get('/p/{slug}', [PageController::class, 'pagina'])->name('site.pagina');
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// Recuperação de senha do painel corporativo
+Route::get('/esqueci-senha', [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/esqueci-senha', [PasswordResetController::class, 'sendResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
+Route::get('/redefinir-senha/{user}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
+Route::post('/redefinir-senha/{user}', [PasswordResetController::class, 'reset'])->middleware('throttle:5,1')->name('password.update');
 
 /*
 |--------------------------------------------------------------------------
