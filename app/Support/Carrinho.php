@@ -184,7 +184,7 @@ class Carrinho
     {
         $produto = Product::doCatalogo($produtoId);
 
-        if ($produto === null) {
+        if ($produto === null || ! empty($produto['sob_consulta'])) {
             $this->remover($produtoId);
 
             return;
@@ -232,7 +232,7 @@ class Carrinho
         foreach ($this->itens as $id => $quantidade) {
             $produto = $catalogo->get((int) $id);
 
-            if ($produto === null) {
+            if ($produto === null || ! empty($produto['sob_consulta'])) {
                 unset($this->itens[$id]);
 
                 continue;

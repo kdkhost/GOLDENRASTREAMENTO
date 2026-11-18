@@ -826,18 +826,30 @@ class FluxoDaLojaTest extends TestCase
 
         Cache::flush();
 
-        // Na vitrine pública deve aparecer Sob consulta e bloquear adição ao carrinho
+        // Na vitrine pública deve aparecer Sob consulta, ocultar tudo (preços, chips, frete) e obrigar contato
         $this->get(route('site.loja.produto', $this->produto->slug))
             ->assertOk()
             ->assertSee('Sob consulta')
-            ->assertSee('Consultar preço no WhatsApp')
-            ->assertDontSee('R$ 249,00');
+            ->assertSee('Entrar em contato pelo WhatsApp')
+            ->assertSee('Falar com a empresa')
+            ->assertDontSee('R$ 299,00')
+            ->assertDontSee('R$ 249,00')
+            ->assertDontSee('R$ 59,90')
+            ->assertDontSee('R$ 69,90')
+            ->assertDontSee('R$ 49,90')
+            ->assertDontSee('pdp-chip-selector')
+            ->assertDontSee('Simular Frete e Prazo de Entrega')
+            ->assertDontSee('value="checkout"', false);
 
         $this->postJson(route('site.loja.carrinho.adicionar'), [
             'produto' => $this->produto->id,
             'quantidade' => 1,
         ])->assertStatus(422)
             ->assertJson(['sucesso' => false]);
+
+        // Mesmo se o item já estivesse na sessão do carrinho, ao marcar sob consulta ele é removido automaticamente
+        session([Carrinho::CHAVE => [$this->produto->id => 1]]);
+        $this->assertSame([], Carrinho::daSessao()->linhas());
     }
 
     public function test_pagina_do_produto_exibe_recursos_e_beneficios_abaixo_da_foto_e_da_galeria_extra(): void

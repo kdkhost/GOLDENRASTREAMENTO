@@ -133,7 +133,7 @@
                             <b>Sob consulta</b>
                         </div>
                         <div class="pdp-monthly-note" style="margin-top:6px;font-size:.84rem">
-                            <span><i class="fa-solid fa-comments" style="color:var(--gold)"></i> Valores e condições personalizados. Fale com um consultor para receber sua proposta.</span>
+                            <span><i class="fa-solid fa-comments" style="color:var(--gold)"></i> Produto, plano, chip M2M e todas as condições comerciais sob consulta. Entre em contato com nossa equipe para receber sua proposta.</span>
                         </div>
                     @else
                         @if(!empty($produto['promocao']))
@@ -199,11 +199,16 @@
                     <div class="pdp-unavailable-card">
                         <div class="notice-warn" style="background:rgba(224,163,62,.12);border-color:rgba(224,163,62,.35);color:var(--ink)">
                             <i class="fa-solid fa-headset" style="color:var(--gold-2)"></i>
-                            Este item é comercializado sob consulta. Clique abaixo para conversar diretamente com nossa equipe no WhatsApp.
+                            Este produto e tudo o que está incluso (equipamento, plano, chip e frete) são negociados <strong>sob consulta</strong>. Entre em contato com a Golden Rastreamento para receber sua proposta.
                         </div>
-                        <a href="{{ $golden['whatsapp_url'] }}?text={{ urlencode('Olá! Tenho interesse em ' . $produto['nome'] . ' e gostaria de solicitar um orçamento.') }}" target="_blank" rel="noopener" class="pdp-btn-primary" style="margin-top:12px">
-                            <i class="fa-brands fa-whatsapp"></i> Consultar preço no WhatsApp
-                        </a>
+                        <div class="buy-actions" style="margin-top:14px">
+                            <a href="{{ $golden['whatsapp_url'] }}?text={{ urlencode('Olá! Tenho interesse em ' . $produto['nome'] . ' e gostaria de solicitar uma proposta comercial.') }}" target="_blank" rel="noopener" class="pdp-btn-primary">
+                                <i class="fa-brands fa-whatsapp"></i> Entrar em contato pelo WhatsApp
+                            </a>
+                            <a href="{{ route('site.contato') }}" class="pdp-btn-secondary">
+                                <i class="fa-solid fa-envelope"></i> Falar com a empresa
+                            </a>
+                        </div>
                     </div>
                 @elseif(!empty($produto['disponivel']))
                     @php
@@ -328,21 +333,22 @@
                         </div>
                     </div>
                     <div class="pdp-trust-tile">
-                        <i class="fa-solid fa-lock"></i>
+                        <i class="fa-solid {{ $ehSobConsulta ? 'fa-headset' : 'fa-lock' }}"></i>
                         <div>
-                            <strong>Compra 100% Segura</strong>
-                            <small>Dados criptografados</small>
+                            <strong>{{ $ehSobConsulta ? 'Atendimento Consultivo' : 'Compra 100% Segura' }}</strong>
+                            <small>{{ $ehSobConsulta ? 'Proposta comercial sob medida' : 'Dados criptografados' }}</small>
                         </div>
                     </div>
                     <div class="pdp-trust-tile">
                         <i class="fa-solid fa-truck-fast"></i>
                         <div>
                             <strong>Entrega ou Retirada</strong>
-                            <small>Envio rápido para todo o Brasil</small>
+                            <small>{{ $ehSobConsulta ? 'Condições definidas na proposta' : 'Envio rápido para todo o Brasil' }}</small>
                         </div>
                     </div>
                 </div>
 
+                @if(!$ehSobConsulta)
                 {{-- Simulador de Frete --}}
                 <div class="prod-frete-card">
                     <div class="prod-frete-head">
@@ -359,6 +365,7 @@
                     <div id="prodFreteStatus" class="prod-frete-status"></div>
                     <div id="prodFreteResultados" class="prod-frete-res" style="display:none"></div>
                 </div>
+                @endif
             </div>
         </div>
     </div>
@@ -412,6 +419,7 @@
             </div>
         </div>
 
+        @if(!$ehSobConsulta)
         <div class="pdp-steps">
             <div class="pdp-step-card">
                 <span class="pdp-step-num">1</span>
@@ -432,6 +440,7 @@
                 <span>Receba código de rastreio e link exclusivo com a linha do tempo do pedido.</span>
             </div>
         </div>
+        @endif
     </div>
 </section>
 

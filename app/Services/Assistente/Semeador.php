@@ -75,13 +75,18 @@ class Semeador
         }
 
         $linhas = $produtos->map(function (Product $produto): string {
-            $preco = $produto->preco() > 0
-                ? 'Preço na loja: '.brl($produto->preco()).'.'
-                : 'Preço sob consulta na proposta.';
+            if ($produto->sob_consulta) {
+                $preco = 'Produto, plano, chip e todas as condições comerciais sob consulta — oriente o cliente a entrar em contato com a equipe Golden para receber uma proposta.';
+                $mensal = '';
+            } else {
+                $preco = $produto->preco() > 0
+                    ? 'Preço na loja: '.brl($produto->preco()).'.'
+                    : 'Preço sob consulta na proposta.';
 
-            $mensal = $produto->mensalidade_cents
-                ? ' Mensalidade: '.brl($produto->mensalidade_cents).' por mês.'
-                : '';
+                $mensal = $produto->mensalidade_cents
+                    ? ' Mensalidade: '.brl($produto->mensalidade_cents).' por mês.'
+                    : '';
+            }
 
             return '• '.$produto->nome.': '.trim((string) $produto->resumo).' '.$preco.$mensal
                 .(filled($produto->descricao) ? ' '.trim(preg_replace('/\s+/', ' ', $produto->descricao)) : '');

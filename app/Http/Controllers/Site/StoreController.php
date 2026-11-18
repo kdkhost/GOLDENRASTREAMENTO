@@ -589,6 +589,12 @@ class StoreController extends Controller
                     throw ValidationException::withMessages(['carrinho' => "{$linha['nome']} não está mais disponível."]);
                 }
 
+                if ($produto->sob_consulta) {
+                    throw ValidationException::withMessages([
+                        'carrinho' => "{$produto->nome} está disponível apenas sob consulta. Entre em contato com nossa equipe comercial.",
+                    ]);
+                }
+
                 if ($produto->controle_estoque && $produto->estoque < $linha['quantidade']) {
                     throw ValidationException::withMessages([
                         'carrinho' => "Estoque insuficiente de {$produto->nome}: restam {$produto->estoque} unidade(s).",
