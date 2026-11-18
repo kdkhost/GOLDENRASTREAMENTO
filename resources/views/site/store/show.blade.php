@@ -237,30 +237,37 @@
 
                         {{-- Escolha do Chip / Operadora --}}
                         @if($permiteChip && count($operadoras) > 0)
-                            <div class="pdp-chip-selector" style="margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px">
-                                <label style="display:flex;align-items:center;justify-content:space-between;font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:8px">
-                                    <span><i class="fa-solid fa-sim-card" style="color:var(--gold);margin-right:6px"></i> Escolha a operadora do chip:</span>
-                                    <small style="font-weight:700;color:var(--teal);font-size:.76rem"><i class="fa-solid fa-circle-check"></i> Chip incluso no plano</small>
-                                </label>
-                                <div style="display:flex;flex-direction:column;gap:8px">
+                            <div class="pdp-chip-selector">
+                                <div class="pdp-chip-header">
+                                    <span><i class="fa-solid fa-sim-card"></i> Escolha a operadora do chip</span>
+                                    <small><i class="fa-solid fa-circle-check"></i> Chip incluso no plano</small>
+                                </div>
+                                <div class="pdp-chip-list">
                                     @foreach($operadoras as $chaveOp => $op)
-                                        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:1.5px solid {{ $chaveOp === $chipPadrao ? 'var(--gold)' : '#cbd5e1' }};border-radius:10px;cursor:pointer;transition:all .15s ease" class="pdp-chip-option">
-                                            <div style="display:flex;align-items:center;gap:10px">
-                                                <input type="radio" name="operadora" value="{{ $chaveOp }}" data-mensalidade="{{ $op['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0) }}" @checked($chaveOp === $chipPadrao) style="accent-color:var(--gold)" onchange="this.closest('.pdp-chip-selector').querySelectorAll('.pdp-chip-option').forEach(el=>el.style.borderColor='#cbd5e1');this.closest('.pdp-chip-option').style.borderColor='var(--gold)'">
-                                                <div>
-                                                    <div style="display:flex;align-items:center;gap:6px">
-                                                        <strong style="font-size:.88rem;color:var(--ink)">{{ $op['rotulo'] }}</strong>
-                                                        @if(!empty($op['destaque']))
-                                                            <span style="font-size:.68rem;font-weight:700;background:rgba(224,163,62,.15);color:var(--gold-2);padding:1px 6px;border-radius:999px;white-space:nowrap">{{ $op['destaque'] }}</span>
-                                                        @endif
+                                        @php
+                                            $ehMultiOp = ($op['tipo'] ?? '') === 'multioperadora';
+                                            $subOp = $ehMultiOp
+                                                ? (!empty($produto['chip_operadora']) ? $produto['chip_operadora'] : 'Algar, Claro, Vivo e TIM')
+                                                : 'Rede dedicada 4G/2G';
+                                            $mensalidadeOp = (int) ($op['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0));
+                                        @endphp
+                                        <label class="pdp-chip-option {{ $chaveOp === $chipPadrao ? 'is-selected' : '' }}">
+                                            <div class="pdp-chip-left">
+                                                <input type="radio" name="operadora" value="{{ $chaveOp }}" data-mensalidade="{{ $mensalidadeOp }}" @checked($chaveOp === $chipPadrao) onchange="this.closest('.pdp-chip-selector').querySelectorAll('.pdp-chip-option').forEach(el=>el.classList.remove('is-selected'));this.closest('.pdp-chip-option').classList.add('is-selected')">
+                                                <div class="pdp-chip-info">
+                                                    <div class="pdp-chip-title-row">
+                                                        <strong>{{ $op['nome'] }}</strong>
+                                                        <span class="pdp-chip-badge {{ $ehMultiOp ? 'is-rec' : '' }}">{{ $ehMultiOp ? 'Recomendado' : 'Individual' }}</span>
                                                     </div>
-                                                    <div style="font-size:.74rem;color:#64748b;line-height:1.2;margin-top:2px">
-                                                        <span style="color:var(--teal);font-weight:600"><i class="fa-solid fa-check"></i> Chip incluso</span> · {{ $op['nome'] }}
+                                                    <div class="pdp-chip-sub">
+                                                        <span class="ok"><i class="fa-solid fa-check"></i> Chip incluso</span>
+                                                        <span class="sep">·</span>
+                                                        <span>{{ $subOp }}</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div style="text-align:right">
-                                                <strong style="font-size:.92rem;color:var(--gold-2);white-space:nowrap">{{ brl($op['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0)) }}<span style="font-size:.74rem;font-weight:normal;color:#64748b">/mês</span></strong>
+                                            <div class="pdp-chip-price">
+                                                <strong>{{ brl($mensalidadeOp) }}<span>/mês</span></strong>
                                             </div>
                                         </label>
                                     @endforeach
@@ -271,8 +278,8 @@
                                         : 'Chip de telemetria M2M incluso no plano (R$ 0,00 de adesão do chip).';
                                     $textoBeneficioHtml = preg_replace('/\s*(\([^)]+\)\.?)\s*$/u', '<br>$1', e($textoBeneficio));
                                 @endphp
-                                <div style="font-size:.76rem;color:var(--teal);margin-top:8px;display:flex;align-items:flex-start;gap:6px;line-height:1.4">
-                                    <i class="fa-solid fa-circle-check" style="margin-top:2px;flex-shrink:0"></i>
+                                <div class="pdp-chip-benefit">
+                                    <i class="fa-solid fa-circle-check"></i>
                                     <span><strong>Benefício garantido:</strong> {!! $textoBeneficioHtml !!}</span>
                                 </div>
                             </div>
@@ -559,6 +566,37 @@
 .pdp-features-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 14px}
 .pdp-features-list li{display:flex;align-items:flex-start;gap:8px;font-size:.86rem;line-height:1.38;color:#334155}
 .pdp-features-list li i{color:var(--teal);font-size:.9rem;margin-top:2px;flex-shrink:0}
+
+.pdp-chip-selector{margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px}
+.pdp-chip-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.86rem;font-weight:700;color:var(--ink);margin-bottom:10px}
+.pdp-chip-header i{color:var(--gold);margin-right:5px}
+.pdp-chip-header small{font-weight:700;color:var(--teal);font-size:.76rem;white-space:nowrap}
+.pdp-chip-header small i{color:var(--teal);margin-right:3px}
+.pdp-chip-list{display:flex;flex-direction:column;gap:8px}
+.pdp-chip-option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+.pdp-chip-option:hover{border-color:#cbd5e1;background:#fcfdff}
+.pdp-chip-option.is-selected{border-color:var(--gold);background:rgba(224,163,62,.04);box-shadow:0 2px 10px rgba(224,163,62,.12)}
+.pdp-chip-left{display:flex;align-items:center;gap:11px;min-width:0;flex:1}
+.pdp-chip-left input[type="radio"]{accent-color:var(--gold);width:16px;height:16px;margin:0;flex-shrink:0;cursor:pointer}
+.pdp-chip-info{min-width:0;flex:1}
+.pdp-chip-title-row{display:flex;align-items:center;gap:7px;flex-wrap:nowrap;min-width:0}
+.pdp-chip-title-row strong{font-size:.9rem;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdp-chip-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0;background:#f1f5f9;color:#64748b}
+.pdp-chip-badge.is-rec{background:rgba(224,163,62,.16);color:var(--gold-2)}
+.pdp-chip-sub{display:flex;align-items:center;gap:5px;font-size:.75rem;color:#64748b;line-height:1.25;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdp-chip-sub .ok{color:var(--teal);font-weight:600;flex-shrink:0}
+.pdp-chip-sub .sep{opacity:.6}
+.pdp-chip-price{text-align:right;flex-shrink:0;padding-left:6px}
+.pdp-chip-price strong{font-size:.94rem;font-weight:800;color:var(--gold-2);white-space:nowrap}
+.pdp-chip-price strong span{font-size:.74rem;font-weight:500;color:#64748b}
+.pdp-chip-benefit{font-size:.76rem;color:var(--teal);margin-top:10px;padding-top:8px;border-top:1px dashed rgba(15,23,42,.08);display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+.pdp-chip-benefit i{margin-top:2px;flex-shrink:0}
+@media(max-width:520px){
+  .pdp-chip-option{padding:10px 11px;gap:8px}
+  .pdp-chip-title-row strong{font-size:.84rem}
+  .pdp-chip-sub{font-size:.72rem;white-space:normal}
+  .pdp-chip-price strong{font-size:.86rem}
+}
 
 .pdp-video-wrap{margin-top:16px;background:#fff;border-radius:20px;padding:12px;border:1px solid rgba(15,23,42,.06);box-shadow:0 8px 24px rgba(15,23,42,.05)}
 .pdp-video-label{font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
