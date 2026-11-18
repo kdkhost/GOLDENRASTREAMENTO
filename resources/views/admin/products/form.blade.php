@@ -115,7 +115,7 @@
                         <label class="form-label fw-semibold mb-1"><i class="fas fa-sliders me-1 text-golden"></i> Textos e Selos Exibidos no Site</label>
                         <p class="small text-muted mb-3">Estes textos são exibidos diretamente nos selos e na caixa do chip da página do produto, carrinho e checkout:</p>
                         @php
-                            $valorChipOperadora = $produto->chip_operadora ?: 'Vivo, Claro e TIM';
+                            $valorChipOperadora = $produto->chip_operadora ?: 'Algar, Vivo, Claro e TIM';
                             $valorAnatel = $produto->anatel_homologado ?: 'Homologado Anatel';
                             $valorGarantia = $produto->garantia ?: 'Vitalícia no plano ou 12 meses';
                             $valorBeneficioChip = $produto->beneficio_chip_texto ?: 'Chip de telemetria M2M incluso no plano (R$ 0,00 de adesão do chip).';
@@ -124,14 +124,14 @@
                             <div class="col-12 col-md-6">
                                 <label class="form-label fw-semibold" for="chip_padrao">Operadora Padrão</label>
                                 <select name="chip_padrao" id="chip_padrao" class="form-select">
-                                    <option value="algar" @selected(old('chip_padrao', $produto->chip_padrao ?? 'algar') === 'algar')>Chip Multioperadora (Recomendado)</option>
+                                    <option value="algar" @selected(old('chip_padrao', $produto->chip_padrao ?? 'algar') === 'algar')>Chip Multioperadora (Algar, Claro, Vivo e TIM)</option>
                                     <option value="vivo" @selected(old('chip_padrao', $produto->chip_padrao) === 'vivo')>Vivo M2M (Individual)</option>
                                     <option value="claro" @selected(old('chip_padrao', $produto->chip_padrao) === 'claro')>Claro M2M (Individual)</option>
                                     <option value="tim" @selected(old('chip_padrao', $produto->chip_padrao) === 'tim')>TIM M2M (Individual)</option>
                                 </select>
                                 <small class="form-text text-muted">Opção que já vem selecionada por padrão na loja.</small>
                             </div>
-                            <x-admin.field name="chip_operadora" label="Conectividade do Chip" :value="$valorChipOperadora" col="col-12 col-md-6" :opcional="true" placeholder="Ex.: Vivo, Claro e TIM" hint="Exibido no selo Chip Multioperadora na página do produto." />
+                            <x-admin.field name="chip_operadora" label="Conectividade do Chip" :value="$valorChipOperadora" col="col-12 col-md-6" :opcional="true" placeholder="Ex.: Algar, Vivo, Claro e TIM" hint="Exibido no selo Chip Multioperadora na página do produto." />
                             <x-admin.field name="anatel_homologado" label="Homologação Anatel" :value="$valorAnatel" col="col-12 col-md-6" :opcional="true" placeholder="Ex.: Homologado Anatel" hint="Título do selo de conformidade técnica na página do produto." />
                             <x-admin.field name="garantia" label="Garantia do Equipamento" :value="$valorGarantia" col="col-12 col-md-6" :opcional="true" placeholder="Ex.: Vitalícia no plano ou 12 meses" hint="Exibido no selo de certificação e garantia na página do produto." />
                             <x-admin.field name="beneficio_chip_texto" label="Texto do Benefício do Chip (Site, Carrinho e Pedido)" :value="$valorBeneficioChip" col="col-12" :opcional="true" placeholder="Chip de telemetria M2M incluso no plano (R$ 0,00 de adesão do chip)." hint="Frase de benefício garantido exibida na seleção do chip, no carrinho e no checkout." />

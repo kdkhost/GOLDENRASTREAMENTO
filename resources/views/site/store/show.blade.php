@@ -336,7 +336,7 @@
                         <i class="fa-solid fa-sim-card"></i>
                         <div>
                             <strong>Chip Multioperadora</strong>
-                            <small>{{ !empty($produto['chip_operadora']) ? $produto['chip_operadora'] : 'Vivo, Claro e TIM' }}</small>
+                            <small>{{ !empty($produto['chip_operadora']) ? $produto['chip_operadora'] : 'Algar, Vivo, Claro e TIM' }}</small>
                         </div>
                     </div>
                     <div class="pdp-trust-tile">
