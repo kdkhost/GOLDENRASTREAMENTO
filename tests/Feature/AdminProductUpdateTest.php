@@ -333,4 +333,29 @@ class AdminProductUpdateTest extends TestCase
         $this->assertSame(24900, $p->preco_cents);
         $this->assertSame(6990, $p->mensalidade_cents);
     }
+
+    public function test_edicao_de_produto_com_mensalidade_com_sufixo_mes(): void
+    {
+        $admin = User::first();
+        $p = Product::find(10);
+
+        $payload = [
+            'nome' => 'Plano Frota Com Sufixo',
+            'category_id' => (string) $p->category_id,
+            'preco' => 'R$ 199,00 à vista',
+            'mensalidade' => 'R$ 59,90/mês',
+            'tipo_cobranca' => 'combo',
+            'imagem' => $p->imagem,
+            'ativo' => '1',
+        ];
+
+        $res = $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $p), $payload);
+
+        $res->assertRedirect(route('admin.catalogo.produtos.index'));
+        $p->refresh();
+        $this->assertSame(19900, $p->preco_cents);
+        $this->assertSame(5990, $p->mensalidade_cents);
+        $this->assertSame('combo', $p->tipo_cobranca);
+    }
 }

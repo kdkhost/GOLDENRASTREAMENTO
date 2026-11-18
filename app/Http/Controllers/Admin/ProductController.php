@@ -316,7 +316,13 @@ class ProductController extends Controller
         }
 
         if (is_string($valor)) {
-            $limpo = trim(str_ireplace(['r$', ' '], '', $valor));
+            $limpo = trim($valor);
+            // Remove R$, espaços, /mês, etc mantendo apenas dígitos, vírgula e ponto
+            $limpo = preg_replace('/[^\d,.]/', '', $limpo);
+
+            if ($limpo === '' || $limpo === null) {
+                return null;
+            }
 
             if (str_contains($limpo, ',') && str_contains($limpo, '.')) {
                 $limpo = str_replace('.', '', $limpo);

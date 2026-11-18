@@ -9,7 +9,7 @@
     <a href="{{ route('admin.catalogo.produtos.estoque.show', $produto) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-boxes-stacked me-1"></i> Movimentar estoque</a>
     <a href="{{ route('site.loja.produto', $produto->slug) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-info" title="Ver produto na loja virtual"><i class="fas fa-external-link me-1"></i> Ver na loja</a>
 @endif
-<button type="button" class="btn btn-sm btn-golden shadow-sm" id="btnSalvarTopo" onclick="submeterFormProduto(false)"><i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}</button>
+<button type="submit" form="formProduto" class="btn btn-sm btn-golden shadow-sm" id="btnSalvarTopo" onclick="var b=document.getElementById('btnSalvarProduto'); if(b){ b.click(); return false; }"><i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}</button>
 <a href="{{ route('admin.catalogo.produtos.index') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar</a>
 @endsection
 
@@ -43,18 +43,18 @@
                     <div class="col-12 col-md-4">
                         <label class="form-label fw-semibold">Tipo de Cobrança</label>
                         <select name="tipo_cobranca" class="form-select">
+                            <option value="combo" @selected(old('tipo_cobranca', $produto->tipo_cobranca) === 'combo')>Combo (Aparelho/Adesão + Mensalidade)</option>
                             <option value="mensal" @selected(old('tipo_cobranca', $produto->tipo_cobranca ?? 'mensal') === 'mensal')>Plano Mensal (Mensalidade recorrente)</option>
-                            <option value="unico" @selected(old('tipo_cobranca', $produto->tipo_cobranca) === 'unico')>Venda Única (Apenas Equipamento/Acessório)</option>
-                            <option value="combo" @selected(old('tipo_cobranca', $produto->tipo_cobranca) === 'combo')>Combo (Adesão/Equipamento + Mensalidade)</option>
+                            <option value="unico" @selected(old('tipo_cobranca', $produto->tipo_cobranca) === 'unico')>Venda Única (Apenas Equipamento / Sem mensalidade)</option>
                         </select>
                         <small class="form-text text-muted">Define como o produto é apresentado e cobrado do cliente.</small>
                     </div>
-                    <x-admin.field name="preco" type="text" inputmode="decimal" label="Preço à vista (Equipamento / Taxa de Adesão)" :value="$produto->preco_cents ? number_format($produto->preco_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Deixe em branco ou 0 para planos com adesão grátis." />
-                    <x-admin.field name="preco_promocional" type="text" inputmode="decimal" label="Preço promocional à vista" :value="$produto->preco_promocional_cents ? number_format($produto->preco_promocional_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Se preenchido, risca o preço de tabela." />
-                    <x-admin.field name="mensalidade" type="text" inputmode="decimal" label="Mensalidade por veículo (Recorrente)" :value="$produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '') : ''" col="col-12 col-md-6" :opcional="true" placeholder="0,00" hint="Valor mensal cobrado por veículo para acesso à plataforma e dados móveis." />
+                    <x-admin.field name="preco" type="text" inputmode="decimal" label="Valor do Aparelho (Venda à vista / Taxa de Adesão)" :value="$produto->preco_cents ? number_format($produto->preco_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Valor à vista cobrado hoje pelo equipamento. Deixe 0 para adesão grátis." />
+                    <x-admin.field name="preco_promocional" type="text" inputmode="decimal" label="Preço promocional do aparelho" :value="$produto->preco_promocional_cents ? number_format($produto->preco_promocional_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Se preenchido, risca o valor de tabela do aparelho." />
+                    <x-admin.field name="mensalidade" type="text" inputmode="decimal" label="Valor de Recorrência (Mensalidade por veículo/mês)" :value="$produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '') : ''" col="col-12 col-md-6" :opcional="true" placeholder="0,00" hint="Valor mensal cobrado por veículo para acesso à plataforma e dados móveis." />
                     <div class="col-12 col-md-6 d-flex align-items-center">
                         <div class="p-3 bg-light rounded border w-100">
-                            <x-admin.switch name="sob_consulta" label="Preço sob consulta" :checked="old('sob_consulta', $editando && (int) $produto->preco_cents === 0 && !(int) $produto->mensalidade_cents)" hint="Oculta os preços na loja e orienta o cliente a falar com um consultor via WhatsApp." />
+                            <x-admin.switch name="sob_consulta" label="Preço sob consulta" :checked="old('sob_consulta', false)" hint="Oculta os preços na loja e orienta o cliente a falar com um consultor via WhatsApp." />
                         </div>
                     </div>
                 </div>
@@ -167,50 +167,26 @@
             </x-admin.card>
 
             <div class="d-flex flex-column gap-2 mt-3">
-                <button type="button" class="btn btn-golden w-100 py-2 fw-semibold shadow-sm" id="btnSalvarProduto" onclick="submeterFormProduto(false)">
+                <button type="submit" class="btn btn-golden w-100 py-2 fw-semibold shadow-sm" id="btnSalvarProduto">
                     <i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}
                 </button>
-                <button type="button" class="btn btn-outline-secondary w-100 btn-sm" id="btnSalvarContinuar" onclick="submeterFormProduto(true)">
+                <button type="submit" name="salvar_e_continuar" value="1" class="btn btn-outline-secondary w-100 btn-sm" id="btnSalvarContinuar">
                     <i class="fas fa-floppy-disk me-1"></i> {{ $editando ? 'Salvar e continuar editando' : 'Criar e continuar editando' }}
                 </button>
             </div>
         </div>
     </div>
 </form>
-@endsection
 
-@push('scripts')
 <script>
-function submeterFormProduto(continuar) {
-    var f = document.getElementById('formProduto');
-    if (!f) return;
-
-    var inputContinuar = f.querySelector('input[name="salvar_e_continuar"]');
-    if (continuar) {
-        if (!inputContinuar) {
-            inputContinuar = document.createElement('input');
-            inputContinuar.type = 'hidden';
-            inputContinuar.name = 'salvar_e_continuar';
-            f.appendChild(inputContinuar);
-        }
-        inputContinuar.value = '1';
-    } else if (inputContinuar) {
-        inputContinuar.remove();
-    }
-
-    if (window.GoldenSummernote && typeof window.GoldenSummernote.syncForm === 'function') {
-        window.GoldenSummernote.syncForm(f);
-    }
-
-    var botoes = document.querySelectorAll('#btnSalvarTopo, #btnSalvarProduto, #btnSalvarContinuar');
-    botoes.forEach(function (b) {
-        if (b) {
-            b.classList.add('disabled');
-            b.style.pointerEvents = 'none';
+(function() {
+    var form = document.getElementById('formProduto');
+    if (!form) return;
+    form.addEventListener('submit', function() {
+        if (window.GoldenSummernote && typeof window.GoldenSummernote.syncForm === 'function') {
+            window.GoldenSummernote.syncForm(form);
         }
     });
-
-    f.submit();
-}
+})();
 </script>
-@endpush
+@endsection
