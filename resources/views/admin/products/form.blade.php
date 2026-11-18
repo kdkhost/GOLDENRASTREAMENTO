@@ -9,7 +9,7 @@
     <a href="{{ route('admin.catalogo.produtos.estoque.show', $produto) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-boxes-stacked me-1"></i> Movimentar estoque</a>
     <a href="{{ route('site.loja.produto', $produto->slug) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-info" title="Ver produto na loja virtual"><i class="fas fa-external-link me-1"></i> Ver na loja</a>
 @endif
-<button type="submit" form="formProduto" class="btn btn-sm btn-golden shadow-sm"><i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}</button>
+<button type="button" class="btn btn-sm btn-golden shadow-sm" id="btnSalvarTopo" onclick="submeterFormProduto(false)"><i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}</button>
 <a href="{{ route('admin.catalogo.produtos.index') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar</a>
 @endsection
 
@@ -25,7 +25,7 @@
     </div>
 @endif
 
-<form id="formProduto" method="POST" action="{{ $editando ? route('admin.catalogo.produtos.update', $produto) : route('admin.catalogo.produtos.store') }}">
+<form id="formProduto" method="POST" action="{{ $editando ? route('admin.catalogo.produtos.update', $produto, false) : route('admin.catalogo.produtos.store', [], false) }}" data-sem-ajax novalidate>
     @csrf
     <div class="row g-3">
         <div class="col-lg-8">
@@ -167,10 +167,10 @@
             </x-admin.card>
 
             <div class="d-flex flex-column gap-2 mt-3">
-                <button type="submit" form="formProduto" class="btn btn-golden w-100 py-2 fw-semibold shadow-sm" id="btnSalvarProduto">
+                <button type="button" class="btn btn-golden w-100 py-2 fw-semibold shadow-sm" id="btnSalvarProduto" onclick="submeterFormProduto(false)">
                     <i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}
                 </button>
-                <button type="submit" form="formProduto" name="salvar_e_continuar" value="1" class="btn btn-outline-secondary w-100 btn-sm">
+                <button type="button" class="btn btn-outline-secondary w-100 btn-sm" id="btnSalvarContinuar" onclick="submeterFormProduto(true)">
                     <i class="fas fa-floppy-disk me-1"></i> {{ $editando ? 'Salvar e continuar editando' : 'Criar e continuar editando' }}
                 </button>
             </div>
@@ -178,3 +178,39 @@
     </div>
 </form>
 @endsection
+
+@push('scripts')
+<script>
+function submeterFormProduto(continuar) {
+    var f = document.getElementById('formProduto');
+    if (!f) return;
+
+    var inputContinuar = f.querySelector('input[name="salvar_e_continuar"]');
+    if (continuar) {
+        if (!inputContinuar) {
+            inputContinuar = document.createElement('input');
+            inputContinuar.type = 'hidden';
+            inputContinuar.name = 'salvar_e_continuar';
+            f.appendChild(inputContinuar);
+        }
+        inputContinuar.value = '1';
+    } else if (inputContinuar) {
+        inputContinuar.remove();
+    }
+
+    if (window.GoldenSummernote && typeof window.GoldenSummernote.syncForm === 'function') {
+        window.GoldenSummernote.syncForm(f);
+    }
+
+    var botoes = document.querySelectorAll('#btnSalvarTopo, #btnSalvarProduto, #btnSalvarContinuar');
+    botoes.forEach(function (b) {
+        if (b) {
+            b.classList.add('disabled');
+            b.style.pointerEvents = 'none';
+        }
+    });
+
+    f.submit();
+}
+</script>
+@endpush

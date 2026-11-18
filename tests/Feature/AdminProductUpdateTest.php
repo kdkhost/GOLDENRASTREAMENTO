@@ -279,4 +279,58 @@ class AdminProductUpdateTest extends TestCase
         $this->assertSame(12, $p->largura_cm);
         $this->assertSame(5, $p->altura_cm);
     }
+
+    public function test_salvamento_nativo_formulario_html_redireciona_com_sucesso(): void
+    {
+        $admin = User::first();
+        $p = Product::find(10);
+
+        $payload = [
+            'nome' => 'Plano Frota Salvo Nativo',
+            'category_id' => (string) $p->category_id,
+            'preco' => '199,00',
+            'mensalidade' => '59,90',
+            'imagem' => $p->imagem,
+            'ativo' => '1',
+        ];
+
+        // Simula POST padrão de navegador (sem Ajax / sem header Accept: json)
+        $res = $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $p), $payload);
+
+        $res->assertRedirect(route('admin.catalogo.produtos.index'));
+        $res->assertSessionHas('success');
+
+        $p->refresh();
+        $this->assertSame('Plano Frota Salvo Nativo', $p->nome);
+        $this->assertSame(19900, $p->preco_cents);
+        $this->assertSame(5990, $p->mensalidade_cents);
+    }
+
+    public function test_salvar_e_continuar_editando_nativo_redireciona_para_edicao(): void
+    {
+        $admin = User::first();
+        $p = Product::find(10);
+
+        $payload = [
+            'nome' => 'Plano Frota Salvar e Continuar',
+            'category_id' => (string) $p->category_id,
+            'preco' => '249,00',
+            'mensalidade' => '69,90',
+            'salvar_e_continuar' => '1',
+            'imagem' => $p->imagem,
+            'ativo' => '1',
+        ];
+
+        $res = $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $p), $payload);
+
+        $res->assertRedirect(route('admin.catalogo.produtos.edit', $p));
+        $res->assertSessionHas('success');
+
+        $p->refresh();
+        $this->assertSame('Plano Frota Salvar e Continuar', $p->nome);
+        $this->assertSame(24900, $p->preco_cents);
+        $this->assertSame(6990, $p->mensalidade_cents);
+    }
 }
