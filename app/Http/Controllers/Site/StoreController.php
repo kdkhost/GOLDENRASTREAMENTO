@@ -391,6 +391,25 @@ class StoreController extends Controller
     }
 
     /**
+     * Consulta dados de endereço por CEP para preenchimento automático no formulário.
+     */
+    public function consultarCep(string $cep): JsonResponse
+    {
+        $cepLimpo = preg_replace('/\D/', '', $cep);
+        $dados = $this->consultarLocalidadeCep($cepLimpo);
+
+        if (! $dados) {
+            return response()->json(['sucesso' => false, 'mensagem' => 'CEP não encontrado.'], 404);
+        }
+
+        return response()->json([
+            'sucesso' => true,
+            'cep' => preg_replace('/(\d{5})(\d{3})/', '$1-$2', $cepLimpo),
+            'endereco' => $dados,
+        ]);
+    }
+
+    /**
      * Consulta logradouro, bairro, cidade e UF de um CEP via ViaCEP com cache de 24h.
      *
      * @return array{logradouro:string, bairro:string, cidade:string, uf:string, resumo:string}|null

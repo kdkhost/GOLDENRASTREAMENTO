@@ -94,7 +94,7 @@ class CabecalhosDeSeguranca
             'estilo' => $cdn.' '.$google,
             'fonte' => $google.' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com',
             'imagem' => 'https://i.ytimg.com https://img.youtube.com',
-            'conexao' => $tags.' https://region1.google-analytics.com',
+            'conexao' => $tags.' https://region1.google-analytics.com https://viacep.com.br',
             'quadro' => 'https://www.youtube.com https://www.youtube-nocookie.com https://connect.facebook.net',
         ];
     }

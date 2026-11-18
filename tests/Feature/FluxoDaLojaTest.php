@@ -624,4 +624,48 @@ class FluxoDaLojaTest extends TestCase
                 'total_formatado' => 'R$ 59,90',
             ]);
     }
+
+    public function test_consulta_de_cep_retorna_endereco_para_preenchimento_automatico(): void
+    {
+        Http::fake([
+            'https://viacep.com.br/ws/37160000/json/' => Http::response([
+                'cep' => '37160-000',
+                'logradouro' => '',
+                'bairro' => '',
+                'localidade' => 'Três Pontas',
+                'uf' => 'MG',
+            ], 200),
+            'https://viacep.com.br/ws/01310100/json/' => Http::response([
+                'cep' => '01310-100',
+                'logradouro' => 'Avenida Paulista',
+                'bairro' => 'Bela Vista',
+                'localidade' => 'São Paulo',
+                'uf' => 'SP',
+            ], 200),
+        ]);
+
+        $res1 = $this->getJson('/loja/cep/01310100');
+        $res1->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'cep' => '01310-100',
+                'endereco' => [
+                    'logradouro' => 'Avenida Paulista',
+                    'bairro' => 'Bela Vista',
+                    'cidade' => 'São Paulo',
+                    'uf' => 'SP',
+                ],
+            ]);
+
+        $res2 = $this->getJson('/loja/cep/37160-000');
+        $res2->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'cep' => '37160-000',
+                'endereco' => [
+                    'cidade' => 'Três Pontas',
+                    'uf' => 'MG',
+                ],
+            ]);
+    }
 }

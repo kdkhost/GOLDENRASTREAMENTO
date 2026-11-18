@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded',function(){
   form.querySelectorAll('input[name="entrega"]').forEach(function(i){i.addEventListener('change',function(){aplicarEntrega(this.value);});});
   aplicarEntrega((form.querySelector('input[name="entrega"]:checked')||{value:'entrega'}).value);
 
-  function carregarFreteCorreios(d){
+  function carregarFreteCorreios(d, moverFoco){
     if(d.length!==8)return;
     fetch("{{ route('site.loja.frete.calcular') }}", {
       method: 'POST',
@@ -322,7 +322,11 @@ document.addEventListener('DOMContentLoaded',function(){
     })
     .then(function(r){ return r.json(); })
     .then(function(res){
-      if(!res.sucesso||!res.opcoes||res.opcoes.length===0) return;
+      if(!res.sucesso) return;
+      if(res.endereco_cep && (!ruaInp || !ruaInp.value)){
+        aplicarDadosEndereco(res.endereco_cep, moverFoco);
+      }
+      if(!res.opcoes||res.opcoes.length===0) return;
       var container=document.getElementById('freteOpcoesContainer');
       var lista=document.getElementById('freteOpcoesLista');
       var inputOpcao=document.getElementById('coOpcaoFrete');
@@ -381,58 +385,118 @@ document.addEventListener('DOMContentLoaded',function(){
   if(numInp)numInp.addEventListener('input', sincronizarEndereco);
   form.addEventListener('submit', sincronizarEndereco);
 
-  // ViaCEP: preenchimento automático ao digitar 8 dígitos + foco automático no campo Número + Cálculo Correios.
-  var cep=document.getElementById('coCep');
-  var ultimoCepBuscado='';
-  function consultarCepCheckout(d, moverFoco){
-    if(d.length!==8)return;
-    carregarFreteCorreios(d);
-    fetch('https://viacep.com.br/ws/'+d+'/json/').then(function(r){return r.json();}).then(function(j){
-      if(j.erro)return;
-      if(ruaInp && j.logradouro){
-        ruaInp.value=j.logradouro;
-      }
-      var set=function(n,v){var e=form.querySelector('[name="'+n+'"]');if(e&&v)e.value=v;};
-      set('bairro',j.bairro||'');
-      set('cidade',j.localidade||'');
-      set('uf',j.uf||'');
-      sincronizarEndereco();
-      var hint=document.getElementById('cepHint');
-      var resumo=[j.logradouro,j.bairro].filter(Boolean).join(', ');
-      var cidadeUf=(j.localidade||'')+(j.uf?'/'+j.uf:'');
-      var textoLocal=resumo ? (resumo+' — '+cidadeUf) : cidadeUf;
-      if(hint)hint.innerHTML='<i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> '+textoLocal;
-      if(moverFoco && numInp){
-        numInp.focus();
-      }
-    }).catch(function(){});
-  }
-  if(cep){
-    cep.addEventListener('input',function(){
-      var d=(cep.value||'').replace(/\D/g,'').slice(0,8);
-      if(d.length===8 && d!==ultimoCepBuscado){
-        ultimoCepBuscado=d;
-        consultarCepCheckout(d, true);
-      } else if(d.length<8){
-        ultimoCepBuscado='';
-      }
-    });
-    cep.addEventListener('blur',function(){
-      var d=(cep.value||'').replace(/\D/g,'');
-      if(d.length===8 && d!==ultimoCepBuscado){
-        ultimoCepBuscado=d;
-        consultarCepCheckout(d, false);
-      }
-    });
+  function aplicarDadosEndereco(end, moverFoco){
+    if(!end) return;
+    var temRua = Boolean(end.logradouro && end.logradouro.trim());
+    if(ruaInp && temRua){
+      ruaInp.value = end.logradouro.trim();
+    }
+    var set = function(n, v){
+      var e = form.querySelector('[name="' + n + '"]');
+      if(e && v) e.value = v;
+    };
+    if(end.bairro) set('bairro', end.bairro);
+    if(end.cidade || end.localidade) set('cidade', end.cidade || end.localidade);
+    if(end.uf) set('uf', end.uf);
+    sincronizarEndereco();
 
-    var inicialCep=(cep.value||'').replace(/\D/g,'');
-    if(inicialCep.length===8){
-      ultimoCepBuscado=inicialCep;
-      carregarFreteCorreios(inicialCep);
+    var hint = document.getElementById('cepHint');
+    var logradouro = end.logradouro || '';
+    var bairro = end.bairro || '';
+    var cidade = end.cidade || end.localidade || '';
+    var uf = end.uf || '';
+    var resumo = [logradouro, bairro].filter(Boolean).join(', ');
+    var cidadeUf = cidade + (uf ? '/' + uf : '');
+    var textoLocal = resumo ? (resumo + ' — ' + cidadeUf) : cidadeUf;
+    if(hint){
+      hint.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> ' + textoLocal;
+    }
+
+    if(moverFoco){
+      if(temRua && numInp){
+        numInp.focus();
+        if(numInp.select) numInp.select();
+      } else if(ruaInp){
+        ruaInp.focus();
+      }
     }
   }
 
-  // Máscaras leves: telefone, CEP e documento, sem biblioteca.
+  // Preenchimento automático de endereço por CEP + foco imediato no campo Número + cálculo de frete
+  var cep=document.getElementById('coCep');
+  var ultimoCepBuscado='';
+  function consultarCepCheckout(d, moverFoco){
+    if(d.length !== 8) return;
+    var hint = document.getElementById('cepHint');
+    if(hint){
+      hint.innerHTML = '<span style="color:var(--slate)"><i class="fa-solid fa-spinner fa-spin"></i> Localizando endereço...</span>';
+    }
+    carregarFreteCorreios(d, moverFoco);
+
+    // Consulta primária via rota própria da aplicação (protegida contra bloqueios de CSP e com cache)
+    fetch('/loja/cep/' + d, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res && res.sucesso && res.endereco){
+        aplicarDadosEndereco(res.endereco, moverFoco);
+      } else {
+        throw new Error('Falha rota local');
+      }
+    })
+    .catch(function(){
+      // Fallback via ViaCEP
+      fetch('https://viacep.com.br/ws/' + d + '/json/')
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if(j && !j.erro){
+            aplicarDadosEndereco(j, moverFoco);
+          } else if(hint){
+            hint.innerHTML = '<span style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> CEP não encontrado. Preencha manualmente.</span>';
+          }
+        })
+        .catch(function(){
+          if(hint){
+            hint.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Preencha o endereço abaixo.';
+          }
+        });
+    });
+  }
+
+  if(cep){
+    cep.addEventListener('input', function(){
+      var raw = (cep.value || '').replace(/\D/g, '').slice(0, 8);
+      cep.value = raw.replace(/^(\d{5})(\d)/, '$1-$2');
+      if(raw.length === 8 && raw !== ultimoCepBuscado){
+        ultimoCepBuscado = raw;
+        consultarCepCheckout(raw, true);
+      } else if(raw.length < 8){
+        ultimoCepBuscado = '';
+        var hint = document.getElementById('cepHint');
+        if(hint) hint.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Digite o CEP e preenchemos o endereço.';
+      }
+    });
+
+    cep.addEventListener('blur', function(){
+      var raw = (cep.value || '').replace(/\D/g, '').slice(0, 8);
+      if(raw.length === 8 && raw !== ultimoCepBuscado){
+        ultimoCepBuscado = raw;
+        consultarCepCheckout(raw, false);
+      }
+    });
+
+    var inicialCep = (cep.value || '').replace(/\D/g, '').slice(0, 8);
+    if(inicialCep.length === 8){
+      ultimoCepBuscado = inicialCep;
+      consultarCepCheckout(inicialCep, false);
+    }
+  }
+
+  // Máscaras leves: telefone e documento
   var tel=document.getElementById('coTelefone');
   if(tel)tel.addEventListener('input',function(){
     var d=tel.value.replace(/\D/g,'').slice(0,11);
@@ -448,10 +512,6 @@ document.addEventListener('DOMContentLoaded',function(){
       : d.slice(0,11).replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2');
   }
   if(doc){doc.addEventListener('input',mascaraDoc);tipo.forEach(function(i){i.addEventListener('change',mascaraDoc);});}
-  if(cep)cep.addEventListener('input',function(){
-    var d=cep.value.replace(/\D/g,'').slice(0,8);
-    cep.value=d.replace(/^(\d{5})(\d)/,'$1-$2');
-  });
 });
 </script>
 @endpush

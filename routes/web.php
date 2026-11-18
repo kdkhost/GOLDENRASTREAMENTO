@@ -147,6 +147,9 @@ Route::middleware('loja')->group(function () {
 
     // Pedido: formulário, gravação e acompanhamento por número + token.
     Route::get('/loja/checkout', [StoreController::class, 'checkout'])->name('site.loja.checkout');
+    Route::get('/loja/cep/{cep}', [StoreController::class, 'consultarCep'])
+        ->where('cep', '[0-9\-]{8,10}')
+        ->middleware('throttle:60,1')->name('site.loja.cep.consultar');
     Route::post('/loja/frete/calcular', [StoreController::class, 'calcularFrete'])
         ->middleware('throttle:30,1')->name('site.loja.frete.calcular');
     Route::post('/loja/pedido', [StoreController::class, 'registrar'])
