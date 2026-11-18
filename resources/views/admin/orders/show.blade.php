@@ -20,14 +20,27 @@
             @foreach($pedido->items as $it)
                 <tr>
                     <td>
-                        {{ $it->nome }}
+                        <div class="fw-bold">{{ $it->nome }}</div>
+                        @if($it->chip_operadora)
+                            @php
+                                $infoChip = \App\Models\Product::OPERADORAS_CHIP[$it->chip_operadora] ?? null;
+                            @endphp
+                            <div class="mt-1">
+                                <span class="badge bg-warning-subtle text-dark border border-warning" style="font-size:.76rem">
+                                    <i class="fas fa-sim-card text-warning me-1"></i> Chip: <strong>{{ $infoChip['nome'] ?? ucfirst($it->chip_operadora) }}</strong>
+                                </span>
+                            </div>
+                        @endif
                         @if(($it->mensalidade_cents ?? 0) > 0)
-                            <div class="small text-teal fw-semibold">
+                            <div class="small mt-1 {{ $it->cobrar_mensalidade_hoje ? 'text-teal fw-semibold' : 'text-primary' }}">
                                 <i class="fas fa-repeat me-1"></i> Mensalidade: {{ brl($it->mensalidade_cents) }}/mês
+                                <span class="badge {{ $it->cobrar_mensalidade_hoje ? 'bg-info-subtle text-info-emphasis' : 'bg-secondary-subtle text-secondary-emphasis' }} ms-1">
+                                    {{ $it->cobrar_mensalidade_hoje ? '1ª Mensalidade paga hoje' : 'Pós-paga (faturar após 30 dias)' }}
+                                </span>
                             </div>
                         @endif
                         @if($it->product)
-                            <div class="small text-secondary">
+                            <div class="small text-secondary mt-1">
                                 {{ $it->product->sku ?: 'sem SKU' }}
                                 · <a href="{{ route('admin.catalogo.produtos.edit', $it->product) }}" class="text-decoration-none">editar produto</a>
                             </div>
@@ -41,10 +54,15 @@
         </x-admin.table>
 
         <x-admin.card title="Totais" icon="fa-calculator">
+            @php
+                $mensalidadePagaHoje = $pedido->items->filter(fn($i) => (bool) $i->cobrar_mensalidade_hoje)->sum(fn($i) => ($i->mensalidade_cents ?? 0) * $i->quantidade);
+            @endphp
             <dl class="defs mb-0">
                 <dt>Aparelhos / Adesão</dt><dd>{{ brl($pedido->subtotal_cents) }}</dd>
-                @if(($pedido->mensalidade_total_cents ?? 0) > 0)
-                    <dt>1ª Mensalidade (hoje)</dt><dd class="text-teal">{{ brl($pedido->mensalidade_total_cents) }}</dd>
+                @if($mensalidadePagaHoje > 0)
+                    <dt>1ª Mensalidade (paga hoje)</dt><dd class="text-teal">{{ brl($mensalidadePagaHoje) }}</dd>
+                @elseif(($pedido->mensalidade_total_cents ?? 0) > 0)
+                    <dt>1ª Mensalidade (pós-paga)</dt><dd class="text-primary">Faturar após 30 dias</dd>
                 @endif
                 @if($pedido->frete_cents)
                     <dt>Frete</dt><dd>{{ $pedido->frete_cents > 0 ? brl($pedido->frete_cents) : 'Grátis' }}</dd>
@@ -56,7 +74,7 @@
                 @endif
                 <dt>Total pago hoje</dt><dd class="text-gold fw-bold">{{ brl($pedido->total_cents) }}</dd>
                 @if(($pedido->mensalidade_total_cents ?? 0) > 0)
-                    <dt>Recorrência mensal</dt><dd class="text-teal fw-semibold">{{ brl($pedido->mensalidade_total_cents) }}/mês (a partir do 2º mês)</dd>
+                    <dt>Recorrência mensal</dt><dd class="text-teal fw-semibold">{{ brl($pedido->mensalidade_total_cents) }}/mês ({{ $mensalidadePagaHoje > 0 ? 'a partir do 2º mês' : 'a partir de 30 dias' }})</dd>
                 @endif
             </dl>
             @if($pedido->notas)

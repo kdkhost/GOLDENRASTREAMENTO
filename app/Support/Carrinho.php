@@ -18,6 +18,8 @@ class Carrinho
 
     public const CHAVE_CUPOM = 'golden_carrinho_cupom';
 
+    public const CHAVE_OPERADORAS = 'golden_carrinho_operadoras';
+
     /** @var array<int, int> product_id => quantidade */
     private array $itens;
 
@@ -66,6 +68,10 @@ class Carrinho
     {
         unset($this->itens[$produtoId]);
         $this->salvar();
+
+        $operadoras = (array) session(self::CHAVE_OPERADORAS, []);
+        unset($operadoras[$produtoId]);
+        session([self::CHAVE_OPERADORAS => $operadoras]);
     }
 
     public function limpar(): void
@@ -73,6 +79,21 @@ class Carrinho
         $this->itens = [];
         $this->salvar();
         $this->removerCupom();
+        session()->forget(self::CHAVE_OPERADORAS);
+    }
+
+    public function definirOperadora(int $produtoId, string $operadora): void
+    {
+        $operadoras = (array) session(self::CHAVE_OPERADORAS, []);
+        $operadoras[$produtoId] = $operadora;
+        session([self::CHAVE_OPERADORAS => $operadoras]);
+    }
+
+    public function operadoraDoProduto(int $produtoId, string $padrao = 'algar'): string
+    {
+        $operadoras = (array) session(self::CHAVE_OPERADORAS, []);
+
+        return $operadoras[$produtoId] ?? $padrao;
     }
 
     /**
@@ -206,6 +227,7 @@ class Carrinho
     {
         $catalogo = collect(Product::catalogoParaSite())->keyBy('id');
         $linhas = [];
+        $padraoLojaCobrar = Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
 
         foreach ($this->itens as $id => $quantidade) {
             $produto = $catalogo->get((int) $id);
@@ -221,9 +243,21 @@ class Carrinho
                 $this->itens[$id] = $quantidade;
             }
 
+            $operadoraPadrao = $produto['chip_padrao'] ?? 'algar';
+            $operadoraEscolhida = $this->operadoraDoProduto((int) $id, $operadoraPadrao);
+            $dadosOperadora = Product::OPERADORAS_CHIP[$operadoraEscolhida] ?? (Product::OPERADORAS_CHIP[$operadoraPadrao] ?? null);
+            $cobrarMensalidadeHoje = (bool) ($produto['cobrar_primeira_mensalidade'] ?? true) && $padraoLojaCobrar;
+
             $linhas[] = $produto + [
                 'quantidade' => $quantidade,
                 'subtotal' => $produto['preco'] * $quantidade,
+                'cobrar_mensalidade_hoje' => $cobrarMensalidadeHoje,
+                'operadora_codigo' => $operadoraEscolhida,
+                'operadora_nome' => $dadosOperadora['nome'] ?? ($produto['chip_operadora'] ?: 'Algar Multioperadora'),
+                'operadora_rotulo' => $dadosOperadora['rotulo'] ?? ($produto['chip_operadora'] ?: 'Algar Multioperadora'),
+                'operadora_tipo' => $dadosOperadora['tipo'] ?? 'multioperadora',
+                'operadora_icone' => $dadosOperadora['icone'] ?? 'fa-sim-card',
+                'operadora_destaque' => $dadosOperadora['destaque'] ?? null,
             ];
         }
 
@@ -242,9 +276,14 @@ class Carrinho
         return array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $this->linhas()));
     }
 
+    public function mensalidadeCobradaHojeCents(): int
+    {
+        return array_sum(array_map(fn (array $l): int => (! empty($l['cobrar_mensalidade_hoje']) ? ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)) : 0), $this->linhas()));
+    }
+
     public function subtotalHojeCents(): int
     {
-        return $this->subtotalCents() + $this->mensalidadeTotalCents();
+        return $this->subtotalCents() + $this->mensalidadeCobradaHojeCents();
     }
 
     /**

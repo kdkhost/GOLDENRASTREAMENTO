@@ -50,10 +50,35 @@
                         @else
                             <span class="cart-unit">{{ brl($l['preco']) }} cada</span>
                         @endif
+
+                        @if(!empty($l['permite_escolha_chip']) && !empty($l['operadoras_detalhes']) && count($l['operadoras_detalhes']) > 1)
+                            <div style="margin-top:4px;display:flex;align-items:center;gap:6px">
+                                <label for="cartOp_{{ $l['id'] }}" style="font-size:.76rem;font-weight:600;color:var(--slate)"><i class="fa-solid fa-sim-card" style="color:var(--gold)"></i> Chip:</label>
+                                <select id="cartOp_{{ $l['id'] }}" data-cart-operadora="{{ $l['id'] }}" style="padding:2px 6px;font-size:.78rem;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:var(--ink);cursor:pointer">
+                                    @foreach($l['operadoras_detalhes'] as $cop => $dop)
+                                        <option value="{{ $cop }}" @selected(($l['operadora_codigo'] ?? '') === $cop)>{{ $dop['rotulo'] }} ({{ $dop['tipo'] === 'multioperadora' ? 'Multi' : 'Individual' }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @else
+                            <div style="font-size:.76rem;color:var(--slate);margin-top:3px">
+                                <i class="fa-solid fa-sim-card" style="color:var(--gold)"></i> Chip: <strong>{{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Algar Multioperadora') }}</strong>
+                            </div>
+                        @endif
+
                         @if(!empty($l['mensalidade']))
                             <div style="font-size:.82rem;font-weight:600;color:var(--gold-2);margin-top:2px">
                                 <i class="fa-solid fa-repeat" style="font-size:.75rem"></i> Mensalidade: {{ brl($l['mensalidade']) }}/mês por veículo
                             </div>
+                            @if(empty($l['cobrar_mensalidade_hoje']))
+                                <div style="font-size:.74rem;color:#0284c7;font-weight:600">
+                                    <i class="fa-solid fa-calendar-check"></i> 1ª Mensalidade faturada após 30 dias (pós-paga)
+                                </div>
+                            @else
+                                <div style="font-size:.74rem;color:var(--teal);font-weight:600">
+                                    <i class="fa-solid fa-circle-check"></i> 1ª Mensalidade inclusa no pedido hoje
+                                </div>
+                            @endif
                         @endif
                     </div>
                     <div class="qty">
@@ -80,12 +105,16 @@
             </div>
         </form>
 
-        <aside class="cart-summary" data-total-sem-frete="{{ max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0)) }}">
+        <aside class="cart-summary" data-total-sem-frete="{{ max(0, ($subtotalHoje ?? $subtotal) - ($descontoCents ?? 0)) }}">
             <h2>Resumo</h2>
             <div class="sum-line"><span id="cartSummaryUnitsLabel">Subtotal ({{ $totalUnidades }} {{ $totalUnidades === 1 ? 'unidade' : 'unidades' }})</span><b id="cartSubtotalDisplay">{{ brl($subtotal) }}</b></div>
-            <div class="sum-line" id="cartMensalidadeRow" @if(empty($mensalidadeTotal) || $mensalidadeTotal <= 0) style="display:none" @endif>
+            <div class="sum-line" id="cartMensalidadeRow" @if(empty($mensalidadeCobradaHoje) || $mensalidadeCobradaHoje <= 0) style="display:none" @endif>
                 <span><i class="fa-solid fa-repeat" style="color:var(--teal);margin-right:4px"></i> 1ª Mensalidade antecipada</span>
-                <b id="cartMensalidadeDisplay" style="color:var(--teal)">{{ brl($mensalidadeTotal ?? 0) }}</b>
+                <b id="cartMensalidadeDisplay" style="color:var(--teal)">{{ brl($mensalidadeCobradaHoje ?? 0) }}</b>
+            </div>
+            <div class="sum-line" id="cartMensalidadePosRow" @if(!empty($mensalidadeCobradaHoje) || empty($mensalidadeTotal) || $mensalidadeTotal <= 0) style="display:none" @endif style="color:#0284c7">
+                <span><i class="fa-solid fa-calendar-check" style="margin-right:4px"></i> 1ª Mensalidade (pós-paga)</span>
+                <b id="cartMensalidadePosDisplay" style="font-size:.82rem;color:#0284c7">Faturada após 30 dias</b>
             </div>
             <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">Calcule pelo CEP</b></div>
             <div class="sum-line" id="cartCupomSummaryRow" style="color:var(--teal)" @if(empty($cupom)) hidden @endif>
@@ -98,13 +127,13 @@
                     @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
                         <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal);line-height:1.35;margin-top:3px">
                             <div>+ Recorrência: {{ brl($mensalidadeTotal) }}/mês</div>
-                            <div style="opacity:.85;font-size:.73rem">a partir do 2º mês</div>
+                            <div style="opacity:.85;font-size:.73rem">{{ (!empty($mensalidadeCobradaHoje) && $mensalidadeCobradaHoje > 0) ? 'a partir do 2º mês' : 'a partir de 30 dias' }}</div>
                         </div>
                     @else
                         <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal);display:none"></div>
                     @endif
                 </div>
-                <strong id="cartTotalDisplay" style="color:var(--gold-2);font-size:1.6rem;font-weight:800;white-space:nowrap;margin-left:12px;line-height:1.1">{{ brl(max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0))) }}</strong>
+                <strong id="cartTotalDisplay" style="color:var(--gold-2);font-size:1.6rem;font-weight:800;white-space:nowrap;margin-left:12px;line-height:1.1">{{ brl(max(0, ($subtotalHoje ?? $subtotal) - ($descontoCents ?? 0))) }}</strong>
             </div>
             <p class="sum-hint" id="cartFreteGratisHint" @if($freteGratisEm <= 0) hidden @endif>
                 <i class="fa-solid fa-gift" style="color:var(--gold)"></i>
@@ -407,17 +436,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const mensalRow = document.getElementById('cartMensalidadeRow');
+        const mensalPosRow = document.getElementById('cartMensalidadePosRow');
         const mensalDisplay = document.getElementById('cartMensalidadeDisplay');
         const mensalHint = document.getElementById('cartTotalMensalHint');
-        if (data.mensalidade_total_cents && data.mensalidade_total_cents > 0) {
-            if (mensalDisplay) mensalDisplay.textContent = 'R$ ' + ((data.mensalidade_total_cents) / 100).toFixed(2).replace('.', ',');
+        const cobradaHojeCents = parseInt(data.mensalidade_cobrada_hoje_cents || 0, 10);
+        const mensalTotalCents = parseInt(data.mensalidade_total_cents || 0, 10);
+
+        if (cobradaHojeCents > 0) {
+            if (mensalDisplay) mensalDisplay.textContent = 'R$ ' + (cobradaHojeCents / 100).toFixed(2).replace('.', ',');
             if (mensalRow) mensalRow.style.display = 'flex';
+            if (mensalPosRow) mensalPosRow.style.display = 'none';
             if (mensalHint) {
                 mensalHint.innerHTML = '<div>+ Recorrência: ' + data.mensalidade_total_formatada + '</div><div style="opacity:.85;font-size:.73rem">a partir do 2º mês</div>';
                 mensalHint.style.display = 'block';
             }
+        } else if (mensalTotalCents > 0) {
+            if (mensalRow) mensalRow.style.display = 'none';
+            if (mensalPosRow) mensalPosRow.style.display = 'flex';
+            if (mensalHint) {
+                mensalHint.innerHTML = '<div>+ Recorrência: ' + data.mensalidade_total_formatada + '</div><div style="opacity:.85;font-size:.73rem">a partir de 30 dias</div>';
+                mensalHint.style.display = 'block';
+            }
         } else {
             if (mensalRow) mensalRow.style.display = 'none';
+            if (mensalPosRow) mensalPosRow.style.display = 'none';
             if (mensalHint) mensalHint.style.display = 'none';
         }
 
@@ -520,6 +562,27 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.target.matches('[data-cart-qty]')) {
             clearTimeout(pendingTimer);
             pendingTimer = setTimeout(enviarQuantidades, 150);
+        } else if (e.target.matches('[data-cart-operadora]')) {
+            const produtoId = e.target.getAttribute('data-cart-operadora');
+            const operadora = e.target.value;
+
+            fetch("{{ route('site.loja.carrinho.operadora') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ produto: produtoId, operadora: operadora })
+            })
+            .then(res => res.json())
+            .then(function (data) {
+                aplicarEstadoCarrinho(data);
+                if (data && data.sucesso && typeof window.goldenSiteToast === 'function') {
+                    window.goldenSiteToast(data.mensagem || 'Operadora atualizada.', { type: 'success', duration: 2400 });
+                }
+            })
+            .catch(() => {});
         }
     });
 

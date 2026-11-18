@@ -668,4 +668,84 @@ class FluxoDaLojaTest extends TestCase
                 ],
             ]);
     }
+
+    public function test_cliente_escolhe_operadora_do_chip_e_grava_no_item_do_pedido(): void
+    {
+        Mail::fake();
+
+        $this->produto->update([
+            'permite_escolha_chip' => true,
+            'operadoras_chip' => ['algar', 'vivo', 'claro'],
+            'chip_padrao' => 'algar',
+            'mensalidade_cents' => 5990,
+            'cobrar_primeira_mensalidade' => true,
+        ]);
+        Cache::flush();
+
+        // Adiciona ao carrinho escolhendo Vivo M2M
+        $this->post('/loja/carrinho', [
+            'produto' => $this->produto->id,
+            'quantidade' => 1,
+            'operadora' => 'vivo',
+        ])->assertRedirect(route('site.loja.carrinho'));
+
+        // Verifica se a tela do carrinho exibe Vivo M2M
+        $this->get('/loja/carrinho')->assertOk()
+            ->assertSee('Vivo M2M');
+
+        // Altera para Claro M2M via rota AJAX
+        $res = $this->postJson('/loja/carrinho/operadora', [
+            'produto' => $this->produto->id,
+            'operadora' => 'claro',
+        ]);
+        $res->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'linhas' => [
+                    [
+                        'id' => $this->produto->id,
+                        'operadora_codigo' => 'claro',
+                    ],
+                ],
+            ]);
+
+        // Registra o pedido
+        $this->post('/loja/pedido', $this->dadosCheckout());
+        $pedido = $this->ultimoPedido();
+        $item = $pedido->items()->first();
+
+        $this->assertSame('claro', $item->chip_operadora);
+        $this->assertTrue((bool) $item->cobrar_mensalidade_hoje);
+    }
+
+    public function test_produto_com_mensalidade_pos_paga_nao_cobra_primeira_mensalidade_hoje(): void
+    {
+        Mail::fake();
+
+        $this->produto->update([
+            'preco_cents' => 19900,
+            'mensalidade_cents' => 5990,
+            'cobrar_primeira_mensalidade' => false, // Pós-paga (faturar após 30 dias)
+        ]);
+        Cache::flush();
+
+        $this->post('/loja/carrinho', [
+            'produto' => $this->produto->id,
+            'quantidade' => 1,
+        ])->assertRedirect(route('site.loja.carrinho'));
+
+        // Carrinho não deve somar a mensalidade no total a pagar hoje
+        $res = $this->get('/loja/carrinho');
+        $res->assertOk();
+        $res->assertSee('Faturada após 30 dias');
+
+        // Realiza o checkout e confere os totais
+        $this->post('/loja/pedido', $this->dadosCheckout());
+        $pedido = $this->ultimoPedido();
+        $item = $pedido->items()->first();
+
+        $this->assertFalse((bool) $item->cobrar_mensalidade_hoje);
+        // O total do pedido deve ser apenas o aparelho (199,00) + frete, sem somar os 59,90 hoje
+        $this->assertSame(19900 + $pedido->frete_cents, (int) $pedido->total_cents);
+    }
 }

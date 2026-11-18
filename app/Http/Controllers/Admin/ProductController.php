@@ -59,6 +59,7 @@ class ProductController extends Controller
             ]),
             'categorias' => Category::orderBy('nome')->get(),
             'recursosDisponiveis' => Product::recursosDisponiveis(),
+            'operadorasDisponiveis' => Product::operadorasDisponiveis(),
         ]);
     }
 
@@ -88,6 +89,7 @@ class ProductController extends Controller
             'produto' => $produto,
             'categorias' => Category::orderBy('nome')->get(),
             'recursosDisponiveis' => Product::recursosDisponiveis(),
+            'operadorasDisponiveis' => Product::operadorasDisponiveis(),
         ]);
     }
 
@@ -185,7 +187,12 @@ class ProductController extends Controller
             'preco_promocional' => ['nullable', 'numeric', 'min:0'],
             'mensalidade' => ['nullable', 'numeric', 'min:0'],
             'tipo_cobranca' => ['nullable', 'string', 'in:mensal,unico,combo'],
+            'cobrar_primeira_mensalidade' => ['nullable', 'boolean'],
             'chip_operadora' => ['nullable', 'string', 'max:64'],
+            'permite_escolha_chip' => ['nullable', 'boolean'],
+            'operadoras_chip' => ['nullable', 'array'],
+            'operadoras_chip.*' => ['string', 'in:algar,vivo,claro,tim'],
+            'chip_padrao' => ['nullable', 'string', 'in:algar,vivo,claro,tim'],
             'garantia' => ['nullable', 'string', 'max:64'],
             'anatel_homologado' => ['nullable', 'string', 'max:64'],
             'recursos' => ['nullable', 'array'],
@@ -284,8 +291,12 @@ class ProductController extends Controller
             'preco_cents' => $precoCents,
             'preco_promocional_cents' => $precoPromocionalCents,
             'mensalidade_cents' => $mensalidadeCents,
+            'cobrar_primeira_mensalidade' => $request->boolean('cobrar_primeira_mensalidade', true),
             'tipo_cobranca' => $data['tipo_cobranca'] ?? 'mensal',
             'chip_operadora' => ! empty($data['chip_operadora']) ? trim($data['chip_operadora']) : null,
+            'permite_escolha_chip' => $request->boolean('permite_escolha_chip'),
+            'operadoras_chip' => ! empty($data['operadoras_chip']) ? array_values($data['operadoras_chip']) : null,
+            'chip_padrao' => ! empty($data['chip_padrao']) ? $data['chip_padrao'] : 'algar',
             'garantia' => ! empty($data['garantia']) ? trim($data['garantia']) : null,
             'anatel_homologado' => ! empty($data['anatel_homologado']) ? trim($data['anatel_homologado']) : null,
             'recursos' => ! empty($data['recursos']) ? array_values(array_filter((array) $data['recursos'])) : null,

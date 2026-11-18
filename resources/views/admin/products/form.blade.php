@@ -51,8 +51,13 @@
                     </div>
                     <x-admin.field name="preco" type="text" inputmode="decimal" label="Valor do Aparelho (Venda à vista / Taxa de Adesão)" :value="$produto->preco_cents ? number_format($produto->preco_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Valor à vista cobrado hoje pelo equipamento. Deixe 0 para adesão grátis." />
                     <x-admin.field name="preco_promocional" type="text" inputmode="decimal" label="Preço promocional do aparelho" :value="$produto->preco_promocional_cents ? number_format($produto->preco_promocional_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Se preenchido, risca o valor de tabela do aparelho." />
-                    <x-admin.field name="mensalidade" type="text" inputmode="decimal" label="Valor de Recorrência (Mensalidade por veículo/mês)" :value="$produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '') : ''" col="col-12 col-md-6" :opcional="true" placeholder="0,00" hint="Valor mensal cobrado por veículo para acesso à plataforma e dados móveis." />
-                    <div class="col-12 col-md-6 d-flex align-items-center">
+                    <x-admin.field name="mensalidade" type="text" inputmode="decimal" label="Valor de Recorrência (Mensalidade por veículo/mês)" :value="$produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Valor mensal cobrado por veículo para acesso à plataforma e dados móveis." />
+                    <div class="col-12 col-md-4 d-flex align-items-center">
+                        <div class="p-3 bg-light rounded border w-100">
+                            <x-admin.switch name="cobrar_primeira_mensalidade" label="Cobrar 1ª mensalidade hoje" :checked="old('cobrar_primeira_mensalidade', $produto->cobrar_primeira_mensalidade ?? true)" hint="Se ativo, soma a 1ª mensalidade no ato da compra. Se desmarcado, fatura após 30 dias." />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 d-flex align-items-center">
                         <div class="p-3 bg-light rounded border w-100">
                             <x-admin.switch name="sob_consulta" label="Preço sob consulta" :checked="old('sob_consulta', false)" hint="Oculta os preços na loja e orienta o cliente a falar com um consultor via WhatsApp." />
                         </div>
@@ -60,9 +65,49 @@
                 </div>
             </x-admin.card>
 
-            <x-admin.card title="Rastreamento, Chip M2M e Recursos" icon="fa-tower-cell" class="mt-3">
+            <x-admin.card title="Rastreamento, Chip M2M e Conectividade" icon="fa-tower-cell" class="mt-3">
                 <div class="row g-3">
-                    <x-admin.field name="chip_operadora" label="Chip M2M / Conectividade" :value="$produto->chip_operadora" col="col-12 col-md-4" :opcional="true" placeholder="Ex.: Multi-operadora 4G (Vivo/Claro/TIM/Algar)" hint="Operadora ou tipo de chip incluso." />
+                    <div class="col-12">
+                        <div class="p-3 bg-light rounded border">
+                            <x-admin.switch name="permite_escolha_chip" label="Permitir que o cliente escolha a operadora do chip durante o pedido" :checked="old('permite_escolha_chip', $produto->permite_escolha_chip ?? false)" hint="Exibe o seletor de operadora na página do produto, no carrinho e no checkout." />
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold mb-1"><i class="fas fa-sim-card me-1 text-golden"></i> Operadoras disponíveis para este produto</label>
+                        <p class="small text-muted mb-2">Marque as operadoras que o cliente poderá escolher (Chip Individual ou Algar Multioperadora):</p>
+                        @php
+                            $operadorasAtuais = (array) (old('operadoras_chip', $produto->operadoras_chip ?? ['algar', 'vivo', 'claro', 'tim']));
+                            $catalogoOperadoras = $operadorasDisponiveis ?? \App\Models\Product::operadorasDisponiveis();
+                        @endphp
+                        <div class="row g-2 mb-2">
+                            @foreach($catalogoOperadoras as $chaveOp => $op)
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check p-2 rounded border bg-light-subtle d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <input class="form-check-input ms-1 me-2" type="checkbox" name="operadoras_chip[]" value="{{ $chaveOp }}" id="op_{{ $chaveOp }}" @checked(in_array($chaveOp, $operadorasAtuais, true))>
+                                            <label class="form-check-label small fw-semibold text-dark mb-0 cursor-pointer" for="op_{{ $chaveOp }}">
+                                                <i class="fas {{ $op['icone'] }} me-1 text-secondary"></i> {{ $op['rotulo'] }}
+                                            </label>
+                                        </div>
+                                        <span class="badge {{ $op['tipo'] === 'multioperadora' ? 'bg-warning-subtle text-warning-emphasis' : 'bg-info-subtle text-info-emphasis' }}">{{ $op['destaque'] }}</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">Operadora Padrão</label>
+                        <select name="chip_padrao" class="form-select">
+                            <option value="algar" @selected(old('chip_padrao', $produto->chip_padrao ?? 'algar') === 'algar')>Algar Multioperadora (Recomendado)</option>
+                            <option value="vivo" @selected(old('chip_padrao', $produto->chip_padrao) === 'vivo')>Vivo M2M (Individual)</option>
+                            <option value="claro" @selected(old('chip_padrao', $produto->chip_padrao) === 'claro')>Claro M2M (Individual)</option>
+                            <option value="tim" @selected(old('chip_padrao', $produto->chip_padrao) === 'tim')>TIM M2M (Individual)</option>
+                        </select>
+                        <small class="form-text text-muted">Opção que já vem marcada por padrão.</small>
+                    </div>
+                    <x-admin.field name="chip_operadora" label="Texto descritivo do Chip / Conectividade" :value="$produto->chip_operadora" col="col-12 col-md-4" :opcional="true" placeholder="Ex.: Multi-operadora 4G (Vivo/Claro/TIM/Algar)" hint="Texto exibido na ficha técnica." />
                     <x-admin.field name="garantia" label="Garantia do Equipamento" :value="$produto->garantia" col="col-12 col-md-4" :opcional="true" placeholder="Ex.: Vitalícia no plano ou 12 meses" hint="Garantia oferecida ao cliente." />
                     <x-admin.field name="anatel_homologado" label="Homologação Anatel" :value="$produto->anatel_homologado" col="col-12 col-md-4" :opcional="true" placeholder="Ex.: Homologado Anatel" hint="Selo de conformidade técnica." />
 

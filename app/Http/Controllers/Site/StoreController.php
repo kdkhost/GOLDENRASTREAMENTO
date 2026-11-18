@@ -84,9 +84,10 @@ class StoreController extends Controller
     {
         $carrinho = Carrinho::daSessao();
         $linhas = $carrinho->linhas();
-        $subtotal = array_sum(array_column($linhas, 'subtotal'));
-        $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
-        $subtotalHoje = $subtotal + $mensalidadeTotal;
+        $subtotal = $carrinho->subtotalCents();
+        $mensalidadeTotal = $carrinho->mensalidadeTotalCents();
+        $mensalidadeCobradaHoje = $carrinho->mensalidadeCobradaHojeCents();
+        $subtotalHoje = $carrinho->subtotalHojeCents();
         $desc = $carrinho->resumoDesconto($subtotalHoje);
 
         return response()
@@ -94,6 +95,7 @@ class StoreController extends Controller
                 'linhas' => $linhas,
                 'subtotal' => $subtotal,
                 'mensalidadeTotal' => $mensalidadeTotal,
+                'mensalidadeCobradaHoje' => $mensalidadeCobradaHoje,
                 'subtotalHoje' => $subtotalHoje,
                 'frete' => 0,
                 'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
@@ -162,6 +164,7 @@ class StoreController extends Controller
             'quantidade' => ['nullable', 'integer', 'min:1', 'max:999'],
             'ir' => ['nullable', 'in:carrinho,checkout'],
             'modo' => ['nullable', 'in:somar,definir'],
+            'operadora' => ['nullable', 'string', 'in:algar,vivo,claro,tim'],
         ]);
 
         $produto = Product::doCatalogo((int) $data['produto']);
@@ -187,6 +190,12 @@ class StoreController extends Controller
         $qtdPedida = max(1, (int) ($data['quantidade'] ?? 1));
         $qtdAnterior = $carrinho->quantidadeDoProduto((int) $produto['id']);
         $modo = $data['modo'] ?? 'somar';
+
+        if (! empty($data['operadora'])) {
+            $carrinho->definirOperadora((int) $produto['id'], $data['operadora']);
+        } elseif (! empty($produto['chip_padrao'])) {
+            $carrinho->definirOperadora((int) $produto['id'], (string) $produto['chip_padrao']);
+        }
 
         if ($modo === 'definir') {
             $carrinho->ajustar((int) $produto['id'], $qtdPedida);
@@ -222,6 +231,24 @@ class StoreController extends Controller
             : route('site.loja.carrinho');
 
         return redirect()->to($destino)->with('success', $mensagem);
+    }
+
+    public function alterarOperadora(Request $request): RedirectResponse|JsonResponse
+    {
+        $data = $request->validate([
+            'produto' => ['required', 'integer'],
+            'operadora' => ['required', 'string', 'in:algar,vivo,claro,tim'],
+        ]);
+
+        $carrinho = Carrinho::daSessao();
+        $carrinho->definirOperadora((int) $data['produto'], $data['operadora']);
+        $request->session()->save();
+
+        if ($request->expectsJson()) {
+            return $this->resumoCarrinhoJson($carrinho, 'Operadora de chip atualizada.');
+        }
+
+        return back()->with('success', 'Operadora de chip atualizada.');
     }
 
     public function atualizar(Request $request): RedirectResponse|JsonResponse
@@ -270,9 +297,10 @@ class StoreController extends Controller
     private function resumoCarrinhoJson(Carrinho $carrinho, string $mensagem = ''): JsonResponse
     {
         $linhas = $carrinho->linhas();
-        $subtotal = array_sum(array_column($linhas, 'subtotal'));
-        $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
-        $subtotalHoje = $subtotal + $mensalidadeTotal;
+        $subtotal = $carrinho->subtotalCents();
+        $mensalidadeTotal = $carrinho->mensalidadeTotalCents();
+        $mensalidadeCobradaHoje = $carrinho->mensalidadeCobradaHojeCents();
+        $subtotalHoje = $carrinho->subtotalHojeCents();
         $desc = $carrinho->resumoDesconto($subtotalHoje);
         $freteGratisEm = $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal);
         $totalSemFrete = max(0, $subtotalHoje - ($desc['desconto_cents'] ?? 0));
@@ -285,11 +313,17 @@ class StoreController extends Controller
             'total_unidades' => array_sum(array_column($linhas, 'quantidade')),
             'mensalidade_total_cents' => $mensalidadeTotal,
             'mensalidade_total_formatada' => $mensalidadeTotal > 0 ? brl($mensalidadeTotal).'/mês' : null,
+            'mensalidade_cobrada_hoje_cents' => $mensalidadeCobradaHoje,
+            'mensalidade_cobrada_hoje_formatada' => $mensalidadeCobradaHoje > 0 ? brl($mensalidadeCobradaHoje) : null,
             'linhas' => array_map(fn (array $l): array => [
                 'id' => (int) $l['id'],
                 'quantidade' => (int) $l['quantidade'],
                 'mensalidade_cents' => (int) ($l['mensalidade'] ?? 0),
                 'mensalidade_formatada' => ! empty($l['mensalidade']) ? brl($l['mensalidade']).'/mês' : null,
+                'cobrar_mensalidade_hoje' => (bool) ($l['cobrar_mensalidade_hoje'] ?? false),
+                'operadora_codigo' => $l['operadora_codigo'] ?? 'algar',
+                'operadora_nome' => $l['operadora_nome'] ?? 'Algar Multioperadora',
+                'operadora_rotulo' => $l['operadora_rotulo'] ?? 'Algar Multioperadora',
                 'subtotal_formatado' => brl($l['subtotal']),
             ], $linhas),
             'subtotal_cents' => $subtotal,
@@ -528,6 +562,7 @@ class StoreController extends Controller
         }
 
         $pedido = DB::transaction(function () use ($request, $data, $documento, $carrinho, $itensDaSessao) {
+            $padraoLojaCobrar = Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
             $produtos = Product::whereIn('id', array_column($itensDaSessao, 'id'))
                 ->where('ativo', true)
                 ->get()
@@ -536,6 +571,7 @@ class StoreController extends Controller
             $aprovados = [];
             $subtotal = 0;
             $mensalidadeTotal = 0;
+            $mensalidadeCobradaHoje = 0;
 
             foreach ($itensDaSessao as $linha) {
                 $produto = $produtos->get($linha['id']);
@@ -552,17 +588,25 @@ class StoreController extends Controller
 
                 $unit = $produto->preco();
                 $mensalidadeUnit = (int) ($produto->mensalidade_cents ?? 0);
+                $cobrarHoje = (bool) ($produto->cobrar_primeira_mensalidade ?? true) && $padraoLojaCobrar;
+                $operadoraEscolhida = $linha['operadora_codigo'] ?? ($produto->chip_padrao ?? 'algar');
+
                 $aprovados[] = [
                     'produto' => $produto,
                     'quantidade' => $linha['quantidade'],
                     'unit' => $unit,
                     'mensalidade' => $mensalidadeUnit,
+                    'cobrar_mensalidade_hoje' => $cobrarHoje,
+                    'chip_operadora' => $operadoraEscolhida,
                 ];
                 $subtotal += $unit * $linha['quantidade'];
                 $mensalidadeTotal += $mensalidadeUnit * $linha['quantidade'];
+                if ($cobrarHoje) {
+                    $mensalidadeCobradaHoje += $mensalidadeUnit * $linha['quantidade'];
+                }
             }
 
-            $subtotalHoje = $subtotal + $mensalidadeTotal;
+            $subtotalHoje = $subtotal + $mensalidadeCobradaHoje;
             $frete = 0;
             $transportadora = null;
 
@@ -656,6 +700,8 @@ class StoreController extends Controller
                     'preco_unit_cents' => $linha['unit'],
                     'mensalidade_cents' => $linha['mensalidade'],
                     'subtotal_cents' => $linha['unit'] * $linha['quantidade'],
+                    'chip_operadora' => $linha['chip_operadora'] ?? null,
+                    'cobrar_mensalidade_hoje' => (bool) ($linha['cobrar_mensalidade_hoje'] ?? true),
                 ]);
 
                 if ($produto->controle_estoque) {
@@ -844,15 +890,18 @@ class StoreController extends Controller
     /** @return array<string, mixed> */
     private function dadosDoCheckout(array $linhas, int $subtotal): array
     {
-        $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
-        $subtotalHoje = $subtotal + $mensalidadeTotal;
-        $desc = Carrinho::daSessao()->resumoDesconto($subtotalHoje);
+        $carrinho = Carrinho::daSessao();
+        $mensalidadeTotal = $carrinho->mensalidadeTotalCents();
+        $mensalidadeCobradaHoje = $carrinho->mensalidadeCobradaHojeCents();
+        $subtotalHoje = $carrinho->subtotalHojeCents();
+        $desc = $carrinho->resumoDesconto($subtotalHoje);
         $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal, 'entrega');
 
         return [
             'linhas' => $linhas,
             'subtotal' => $subtotal,
             'mensalidadeTotal' => $mensalidadeTotal,
+            'mensalidadeCobradaHoje' => $mensalidadeCobradaHoje,
             'subtotalHoje' => $subtotalHoje,
             'frete' => $frete,
             'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),

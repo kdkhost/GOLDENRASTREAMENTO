@@ -181,8 +181,18 @@
                 <li>
                     <div>
                         <span>{{ $l['quantidade'] }}× {{ $l['nome'] }}</span>
+                        @if(!empty($l['operadora_nome']) || !empty($l['chip_operadora']))
+                            <div style="font-size:.74rem;color:#fcd34d;font-weight:600;margin-top:2px">
+                                <i class="fa-solid fa-sim-card" style="font-size:.7rem"></i> Chip: {{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Algar Multioperadora') }}
+                            </div>
+                        @endif
                         @if(!empty($l['mensalidade']))
-                            <div style="font-size:.76rem;color:#4ade80;font-weight:500">+ {{ brl($l['mensalidade'] * $l['quantidade']) }}/mês (plano)</div>
+                            <div style="font-size:.76rem;color:#4ade80;font-weight:500">
+                                + {{ brl($l['mensalidade'] * $l['quantidade']) }}/mês (plano)
+                                @if(empty($l['cobrar_mensalidade_hoje']))
+                                    <span style="color:#38bdf8;font-size:.72rem">· pós-pago</span>
+                                @endif
+                            </div>
                         @endif
                     </div>
                     <b>{{ brl($l['subtotal']) }}</b>
@@ -190,10 +200,15 @@
                 @endforeach
             </ul>
             <div class="sum-line"><span>Adesão / Equipamentos</span><b>{{ brl($subtotal) }}</b></div>
-            @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
+            @if(!empty($mensalidadeCobradaHoje) && $mensalidadeCobradaHoje > 0)
             <div class="sum-line" style="color:#67e8f9">
                 <span><i class="fa-solid fa-repeat" style="margin-right:4px"></i> 1ª Mensalidade antecipada</span>
-                <b>{{ brl($mensalidadeTotal) }}</b>
+                <b>{{ brl($mensalidadeCobradaHoje) }}</b>
+            </div>
+            @elseif(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
+            <div class="sum-line" style="color:#38bdf8">
+                <span><i class="fa-solid fa-calendar-check" style="margin-right:4px"></i> 1ª Mensalidade (pós-paga)</span>
+                <b style="font-size:.84rem;color:#38bdf8">Faturada após 30 dias</b>
             </div>
             @endif
             <div class="sum-line"><span>Frete</span><b id="sumFrete">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
@@ -212,11 +227,11 @@
                     @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
                         <div style="font-size:.76rem;font-weight:normal;color:#67e8f9;line-height:1.35;margin-top:3px">
                             <div>+ Recorrência: {{ brl($mensalidadeTotal) }}/mês</div>
-                            <div style="opacity:.85;font-size:.72rem">a partir do 2º mês</div>
+                            <div style="opacity:.85;font-size:.72rem">{{ (!empty($mensalidadeCobradaHoje) && $mensalidadeCobradaHoje > 0) ? 'a partir do 2º mês' : 'a partir de 30 dias' }}</div>
                         </div>
                     @endif
                 </div>
-                <b id="sumTotal" style="font-size:1.6rem;font-weight:800;color:var(--gold);white-space:nowrap;margin-left:12px;line-height:1.1">{{ brl(max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0)) + $frete) }}</b>
+                <b id="sumTotal" style="font-size:1.6rem;font-weight:800;color:var(--gold);white-space:nowrap;margin-left:12px;line-height:1.1">{{ brl(max(0, ($subtotalHoje ?? $subtotal) - ($descontoCents ?? 0)) + $frete) }}</b>
             </div>
 
             <div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)">
@@ -283,7 +298,8 @@ document.addEventListener('DOMContentLoaded',function(){
   var freteBase=parseInt(form.dataset.frete,10)||0;
   var subtotal=({{ (int) $subtotal }});
   var mensalidadeTotal=({{ (int) ($mensalidadeTotal ?? 0) }});
-  var subtotalHoje=subtotal + mensalidadeTotal;
+  var mensalidadeCobradaHoje=({{ (int) ($mensalidadeCobradaHoje ?? 0) }});
+  var subtotalHoje=({{ (int) ($subtotalHoje ?? ($subtotal + ($mensalidadeCobradaHoje ?? 0))) }});
   var descontoCents=({{ (int) ($descontoCents ?? 0) }});
   var freteGratisCupom={{ !empty($freteGratisCupom) ? 'true' : 'false' }};
   var freteEl=document.getElementById('sumFrete'),totalEl=document.getElementById('sumTotal');

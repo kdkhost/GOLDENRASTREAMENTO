@@ -123,9 +123,34 @@
                     </div>
 
                     @if(!empty($produto['mensalidade']) && $produto['preco'] > 0)
-                        <div class="pdp-monthly-note">
-                            <i class="fa-solid fa-tower-broadcast"></i>
-                            Monitoramento opcional/plano: <strong>{{ brl($produto['mensalidade']) }}/mês</strong>
+                        @php
+                            $lojaCobrar1a = \App\Models\Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
+                            $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']) && $lojaCobrar1a;
+                        @endphp
+                        <div class="pdp-monthly-note" style="display:flex;flex-direction:column;gap:4px">
+                            <div>
+                                <i class="fa-solid fa-tower-broadcast"></i>
+                                Plano / Monitoramento: <strong>{{ brl($produto['mensalidade']) }}/mês</strong>
+                            </div>
+                            <small style="color:var(--muted);font-size:.78rem">
+                                @if($cobrarHoje)
+                                    <i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> 1ª mensalidade inclusa no pedido hoje. Recorrência seguinte a partir do 2º mês.
+                                @else
+                                    <i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> 1ª mensalidade faturada após 30 dias (pós-paga). Nada de mensalidade cobrada hoje.
+                                @endif
+                            </small>
+                        </div>
+                    @elseif(!empty($produto['mensalidade']) && $produto['preco'] == 0)
+                        @php
+                            $lojaCobrar1a = \App\Models\Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
+                            $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']) && $lojaCobrar1a;
+                        @endphp
+                        <div class="pdp-monthly-note" style="margin-top:6px;font-size:.82rem">
+                            @if($cobrarHoje)
+                                <span><i class="fa-solid fa-shield-halved" style="color:var(--teal)"></i> Adesão grátis: você paga apenas a 1ª mensalidade hoje ({{ brl($produto['mensalidade']) }}).</span>
+                            @else
+                                <span><i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> Adesão grátis: 1ª mensalidade faturada somente após 30 dias de uso.</span>
+                            @endif
                         </div>
                     @endif
 
@@ -155,6 +180,42 @@
                                 <a href="{{ route('site.loja.carrinho', absolute: false) }}" class="pdp-in-cart-link">Ver carrinho completo →</a>
                             </div>
                         </div>
+
+                        {{-- Escolha do Chip / Operadora --}}
+                        @php
+                            $permiteChip = !empty($produto['permite_escolha_chip']);
+                            $operadoras = $produto['operadoras_detalhes'] ?? \App\Models\Product::OPERADORAS_CHIP;
+                            $chipPadrao = $produto['chip_padrao'] ?? 'algar';
+                        @endphp
+
+                        @if($permiteChip && count($operadoras) > 0)
+                            <div class="pdp-chip-selector" style="margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px">
+                                <label style="display:flex;align-items:center;justify-content:space-between;font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:8px">
+                                    <span><i class="fa-solid fa-sim-card" style="color:var(--gold);margin-right:6px"></i> Escolha a operadora do chip:</span>
+                                    <small style="font-weight:600;color:var(--teal);font-size:.76rem"><i class="fa-solid fa-wifi"></i> Chip M2M de telemetria</small>
+                                </label>
+                                <div style="display:flex;flex-direction:column;gap:6px">
+                                    @foreach($operadoras as $chaveOp => $op)
+                                        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:#fff;border:1.5px solid {{ $chaveOp === $chipPadrao ? 'var(--gold)' : '#cbd5e1' }};border-radius:8px;cursor:pointer;transition:all .15s ease" class="pdp-chip-option">
+                                            <div style="display:flex;align-items:center;gap:8px">
+                                                <input type="radio" name="operadora" value="{{ $chaveOp }}" @checked($chaveOp === $chipPadrao) style="accent-color:var(--gold)" onchange="this.closest('.pdp-chip-selector').querySelectorAll('.pdp-chip-option').forEach(el=>el.style.borderColor='#cbd5e1');this.closest('.pdp-chip-option').style.borderColor='var(--gold)'">
+                                                <div>
+                                                    <strong style="font-size:.86rem;color:var(--ink)">{{ $op['rotulo'] }}</strong>
+                                                    <div style="font-size:.74rem;color:#64748b;line-height:1.2">{{ $op['nome'] }}</div>
+                                                </div>
+                                            </div>
+                                            @if(!empty($op['destaque']))
+                                                <span style="font-size:.7rem;font-weight:700;background:rgba(224,163,62,.15);color:var(--gold-2);padding:2px 7px;border-radius:999px;white-space:nowrap">{{ $op['destaque'] }}</span>
+                                            @else
+                                                <span style="font-size:.7rem;font-weight:600;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:4px;white-space:nowrap">Individual</span>
+                                            @endif
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @else
+                            <input type="hidden" name="operadora" value="{{ $produto['chip_padrao'] ?? 'algar' }}">
+                        @endif
 
                         <div class="quantity-row">
                             <span class="qty-label">Quantidade</span>

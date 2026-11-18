@@ -415,6 +415,7 @@ class SettingController extends Controller
 
         Setting::set('loja_livre', $request->boolean('loja_livre') ? '1' : '0');
         Setting::set('loja_retirada', $request->boolean('loja_retirada') ? '1' : '0');
+        Setting::set('loja_cobrar_primeira_mensalidade', $request->boolean('loja_cobrar_primeira_mensalidade', true) ? '1' : '0');
         Setting::set('loja_frete_cents', (int) round(((float) ($data['loja_frete'] ?? 0)) * 100));
         Setting::set('loja_frete_gratis_acima_cents', (int) round(((float) ($data['loja_frete_gratis_acima'] ?? 0)) * 100));
         Setting::set('loja_pix_chave', trim($data['loja_pix_chave'] ?? ''));
