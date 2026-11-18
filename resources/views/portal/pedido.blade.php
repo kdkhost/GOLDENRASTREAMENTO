@@ -33,6 +33,11 @@
             <tr>
                 <td>
                     {{ $item->nome }}
+                    @if(($item->mensalidade_cents ?? 0) > 0)
+                        <div class="small text-teal fw-semibold">
+                            <i class="fas fa-repeat me-1"></i> Mensalidade: {{ brl($item->mensalidade_cents) }}/mês
+                        </div>
+                    @endif
                     <div class="small text-secondary">{{ $item->sku ?: 'Código interno' }}</div>
                 </td>
                 <td class="text-center">{{ $item->quantidade }}</td>
@@ -44,12 +49,18 @@
 
         <x-admin.card title="Totais" icon="fa-calculator" class="mt-3">
             <dl class="defs mb-0">
-                <dt>Subtotal</dt><dd>{{ brl($pedido->subtotal_cents) }}</dd>
+                <dt>Aparelhos / Adesão</dt><dd>{{ brl($pedido->subtotal_cents) }}</dd>
+                @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                    <dt>1ª Mensalidade antecipada</dt><dd class="text-teal">{{ brl($pedido->mensalidade_total_cents) }}</dd>
+                @endif
                 <dt>Frete ({{ $pedido->entregaLabel() }})</dt><dd>{{ $pedido->frete_cents > 0 ? brl($pedido->frete_cents) : 'Grátis' }}</dd>
                 @if($pedido->desconto_cents > 0)
                     <dt>Desconto</dt><dd>− {{ brl($pedido->desconto_cents) }}</dd>
                 @endif
-                <dt>Total</dt><dd class="text-gold">{{ brl($pedido->total_cents) }}</dd>
+                <dt>Total pago hoje</dt><dd class="text-gold">{{ brl($pedido->total_cents) }}</dd>
+                @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                    <dt>Recorrência mensal</dt><dd class="text-teal small">{{ brl($pedido->mensalidade_total_cents) }}/mês (a partir do 2º mês)</dd>
+                @endif
             </dl>
         </x-admin.card>
     </div>

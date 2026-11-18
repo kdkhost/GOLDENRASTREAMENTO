@@ -71,16 +71,35 @@
                 <h2 class="order-h">Resumo</h2>
                 <div class="order-box">
                     @foreach($pedido->items as $item)
-                    <div class="order-line"><span>{{ $item->quantidade }}× {{ $item->nome }}</span><b>{{ brl($item->subtotal_cents) }}</b></div>
+                    <div class="order-line">
+                        <div>
+                            <span>{{ $item->quantidade }}× {{ $item->nome }}</span>
+                            @if(($item->mensalidade_cents ?? 0) > 0)
+                                <div style="font-size:.76rem;color:var(--teal)">+ {{ brl($item->mensalidade_cents * $item->quantidade) }}/mês (plano)</div>
+                            @endif
+                        </div>
+                        <b>{{ brl($item->subtotal_cents) }}</b>
+                    </div>
                     @endforeach
-                    <div class="order-line"><span>Subtotal</span><b>{{ brl($pedido->subtotal_cents) }}</b></div>
+                    <div class="order-line"><span>Adesão / Equipamentos</span><b>{{ brl($pedido->subtotal_cents) }}</b></div>
+                    @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                    <div class="order-line" style="color:var(--teal)"><span>1ª Mensalidade antecipada</span><b>{{ brl($pedido->mensalidade_total_cents) }}</b></div>
+                    @endif
                     <div class="order-line"><span>Frete</span><b>{{ $pedido->frete_cents > 0 ? brl($pedido->frete_cents) : 'Grátis' }}</b></div>
                     @if($pedido->desconto_cents > 0)
                     <div class="order-line"><span>Desconto @if($pedido->cupom_codigo)<small>({{ $pedido->cupom_codigo }})</small>@endif</span><b>– {{ brl($pedido->desconto_cents) }}</b></div>
                     @elseif($pedido->cupom_codigo)
                     <div class="order-line"><span>Cupom ({{ $pedido->cupom_codigo }})</span><b>Frete grátis</b></div>
                     @endif
-                    <div class="order-line total"><span>Total</span><b>{{ brl($pedido->total_cents) }}</b></div>
+                    <div class="order-line total">
+                        <div>
+                            <span>Total a pagar hoje</span>
+                            @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                                <div style="font-size:.75rem;font-weight:normal;color:var(--teal)">+ Recorrência: {{ brl($pedido->mensalidade_total_cents) }}/mês a partir do 2º mês</div>
+                            @endif
+                        </div>
+                        <b>{{ brl($pedido->total_cents) }}</b>
+                    </div>
                 </div>
 
                 <label class="order-link">Guarde este link para rever o pedido

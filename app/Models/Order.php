@@ -51,7 +51,7 @@ class Order extends Model
     protected $fillable = [
         'numero', 'customer_id', 'lead_id', 'user_id', 'nome', 'email', 'telefone',
         'tipo_pessoa', 'documento', 'entrega', 'endereco', 'bairro', 'complemento',
-        'cidade', 'uf', 'cep', 'subtotal_cents', 'frete_cents', 'desconto_cents',
+        'cidade', 'uf', 'cep', 'subtotal_cents', 'mensalidade_total_cents', 'frete_cents', 'desconto_cents',
         'coupon_id', 'cupom_codigo', 'total_cents', 'pagamento', 'status', 'notas', 'consent_given', 'documentos', 'ip_hash',
         'visitor_id', 'pago_em', 'enviado_em',
         'codigo_rastreio', 'transportadora', 'rastreio_notificado_em', 'rastreio_historico',
@@ -59,6 +59,7 @@ class Order extends Model
 
     protected $casts = [
         'subtotal_cents' => 'integer',
+        'mensalidade_total_cents' => 'integer',
         'frete_cents' => 'integer',
         'desconto_cents' => 'integer',
         'total_cents' => 'integer',

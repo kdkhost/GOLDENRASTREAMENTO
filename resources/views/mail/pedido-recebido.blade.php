@@ -16,18 +16,40 @@
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e0d3;border-radius:12px;font-size:14px">
                     @foreach($pedido->items as $item)
                     <tr>
-                        <td style="padding:10px 14px">{{ $item->quantidade }}× {{ $item->nome }}</td>
+                        <td style="padding:10px 14px">
+                            {{ $item->quantidade }}× {{ $item->nome }}
+                            @if(($item->mensalidade_cents ?? 0) > 0)
+                                <div style="font-size:12px;color:#0f766e">+ {{ brl($item->mensalidade_cents * $item->quantidade) }}/mês (plano)</div>
+                            @endif
+                        </td>
                         <td style="padding:10px 14px;text-align:right">{{ brl($item->subtotal_cents) }}</td>
                     </tr>
                     @endforeach
+                    @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                    <tr>
+                        <td style="padding:10px 14px;color:#0f766e">1ª Mensalidade antecipada</td>
+                        <td style="padding:10px 14px;text-align:right;color:#0f766e">{{ brl($pedido->mensalidade_total_cents) }}</td>
+                    </tr>
+                    @endif
                     @if($pedido->frete_cents > 0)
                     <tr>
                         <td style="padding:10px 14px">Frete</td>
                         <td style="padding:10px 14px;text-align:right">{{ brl($pedido->frete_cents) }}</td>
                     </tr>
                     @endif
+                    @if(($pedido->desconto_cents ?? 0) > 0)
                     <tr>
-                        <td style="padding:12px 14px;font-weight:700;border-top:1px solid #e5e0d3">Total</td>
+                        <td style="padding:10px 14px;color:#059669">Desconto @if($pedido->cupom_codigo)({{ $pedido->cupom_codigo }})@endif</td>
+                        <td style="padding:10px 14px;text-align:right;color:#059669">− {{ brl($pedido->desconto_cents) }}</td>
+                    </tr>
+                    @endif
+                    <tr>
+                        <td style="padding:12px 14px;font-weight:700;border-top:1px solid #e5e0d3">
+                            Total pago hoje
+                            @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                                <div style="font-size:12px;font-weight:normal;color:#0f766e">+ Recorrência: {{ brl($pedido->mensalidade_total_cents) }}/mês a partir do 2º mês</div>
+                            @endif
+                        </td>
                         <td style="padding:12px 14px;font-weight:700;text-align:right;border-top:1px solid #e5e0d3;color:#a97b16">{{ brl($pedido->total_cents) }}</td>
                     </tr>
                 </table>

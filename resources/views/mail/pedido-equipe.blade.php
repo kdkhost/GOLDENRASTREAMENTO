@@ -7,7 +7,11 @@
             <tr><td style="padding:10px 14px">Entrega</td><td style="padding:10px 14px">{{ $pedido->entregaLabel() }}@if($pedido->entrega !== 'retira') — {{ $pedido->enderecoFormatado() }}@endif</td></tr>
             <tr><td style="padding:10px 14px">Pagamento</td><td style="padding:10px 14px">{{ $pedido->pagamentoLabel() }}</td></tr>
             <tr><td style="padding:10px 14px">Itens</td><td style="padding:10px 14px">
-                @foreach($pedido->items as $item){{ $item->quantidade }}× {{ $item->nome }} ({{ brl($item->subtotal_cents) }})<br>@endforeach
+                @foreach($pedido->items as $item){{ $item->quantidade }}× {{ $item->nome }} ({{ brl($item->subtotal_cents) }}@if(($item->mensalidade_cents ?? 0) > 0) + {{ brl($item->mensalidade_cents * $item->quantidade) }}/mês @endif)<br>@endforeach
+                @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                    <br><strong style="color:#0f766e">1ª Mensalidade (paga hoje): {{ brl($pedido->mensalidade_total_cents) }}</strong><br>
+                    <span style="color:#0f766e">Recorrência: {{ brl($pedido->mensalidade_total_cents) }}/mês</span><br>
+                @endif
             </td></tr>
             @if($pedido->notas)
             <tr><td style="padding:10px 14px">Observações</td><td style="padding:10px 14px">{{ $pedido->notas }}</td></tr>

@@ -192,8 +192,8 @@
             <div class="sum-line"><span>Adesão / Equipamentos</span><b>{{ brl($subtotal) }}</b></div>
             @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
             <div class="sum-line" style="color:#67e8f9">
-                <span><i class="fa-solid fa-repeat" style="margin-right:4px"></i> Mensalidade recorrente</span>
-                <b>{{ brl($mensalidadeTotal) }}/mês</b>
+                <span><i class="fa-solid fa-repeat" style="margin-right:4px"></i> 1ª Mensalidade antecipada</span>
+                <b>{{ brl($mensalidadeTotal) }}</b>
             </div>
             @endif
             <div class="sum-line"><span>Frete</span><b id="sumFrete">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
@@ -210,10 +210,10 @@
                 <div>
                     <span>Total a pagar hoje</span>
                     @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
-                        <div style="font-size:.75rem;font-weight:normal;color:#67e8f9">+ {{ brl($mensalidadeTotal) }}/mês recorrente</div>
+                        <div style="font-size:.75rem;font-weight:normal;color:#67e8f9">+ Recorrência: {{ brl($mensalidadeTotal) }}/mês a partir do 2º mês</div>
                     @endif
                 </div>
-                <b id="sumTotal">{{ brl(max(0, $subtotal - ($descontoCents ?? 0)) + $frete) }}</b>
+                <b id="sumTotal">{{ brl(max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0)) + $frete) }}</b>
             </div>
 
             <div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)">
@@ -279,6 +279,8 @@ document.addEventListener('DOMContentLoaded',function(){
   var form=document.getElementById('checkoutForm');if(!form)return;
   var freteBase=parseInt(form.dataset.frete,10)||0;
   var subtotal=({{ (int) $subtotal }});
+  var mensalidadeTotal=({{ (int) ($mensalidadeTotal ?? 0) }});
+  var subtotalHoje=subtotal + mensalidadeTotal;
   var descontoCents=({{ (int) ($descontoCents ?? 0) }});
   var freteGratisCupom={{ !empty($freteGratisCupom) ? 'true' : 'false' }};
   var freteEl=document.getElementById('sumFrete'),totalEl=document.getElementById('sumTotal');
@@ -293,7 +295,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(containerFrete)containerFrete.style.display=retirou?'none':(containerFrete.dataset.visivel==='1'?'':'none');
     var frete=(retirou||freteGratisCupom)?0:freteBase;
     if(freteEl)freteEl.textContent=frete>0?brl(frete):'Grátis';
-    if(totalEl)totalEl.textContent=brl(Math.max(0,subtotal-descontoCents)+frete);
+    if(totalEl)totalEl.textContent=brl(Math.max(0,subtotalHoje-descontoCents)+frete);
     form.querySelectorAll('.card-radio[data-pag-entrega]').forEach(function(l){
       var v=l.dataset.pagEntrega;
       l.style.display=(v==='qualquer'||v===valor)?'':'none';

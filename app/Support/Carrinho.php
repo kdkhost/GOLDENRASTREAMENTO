@@ -88,7 +88,7 @@ class Carrinho
             return ['ok' => false, 'erro' => 'Cupom não encontrado. Confira o código digitado.'];
         }
 
-        $validacao = $cupom->validarParaCompra($this->subtotalCents());
+        $validacao = $cupom->validarParaCompra($this->subtotalHojeCents());
 
         if (! $validacao['ok']) {
             return $validacao;
@@ -120,7 +120,7 @@ class Carrinho
         }
 
         $cupom = Coupon::buscarPorCodigo($codigo);
-        $subtotal = $subtotalCents ?? $this->subtotalCents();
+        $subtotal = $subtotalCents ?? $this->subtotalHojeCents();
 
         if ($cupom === null || ! $cupom->validarParaCompra($subtotal)['ok']) {
             $this->removerCupom();
@@ -136,7 +136,7 @@ class Carrinho
      */
     public function resumoDesconto(?int $subtotalCents = null): array
     {
-        $subtotal = $subtotalCents ?? $this->subtotalCents();
+        $subtotal = $subtotalCents ?? $this->subtotalHojeCents();
         $cupom = $this->cupomValido($subtotal);
 
         if ($cupom === null) {
@@ -235,6 +235,16 @@ class Carrinho
     public function subtotalCents(): int
     {
         return array_sum(array_column($this->linhas(), 'subtotal'));
+    }
+
+    public function mensalidadeTotalCents(): int
+    {
+        return array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $this->linhas()));
+    }
+
+    public function subtotalHojeCents(): int
+    {
+        return $this->subtotalCents() + $this->mensalidadeTotalCents();
     }
 
     /**

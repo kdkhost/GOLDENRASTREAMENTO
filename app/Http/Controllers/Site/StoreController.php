@@ -86,13 +86,15 @@ class StoreController extends Controller
         $linhas = $carrinho->linhas();
         $subtotal = array_sum(array_column($linhas, 'subtotal'));
         $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
-        $desc = $carrinho->resumoDesconto($subtotal);
+        $subtotalHoje = $subtotal + $mensalidadeTotal;
+        $desc = $carrinho->resumoDesconto($subtotalHoje);
 
         return response()
             ->view('site.store.cart', [
                 'linhas' => $linhas,
                 'subtotal' => $subtotal,
                 'mensalidadeTotal' => $mensalidadeTotal,
+                'subtotalHoje' => $subtotalHoje,
                 'frete' => 0,
                 'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
                 'cupom' => $desc['cupom'],
@@ -270,9 +272,10 @@ class StoreController extends Controller
         $linhas = $carrinho->linhas();
         $subtotal = array_sum(array_column($linhas, 'subtotal'));
         $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
-        $desc = $carrinho->resumoDesconto($subtotal);
+        $subtotalHoje = $subtotal + $mensalidadeTotal;
+        $desc = $carrinho->resumoDesconto($subtotalHoje);
         $freteGratisEm = $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal);
-        $totalSemFrete = max(0, $subtotal - ($desc['desconto_cents'] ?? 0));
+        $totalSemFrete = max(0, $subtotalHoje - ($desc['desconto_cents'] ?? 0));
 
         return response()->json([
             'sucesso' => true,
@@ -290,9 +293,11 @@ class StoreController extends Controller
                 'subtotal_formatado' => brl($l['subtotal']),
             ], $linhas),
             'subtotal_cents' => $subtotal,
+            'subtotal_hoje_cents' => $subtotalHoje,
             'desconto_cents' => (int) ($desc['desconto_cents'] ?? 0),
             'total_sem_frete_cents' => $totalSemFrete,
             'subtotal_formatado' => brl($subtotal),
+            'subtotal_hoje_formatado' => brl($subtotalHoje),
             'frete_formatado' => 'Calcule pelo CEP',
             'frete_gratis_faltam_formatado' => $freteGratisEm > 0 ? brl($freteGratisEm) : null,
             'cupom' => $desc['cupom'] ? [
@@ -511,6 +516,7 @@ class StoreController extends Controller
 
             $aprovados = [];
             $subtotal = 0;
+            $mensalidadeTotal = 0;
 
             foreach ($itensDaSessao as $linha) {
                 $produto = $produtos->get($linha['id']);
@@ -526,10 +532,18 @@ class StoreController extends Controller
                 }
 
                 $unit = $produto->preco();
-                $aprovados[] = ['produto' => $produto, 'quantidade' => $linha['quantidade'], 'unit' => $unit];
+                $mensalidadeUnit = (int) ($produto->mensalidade_cents ?? 0);
+                $aprovados[] = [
+                    'produto' => $produto,
+                    'quantidade' => $linha['quantidade'],
+                    'unit' => $unit,
+                    'mensalidade' => $mensalidadeUnit,
+                ];
                 $subtotal += $unit * $linha['quantidade'];
+                $mensalidadeTotal += $mensalidadeUnit * $linha['quantidade'];
             }
 
+            $subtotalHoje = $subtotal + $mensalidadeTotal;
             $frete = 0;
             $transportadora = null;
 
@@ -565,12 +579,12 @@ class StoreController extends Controller
                     throw ValidationException::withMessages(['cupom' => 'O cupom aplicado não está mais disponível.']);
                 }
 
-                $validacaoCupom = $cupom->validarParaCompra($subtotal, $data['email'], $documento);
+                $validacaoCupom = $cupom->validarParaCompra($subtotalHoje, $data['email'], $documento);
                 if (! $validacaoCupom['ok']) {
                     throw ValidationException::withMessages(['cupom' => $validacaoCupom['erro']]);
                 }
 
-                $calcCupom = $cupom->calcularDesconto($subtotal);
+                $calcCupom = $cupom->calcularDesconto($subtotalHoje);
                 $descontoCents = $calcCupom['desconto_cents'];
                 if ($calcCupom['frete_gratis']) {
                     $frete = 0;
@@ -592,11 +606,12 @@ class StoreController extends Controller
                 'uf' => strtoupper($data['uf']),
                 'cep' => preg_replace('/\D/', '', (string) $data['cep']) ?: null,
                 'subtotal_cents' => $subtotal,
+                'mensalidade_total_cents' => $mensalidadeTotal,
                 'frete_cents' => $frete,
                 'desconto_cents' => $descontoCents,
                 'coupon_id' => $cupom?->id,
                 'cupom_codigo' => $cupom?->codigo,
-                'total_cents' => max(0, $subtotal - $descontoCents) + $frete,
+                'total_cents' => max(0, $subtotalHoje - $descontoCents) + $frete,
                 'pagamento' => $data['pagamento'],
                 'status' => 'pendente',
                 'notas' => $data['notas'] ?? null,
@@ -620,6 +635,7 @@ class StoreController extends Controller
                     'sku' => $produto->sku,
                     'quantidade' => $linha['quantidade'],
                     'preco_unit_cents' => $linha['unit'],
+                    'mensalidade_cents' => $linha['mensalidade'],
                     'subtotal_cents' => $linha['unit'] * $linha['quantidade'],
                 ]);
 
@@ -722,7 +738,8 @@ class StoreController extends Controller
             'Pedido de '.($pedido->nome ?: 'cliente da loja').' ('.$pedido->email.') no valor de '
                 .brl((int) $pedido->total_cents).'. Pagamento por '
                 .(Order::PAGAMENTOS[$pedido->pagamento] ?? $pedido->pagamento)
-                .', entrega em '.$pedido->cidade.'/'.$pedido->uf.'.',
+                .', entrega em '.$pedido->cidade.'/'.$pedido->uf.'.'
+                .(($pedido->mensalidade_total_cents ?? 0) > 0 ? ' (Inclui 1ª mensalidade de '.brl($pedido->mensalidade_total_cents).')' : ''),
             (string) $pedido->id,
             [
                 'pedido_id' => $pedido->id,
@@ -730,6 +747,7 @@ class StoreController extends Controller
                 'nome' => $pedido->nome,
                 'email' => $pedido->email,
                 'total' => brl((int) $pedido->total_cents),
+                'mensalidade' => ($pedido->mensalidade_total_cents ?? 0) > 0 ? brl($pedido->mensalidade_total_cents) : null,
                 'pagamento' => $pedido->pagamento,
             ],
             'pedido_novo:'.$pedido->id,
@@ -807,14 +825,16 @@ class StoreController extends Controller
     /** @return array<string, mixed> */
     private function dadosDoCheckout(array $linhas, int $subtotal): array
     {
-        $desc = Carrinho::daSessao()->resumoDesconto($subtotal);
-        $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal, 'entrega');
         $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
+        $subtotalHoje = $subtotal + $mensalidadeTotal;
+        $desc = Carrinho::daSessao()->resumoDesconto($subtotalHoje);
+        $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal, 'entrega');
 
         return [
             'linhas' => $linhas,
             'subtotal' => $subtotal,
             'mensalidadeTotal' => $mensalidadeTotal,
+            'subtotalHoje' => $subtotalHoje,
             'frete' => $frete,
             'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
             'pixChave' => Setting::get('loja_pix_chave', ''),

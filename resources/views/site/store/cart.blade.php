@@ -80,12 +80,12 @@
             </div>
         </form>
 
-        <aside class="cart-summary" data-total-sem-frete="{{ max(0, $subtotal - ($descontoCents ?? 0)) }}">
+        <aside class="cart-summary" data-total-sem-frete="{{ max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0)) }}">
             <h2>Resumo</h2>
             <div class="sum-line"><span id="cartSummaryUnitsLabel">Subtotal ({{ $totalUnidades }} {{ $totalUnidades === 1 ? 'unidade' : 'unidades' }})</span><b id="cartSubtotalDisplay">{{ brl($subtotal) }}</b></div>
             <div class="sum-line" id="cartMensalidadeRow" @if(empty($mensalidadeTotal) || $mensalidadeTotal <= 0) style="display:none" @endif>
-                <span><i class="fa-solid fa-repeat" style="color:var(--teal);margin-right:4px"></i> Mensalidade recorrente</span>
-                <b id="cartMensalidadeDisplay" style="color:var(--teal)">{{ brl($mensalidadeTotal ?? 0) }}/mês</b>
+                <span><i class="fa-solid fa-repeat" style="color:var(--teal);margin-right:4px"></i> 1ª Mensalidade antecipada</span>
+                <b id="cartMensalidadeDisplay" style="color:var(--teal)">{{ brl($mensalidadeTotal ?? 0) }}</b>
             </div>
             <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">Calcule pelo CEP</b></div>
             <div class="sum-line" id="cartCupomSummaryRow" style="color:var(--teal)" @if(empty($cupom)) hidden @endif>
@@ -96,12 +96,12 @@
                 <div>
                     <strong>Total a pagar hoje</strong>
                     @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
-                        <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal)">+ {{ brl($mensalidadeTotal) }}/mês recorrente</div>
+                        <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal)">+ Recorrência: {{ brl($mensalidadeTotal) }}/mês a partir do 2º mês</div>
                     @else
                         <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal);display:none"></div>
                     @endif
                 </div>
-                <strong id="cartTotalDisplay" style="color:var(--gold-2)">{{ brl(max(0, $subtotal - ($descontoCents ?? 0))) }}</strong>
+                <strong id="cartTotalDisplay" style="color:var(--gold-2)">{{ brl(max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0))) }}</strong>
             </div>
             <p class="sum-hint" id="cartFreteGratisHint" @if($freteGratisEm <= 0) hidden @endif>
                 <i class="fa-solid fa-gift" style="color:var(--gold)"></i>
@@ -406,11 +406,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const mensalRow = document.getElementById('cartMensalidadeRow');
         const mensalDisplay = document.getElementById('cartMensalidadeDisplay');
         const mensalHint = document.getElementById('cartTotalMensalHint');
-        if (data.mensalidade_total_cents && data.mensalidade_total_formatada) {
-            if (mensalDisplay) mensalDisplay.textContent = data.mensalidade_total_formatada;
+        if (data.mensalidade_total_cents && data.mensalidade_total_cents > 0) {
+            if (mensalDisplay) mensalDisplay.textContent = 'R$ ' + ((data.mensalidade_total_cents) / 100).toFixed(2).replace('.', ',');
             if (mensalRow) mensalRow.style.display = 'flex';
             if (mensalHint) {
-                mensalHint.textContent = '+ ' + data.mensalidade_total_formatada + ' recorrente';
+                mensalHint.textContent = '+ Recorrência: ' + data.mensalidade_total_formatada + ' a partir do 2º mês';
                 mensalHint.style.display = 'block';
             }
         } else {

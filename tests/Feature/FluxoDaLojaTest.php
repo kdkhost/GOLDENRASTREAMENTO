@@ -526,4 +526,101 @@ class FluxoDaLojaTest extends TestCase
         ]);
         $resFinalizar->assertRedirect(route('site.loja.checkout'));
     }
+
+    public function test_carrinho_e_checkout_somam_aparelho_e_primeira_mensalidade_no_total_a_pagar_hoje(): void
+    {
+        Mail::fake();
+        Setting::set('loja_livre', '1'); // Sem frete para focar no cálculo
+
+        // Cria produto com aparelho de R$ 59,90 e mensalidade de R$ 59,90
+        $produtoRastreador = Product::create([
+            'nome' => 'Rastreador Teste Com Recorrência',
+            'slug' => 'rastreador-teste-recorrencia',
+            'preco_cents' => 5990,
+            'mensalidade_cents' => 5990,
+            'ativo' => true,
+            'controle_estoque' => false,
+            'estoque' => 10,
+        ]);
+        Cache::flush();
+
+        // 1. Adiciona 1 unidade ao carrinho
+        $this->post(route('site.loja.carrinho.adicionar'), [
+            'produto' => $produtoRastreador->id,
+            'quantidade' => 1,
+            'modo' => 'definir',
+        ])->assertRedirect(route('site.loja.carrinho'));
+
+        // 2. Visita a tela do carrinho: deve somar aparelho (59,90) + 1ª mensalidade (59,90) = Total R$ 119,80
+        $resCart = $this->get(route('site.loja.carrinho'));
+        $resCart->assertOk()
+            ->assertSee('R$ 59,90') // Subtotal aparelho
+            ->assertSee('1ª Mensalidade')
+            ->assertSee('R$ 119,80') // Total a pagar hoje
+            ->assertSee('Recorrência: R$ 59,90/mês a partir do 2º mês');
+
+        // 3. Verifica resposta AJAX do resumo do carrinho
+        $resAjax = $this->postJson(route('site.loja.carrinho.atualizar'), [
+            'quantidades' => [$produtoRastreador->id => 1],
+        ]);
+        $resAjax->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'subtotal_cents' => 5990,
+                'mensalidade_total_cents' => 5990,
+                'total_sem_frete_cents' => 11980,
+                'total_formatado' => 'R$ 119,80',
+            ]);
+
+        // 4. Visita a tela do checkout
+        $resCheckout = $this->get(route('site.loja.checkout'));
+        $resCheckout->assertOk()
+            ->assertSee('1ª Mensalidade antecipada')
+            ->assertSee('R$ 119,80');
+
+        // 5. Finaliza o pedido
+        $this->post('/loja/pedido', $this->dadosCheckout())->assertRedirect();
+
+        $pedido = $this->ultimoPedido();
+        $this->assertSame(5990, (int) $pedido->subtotal_cents);
+        $this->assertSame(5990, (int) $pedido->mensalidade_total_cents);
+        $this->assertSame(11980, (int) $pedido->total_cents);
+
+        $item = $pedido->items()->where('product_id', $produtoRastreador->id)->first();
+        $this->assertNotNull($item);
+        $this->assertSame(5990, (int) $item->preco_unit_cents);
+        $this->assertSame(5990, (int) $item->mensalidade_cents);
+        $this->assertSame(5990, (int) $item->subtotal_cents);
+
+        // 6. Teste com aparelho grátis (comodato) e apenas mensalidade
+        $produtoComodato = Product::create([
+            'nome' => 'Rastreador Adesão Grátis',
+            'slug' => 'rastreador-adesao-gratis',
+            'preco_cents' => 0,
+            'mensalidade_cents' => 5990,
+            'ativo' => true,
+            'controle_estoque' => false,
+            'estoque' => 10,
+        ]);
+        Cache::flush();
+
+        $this->post(route('site.loja.carrinho.adicionar'), [
+            'produto' => $produtoComodato->id,
+            'quantidade' => 1,
+            'modo' => 'definir',
+        ])->assertRedirect(route('site.loja.carrinho'));
+
+        // No carrinho, total a pagar hoje deve ser R$ 59,90 (da 1ª mensalidade), e NUNCA R$ 0,00!
+        $resAjaxComodato = $this->postJson(route('site.loja.carrinho.atualizar'), [
+            'quantidades' => [$produtoComodato->id => 1],
+        ]);
+        $resAjaxComodato->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'subtotal_cents' => 0,
+                'mensalidade_total_cents' => 5990,
+                'total_sem_frete_cents' => 5990,
+                'total_formatado' => 'R$ 59,90',
+            ]);
+    }
 }

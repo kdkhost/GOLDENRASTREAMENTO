@@ -21,6 +21,11 @@
                 <tr>
                     <td>
                         {{ $it->nome }}
+                        @if(($it->mensalidade_cents ?? 0) > 0)
+                            <div class="small text-teal fw-semibold">
+                                <i class="fas fa-repeat me-1"></i> Mensalidade: {{ brl($it->mensalidade_cents) }}/mês
+                            </div>
+                        @endif
                         @if($it->product)
                             <div class="small text-secondary">
                                 {{ $it->product->sku ?: 'sem SKU' }}
@@ -37,7 +42,10 @@
 
         <x-admin.card title="Totais" icon="fa-calculator">
             <dl class="defs mb-0">
-                <dt>Subtotal</dt><dd>{{ brl($pedido->subtotal_cents) }}</dd>
+                <dt>Aparelhos / Adesão</dt><dd>{{ brl($pedido->subtotal_cents) }}</dd>
+                @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                    <dt>1ª Mensalidade (hoje)</dt><dd class="text-teal">{{ brl($pedido->mensalidade_total_cents) }}</dd>
+                @endif
                 @if($pedido->frete_cents)
                     <dt>Frete</dt><dd>{{ $pedido->frete_cents > 0 ? brl($pedido->frete_cents) : 'Grátis' }}</dd>
                 @endif
@@ -46,7 +54,10 @@
                 @elseif($pedido->cupom_codigo)
                     <dt>Cupom</dt><dd><span class="badge bg-success-subtle text-success">{{ $pedido->cupom_codigo }} (Frete grátis)</span></dd>
                 @endif
-                <dt>Total</dt><dd class="text-gold">{{ brl($pedido->total_cents) }}</dd>
+                <dt>Total pago hoje</dt><dd class="text-gold fw-bold">{{ brl($pedido->total_cents) }}</dd>
+                @if(($pedido->mensalidade_total_cents ?? 0) > 0)
+                    <dt>Recorrência mensal</dt><dd class="text-teal fw-semibold">{{ brl($pedido->mensalidade_total_cents) }}/mês (a partir do 2º mês)</dd>
+                @endif
             </dl>
             @if($pedido->notas)
                 <div class="border-top mt-3 pt-2">
