@@ -69,7 +69,7 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <div class="p-3 bg-light rounded border">
-                            <x-admin.switch name="permite_escolha_chip" label="Permitir que o cliente escolha a operadora do chip durante o pedido" :checked="old('permite_escolha_chip', $produto->permite_escolha_chip ?? false)" hint="Exibe o seletor de operadora na página do produto, no carrinho e no checkout." />
+                            <x-admin.switch name="permite_escolha_chip" label="Permitir que o cliente escolha a operadora do chip durante o pedido" :checked="old('permite_escolha_chip', ($produto->id ? $produto->permiteEscolhaChip() : true))" hint="Exibe o seletor de operadora na página do produto, no carrinho e no checkout." />
                         </div>
                     </div>
 

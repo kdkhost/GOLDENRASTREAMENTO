@@ -217,6 +217,21 @@ class Product extends Model
         return $resultado ?: $todas;
     }
 
+    public function permiteEscolhaChip(): bool
+    {
+        if ($this->permite_escolha_chip !== null && (bool) $this->permite_escolha_chip) {
+            return true;
+        }
+
+        $temMensalidade = ! empty($this->mensalidade_cents) && $this->mensalidade_cents > 0;
+        $ehRastreadorOuPlano = in_array((int) $this->category_id, [1, 2, 4], true)
+            || str_contains(strtolower($this->nome), 'rastreador')
+            || str_contains(strtolower($this->nome), 'plano')
+            || str_contains(strtolower($this->nome), 'chip');
+
+        return $temMensalidade || $ehRastreadorOuPlano;
+    }
+
     public function operadoraPadrao(): string
     {
         if (! empty($this->chip_padrao) && isset(static::OPERADORAS_CHIP[$this->chip_padrao])) {
@@ -320,7 +335,8 @@ class Product extends Model
                     'cobrar_primeira_mensalidade' => (bool) ($p->cobrar_primeira_mensalidade ?? true),
                     'tipo_cobranca' => $p->tipo_cobranca ?: 'mensal',
                     'chip_operadora' => $p->chip_operadora,
-                    'permite_escolha_chip' => (bool) ($p->permite_escolha_chip ?? false),
+                    'category_id' => $p->category_id,
+                    'permite_escolha_chip' => $p->permiteEscolhaChip(),
                     'operadoras_chip' => (array) ($p->operadoras_chip ?? []),
                     'precos_chip' => (array) ($p->precos_chip ?? []),
                     'operadoras_detalhes' => $p->operadorasConfiguradas(),

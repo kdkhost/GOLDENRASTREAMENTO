@@ -183,8 +183,13 @@
 
                         {{-- Escolha do Chip / Operadora --}}
                         @php
-                            $permiteChip = !empty($produto['permite_escolha_chip']);
-                            $operadoras = $produto['operadoras_detalhes'] ?? \App\Models\Product::OPERADORAS_CHIP;
+                            $ehRastreadorOuPlano = in_array((int) ($produto['category_id'] ?? 0), [1, 2, 4], true)
+                                || str_contains(strtolower($produto['nome']), 'rastreador')
+                                || str_contains(strtolower($produto['nome']), 'plano')
+                                || str_contains(strtolower($produto['nome']), 'chip')
+                                || !empty($produto['mensalidade']);
+                            $permiteChip = !empty($produto['permite_escolha_chip']) || $ehRastreadorOuPlano;
+                            $operadoras = $produto['operadoras_detalhes'] ?? \App\Models\Product::operadorasDisponiveis();
                             $chipPadrao = $produto['chip_padrao'] ?? 'algar';
                         @endphp
 
@@ -614,6 +619,18 @@ document.addEventListener('DOMContentLoaded',function(){
     if(form.querySelector('.qplus')) form.querySelector('.qplus').addEventListener('click',function(){inp.value=Math.min(teto,(parseInt(inp.value,10)||1)+1);recalc();});
   }
 
+  if(form){
+    form.querySelectorAll('input[name="operadora"]').forEach(function(radio){
+      radio.addEventListener('change', function(){
+        var val = parseInt(this.getAttribute('data-mensalidade'), 10) || 0;
+        if(isMonthly && val > 0){
+          unit = val;
+          recalc();
+        }
+      });
+    });
+  }
+
   // 1b. Adicionar ao carrinho sem refresh e sem preloader (só "Comprar agora" navega)
   var btnAddCart = form ? form.querySelector('button[name="ir"][value="carrinho"]') : null;
   if (form && btnAddCart) {
@@ -626,6 +643,8 @@ document.addEventListener('DOMContentLoaded',function(){
       var modoInput = document.getElementById('pdpModoOperacao');
       var modo = modoInput ? modoInput.value : 'somar';
       var destinoUrl = form.getAttribute('action') || '{{ route('site.loja.carrinho.adicionar', absolute: false) }}';
+      var opInput = form.querySelector('input[name="operadora"]:checked') || form.querySelector('input[name="operadora"]');
+      var opEscolhida = opInput ? opInput.value : '';
 
       fetch(destinoUrl, {
         method: 'POST',
@@ -639,7 +658,8 @@ document.addEventListener('DOMContentLoaded',function(){
           produto: {{ (int) $produto['id'] }},
           quantidade: inp ? Math.max(1, parseInt(inp.value, 10) || 1) : 1,
           modo: modo,
-          ir: 'carrinho'
+          ir: 'carrinho',
+          operadora: opEscolhida
         })
       })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
