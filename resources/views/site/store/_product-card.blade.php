@@ -24,7 +24,7 @@
                 <i class="fa-solid fa-satellite-dish"></i>
             </a>
         @endif
-        @if(!empty($p['promocao']))<span class="prod-badge">Promoção</span>@endif
+        @if(!empty($p['promocao']) && empty($p['sob_consulta']))<span class="prod-badge">Promoção</span>@endif
         @if(!empty($p['destaque']))<span class="prod-badge feat">Destaque</span>@endif
         @if($qtdNoCarrinho > 0)<span class="prod-badge in-cart"><i class="fa-solid fa-cart-shopping"></i> {{ $qtdNoCarrinho }} no carrinho</span>@endif
     </div>
@@ -35,14 +35,18 @@
                 <a href="{{ route('site.loja.produto', $p['slug']) }}">{{ $p['nome'] }}</a>
             </h3>
             <div class="prod-price">
-                @if(!empty($p['promocao']))<s>{{ brl($p['preco_cents']) }}</s>@endif
-                @if($p['preco'] > 0)
-                    <b>{{ brl($p['preco']) }}</b>
-                    @if(!empty($p['mensalidade']))<small>+ {{ brl($p['mensalidade']) }}/mês</small>@endif
-                @elseif(!empty($p['mensalidade']))
-                    <b>{{ brl($p['mensalidade']) }}/mês</b>
+                @if(!empty($p['sob_consulta']))
+                    <b>Sob consulta</b>
                 @else
-                    <b>Consulte</b>
+                    @if(!empty($p['promocao']))<s>{{ brl($p['preco_cents']) }}</s>@endif
+                    @if($p['preco'] > 0)
+                        <b>{{ brl($p['preco']) }}</b>
+                        @if(!empty($p['mensalidade']))<small>+ {{ brl($p['mensalidade']) }}/mês</small>@endif
+                    @elseif(!empty($p['mensalidade']))
+                        <b>{{ brl($p['mensalidade']) }}/mês</b>
+                    @else
+                        <b>Consulte</b>
+                    @endif
                 @endif
             </div>
         </div>
@@ -62,7 +66,11 @@
                 @endif
             </div>
 
-            @if(!empty($p['disponivel']))
+            @if(!empty($p['sob_consulta']))
+                <a href="{{ $golden['whatsapp_url'] }}?text={{ urlencode('Olá! Gostaria de consultar o valor de ' . $p['nome'] . ' na loja Golden.') }}" target="_blank" rel="noopener" class="prod-buy-btn prod-buy-wa">
+                    <i class="fa-brands fa-whatsapp"></i> Consultar
+                </a>
+            @elseif(!empty($p['disponivel']))
                 <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}" data-farol="sacola" data-detalhe="{{ $p['slug'] }}">
                     @csrf
                     <input type="hidden" name="produto" value="{{ $p['id'] }}">

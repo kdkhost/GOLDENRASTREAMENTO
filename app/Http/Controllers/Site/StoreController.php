@@ -186,6 +186,15 @@ class StoreController extends Controller
             return back()->with('error', $msgEsgotado);
         }
 
+        if (! empty($produto['sob_consulta'])) {
+            $msgConsulta = "O {$produto['nome']} está disponível sob consulta. Fale com um consultor no WhatsApp para receber uma proposta.";
+            if ($request->expectsJson()) {
+                return response()->json(['sucesso' => false, 'mensagem' => $msgConsulta], 422);
+            }
+
+            return back()->with('error', $msgConsulta);
+        }
+
         $carrinho = Carrinho::daSessao();
         $qtdPedida = max(1, (int) ($data['quantidade'] ?? 1));
         $qtdAnterior = $carrinho->quantidadeDoProduto((int) $produto['id']);

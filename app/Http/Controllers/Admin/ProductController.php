@@ -278,14 +278,8 @@ class ProductController extends Controller
         $precoPromocionalCents = $temPromocional && (float) $data['preco_promocional'] > 0 ? $this->paraCentavos($data['preco_promocional']) : null;
         $mensalidadeCents = $temMensalidade && (float) $data['mensalidade'] > 0 ? $this->paraCentavos($data['mensalidade']) : null;
 
-        if ($sobConsulta) {
-            $precoCents = 0;
-            $precoPromocionalCents = null;
-            $mensalidadeCents = null;
-        }
-
         $precosChip = [];
-        if (! $sobConsulta && $request->has('precos_chip') && is_array($request->input('precos_chip'))) {
+        if ($request->has('precos_chip') && is_array($request->input('precos_chip'))) {
             foreach ($request->input('precos_chip') as $chaveOp => $valOp) {
                 $valNorm = $this->normalizarPreco($valOp);
                 if ($valNorm !== null && $valNorm > 0) {
@@ -303,6 +297,7 @@ class ProductController extends Controller
             'preco_cents' => $precoCents,
             'preco_promocional_cents' => $precoPromocionalCents,
             'mensalidade_cents' => $mensalidadeCents,
+            'sob_consulta' => $sobConsulta,
             'cobrar_primeira_mensalidade' => $request->boolean('cobrar_primeira_mensalidade', true),
             'tipo_cobranca' => $data['tipo_cobranca'] ?? 'mensal',
             'chip_operadora' => ! empty($data['chip_operadora']) ? trim($data['chip_operadora']) : null,

@@ -792,4 +792,75 @@ class FluxoDaLojaTest extends TestCase
         // Total a pagar hoje: 100,00 (aparelho) + 49,90 (1ª mensalidade da Vivo) + frete
         $this->assertSame(10000 + 4990 + $pedido->frete_cents, (int) $pedido->total_cents);
     }
+
+    public function test_marcar_preco_sob_consulta_preserva_todos_os_valores_do_produto(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'ativo',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $this->produto), [
+                'nome' => $this->produto->nome,
+                'preco' => '299,00',
+                'preco_promocional' => '249,00',
+                'mensalidade' => '59,90',
+                'sob_consulta' => '1',
+                'precos_chip' => [
+                    'algar' => '69,90',
+                    'vivo' => '49,90',
+                ],
+                'estoque' => 10,
+                'ativo' => '1',
+            ])
+            ->assertRedirect(route('admin.catalogo.produtos.index'));
+
+        $this->produto->refresh();
+
+        $this->assertTrue((bool) $this->produto->sob_consulta);
+        $this->assertSame(29900, (int) $this->produto->preco_cents);
+        $this->assertSame(24900, (int) $this->produto->preco_promocional_cents);
+        $this->assertSame(5990, (int) $this->produto->mensalidade_cents);
+        $this->assertSame(['algar' => 6990, 'vivo' => 4990], $this->produto->precos_chip);
+
+        Cache::flush();
+
+        // Na vitrine pública deve aparecer Sob consulta e bloquear adição ao carrinho
+        $this->get(route('site.loja.produto', $this->produto->slug))
+            ->assertOk()
+            ->assertSee('Sob consulta')
+            ->assertSee('Consultar preço no WhatsApp')
+            ->assertDontSee('R$ 249,00');
+
+        $this->postJson(route('site.loja.carrinho.adicionar'), [
+            'produto' => $this->produto->id,
+            'quantidade' => 1,
+        ])->assertStatus(422)
+            ->assertJson(['sucesso' => false]);
+    }
+
+    public function test_pagina_do_produto_exibe_recursos_e_beneficios_abaixo_da_foto_e_da_galeria_extra(): void
+    {
+        $this->produto->update([
+            'recursos' => ['chip_incluso', 'app', 'bloqueio'],
+            'imagem' => 'img/home/rastreador-j16.jpg',
+            'galeria' => ['img/home/rastreador-j6.jpg'],
+        ]);
+        Cache::flush();
+
+        $res = $this->get(route('site.loja.produto', $this->produto->slug));
+        $res->assertOk()
+            ->assertSee('Recursos e Benefícios Inclusos')
+            ->assertSee('Aplicativo Celular (Android e iOS)')
+            ->assertSee('Bloqueio e Desbloqueio Remoto');
+
+        $html = $res->getContent();
+        $posGaleria = strpos($html, 'prod-thumbs-strip');
+        $posRecursos = strpos($html, 'pdpRecursosBeneficios');
+
+        $this->assertNotFalse($posGaleria);
+        $this->assertNotFalse($posRecursos);
+        $this->assertGreaterThan($posGaleria, $posRecursos);
+    }
 }

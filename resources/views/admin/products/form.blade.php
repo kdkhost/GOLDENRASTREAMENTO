@@ -59,7 +59,7 @@
                     </div>
                     <div class="col-12 col-md-4 d-flex align-items-center">
                         <div class="p-3 bg-light rounded border w-100">
-                            <x-admin.switch name="sob_consulta" label="Preço sob consulta" :checked="old('sob_consulta', false)" hint="Oculta os preços na loja e orienta o cliente a falar com um consultor via WhatsApp." />
+                            <x-admin.switch name="sob_consulta" label="Preço sob consulta" :checked="old('sob_consulta', (bool) ($produto->sob_consulta ?? false))" hint="Oculta os preços na loja e orienta o cliente a falar com um consultor via WhatsApp, sem apagar os valores cadastrados." />
                         </div>
                     </div>
                 </div>

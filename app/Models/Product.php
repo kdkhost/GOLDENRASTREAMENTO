@@ -55,7 +55,7 @@ class Product extends Model
 
     protected $fillable = [
         'category_id', 'nome', 'slug', 'sku', 'resumo', 'descricao',
-        'preco_cents', 'preco_promocional_cents', 'mensalidade_cents', 'cobrar_primeira_mensalidade',
+        'preco_cents', 'preco_promocional_cents', 'mensalidade_cents', 'sob_consulta', 'cobrar_primeira_mensalidade',
         'tipo_cobranca', 'chip_operadora', 'permite_escolha_chip', 'operadoras_chip', 'precos_chip', 'chip_padrao', 'garantia', 'anatel_homologado', 'recursos',
         'peso_gramas', 'comprimento_cm', 'largura_cm', 'altura_cm',
         'estoque', 'estoque_minimo', 'imagem', 'galeria', 'video', 'destaque', 'ativo', 'controle_estoque', 'ordem',
@@ -65,6 +65,7 @@ class Product extends Model
         'destaque' => 'boolean',
         'ativo' => 'boolean',
         'controle_estoque' => 'boolean',
+        'sob_consulta' => 'boolean',
         'cobrar_primeira_mensalidade' => 'boolean',
         'permite_escolha_chip' => 'boolean',
         'operadoras_chip' => 'array',
@@ -332,6 +333,7 @@ class Product extends Model
                     'preco' => $p->preco(),
                     'promocao' => $p->temPromocao(),
                     'mensalidade' => $p->mensalidade_cents,
+                    'sob_consulta' => (bool) ($p->sob_consulta ?? false),
                     'cobrar_primeira_mensalidade' => (bool) ($p->cobrar_primeira_mensalidade ?? true),
                     'tipo_cobranca' => $p->tipo_cobranca ?: 'mensal',
                     'chip_operadora' => $p->chip_operadora,

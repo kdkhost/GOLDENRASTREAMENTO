@@ -6,9 +6,17 @@
 @section('content')
 @php
     $todasFotos = $produto['imagens'] ?? (!empty($produto['imagem']) ? [$produto['imagem']] : []);
-    $descontoPct = (!empty($produto['promocao']) && !empty($produto['preco_cents']) && $produto['preco'] > 0 && $produto['preco_cents'] > $produto['preco'])
+    $ehSobConsulta = !empty($produto['sob_consulta']);
+    $descontoPct = (!$ehSobConsulta && !empty($produto['promocao']) && !empty($produto['preco_cents']) && $produto['preco'] > 0 && $produto['preco_cents'] > $produto['preco'])
         ? (int) round((($produto['preco_cents'] - $produto['preco']) / $produto['preco_cents']) * 100)
         : 0;
+    $dicionarioRecursos = \App\Models\Product::recursosDisponiveis();
+    $recursosLista = [];
+    foreach ((array) ($produto['recursos'] ?? []) as $chaveRec) {
+        if (is_string($chaveRec) && $chaveRec !== '') {
+            $recursosLista[] = $dicionarioRecursos[$chaveRec] ?? $chaveRec;
+        }
+    }
 @endphp
 
 <section class="pdp-hero">
@@ -27,7 +35,7 @@
             {{-- Coluna Esquerda: Galeria Sticky --}}
             <div class="pdp-gallery-col">
                 <div class="pdp-media {{ !empty($todasFotos[0]) ? 'has-zoom' : '' }}" id="pdpMediaBox">
-                    @if(!empty($produto['promocao']))
+                    @if(!$ehSobConsulta && !empty($produto['promocao']))
                         <span class="pdp-badge-offer">
                             <i class="fa-solid fa-tag"></i>
                             {{ $descontoPct > 0 ? "-{$descontoPct}% OFF" : 'Oferta Especial' }}
@@ -62,6 +70,23 @@
                                 <img src="{{ produto_foto_url($foto) }}" alt="Foto {{ $idx + 1 }}">
                             </button>
                         @endforeach
+                    </div>
+                @endif
+
+                @if(!empty($recursosLista))
+                    <div class="pdp-features-card" id="pdpRecursosBeneficios">
+                        <div class="pdp-features-head">
+                            <i class="fa-solid fa-list-check"></i>
+                            <strong>Recursos e Benefícios Inclusos</strong>
+                        </div>
+                        <ul class="pdp-features-list">
+                            @foreach($recursosLista as $rotuloRecurso)
+                                <li>
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span>{{ $rotuloRecurso }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
                     </div>
                 @endif
 
@@ -103,65 +128,84 @@
 
                 {{-- Bloco de Preço --}}
                 <div class="pdp-price-card">
-                    @if(!empty($produto['promocao']))
-                        <div class="pdp-price-old">
-                            <span>De <s>{{ brl($produto['preco_cents']) }}</s></span>
-                            @if($descontoPct > 0)
-                                <span class="pdp-save-tag">Economize {{ $descontoPct }}%</span>
-                            @endif
-                        </div>
-                    @endif
-
-                    <div class="pdp-price-main">
-                        @if($produto['preco'] > 0)
-                            <b>{{ brl($produto['preco']) }}</b>
-                        @elseif(!empty($produto['mensalidade']))
-                            <b>{{ brl($produto['mensalidade']) }}<span>/mês</span></b>
-                        @else
+                    @if($ehSobConsulta)
+                        <div class="pdp-price-main">
                             <b>Sob consulta</b>
-                        @endif
-                    </div>
-
-                    @if(!empty($produto['mensalidade']) && $produto['preco'] > 0)
-                        @php
-                            $lojaCobrar1a = \App\Models\Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
-                            $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']) && $lojaCobrar1a;
-                        @endphp
-                        <div class="pdp-monthly-note" style="display:flex;flex-direction:column;gap:4px">
-                            <div>
-                                <i class="fa-solid fa-tower-broadcast"></i>
-                                Plano / Monitoramento: <strong>{{ brl($produto['mensalidade']) }}/mês</strong>
-                            </div>
-                            <small style="color:var(--muted);font-size:.78rem">
-                                @if($cobrarHoje)
-                                    <i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> 1ª mensalidade inclusa no pedido hoje. Recorrência seguinte a partir do 2º mês.
-                                @else
-                                    <i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> 1ª mensalidade faturada após 30 dias (pós-paga). Nada de mensalidade cobrada hoje.
-                                @endif
-                            </small>
                         </div>
-                    @elseif(!empty($produto['mensalidade']) && $produto['preco'] == 0)
-                        @php
-                            $lojaCobrar1a = \App\Models\Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
-                            $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']) && $lojaCobrar1a;
-                        @endphp
-                        <div class="pdp-monthly-note" style="margin-top:6px;font-size:.82rem">
-                            @if($cobrarHoje)
-                                <span><i class="fa-solid fa-shield-halved" style="color:var(--teal)"></i> Adesão grátis: você paga apenas a 1ª mensalidade hoje ({{ brl($produto['mensalidade']) }}).</span>
+                        <div class="pdp-monthly-note" style="margin-top:6px;font-size:.84rem">
+                            <span><i class="fa-solid fa-comments" style="color:var(--gold)"></i> Valores e condições personalizados. Fale com um consultor para receber sua proposta.</span>
+                        </div>
+                    @else
+                        @if(!empty($produto['promocao']))
+                            <div class="pdp-price-old">
+                                <span>De <s>{{ brl($produto['preco_cents']) }}</s></span>
+                                @if($descontoPct > 0)
+                                    <span class="pdp-save-tag">Economize {{ $descontoPct }}%</span>
+                                @endif
+                            </div>
+                        @endif
+
+                        <div class="pdp-price-main">
+                            @if($produto['preco'] > 0)
+                                <b>{{ brl($produto['preco']) }}</b>
+                            @elseif(!empty($produto['mensalidade']))
+                                <b>{{ brl($produto['mensalidade']) }}<span>/mês</span></b>
                             @else
-                                <span><i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> Adesão grátis: 1ª mensalidade faturada somente após 30 dias de uso.</span>
+                                <b>Sob consulta</b>
                             @endif
                         </div>
-                    @endif
 
-                    <div class="pdp-pay-methods">
-                        <span><i class="fa-brands fa-pix"></i> Pix com confirmação imediata</span>
-                        <span><i class="fa-regular fa-credit-card"></i> Cartão ou Boleto</span>
-                    </div>
+                        @if(!empty($produto['mensalidade']) && $produto['preco'] > 0)
+                            @php
+                                $lojaCobrar1a = \App\Models\Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
+                                $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']) && $lojaCobrar1a;
+                            @endphp
+                            <div class="pdp-monthly-note" style="display:flex;flex-direction:column;gap:4px">
+                                <div>
+                                    <i class="fa-solid fa-tower-broadcast"></i>
+                                    Plano / Monitoramento: <strong>{{ brl($produto['mensalidade']) }}/mês</strong>
+                                </div>
+                                <small style="color:var(--muted);font-size:.78rem">
+                                    @if($cobrarHoje)
+                                        <i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> 1ª mensalidade inclusa no pedido hoje. Recorrência seguinte a partir do 2º mês.
+                                    @else
+                                        <i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> 1ª mensalidade faturada após 30 dias (pós-paga). Nada de mensalidade cobrada hoje.
+                                    @endif
+                                </small>
+                            </div>
+                        @elseif(!empty($produto['mensalidade']) && $produto['preco'] == 0)
+                            @php
+                                $lojaCobrar1a = \App\Models\Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
+                                $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']) && $lojaCobrar1a;
+                            @endphp
+                            <div class="pdp-monthly-note" style="margin-top:6px;font-size:.82rem">
+                                @if($cobrarHoje)
+                                    <span><i class="fa-solid fa-shield-halved" style="color:var(--teal)"></i> Adesão grátis: você paga apenas a 1ª mensalidade hoje ({{ brl($produto['mensalidade']) }}).</span>
+                                @else
+                                    <span><i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> Adesão grátis: 1ª mensalidade faturada somente após 30 dias de uso.</span>
+                                @endif
+                            </div>
+                        @endif
+
+                        <div class="pdp-pay-methods">
+                            <span><i class="fa-brands fa-pix"></i> Pix com confirmação imediata</span>
+                            <span><i class="fa-regular fa-credit-card"></i> Cartão ou Boleto</span>
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Caixa de Compra --}}
-                @if(!empty($produto['disponivel']))
+                @if($ehSobConsulta)
+                    <div class="pdp-unavailable-card">
+                        <div class="notice-warn" style="background:rgba(224,163,62,.12);border-color:rgba(224,163,62,.35);color:var(--ink)">
+                            <i class="fa-solid fa-headset" style="color:var(--gold-2)"></i>
+                            Este item é comercializado sob consulta. Clique abaixo para conversar diretamente com nossa equipe no WhatsApp.
+                        </div>
+                        <a href="{{ $golden['whatsapp_url'] }}?text={{ urlencode('Olá! Tenho interesse em ' . $produto['nome'] . ' e gostaria de solicitar um orçamento.') }}" target="_blank" rel="noopener" class="pdp-btn-primary" style="margin-top:12px">
+                            <i class="fa-brands fa-whatsapp"></i> Consultar preço no WhatsApp
+                        </a>
+                    </div>
+                @elseif(!empty($produto['disponivel']))
                     @php
                         $precoBase = $produto['preco'] > 0 ? $produto['preco'] : ($produto['mensalidade'] ?? 0);
                         $ehMensal = ($produto['preco'] == 0 && ($produto['mensalidade'] ?? 0) > 0);
@@ -492,6 +536,13 @@
 .prod-thumb-btn{width:76px;height:76px;border-radius:16px;background:#f3f4f6;border:2px solid transparent;padding:0;cursor:pointer;flex-shrink:0;transition:border-color .2s,transform .2s,box-shadow .2s;overflow:hidden}
 .prod-thumb-btn.active{border-color:var(--gold);box-shadow:0 4px 12px rgba(224,163,62,.28);transform:translateY(-2px)}
 .prod-thumb-btn img{width:100%;height:100%;object-fit:cover;display:block}
+
+.pdp-features-card{margin-top:18px;background:#fff;border-radius:20px;padding:18px 20px;border:1px solid rgba(15,23,42,.08);box-shadow:0 8px 24px rgba(15,23,42,.05)}
+.pdp-features-head{display:flex;align-items:center;gap:9px;font-size:.96rem;color:var(--ink);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(15,23,42,.07)}
+.pdp-features-head i{color:var(--gold-2);font-size:1.05rem}
+.pdp-features-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 14px}
+.pdp-features-list li{display:flex;align-items:flex-start;gap:8px;font-size:.86rem;line-height:1.38;color:#334155}
+.pdp-features-list li i{color:var(--teal);font-size:.9rem;margin-top:2px;flex-shrink:0}
 
 .pdp-video-wrap{margin-top:16px;background:#fff;border-radius:20px;padding:12px;border:1px solid rgba(15,23,42,.06);box-shadow:0 8px 24px rgba(15,23,42,.05)}
 .pdp-video-label{font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
