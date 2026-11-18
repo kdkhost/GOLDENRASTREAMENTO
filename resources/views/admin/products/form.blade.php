@@ -74,23 +74,37 @@
                     </div>
 
                     <div class="col-12">
-                        <label class="form-label fw-semibold mb-1"><i class="fas fa-sim-card me-1 text-golden"></i> Operadoras disponíveis para este produto</label>
-                        <p class="small text-muted mb-2">Marque as operadoras que o cliente poderá escolher (Chip Individual ou Algar Multioperadora):</p>
+                        <label class="form-label fw-semibold mb-1"><i class="fas fa-sim-card me-1 text-golden"></i> Operadoras e Valores de Cada Chip</label>
+                        <p class="small text-muted mb-2">Marque as operadoras disponíveis para este produto e defina o valor da mensalidade de cada chip (se deixar em branco, o sistema aplica o valor padrão de {{ brl($produto->mensalidade_cents ?? 5990) }}/mês):</p>
                         @php
                             $operadorasAtuais = (array) (old('operadoras_chip', $produto->operadoras_chip ?? ['algar', 'vivo', 'claro', 'tim']));
+                            $precosAtuais = (array) (old('precos_chip', $produto->precos_chip ?? []));
                             $catalogoOperadoras = $operadorasDisponiveis ?? \App\Models\Product::operadorasDisponiveis();
                         @endphp
                         <div class="row g-2 mb-2">
                             @foreach($catalogoOperadoras as $chaveOp => $op)
+                                @php
+                                    $valCentsOp = isset($precosAtuais[$chaveOp]) && is_numeric($precosAtuais[$chaveOp]) ? (int) $precosAtuais[$chaveOp] : null;
+                                @endphp
                                 <div class="col-12 col-md-6">
-                                    <div class="form-check p-2 rounded border bg-light-subtle d-flex align-items-center justify-content-between">
-                                        <div class="d-flex align-items-center">
-                                            <input class="form-check-input ms-1 me-2" type="checkbox" name="operadoras_chip[]" value="{{ $chaveOp }}" id="op_{{ $chaveOp }}" @checked(in_array($chaveOp, $operadorasAtuais, true))>
-                                            <label class="form-check-label small fw-semibold text-dark mb-0 cursor-pointer" for="op_{{ $chaveOp }}">
-                                                <i class="fas {{ $op['icone'] }} me-1 text-secondary"></i> {{ $op['rotulo'] }}
-                                            </label>
+                                    <div class="p-3 rounded border bg-light-subtle h-100 d-flex flex-column justify-content-between">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <div class="form-check mb-0 d-flex align-items-center">
+                                                <input class="form-check-input ms-1 me-2" type="checkbox" name="operadoras_chip[]" value="{{ $chaveOp }}" id="op_{{ $chaveOp }}" @checked(in_array($chaveOp, $operadorasAtuais, true))>
+                                                <label class="form-check-label small fw-bold text-dark mb-0 cursor-pointer" for="op_{{ $chaveOp }}">
+                                                    <i class="fas {{ $op['icone'] }} me-1 text-secondary"></i> {{ $op['rotulo'] }}
+                                                </label>
+                                            </div>
+                                            <span class="badge {{ $op['tipo'] === 'multioperadora' ? 'bg-warning-subtle text-warning-emphasis' : 'bg-info-subtle text-info-emphasis' }}" style="font-size:.7rem">{{ $op['destaque'] }}</span>
                                         </div>
-                                        <span class="badge {{ $op['tipo'] === 'multioperadora' ? 'bg-warning-subtle text-warning-emphasis' : 'bg-info-subtle text-info-emphasis' }}">{{ $op['destaque'] }}</span>
+                                        <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between gap-2">
+                                            <span class="small text-muted fw-semibold"><i class="fas fa-tag me-1 text-golden"></i> Valor do chip:</span>
+                                            <div class="input-group input-group-sm" style="max-width:170px">
+                                                <span class="input-group-text">R$</span>
+                                                <input type="text" name="precos_chip[{{ $chaveOp }}]" class="form-control text-end fw-semibold" placeholder="{{ $produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '.') : '59,90' }}" value="{{ $valCentsOp !== null ? number_format($valCentsOp / 100, 2, ',', '.') : '' }}">
+                                                <span class="input-group-text">/mês</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach

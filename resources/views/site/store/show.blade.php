@@ -192,25 +192,34 @@
                             <div class="pdp-chip-selector" style="margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px">
                                 <label style="display:flex;align-items:center;justify-content:space-between;font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:8px">
                                     <span><i class="fa-solid fa-sim-card" style="color:var(--gold);margin-right:6px"></i> Escolha a operadora do chip:</span>
-                                    <small style="font-weight:600;color:var(--teal);font-size:.76rem"><i class="fa-solid fa-wifi"></i> Chip M2M de telemetria</small>
+                                    <small style="font-weight:700;color:var(--teal);font-size:.76rem"><i class="fa-solid fa-circle-check"></i> Chip incluso no plano</small>
                                 </label>
-                                <div style="display:flex;flex-direction:column;gap:6px">
+                                <div style="display:flex;flex-direction:column;gap:8px">
                                     @foreach($operadoras as $chaveOp => $op)
-                                        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:#fff;border:1.5px solid {{ $chaveOp === $chipPadrao ? 'var(--gold)' : '#cbd5e1' }};border-radius:8px;cursor:pointer;transition:all .15s ease" class="pdp-chip-option">
-                                            <div style="display:flex;align-items:center;gap:8px">
-                                                <input type="radio" name="operadora" value="{{ $chaveOp }}" @checked($chaveOp === $chipPadrao) style="accent-color:var(--gold)" onchange="this.closest('.pdp-chip-selector').querySelectorAll('.pdp-chip-option').forEach(el=>el.style.borderColor='#cbd5e1');this.closest('.pdp-chip-option').style.borderColor='var(--gold)'">
+                                        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:1.5px solid {{ $chaveOp === $chipPadrao ? 'var(--gold)' : '#cbd5e1' }};border-radius:10px;cursor:pointer;transition:all .15s ease" class="pdp-chip-option">
+                                            <div style="display:flex;align-items:center;gap:10px">
+                                                <input type="radio" name="operadora" value="{{ $chaveOp }}" data-mensalidade="{{ $op['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0) }}" @checked($chaveOp === $chipPadrao) style="accent-color:var(--gold)" onchange="this.closest('.pdp-chip-selector').querySelectorAll('.pdp-chip-option').forEach(el=>el.style.borderColor='#cbd5e1');this.closest('.pdp-chip-option').style.borderColor='var(--gold)'">
                                                 <div>
-                                                    <strong style="font-size:.86rem;color:var(--ink)">{{ $op['rotulo'] }}</strong>
-                                                    <div style="font-size:.74rem;color:#64748b;line-height:1.2">{{ $op['nome'] }}</div>
+                                                    <div style="display:flex;align-items:center;gap:6px">
+                                                        <strong style="font-size:.88rem;color:var(--ink)">{{ $op['rotulo'] }}</strong>
+                                                        @if(!empty($op['destaque']))
+                                                            <span style="font-size:.68rem;font-weight:700;background:rgba(224,163,62,.15);color:var(--gold-2);padding:1px 6px;border-radius:999px;white-space:nowrap">{{ $op['destaque'] }}</span>
+                                                        @endif
+                                                    </div>
+                                                    <div style="font-size:.74rem;color:#64748b;line-height:1.2;margin-top:2px">
+                                                        <span style="color:var(--teal);font-weight:600"><i class="fa-solid fa-check"></i> Chip incluso</span> · {{ $op['nome'] }}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            @if(!empty($op['destaque']))
-                                                <span style="font-size:.7rem;font-weight:700;background:rgba(224,163,62,.15);color:var(--gold-2);padding:2px 7px;border-radius:999px;white-space:nowrap">{{ $op['destaque'] }}</span>
-                                            @else
-                                                <span style="font-size:.7rem;font-weight:600;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:4px;white-space:nowrap">Individual</span>
-                                            @endif
+                                            <div style="text-align:right">
+                                                <strong style="font-size:.92rem;color:var(--gold-2);white-space:nowrap">{{ brl($op['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0)) }}<span style="font-size:.74rem;font-weight:normal;color:#64748b">/mês</span></strong>
+                                            </div>
                                         </label>
                                     @endforeach
+                                </div>
+                                <div style="font-size:.76rem;color:var(--teal);margin-top:8px;display:flex;align-items:center;gap:6px">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span><strong>Benefício garantido:</strong> Chip de telemetria M2M incluso no plano (R$ 0,00 de adesão do chip).</span>
                                 </div>
                             </div>
                         @else

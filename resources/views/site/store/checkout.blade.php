@@ -185,6 +185,9 @@
                             <div style="font-size:.74rem;color:#fcd34d;font-weight:600;margin-top:2px">
                                 <i class="fa-solid fa-sim-card" style="font-size:.7rem"></i> Chip: {{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Algar Multioperadora') }}
                             </div>
+                            <div style="font-size:.72rem;color:#4ade80;font-weight:600">
+                                <i class="fa-solid fa-circle-check"></i> Benefício: Chip incluso no plano (R$ 0,00)
+                            </div>
                         @endif
                         @if(!empty($l['mensalidade']))
                             <div style="font-size:.76rem;color:#4ade80;font-weight:500">

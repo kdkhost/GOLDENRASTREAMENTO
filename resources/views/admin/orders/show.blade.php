@@ -25,9 +25,12 @@
                             @php
                                 $infoChip = \App\Models\Product::OPERADORAS_CHIP[$it->chip_operadora] ?? null;
                             @endphp
-                            <div class="mt-1">
+                            <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
                                 <span class="badge bg-warning-subtle text-dark border border-warning" style="font-size:.76rem">
                                     <i class="fas fa-sim-card text-warning me-1"></i> Chip: <strong>{{ $infoChip['nome'] ?? ucfirst($it->chip_operadora) }}</strong>
+                                </span>
+                                <span class="badge bg-success-subtle text-success border border-success" style="font-size:.76rem">
+                                    <i class="fas fa-check-circle text-success me-1"></i> Benefício: Chip incluso no pedido
                                 </span>
                             </div>
                         @endif

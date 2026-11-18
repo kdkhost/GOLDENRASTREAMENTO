@@ -587,9 +587,9 @@ class StoreController extends Controller
                 }
 
                 $unit = $produto->preco();
-                $mensalidadeUnit = (int) ($produto->mensalidade_cents ?? 0);
-                $cobrarHoje = (bool) ($produto->cobrar_primeira_mensalidade ?? true) && $padraoLojaCobrar;
                 $operadoraEscolhida = $linha['operadora_codigo'] ?? ($produto->chip_padrao ?? 'algar');
+                $mensalidadeUnit = $produto->mensalidadeParaOperadora($operadoraEscolhida);
+                $cobrarHoje = (bool) ($produto->cobrar_primeira_mensalidade ?? true) && $padraoLojaCobrar;
 
                 $aprovados[] = [
                     'produto' => $produto,

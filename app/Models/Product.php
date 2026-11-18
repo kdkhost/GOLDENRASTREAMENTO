@@ -56,7 +56,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'nome', 'slug', 'sku', 'resumo', 'descricao',
         'preco_cents', 'preco_promocional_cents', 'mensalidade_cents', 'cobrar_primeira_mensalidade',
-        'tipo_cobranca', 'chip_operadora', 'permite_escolha_chip', 'operadoras_chip', 'chip_padrao', 'garantia', 'anatel_homologado', 'recursos',
+        'tipo_cobranca', 'chip_operadora', 'permite_escolha_chip', 'operadoras_chip', 'precos_chip', 'chip_padrao', 'garantia', 'anatel_homologado', 'recursos',
         'peso_gramas', 'comprimento_cm', 'largura_cm', 'altura_cm',
         'estoque', 'estoque_minimo', 'imagem', 'galeria', 'video', 'destaque', 'ativo', 'controle_estoque', 'ordem',
     ];
@@ -68,6 +68,7 @@ class Product extends Model
         'cobrar_primeira_mensalidade' => 'boolean',
         'permite_escolha_chip' => 'boolean',
         'operadoras_chip' => 'array',
+        'precos_chip' => 'array',
         'preco_cents' => 'integer',
         'preco_promocional_cents' => 'integer',
         'mensalidade_cents' => 'integer',
@@ -159,6 +160,7 @@ class Product extends Model
     public static function recursosDisponiveis(): array
     {
         return [
+            'chip_incluso' => 'Chip M2M Incluso no Benefício do Plano (Sem Custo de Ativação do Chip)',
             'app' => 'Aplicativo Celular (Android e iOS)',
             'web' => 'Plataforma Web para Computador',
             'bloqueio' => 'Bloqueio e Desbloqueio Remoto',
@@ -179,22 +181,40 @@ class Product extends Model
         return static::OPERADORAS_CHIP;
     }
 
+    public function mensalidadeParaOperadora(?string $operadora = null): int
+    {
+        $op = $operadora ?: $this->operadoraPadrao();
+        $precos = (array) ($this->precos_chip ?? []);
+        if (isset($precos[$op]) && is_numeric($precos[$op]) && (int) $precos[$op] > 0) {
+            return (int) $precos[$op];
+        }
+
+        return (int) ($this->mensalidade_cents ?? 0);
+    }
+
     public function operadorasConfiguradas(): array
     {
         $selecionadas = (array) ($this->operadoras_chip ?? []);
-        if (empty($selecionadas)) {
-            return static::OPERADORAS_CHIP;
-        }
-
         $todas = static::OPERADORAS_CHIP;
-        $filtradas = [];
-        foreach ($selecionadas as $chave) {
+        $chaves = ! empty($selecionadas) ? $selecionadas : array_keys($todas);
+        $precos = (array) ($this->precos_chip ?? []);
+        $mensalidadeBase = (int) ($this->mensalidade_cents ?? 0);
+
+        $resultado = [];
+        foreach ($chaves as $chave) {
             if (isset($todas[$chave])) {
-                $filtradas[$chave] = $todas[$chave];
+                $dados = $todas[$chave];
+                $precoOp = (isset($precos[$chave]) && is_numeric($precos[$chave]) && (int) $precos[$chave] > 0)
+                    ? (int) $precos[$chave]
+                    : $mensalidadeBase;
+                $dados['mensalidade_cents'] = $precoOp;
+                $dados['mensalidade_formatada'] = $precoOp > 0 ? brl($precoOp).'/mês' : null;
+                $dados['chip_incluso'] = true;
+                $resultado[$chave] = $dados;
             }
         }
 
-        return $filtradas ?: static::OPERADORAS_CHIP;
+        return $resultado ?: $todas;
     }
 
     public function operadoraPadrao(): string
@@ -302,6 +322,7 @@ class Product extends Model
                     'chip_operadora' => $p->chip_operadora,
                     'permite_escolha_chip' => (bool) ($p->permite_escolha_chip ?? false),
                     'operadoras_chip' => (array) ($p->operadoras_chip ?? []),
+                    'precos_chip' => (array) ($p->precos_chip ?? []),
                     'operadoras_detalhes' => $p->operadorasConfiguradas(),
                     'chip_padrao' => $p->operadoraPadrao(),
                     'garantia' => $p->garantia,

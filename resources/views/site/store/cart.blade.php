@@ -56,7 +56,7 @@
                                 <label for="cartOp_{{ $l['id'] }}" style="font-size:.76rem;font-weight:600;color:var(--slate)"><i class="fa-solid fa-sim-card" style="color:var(--gold)"></i> Chip:</label>
                                 <select id="cartOp_{{ $l['id'] }}" data-cart-operadora="{{ $l['id'] }}" style="padding:2px 6px;font-size:.78rem;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:var(--ink);cursor:pointer">
                                     @foreach($l['operadoras_detalhes'] as $cop => $dop)
-                                        <option value="{{ $cop }}" @selected(($l['operadora_codigo'] ?? '') === $cop)>{{ $dop['rotulo'] }} ({{ $dop['tipo'] === 'multioperadora' ? 'Multi' : 'Individual' }})</option>
+                                        <option value="{{ $cop }}" @selected(($l['operadora_codigo'] ?? '') === $cop)>{{ $dop['rotulo'] }} ({{ brl($dop['mensalidade_cents'] ?? $l['mensalidade']) }}/mês)</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -65,6 +65,10 @@
                                 <i class="fa-solid fa-sim-card" style="color:var(--gold)"></i> Chip: <strong>{{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Algar Multioperadora') }}</strong>
                             </div>
                         @endif
+
+                        <div style="font-size:.74rem;color:var(--teal);font-weight:600;margin-top:2px">
+                            <i class="fa-solid fa-circle-check"></i> Benefício: Chip incluso no plano (R$ 0,00 de adesão do chip)
+                        </div>
 
                         @if(!empty($l['mensalidade']))
                             <div style="font-size:.82rem;font-weight:600;color:var(--gold-2);margin-top:2px">

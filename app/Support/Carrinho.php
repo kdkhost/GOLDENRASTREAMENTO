@@ -245,12 +245,14 @@ class Carrinho
 
             $operadoraPadrao = $produto['chip_padrao'] ?? 'algar';
             $operadoraEscolhida = $this->operadoraDoProduto((int) $id, $operadoraPadrao);
-            $dadosOperadora = Product::OPERADORAS_CHIP[$operadoraEscolhida] ?? (Product::OPERADORAS_CHIP[$operadoraPadrao] ?? null);
+            $dadosOperadora = $produto['operadoras_detalhes'][$operadoraEscolhida] ?? ($produto['operadoras_detalhes'][$operadoraPadrao] ?? (Product::OPERADORAS_CHIP[$operadoraEscolhida] ?? null));
             $cobrarMensalidadeHoje = (bool) ($produto['cobrar_primeira_mensalidade'] ?? true) && $padraoLojaCobrar;
+            $mensalidadeItem = (int) ($dadosOperadora['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0));
 
             $linhas[] = $produto + [
                 'quantidade' => $quantidade,
                 'subtotal' => $produto['preco'] * $quantidade,
+                'mensalidade' => $mensalidadeItem,
                 'cobrar_mensalidade_hoje' => $cobrarMensalidadeHoje,
                 'operadora_codigo' => $operadoraEscolhida,
                 'operadora_nome' => $dadosOperadora['nome'] ?? ($produto['chip_operadora'] ?: 'Algar Multioperadora'),
@@ -258,6 +260,8 @@ class Carrinho
                 'operadora_tipo' => $dadosOperadora['tipo'] ?? 'multioperadora',
                 'operadora_icone' => $dadosOperadora['icone'] ?? 'fa-sim-card',
                 'operadora_destaque' => $dadosOperadora['destaque'] ?? null,
+                'chip_incluso' => true,
+                'beneficio_chip' => 'Chip M2M incluso no benefício do plano',
             ];
         }
 

@@ -192,6 +192,8 @@ class ProductController extends Controller
             'permite_escolha_chip' => ['nullable', 'boolean'],
             'operadoras_chip' => ['nullable', 'array'],
             'operadoras_chip.*' => ['string', 'in:algar,vivo,claro,tim'],
+            'precos_chip' => ['nullable', 'array'],
+            'precos_chip.*' => ['nullable'],
             'chip_padrao' => ['nullable', 'string', 'in:algar,vivo,claro,tim'],
             'garantia' => ['nullable', 'string', 'max:64'],
             'anatel_homologado' => ['nullable', 'string', 'max:64'],
@@ -282,6 +284,16 @@ class ProductController extends Controller
             $mensalidadeCents = null;
         }
 
+        $precosChip = [];
+        if (! $sobConsulta && $request->has('precos_chip') && is_array($request->input('precos_chip'))) {
+            foreach ($request->input('precos_chip') as $chaveOp => $valOp) {
+                $valNorm = $this->normalizarPreco($valOp);
+                if ($valNorm !== null && $valNorm > 0) {
+                    $precosChip[$chaveOp] = $this->paraCentavos($valNorm);
+                }
+            }
+        }
+
         return [
             'nome' => trim($data['nome']),
             'category_id' => $data['category_id'] ?: null,
@@ -296,6 +308,7 @@ class ProductController extends Controller
             'chip_operadora' => ! empty($data['chip_operadora']) ? trim($data['chip_operadora']) : null,
             'permite_escolha_chip' => $request->boolean('permite_escolha_chip'),
             'operadoras_chip' => ! empty($data['operadoras_chip']) ? array_values($data['operadoras_chip']) : null,
+            'precos_chip' => ! empty($precosChip) ? $precosChip : null,
             'chip_padrao' => ! empty($data['chip_padrao']) ? $data['chip_padrao'] : 'algar',
             'garantia' => ! empty($data['garantia']) ? trim($data['garantia']) : null,
             'anatel_homologado' => ! empty($data['anatel_homologado']) ? trim($data['anatel_homologado']) : null,

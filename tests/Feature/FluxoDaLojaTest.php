@@ -748,4 +748,48 @@ class FluxoDaLojaTest extends TestCase
         // O total do pedido deve ser apenas o aparelho (199,00) + frete, sem somar os 59,90 hoje
         $this->assertSame(19900 + $pedido->frete_cents, (int) $pedido->total_cents);
     }
+
+    public function test_cada_chip_possui_seu_proprio_valor_e_aparece_incluso_no_beneficio(): void
+    {
+        Mail::fake();
+
+        $this->produto->update([
+            'preco_cents' => 10000,
+            'mensalidade_cents' => 5990, // Padrão 59,90
+            'permite_escolha_chip' => true,
+            'operadoras_chip' => ['algar', 'vivo'],
+            'precos_chip' => [
+                'algar' => 5990, // Algar custa 59,90/mês
+                'vivo' => 4990,  // Vivo individual custa 49,90/mês
+            ],
+            'chip_padrao' => 'algar',
+            'cobrar_primeira_mensalidade' => true,
+        ]);
+        Cache::flush();
+
+        // Adiciona ao carrinho escolhendo Vivo (49,90)
+        $this->post('/loja/carrinho', [
+            'produto' => $this->produto->id,
+            'quantidade' => 1,
+            'operadora' => 'vivo',
+        ])->assertRedirect(route('site.loja.carrinho'));
+
+        $res = $this->get('/loja/carrinho');
+        $res->assertOk();
+        // O benefício do chip deve estar explícito
+        $res->assertSee('Benefício: Chip incluso');
+        // A mensalidade cobrada para a Vivo deve ser 49,90
+        $res->assertSee('49,90');
+
+        // Finaliza o pedido
+        $this->post('/loja/pedido', $this->dadosCheckout());
+        $pedido = $this->ultimoPedido();
+        $item = $pedido->items()->first();
+
+        // Verifica se gravou o valor de 49,90 no item para o chip Vivo
+        $this->assertSame('vivo', $item->chip_operadora);
+        $this->assertSame(4990, (int) $item->mensalidade_cents);
+        // Total a pagar hoje: 100,00 (aparelho) + 49,90 (1ª mensalidade da Vivo) + frete
+        $this->assertSame(10000 + 4990 + $pedido->frete_cents, (int) $pedido->total_cents);
+    }
 }
