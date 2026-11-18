@@ -206,14 +206,17 @@
             @if($freteGratisEm > 0)
             <p class="sum-hint"><i class="fa-solid fa-gift"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
             @endif
-            <div class="sum-line total">
+            <div class="sum-line total" style="align-items:flex-start">
                 <div>
                     <span>Total a pagar hoje</span>
                     @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
-                        <div style="font-size:.75rem;font-weight:normal;color:#67e8f9">+ Recorrência: {{ brl($mensalidadeTotal) }}/mês a partir do 2º mês</div>
+                        <div style="font-size:.76rem;font-weight:normal;color:#67e8f9;line-height:1.35;margin-top:3px">
+                            <div>+ Recorrência: {{ brl($mensalidadeTotal) }}/mês</div>
+                            <div style="opacity:.85;font-size:.72rem">a partir do 2º mês</div>
+                        </div>
                     @endif
                 </div>
-                <b id="sumTotal">{{ brl(max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0)) + $frete) }}</b>
+                <b id="sumTotal" style="font-size:1.6rem;font-weight:800;color:var(--gold);white-space:nowrap;margin-left:12px;line-height:1.1">{{ brl(max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0)) + $frete) }}</b>
             </div>
 
             <div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)">
@@ -262,8 +265,8 @@ legend{font-family:"Poppins",sans-serif;font-size:.95rem;font-weight:700;padding
 .checkout-summary li{display:flex;justify-content:space-between;gap:12px;font-size:.88rem;padding:6px 0;color:#c4ccd4}
 .checkout-summary li b{color:#fff}
 .sum-line{display:flex;justify-content:space-between;padding:8px 0;font-size:.92rem;border-top:1px dashed rgba(255,255,255,.16)}
-.sum-line.total{font-size:1.15rem;border-top:1px solid rgba(255,255,255,.3);margin-top:6px;padding-top:12px}
-.sum-line.total b{color:var(--gold)}
+.sum-line.total{font-size:1.05rem;border-top:1px solid rgba(255,255,255,.3);margin-top:6px;padding-top:12px;display:flex;justify-content:space-between;align-items:flex-start}
+.sum-line.total b{color:var(--gold);font-size:1.6rem;font-weight:800;white-space:nowrap}
 .sum-hint{font-size:.8rem;color:#c4ccd4;margin:8px 0 0}
 .sum-hint i{color:var(--gold)}
 .retira-note i{color:var(--gold)}

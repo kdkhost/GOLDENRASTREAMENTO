@@ -557,7 +557,8 @@ class FluxoDaLojaTest extends TestCase
             ->assertSee('R$ 59,90') // Subtotal aparelho
             ->assertSee('1ª Mensalidade')
             ->assertSee('R$ 119,80') // Total a pagar hoje
-            ->assertSee('Recorrência: R$ 59,90/mês a partir do 2º mês');
+            ->assertSee('Recorrência: R$ 59,90/mês')
+            ->assertSee('a partir do 2º mês');
 
         // 3. Verifica resposta AJAX do resumo do carrinho
         $resAjax = $this->postJson(route('site.loja.carrinho.atualizar'), [

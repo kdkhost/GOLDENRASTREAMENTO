@@ -91,14 +91,17 @@
                     @elseif($pedido->cupom_codigo)
                     <div class="order-line"><span>Cupom ({{ $pedido->cupom_codigo }})</span><b>Frete grátis</b></div>
                     @endif
-                    <div class="order-line total">
+                    <div class="order-line total" style="align-items:flex-start">
                         <div>
                             <span>Total a pagar hoje</span>
                             @if(($pedido->mensalidade_total_cents ?? 0) > 0)
-                                <div style="font-size:.75rem;font-weight:normal;color:var(--teal)">+ Recorrência: {{ brl($pedido->mensalidade_total_cents) }}/mês a partir do 2º mês</div>
+                                <div style="font-size:.76rem;font-weight:normal;color:var(--teal);line-height:1.35;margin-top:3px">
+                                    <div>+ Recorrência: {{ brl($pedido->mensalidade_total_cents) }}/mês</div>
+                                    <div style="opacity:.85;font-size:.72rem">a partir do 2º mês</div>
+                                </div>
                             @endif
                         </div>
-                        <b>{{ brl($pedido->total_cents) }}</b>
+                        <b style="font-size:1.6rem;font-weight:800;color:var(--gold-2);white-space:nowrap;margin-left:12px;line-height:1.1">{{ brl($pedido->total_cents) }}</b>
                     </div>
                 </div>
 

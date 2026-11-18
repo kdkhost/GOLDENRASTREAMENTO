@@ -92,16 +92,19 @@
                 <span id="cartCupomSummaryLabel">@if(!empty($cupom))Cupom <b>{{ $cupom->codigo }}</b> ({{ $cupom->rotuloDesconto() }})@endif</span>
                 <b id="cartCupomSummaryVal">@if(!empty($cupom)){{ ($descontoCents ?? 0) > 0 ? '− '.brl($descontoCents) : 'Frete grátis' }}@endif</b>
             </div>
-            <div class="sum-line" style="font-size:1.06rem;border-bottom:0;padding-top:10px">
+            <div class="sum-line" style="font-size:1.06rem;border-bottom:0;padding-top:12px;align-items:flex-start">
                 <div>
                     <strong>Total a pagar hoje</strong>
                     @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
-                        <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal)">+ Recorrência: {{ brl($mensalidadeTotal) }}/mês a partir do 2º mês</div>
+                        <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal);line-height:1.35;margin-top:3px">
+                            <div>+ Recorrência: {{ brl($mensalidadeTotal) }}/mês</div>
+                            <div style="opacity:.85;font-size:.73rem">a partir do 2º mês</div>
+                        </div>
                     @else
                         <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal);display:none"></div>
                     @endif
                 </div>
-                <strong id="cartTotalDisplay" style="color:var(--gold-2)">{{ brl(max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0))) }}</strong>
+                <strong id="cartTotalDisplay" style="color:var(--gold-2);font-size:1.6rem;font-weight:800;white-space:nowrap;margin-left:12px;line-height:1.1">{{ brl(max(0, ($subtotalHoje ?? ($subtotal + ($mensalidadeTotal ?? 0))) - ($descontoCents ?? 0))) }}</strong>
             </div>
             <p class="sum-hint" id="cartFreteGratisHint" @if($freteGratisEm <= 0) hidden @endif>
                 <i class="fa-solid fa-gift" style="color:var(--gold)"></i>
@@ -410,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (mensalDisplay) mensalDisplay.textContent = 'R$ ' + ((data.mensalidade_total_cents) / 100).toFixed(2).replace('.', ',');
             if (mensalRow) mensalRow.style.display = 'flex';
             if (mensalHint) {
-                mensalHint.textContent = '+ Recorrência: ' + data.mensalidade_total_formatada + ' a partir do 2º mês';
+                mensalHint.innerHTML = '<div>+ Recorrência: ' + data.mensalidade_total_formatada + '</div><div style="opacity:.85;font-size:.73rem">a partir do 2º mês</div>';
                 mensalHint.style.display = 'block';
             }
         } else {
