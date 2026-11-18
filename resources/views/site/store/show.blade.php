@@ -265,9 +265,15 @@
                                         </label>
                                     @endforeach
                                 </div>
-                                <div style="font-size:.76rem;color:var(--teal);margin-top:8px;display:flex;align-items:center;gap:6px">
-                                    <i class="fa-solid fa-circle-check"></i>
-                                    <span><strong>Benefício garantido:</strong> {{ !empty($produto['beneficio_chip_texto']) ? $produto['beneficio_chip_texto'] : 'Chip de telemetria M2M incluso no plano (R$ 0,00 de adesão do chip).' }}</span>
+                                @php
+                                    $textoBeneficio = !empty($produto['beneficio_chip_texto'])
+                                        ? $produto['beneficio_chip_texto']
+                                        : 'Chip de telemetria M2M incluso no plano (R$ 0,00 de adesão do chip).';
+                                    $textoBeneficioHtml = preg_replace('/\s*(\([^)]+\)\.?)\s*$/u', '<br>$1', e($textoBeneficio));
+                                @endphp
+                                <div style="font-size:.76rem;color:var(--teal);margin-top:8px;display:flex;align-items:flex-start;gap:6px;line-height:1.4">
+                                    <i class="fa-solid fa-circle-check" style="margin-top:2px;flex-shrink:0"></i>
+                                    <span><strong>Benefício garantido:</strong> {!! $textoBeneficioHtml !!}</span>
                                 </div>
                             </div>
                         @else
