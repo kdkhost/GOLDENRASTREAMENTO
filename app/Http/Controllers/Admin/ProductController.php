@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\StockMovement;
 use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
@@ -56,6 +57,7 @@ class ProductController extends Controller
                 'destaque' => false,
                 'ordem' => 0,
                 'tipo_cobranca' => 'mensal',
+                'cobrar_primeira_mensalidade' => Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1',
             ]),
             'categorias' => Category::orderBy('nome')->get(),
             'recursosDisponiveis' => Product::recursosDisponiveis(),
@@ -299,7 +301,7 @@ class ProductController extends Controller
             'preco_promocional_cents' => $precoPromocionalCents,
             'mensalidade_cents' => $mensalidadeCents,
             'sob_consulta' => $sobConsulta,
-            'cobrar_primeira_mensalidade' => $request->boolean('cobrar_primeira_mensalidade', true),
+            'cobrar_primeira_mensalidade' => $request->boolean('cobrar_primeira_mensalidade'),
             'tipo_cobranca' => $data['tipo_cobranca'] ?? 'mensal',
             'chip_operadora' => ! empty($data['chip_operadora']) ? trim($data['chip_operadora']) : null,
             'beneficio_chip_texto' => ! empty($data['beneficio_chip_texto']) ? trim($data['beneficio_chip_texto']) : null,

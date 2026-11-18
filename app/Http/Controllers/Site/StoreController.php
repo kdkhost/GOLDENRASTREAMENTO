@@ -571,7 +571,6 @@ class StoreController extends Controller
         }
 
         $pedido = DB::transaction(function () use ($request, $data, $documento, $carrinho, $itensDaSessao) {
-            $padraoLojaCobrar = Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
             $produtos = Product::whereIn('id', array_column($itensDaSessao, 'id'))
                 ->where('ativo', true)
                 ->get()
@@ -604,7 +603,7 @@ class StoreController extends Controller
                 $unit = $produto->preco();
                 $operadoraEscolhida = $linha['operadora_codigo'] ?? ($produto->chip_padrao ?? 'algar');
                 $mensalidadeUnit = $produto->mensalidadeParaOperadora($operadoraEscolhida);
-                $cobrarHoje = (bool) ($produto->cobrar_primeira_mensalidade ?? true) && $padraoLojaCobrar;
+                $cobrarHoje = (bool) ($produto->cobrar_primeira_mensalidade ?? false);
 
                 $aprovados[] = [
                     'produto' => $produto,

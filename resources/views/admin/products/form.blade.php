@@ -54,7 +54,7 @@
                     <x-admin.field name="mensalidade" type="text" inputmode="decimal" label="Valor de Recorrência (Mensalidade por veículo/mês)" :value="$produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Valor mensal cobrado por veículo para acesso à plataforma e dados móveis." />
                     <div class="col-12 col-md-4 d-flex align-items-center">
                         <div class="p-3 bg-light rounded border w-100">
-                            <x-admin.switch name="cobrar_primeira_mensalidade" label="Cobrar 1ª mensalidade hoje" :checked="old('cobrar_primeira_mensalidade', $produto->cobrar_primeira_mensalidade ?? true)" hint="Se ativo, soma a 1ª mensalidade no ato da compra. Se desmarcado, fatura após 30 dias." />
+                            <x-admin.switch name="cobrar_primeira_mensalidade" label="Cobrar 1ª mensalidade do chip no ato da compra" :checked="old('cobrar_primeira_mensalidade', (bool) ($produto->cobrar_primeira_mensalidade ?? true))" hint="Se ativo, soma o valor do produto + a 1ª mensalidade do chip escolhido hoje. Se desmarcado, a mensalidade é cobrada no próximo mês (recorrente)." />
                         </div>
                     </div>
                     <div class="col-12 col-md-4 d-flex align-items-center">

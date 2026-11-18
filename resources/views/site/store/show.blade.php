@@ -126,6 +126,21 @@
                     <p class="pdp-lead">{{ $produto['resumo'] }}</p>
                 @endif
 
+                @php
+                    $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']);
+                    $ehRastreadorOuPlano = in_array((int) ($produto['category_id'] ?? 0), [1, 2, 4], true)
+                        || str_contains(strtolower($produto['nome']), 'rastreador')
+                        || str_contains(strtolower($produto['nome']), 'plano')
+                        || str_contains(strtolower($produto['nome']), 'chip')
+                        || !empty($produto['mensalidade']);
+                    $permiteChip = !empty($produto['permite_escolha_chip']) || $ehRastreadorOuPlano;
+                    $operadoras = $produto['operadoras_detalhes'] ?? \App\Models\Product::operadorasDisponiveis();
+                    $chipPadrao = $produto['chip_padrao'] ?? 'algar';
+                    $mensalidadeChipInicial = (int) ($operadoras[$chipPadrao]['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0));
+                    $precoItemUnit = (int) ($produto['preco'] ?? 0);
+                    $precoHojeUnit = $precoItemUnit + ($cobrarHoje ? $mensalidadeChipInicial : 0);
+                @endphp
+
                 {{-- Bloco de Preço --}}
                 <div class="pdp-price-card">
                     @if($ehSobConsulta)
@@ -146,43 +161,35 @@
                         @endif
 
                         <div class="pdp-price-main">
-                            @if($produto['preco'] > 0)
-                                <b>{{ brl($produto['preco']) }}</b>
-                            @elseif(!empty($produto['mensalidade']))
-                                <b>{{ brl($produto['mensalidade']) }}<span>/mês</span></b>
+                            @if($precoItemUnit > 0)
+                                <b>{{ brl($precoItemUnit) }}</b>
+                            @elseif($mensalidadeChipInicial > 0)
+                                <b id="pdpPriceMainMonthly">{{ brl($mensalidadeChipInicial) }}<span>/mês</span></b>
                             @else
                                 <b>Sob consulta</b>
                             @endif
                         </div>
 
-                        @if(!empty($produto['mensalidade']) && $produto['preco'] > 0)
-                            @php
-                                $lojaCobrar1a = \App\Models\Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
-                                $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']) && $lojaCobrar1a;
-                            @endphp
+                        @if($mensalidadeChipInicial > 0 && $precoItemUnit > 0)
                             <div class="pdp-monthly-note" style="display:flex;flex-direction:column;gap:4px">
                                 <div>
                                     <i class="fa-solid fa-tower-broadcast"></i>
-                                    Plano / Monitoramento: <strong>{{ brl($produto['mensalidade']) }}/mês</strong>
+                                    Mensalidade do chip: <strong id="pdpPriceMonthlyVal">{{ brl($mensalidadeChipInicial) }}/mês</strong>
                                 </div>
                                 <small style="color:var(--muted);font-size:.78rem">
                                     @if($cobrarHoje)
-                                        <i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> 1ª mensalidade inclusa no pedido hoje. Recorrência seguinte a partir do 2º mês.
+                                        <i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> 1ª mensalidade somada no ato da compra. Recorrência seguinte a partir do 2º mês.
                                     @else
-                                        <i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> 1ª mensalidade faturada após 30 dias (pós-paga). Nada de mensalidade cobrada hoje.
+                                        <i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> Mensalidade cobrada apenas no próximo mês (recorrente). Hoje você paga somente o item.
                                     @endif
                                 </small>
                             </div>
-                        @elseif(!empty($produto['mensalidade']) && $produto['preco'] == 0)
-                            @php
-                                $lojaCobrar1a = \App\Models\Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
-                                $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']) && $lojaCobrar1a;
-                            @endphp
+                        @elseif($mensalidadeChipInicial > 0 && $precoItemUnit === 0)
                             <div class="pdp-monthly-note" style="margin-top:6px;font-size:.82rem">
                                 @if($cobrarHoje)
-                                    <span><i class="fa-solid fa-shield-halved" style="color:var(--teal)"></i> Adesão grátis: você paga apenas a 1ª mensalidade hoje ({{ brl($produto['mensalidade']) }}).</span>
+                                    <span><i class="fa-solid fa-shield-halved" style="color:var(--teal)"></i> Adesão grátis: 1ª mensalidade do chip cobrada hoje (<strong id="pdpPriceMonthlyVal">{{ brl($mensalidadeChipInicial) }}</strong>).</span>
                                 @else
-                                    <span><i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> Adesão grátis: 1ª mensalidade faturada somente após 30 dias de uso.</span>
+                                    <span><i class="fa-solid fa-calendar-check" style="color:var(--gold)"></i> Adesão grátis: mensalidade do chip (<strong id="pdpPriceMonthlyVal">{{ brl($mensalidadeChipInicial) }}/mês</strong>) cobrada apenas no próximo mês (recorrente).</span>
                                 @endif
                             </div>
                         @endif
@@ -212,12 +219,10 @@
                     </div>
                 @elseif(!empty($produto['disponivel']))
                     @php
-                        $precoBase = $produto['preco'] > 0 ? $produto['preco'] : ($produto['mensalidade'] ?? 0);
-                        $ehMensal = ($produto['preco'] == 0 && ($produto['mensalidade'] ?? 0) > 0);
                         $noCarrinho = (int) ($quantidadeNoCarrinho ?? 0);
                         $qtdInicial = $noCarrinho > 0 ? $noCarrinho : 1;
                     @endphp
-                    <form method="POST" action="{{ route('site.loja.carrinho.adicionar', absolute: false) }}" class="pdp-buy-card buy-form" data-unit="{{ $precoBase }}" data-monthly="{{ $ehMensal ? '1' : '0' }}" data-farol="sacola" data-detalhe="{{ $produto['slug'] }}">
+                    <form method="POST" action="{{ route('site.loja.carrinho.adicionar', absolute: false) }}" class="pdp-buy-card buy-form" data-preco="{{ $precoItemUnit }}" data-mensalidade="{{ $mensalidadeChipInicial }}" data-cobrar-hoje="{{ $cobrarHoje ? '1' : '0' }}" data-farol="sacola" data-detalhe="{{ $produto['slug'] }}">
                         @csrf
                         <input type="hidden" name="produto" value="{{ $produto['id'] }}">
                         <input type="hidden" name="modo" id="pdpModoOperacao" value="{{ $noCarrinho > 0 ? 'definir' : 'somar' }}">
@@ -231,17 +236,6 @@
                         </div>
 
                         {{-- Escolha do Chip / Operadora --}}
-                        @php
-                            $ehRastreadorOuPlano = in_array((int) ($produto['category_id'] ?? 0), [1, 2, 4], true)
-                                || str_contains(strtolower($produto['nome']), 'rastreador')
-                                || str_contains(strtolower($produto['nome']), 'plano')
-                                || str_contains(strtolower($produto['nome']), 'chip')
-                                || !empty($produto['mensalidade']);
-                            $permiteChip = !empty($produto['permite_escolha_chip']) || $ehRastreadorOuPlano;
-                            $operadoras = $produto['operadoras_detalhes'] ?? \App\Models\Product::operadorasDisponiveis();
-                            $chipPadrao = $produto['chip_padrao'] ?? 'algar';
-                        @endphp
-
                         @if($permiteChip && count($operadoras) > 0)
                             <div class="pdp-chip-selector" style="margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px">
                                 <label style="display:flex;align-items:center;justify-content:space-between;font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:8px">
@@ -288,8 +282,15 @@
                                 <button type="button" class="qplus" aria-label="Aumentar">+</button>
                             </div>
                             <div class="qty-total-wrap">
-                                <small>Subtotal</small>
-                                <strong class="line-total">{{ brl($precoBase * $qtdInicial) }}{{ $ehMensal ? '/mês' : '' }}</strong>
+                                <small>Total a pagar hoje</small>
+                                <strong class="line-total">{{ brl($precoHojeUnit * $qtdInicial) }}</strong>
+                                @if($mensalidadeChipInicial > 0)
+                                    <span id="pdpLineMensalHint" style="display:block;font-size:.73rem;color:var(--teal);font-weight:600;line-height:1.25;margin-top:2px">
+                                        + {{ brl($mensalidadeChipInicial * $qtdInicial) }}/mês {{ $cobrarHoje ? '(a partir do 2º mês)' : '(próximo mês recorrente)' }}
+                                    </span>
+                                @else
+                                    <span id="pdpLineMensalHint" style="display:none;font-size:.73rem;color:var(--teal);font-weight:600;line-height:1.25;margin-top:2px"></span>
+                                @endif
                             </div>
                         </div>
 
@@ -660,18 +661,37 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
-  // 1. Quantidade e Subtotal
+  // 1. Quantidade, Operadora do Chip e Total Hoje
   var form=document.querySelector('.buy-form');
-  var unit=form ? (parseInt(form.dataset.unit,10)||0) : 0;
-  var isMonthly=form ? (form.dataset.monthly === '1') : false;
+  var precoItem=form ? (parseInt(form.dataset.preco,10)||0) : 0;
+  var mensalidadeChip=form ? (parseInt(form.dataset.mensalidade,10)||0) : 0;
+  var cobrarHoje=form ? (form.dataset.cobrarHoje === '1') : false;
   var inp=form ? form.querySelector('input[name="quantidade"]') : null;
   var total=form ? form.querySelector('.line-total') : null;
+  var mensalHint=document.getElementById('pdpLineMensalHint');
+  var priceMonthlyVal=document.getElementById('pdpPriceMonthlyVal');
+  var priceMainMonthly=document.getElementById('pdpPriceMainMonthly');
   var teto=inp ? (parseInt(inp.max,10)||999) : 999;
   function fmt(c){return 'R$ '+(c/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
   function recalc(){
     if(!inp||!total)return;
     var q=Math.min(teto,Math.max(1,parseInt(inp.value,10)||1));
-    total.textContent=fmt(unit*q) + (isMonthly ? '/mês' : '');
+    var unitHoje = precoItem + (cobrarHoje ? mensalidadeChip : 0);
+    total.textContent = fmt(unitHoje * q);
+    if(mensalHint){
+      if(mensalidadeChip > 0){
+        mensalHint.textContent = '+ ' + fmt(mensalidadeChip * q) + '/mês ' + (cobrarHoje ? '(a partir do 2º mês)' : '(próximo mês recorrente)');
+        mensalHint.style.display = 'block';
+      } else {
+        mensalHint.style.display = 'none';
+      }
+    }
+    if(priceMonthlyVal && mensalidadeChip > 0){
+      priceMonthlyVal.textContent = fmt(mensalidadeChip) + (precoItem > 0 || !cobrarHoje ? '/mês' : '');
+    }
+    if(priceMainMonthly && mensalidadeChip > 0){
+      priceMainMonthly.innerHTML = fmt(mensalidadeChip) + '<span>/mês</span>';
+    }
   }
   if(inp){
     inp.addEventListener('input',recalc);
@@ -682,11 +702,8 @@ document.addEventListener('DOMContentLoaded',function(){
   if(form){
     form.querySelectorAll('input[name="operadora"]').forEach(function(radio){
       radio.addEventListener('change', function(){
-        var val = parseInt(this.getAttribute('data-mensalidade'), 10) || 0;
-        if(isMonthly && val > 0){
-          unit = val;
-          recalc();
-        }
+        mensalidadeChip = parseInt(this.getAttribute('data-mensalidade'), 10) || 0;
+        recalc();
       });
     });
   }

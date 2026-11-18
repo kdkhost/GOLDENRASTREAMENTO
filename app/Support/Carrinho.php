@@ -227,7 +227,6 @@ class Carrinho
     {
         $catalogo = collect(Product::catalogoParaSite())->keyBy('id');
         $linhas = [];
-        $padraoLojaCobrar = Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1';
 
         foreach ($this->itens as $id => $quantidade) {
             $produto = $catalogo->get((int) $id);
@@ -246,10 +245,11 @@ class Carrinho
             $operadoraPadrao = $produto['chip_padrao'] ?? 'algar';
             $operadoraEscolhida = $this->operadoraDoProduto((int) $id, $operadoraPadrao);
             $dadosOperadora = $produto['operadoras_detalhes'][$operadoraEscolhida] ?? ($produto['operadoras_detalhes'][$operadoraPadrao] ?? (Product::OPERADORAS_CHIP[$operadoraEscolhida] ?? null));
-            $cobrarMensalidadeHoje = (bool) ($produto['cobrar_primeira_mensalidade'] ?? true) && $padraoLojaCobrar;
+            $cobrarMensalidadeHoje = (bool) ($produto['cobrar_primeira_mensalidade'] ?? false);
             $mensalidadeItem = (int) ($dadosOperadora['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0));
 
-            $linhas[] = $produto + [
+            $linhas[] = [
+                ...$produto,
                 'quantidade' => $quantidade,
                 'subtotal' => $produto['preco'] * $quantidade,
                 'mensalidade' => $mensalidadeItem,

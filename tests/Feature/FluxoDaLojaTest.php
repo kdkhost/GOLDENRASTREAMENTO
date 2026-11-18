@@ -875,4 +875,88 @@ class FluxoDaLojaTest extends TestCase
         $this->assertNotFalse($posRecursos);
         $this->assertGreaterThan($posGaleria, $posRecursos);
     }
+
+    public function test_admin_pode_desmarcar_e_marcar_cobranca_da_primeira_mensalidade_do_chip_por_produto(): void
+    {
+        Mail::fake();
+        Setting::set('loja_livre', '1');
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'ativo',
+        ]);
+
+        // 1. Admin DESMARCA cobrar_primeira_mensalidade (checkbox não enviado no POST) e define valor do item + chips
+        $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $this->produto), [
+                'nome' => $this->produto->nome,
+                'preco' => '200,00',
+                'mensalidade' => '59,90',
+                'permite_escolha_chip' => '1',
+                'operadoras_chip' => ['algar', 'vivo'],
+                'precos_chip' => [
+                    'algar' => '69,90',
+                    'vivo' => '49,90',
+                ],
+                'chip_padrao' => 'algar',
+                'estoque' => 10,
+                'ativo' => '1',
+            ])
+            ->assertRedirect(route('admin.catalogo.produtos.index'));
+
+        $this->produto->refresh();
+        $this->assertFalse((bool) $this->produto->cobrar_primeira_mensalidade);
+        Cache::flush();
+
+        // Cliente escolhe Vivo (49,90) — como está desmarcado, hoje paga apenas o item (200,00)
+        $this->post('/loja/carrinho', [
+            'produto' => $this->produto->id,
+            'quantidade' => 1,
+            'operadora' => 'vivo',
+        ])->assertRedirect(route('site.loja.carrinho'));
+
+        $this->postJson(route('site.loja.carrinho.atualizar'), [
+            'quantidades' => [$this->produto->id => 1],
+        ])->assertOk()
+            ->assertJson([
+                'subtotal_cents' => 20000,
+                'mensalidade_total_cents' => 4990,
+                'mensalidade_cobrada_hoje_cents' => 0,
+                'total_sem_frete_cents' => 20000,
+            ]);
+
+        // 2. Agora o admin MARCA cobrar_primeira_mensalidade = 1
+        $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $this->produto), [
+                'nome' => $this->produto->nome,
+                'preco' => '200,00',
+                'mensalidade' => '59,90',
+                'cobrar_primeira_mensalidade' => '1',
+                'permite_escolha_chip' => '1',
+                'operadoras_chip' => ['algar', 'vivo'],
+                'precos_chip' => [
+                    'algar' => '69,90',
+                    'vivo' => '49,90',
+                ],
+                'chip_padrao' => 'algar',
+                'estoque' => 10,
+                'ativo' => '1',
+            ])
+            ->assertRedirect(route('admin.catalogo.produtos.index'));
+
+        $this->produto->refresh();
+        $this->assertTrue((bool) $this->produto->cobrar_primeira_mensalidade);
+        Cache::flush();
+
+        // Com o chip Vivo (49,90) escolhido, hoje soma 200,00 + 49,90 = 249,90!
+        $this->postJson(route('site.loja.carrinho.atualizar'), [
+            'quantidades' => [$this->produto->id => 1],
+        ])->assertOk()
+            ->assertJson([
+                'subtotal_cents' => 20000,
+                'mensalidade_total_cents' => 4990,
+                'mensalidade_cobrada_hoje_cents' => 4990,
+                'total_sem_frete_cents' => 24990,
+            ]);
+    }
 }
