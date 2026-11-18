@@ -234,15 +234,32 @@ class ProductController extends Controller
 
         $sobConsulta = $request->boolean('sob_consulta');
 
+        $temPreco = isset($data['preco']) && $data['preco'] !== null && $data['preco'] !== '';
+        $temPromocional = isset($data['preco_promocional']) && $data['preco_promocional'] !== null && $data['preco_promocional'] !== '';
+        $temMensalidade = isset($data['mensalidade']) && $data['mensalidade'] !== null && $data['mensalidade'] !== '';
+
+        $precoCents = $temPreco ? $this->paraCentavos($data['preco']) : 0;
+        $precoPromocionalCents = $temPromocional && (float) $data['preco_promocional'] > 0 ? $this->paraCentavos($data['preco_promocional']) : null;
+        $mensalidadeCents = $temMensalidade && (float) $data['mensalidade'] > 0 ? $this->paraCentavos($data['mensalidade']) : null;
+
+        if ($sobConsulta && ! $temPreco && ! $temMensalidade) {
+            $precoCents = 0;
+            $precoPromocionalCents = null;
+            $mensalidadeCents = null;
+        } elseif ($sobConsulta && ! $temPreco) {
+            $precoCents = 0;
+            $precoPromocionalCents = null;
+        }
+
         return [
             'nome' => trim($data['nome']),
             'category_id' => $data['category_id'] ?: null,
             'sku' => ! empty($data['sku']) ? trim($data['sku']) : null,
             'resumo' => ! empty($data['resumo']) ? trim($data['resumo']) : null,
             'descricao' => $data['descricao'] ?? null,
-            'preco_cents' => $sobConsulta ? 0 : (isset($data['preco']) && $data['preco'] !== null && $data['preco'] !== '' ? $this->paraCentavos($data['preco']) : 0),
-            'preco_promocional_cents' => ! $sobConsulta && isset($data['preco_promocional']) && $data['preco_promocional'] > 0 ? $this->paraCentavos($data['preco_promocional']) : null,
-            'mensalidade_cents' => ! $sobConsulta && isset($data['mensalidade']) && $data['mensalidade'] > 0 ? $this->paraCentavos($data['mensalidade']) : null,
+            'preco_cents' => $precoCents,
+            'preco_promocional_cents' => $precoPromocionalCents,
+            'mensalidade_cents' => $mensalidadeCents,
             'estoque' => isset($data['estoque']) ? (int) $data['estoque'] : 0,
             'estoque_minimo' => isset($data['estoque_minimo']) ? (int) $data['estoque_minimo'] : 0,
             'ordem' => isset($data['ordem']) ? (int) $data['ordem'] : 0,

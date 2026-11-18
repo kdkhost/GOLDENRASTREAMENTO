@@ -35,14 +35,14 @@
                 </div>
             </x-admin.card>
 
-            <x-admin.card title="Preços (em reais)" icon="fa-tag" class="mt-3">
+            <x-admin.card title="Preços e Mensalidades" icon="fa-tag" class="mt-3">
                 <div class="row g-3">
-                    <x-admin.field name="preco" type="number" label="Preço à vista" :value="$produto->preco_cents ? $produto->preco_cents / 100 : null" col="col-4" step="0.01" min="0" :opcional="true" placeholder="0,00" />
-                    <x-admin.field name="preco_promocional" type="number" label="Preço promocional" :value="$produto->preco_promocional_cents ? $produto->preco_promocional_cents / 100 : null" col="col-4" step="0.01" min="0" :opcional="true" />
-                    <x-admin.field name="mensalidade" type="number" label="Mensalidade" :value="$produto->mensalidade_cents ? $produto->mensalidade_cents / 100 : null" col="col-4" step="0.01" min="0" :opcional="true" />
+                    <x-admin.field name="preco" type="text" inputmode="decimal" label="Preço à vista (Equipamento / Adesão)" :value="$produto->preco_cents ? number_format($produto->preco_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Deixe em branco para planos apenas mensais." />
+                    <x-admin.field name="preco_promocional" type="text" inputmode="decimal" label="Preço promocional à vista" :value="$produto->preco_promocional_cents ? number_format($produto->preco_promocional_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" />
+                    <x-admin.field name="mensalidade" type="text" inputmode="decimal" label="Mensalidade por veículo" :value="$produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Valor mensal recorrente do monitoramento." />
                 </div>
                 <div class="mt-3 pt-2 border-top">
-                    <x-admin.switch name="sob_consulta" label="Preço sob consulta (ocultar valores)" :checked="old('sob_consulta', $editando && (int) $produto->preco_cents === 0 && !(int) $produto->mensalidade_cents)" hint="Deixe Preço à vista em branco para planos apenas mensais, ou ative esta opção para exibir 'Consulte' na loja." />
+                    <x-admin.switch name="sob_consulta" label="Preço sob consulta (ocultar valores na loja)" :checked="old('sob_consulta', $editando && (int) $produto->preco_cents === 0 && !(int) $produto->mensalidade_cents)" hint="Marque esta opção apenas para ocultar os valores e exibir 'Consulte' na loja virtual." />
                 </div>
             </x-admin.card>
         </div>

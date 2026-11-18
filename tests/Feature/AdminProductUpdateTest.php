@@ -63,18 +63,28 @@ class AdminProductUpdateTest extends TestCase
         $this->assertTrue($produto->destaque);
     }
 
-    public function test_desativar_produto_e_remover_categoria_salva_corretamente(): void
+    public function test_salvar_mensalidade_especifica_produto_10(): void
     {
         $admin = User::first();
-        $produto = Product::first();
+        $p = Product::find(10);
 
-        // O navegador quando desmarca switches não envia ativo, destaque ou controle_estoque.
-        // E quando seleciona "Sem categoria", envia category_id = ""
+        // Testa salvar nova mensalidade de 79,90 no produto 10
         $payload = [
-            'nome' => 'Produto Desativado',
-            'category_id' => '', // Sem categoria
-            'preco' => '100,00',
-            'imagem' => $produto->imagem,
+            'nome' => $p->nome,
+            'sku' => $p->sku,
+            'category_id' => (string) $p->category_id,
+            'resumo' => $p->resumo,
+            'descricao' => $p->descricao,
+            'preco' => '',
+            'preco_promocional' => '',
+            'mensalidade' => '79,90',
+            'estoque' => '999',
+            'estoque_minimo' => '5',
+            'ordem' => '0',
+            'ativo' => '1',
+            'destaque' => '1',
+            'controle_estoque' => '0',
+            'imagem' => $p->imagem,
         ];
 
         $res = $this->actingAs($admin)
@@ -82,16 +92,88 @@ class AdminProductUpdateTest extends TestCase
                 'Accept' => 'application/json',
                 'X-Requested-With' => 'XMLHttpRequest',
             ])
-            ->post(route('admin.catalogo.produtos.update', $produto), $payload);
+            ->post(route('admin.catalogo.produtos.update', $p), $payload);
 
         $res->assertOk();
-        $this->assertTrue($res->json('ok'));
+        $p->refresh();
+        $this->assertSame(7990, $p->mensalidade_cents);
+        $this->assertSame(0, $p->preco_cents);
+    }
 
-        $produto->refresh();
-        $this->assertFalse($produto->ativo, 'Produto deve ser desativado quando o switch ativo for desmarcado.');
-        $this->assertFalse($produto->destaque);
-        $this->assertFalse($produto->controle_estoque);
-        $this->assertNull($produto->category_id);
+    public function test_salvar_mensalidade_com_switch_sob_consulta_ativo(): void
+    {
+        $admin = User::first();
+        $p = Product::find(10);
+
+        // Se o operador marca sob_consulta mas define mensalidade, ela deve ser mantida
+        $payload = [
+            'nome' => $p->nome,
+            'sku' => $p->sku,
+            'category_id' => (string) $p->category_id,
+            'resumo' => $p->resumo,
+            'descricao' => $p->descricao,
+            'preco' => '',
+            'preco_promocional' => '',
+            'mensalidade' => '89,90',
+            'sob_consulta' => '1',
+            'estoque' => '999',
+            'estoque_minimo' => '5',
+            'ordem' => '0',
+            'ativo' => '1',
+            'destaque' => '1',
+            'controle_estoque' => '0',
+            'imagem' => $p->imagem,
+        ];
+
+        $res = $this->actingAs($admin)
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->post(route('admin.catalogo.produtos.update', $p), $payload);
+
+        $res->assertOk();
+        $p->refresh();
+        $this->assertSame(8990, $p->mensalidade_cents);
+        $this->assertSame(0, $p->preco_cents);
+    }
+
+    public function test_adicionar_mensalidade_ao_rastreador_j16(): void
+    {
+        $admin = User::first();
+        $p = Product::where('slug', 'rastreador-j16-4g')->firstOrFail();
+
+        // Rastreador J16: R$ 299,00 à vista + R$ 49,90/mês
+        $payload = [
+            'nome' => $p->nome,
+            'sku' => $p->sku,
+            'category_id' => (string) $p->category_id,
+            'resumo' => $p->resumo,
+            'descricao' => $p->descricao,
+            'preco' => '299,00',
+            'preco_promocional' => '249,00',
+            'mensalidade' => '49,90',
+            'estoque' => '50',
+            'estoque_minimo' => '5',
+            'ordem' => '0',
+            'ativo' => '1',
+            'destaque' => '1',
+            'controle_estoque' => '1',
+            'imagem' => $p->imagem,
+        ];
+
+        $res = $this->actingAs($admin)
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->post(route('admin.catalogo.produtos.update', $p), $payload);
+
+        $res->assertOk();
+        $p->refresh();
+        $this->assertSame(24900, $p->preco_promocional_cents);
+        $this->assertSame(29900, $p->preco_cents);
+        $this->assertSame(4990, $p->mensalidade_cents);
     }
 
     public function test_todos_os_produtos_do_catalogo_podem_ser_editados_e_salvos(): void

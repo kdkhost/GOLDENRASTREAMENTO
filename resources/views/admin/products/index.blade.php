@@ -39,7 +39,17 @@
                 </div>
             </td>
             <td class="small">{{ $p->category?->nome ?: '—' }}</td>
-            <td class="text-end small">{{ brl($p->preco()) }}@if($p->mensalidade_cents)<div class="text-secondary">+{{ brl($p->mensalidade_cents) }}/mês</div>@endif</td>
+            <td class="text-end small">
+                @if($p->preco() > 0)
+                    <b>{{ brl($p->preco()) }}</b>
+                    @if($p->mensalidade_cents)<div class="text-secondary">+{{ brl($p->mensalidade_cents) }}/mês</div>@endif
+                @elseif($p->mensalidade_cents)
+                    <b class="text-warning-emphasis">{{ brl($p->mensalidade_cents) }}/mês</b>
+                    <div class="text-secondary" style="font-size:.78rem">Sem adesão</div>
+                @else
+                    <span class="text-secondary">Sob consulta</span>
+                @endif
+            </td>
             <td class="text-center">
                 @php $estado = $p->estadoEstoque(); @endphp
                 <x-admin.status :rotulo="$estado === 'livre' ? 'livre' : $p->estoque" :tom="tom_por_status('estoque', $estado)" />
