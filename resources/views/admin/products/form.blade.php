@@ -2,12 +2,14 @@
 @php $editando = $produto->exists; @endphp
 @section('title', $editando ? 'Editar produto' : 'Novo produto')
 @section('page_title', $editando ? 'Editar: '.$produto->nome : 'Novo produto')
-@section('page_description', 'O que for preenchido aqui é o que o cliente vê na loja virtual.')
+@section('page_description', 'Configure preços de venda, mensalidade por veículo, conectividade, recursos e fotos do produto.')
 
 @section('page_actions')
 @if($editando)
     <a href="{{ route('admin.catalogo.produtos.estoque.show', $produto) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-boxes-stacked me-1"></i> Movimentar estoque</a>
+    <a href="{{ route('site.loja.produto', $produto->slug) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-info" title="Ver produto na loja virtual"><i class="fas fa-external-link me-1"></i> Ver na loja</a>
 @endif
+<button type="submit" form="formProduto" class="btn btn-sm btn-golden shadow-sm"><i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}</button>
 <a href="{{ route('admin.catalogo.produtos.index') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar</a>
 @endsection
 
@@ -22,46 +24,97 @@
         </ul>
     </div>
 @endif
-<form method="POST" action="{{ $editando ? route('admin.catalogo.produtos.update', $produto) : route('admin.catalogo.produtos.store') }}">
+
+<form id="formProduto" method="POST" action="{{ $editando ? route('admin.catalogo.produtos.update', $produto) : route('admin.catalogo.produtos.store') }}">
     @csrf
     <div class="row g-3">
         <div class="col-lg-8">
-            <x-admin.card title="Apresentação" icon="fa-box">
+            <x-admin.card title="Apresentação do Produto" icon="fa-box">
                 <div class="row g-3">
-                    <x-admin.field name="nome" label="Nome" :value="$produto->nome" col="col-12 col-md-8" :required="true" maxlength="190" />
-                    <x-admin.field name="sku" label="SKU / código" :value="$produto->sku" col="col-12 col-md-4" maxlength="64" :opcional="true" />
-                    <x-admin.field name="resumo" label="Resumo (aparece no card da loja)" :value="$produto->resumo" maxlength="255" :opcional="true" hint="Uma frase curta dizendo para quem é o produto." />
-                    <x-admin.field name="descricao" type="textarea" label="Descrição completa" :value="$produto->descricao" rows="7" :opcional="true" />
+                    <x-admin.field name="nome" label="Nome do produto ou plano" :value="$produto->nome" col="col-12 col-md-8" :required="true" maxlength="190" placeholder="Ex.: Rastreador Veicular J16 4G ou Plano Frota" />
+                    <x-admin.field name="sku" label="SKU / Código" :value="$produto->sku" col="col-12 col-md-4" maxlength="64" :opcional="true" placeholder="Ex.: J16-4G-VIVO" />
+                    <x-admin.field name="resumo" label="Resumo rápido (aparece no card da vitrine)" :value="$produto->resumo" maxlength="255" :opcional="true" hint="Uma frase clara resumindo para quem é o produto." placeholder="Ex.: Rastreamento 24h com bloqueio pelo celular e chip M2M incluso." />
+                    <x-admin.field name="descricao" type="textarea" label="Descrição detalhada" :value="$produto->descricao" rows="6" :opcional="true" hint="Explique o funcionamento, o que acompanha, diferenciais e compatibilidade veicular." />
                 </div>
             </x-admin.card>
 
-            <x-admin.card title="Preços e Mensalidades" icon="fa-tag" class="mt-3">
+            <x-admin.card title="Preços, Cobrança e Mensalidades" icon="fa-tag" class="mt-3">
                 <div class="row g-3">
-                    <x-admin.field name="preco" type="text" inputmode="decimal" label="Preço à vista (Equipamento / Adesão)" :value="$produto->preco_cents ? number_format($produto->preco_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Deixe em branco para planos apenas mensais." />
-                    <x-admin.field name="preco_promocional" type="text" inputmode="decimal" label="Preço promocional à vista" :value="$produto->preco_promocional_cents ? number_format($produto->preco_promocional_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" />
-                    <x-admin.field name="mensalidade" type="text" inputmode="decimal" label="Mensalidade por veículo" :value="$produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Valor mensal recorrente do monitoramento." />
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">Tipo de Cobrança</label>
+                        <select name="tipo_cobranca" class="form-select">
+                            <option value="mensal" @selected(old('tipo_cobranca', $produto->tipo_cobranca ?? 'mensal') === 'mensal')>Plano Mensal (Mensalidade recorrente)</option>
+                            <option value="unico" @selected(old('tipo_cobranca', $produto->tipo_cobranca) === 'unico')>Venda Única (Apenas Equipamento/Acessório)</option>
+                            <option value="combo" @selected(old('tipo_cobranca', $produto->tipo_cobranca) === 'combo')>Combo (Adesão/Equipamento + Mensalidade)</option>
+                        </select>
+                        <small class="form-text text-muted">Define como o produto é apresentado e cobrado do cliente.</small>
+                    </div>
+                    <x-admin.field name="preco" type="text" inputmode="decimal" label="Preço à vista (Equipamento / Taxa de Adesão)" :value="$produto->preco_cents ? number_format($produto->preco_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Deixe em branco ou 0 para planos com adesão grátis." />
+                    <x-admin.field name="preco_promocional" type="text" inputmode="decimal" label="Preço promocional à vista" :value="$produto->preco_promocional_cents ? number_format($produto->preco_promocional_cents / 100, 2, ',', '') : ''" col="col-12 col-md-4" :opcional="true" placeholder="0,00" hint="Se preenchido, risca o preço de tabela." />
+                    <x-admin.field name="mensalidade" type="text" inputmode="decimal" label="Mensalidade por veículo (Recorrente)" :value="$produto->mensalidade_cents ? number_format($produto->mensalidade_cents / 100, 2, ',', '') : ''" col="col-12 col-md-6" :opcional="true" placeholder="0,00" hint="Valor mensal cobrado por veículo para acesso à plataforma e dados móveis." />
+                    <div class="col-12 col-md-6 d-flex align-items-center">
+                        <div class="p-3 bg-light rounded border w-100">
+                            <x-admin.switch name="sob_consulta" label="Preço sob consulta" :checked="old('sob_consulta', $editando && (int) $produto->preco_cents === 0 && !(int) $produto->mensalidade_cents)" hint="Oculta os preços na loja e orienta o cliente a falar com um consultor via WhatsApp." />
+                        </div>
+                    </div>
                 </div>
-                <div class="mt-3 pt-2 border-top">
-                    <x-admin.switch name="sob_consulta" label="Preço sob consulta (ocultar valores na loja)" :checked="old('sob_consulta', $editando && (int) $produto->preco_cents === 0 && !(int) $produto->mensalidade_cents)" hint="Marque esta opção apenas para ocultar os valores e exibir 'Consulte' na loja virtual." />
+            </x-admin.card>
+
+            <x-admin.card title="Rastreamento, Chip M2M e Recursos" icon="fa-tower-cell" class="mt-3">
+                <div class="row g-3">
+                    <x-admin.field name="chip_operadora" label="Chip M2M / Conectividade" :value="$produto->chip_operadora" col="col-12 col-md-4" :opcional="true" placeholder="Ex.: Multi-operadora 4G (Vivo/Claro/TIM/Algar)" hint="Operadora ou tipo de chip incluso." />
+                    <x-admin.field name="garantia" label="Garantia do Equipamento" :value="$produto->garantia" col="col-12 col-md-4" :opcional="true" placeholder="Ex.: Vitalícia no plano ou 12 meses" hint="Garantia oferecida ao cliente." />
+                    <x-admin.field name="anatel_homologado" label="Homologação Anatel" :value="$produto->anatel_homologado" col="col-12 col-md-4" :opcional="true" placeholder="Ex.: Homologado Anatel" hint="Selo de conformidade técnica." />
+
+                    <div class="col-12 mt-3 pt-3 border-top">
+                        <label class="form-label fw-semibold mb-2"><i class="fas fa-list-check me-1 text-golden"></i> Recursos e Benefícios Inclusos</label>
+                        <p class="small text-muted mb-3">Marque os recursos que acompanham este rastreador ou plano de monitoramento:</p>
+                        @php
+                            $recursosAtuais = (array) (old('recursos', $produto->recursos ?? []));
+                            $catalogoRecursos = $recursosDisponiveis ?? \App\Models\Product::recursosDisponiveis();
+                        @endphp
+                        <div class="row g-2">
+                            @foreach($catalogoRecursos as $chave => $rotulo)
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check p-2 rounded border bg-light-subtle d-flex align-items-center">
+                                        <input class="form-check-input ms-1 me-2" type="checkbox" name="recursos[]" value="{{ $chave }}" id="rec_{{ $chave }}" @checked(in_array($chave, $recursosAtuais, true))>
+                                        <label class="form-check-label small fw-semibold text-dark mb-0 cursor-pointer" for="rec_{{ $chave }}">
+                                            {{ $rotulo }}
+                                        </label>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </x-admin.card>
+
+            <x-admin.card title="Dimensões e Embalagem (Frete Correios / Melhor Envio)" icon="fa-truck-fast" class="mt-3">
+                <p class="small text-muted mb-3">Dimensões do pacote para cálculo de frete no carrinho. Se deixar em branco, o sistema aplica os padrões gerais da loja.</p>
+                <div class="row g-3">
+                    <x-admin.field name="peso_gramas" type="number" label="Peso (gramas)" :value="$produto->peso_gramas" col="col-6 col-md-3" :opcional="true" min="1" max="100000" placeholder="Ex.: 250" hint="250g = 0,25 kg" />
+                    <x-admin.field name="comprimento_cm" type="number" label="Comprimento (cm)" :value="$produto->comprimento_cm" col="col-6 col-md-3" :opcional="true" min="1" max="300" placeholder="Ex.: 18" />
+                    <x-admin.field name="largura_cm" type="number" label="Largura (cm)" :value="$produto->largura_cm" col="col-6 col-md-3" :opcional="true" min="1" max="300" placeholder="Ex.: 14" />
+                    <x-admin.field name="altura_cm" type="number" label="Altura (cm)" :value="$produto->altura_cm" col="col-6 col-md-3" :opcional="true" min="1" max="300" placeholder="Ex.: 6" />
                 </div>
             </x-admin.card>
         </div>
 
         <div class="col-lg-4">
-            <x-admin.card title="Publicação" icon="fa-store">
+            <x-admin.card title="Publicação e Categoria" icon="fa-store">
                 <div class="row g-3">
                     <x-admin.field name="category_id" type="select" label="Categoria" :value="$produto->category_id" :options="$categorias->pluck('nome', 'id')->all()" empty="Sem categoria" />
                     <x-admin.field name="ordem" type="number" label="Ordem de exibição" :value="$produto->ordem ?? 0" col="col-6" min="0" hint="Menor aparece primeiro." />
                     <div class="col-6 d-flex flex-column justify-content-end pb-2">
-                        <x-admin.switch name="ativo" label="Ativo (visível na loja)" :checked="$produto->ativo ?? true" />
+                        <x-admin.switch name="ativo" label="Ativo na vitrine" :checked="$produto->ativo ?? true" />
                         <x-admin.switch name="destaque" label="Destaque na vitrine" :checked="$produto->destaque ?? false" col="col-12" />
                     </div>
                 </div>
                 <div class="border-top mt-3 pt-3">
-                    <x-admin.switch name="controle_estoque" label="Controlar estoque" :checked="$produto->controle_estoque ?? true" hint="Com controle ligado, a loja bloqueia a venda quando o saldo zera." />
+                    <x-admin.switch name="controle_estoque" label="Controlar estoque" :checked="$produto->controle_estoque ?? true" hint="Com controle ativo, a venda bloqueia quando o estoque zera. Para planos, deixe desmarcado." />
                     <div class="row g-3 mt-1">
-                        <x-admin.field name="estoque" type="number" label="Estoque" :value="$produto->estoque ?? 0" col="col-6" min="0" />
-                        <x-admin.field name="estoque_minimo" type="number" label="Mínimo" :value="$produto->estoque_minimo ?? 0" col="col-6" min="0" />
+                        <x-admin.field name="estoque" type="number" label="Estoque disponível" :value="$produto->estoque ?? 0" col="col-6" min="0" />
+                        <x-admin.field name="estoque_minimo" type="number" label="Estoque mínimo" :value="$produto->estoque_minimo ?? 0" col="col-6" min="0" />
                     </div>
                 </div>
             </x-admin.card>
@@ -74,7 +127,7 @@
                 @endphp
                 @if($editando && count($previewFotos) > 0)
                     <div class="mb-3">
-                        <div class="small fw-semibold text-secondary mb-2">Imagens atuais ({{ count($previewFotos) }})</div>
+                        <div class="small fw-semibold text-secondary mb-2">Fotos atuais publicadas ({{ count($previewFotos) }})</div>
                         <div class="d-flex flex-wrap gap-2">
                             @foreach($previewFotos as $idx => $foto)
                                 <a href="{{ produto_foto_url($foto) }}" target="_blank" rel="noopener" class="position-relative d-block rounded border overflow-hidden" style="width:68px;height:68px;background:#f8fafc" title="{{ $idx === 0 ? 'Foto principal' : 'Galeria #'.($idx + 1) }}">
@@ -108,12 +161,19 @@
                         'campo' => 'produto_video',
                         'name' => 'video',
                         'valor' => old('video', $produto->video),
-                        'dica' => 'Aparece no vídeo da página do produto na loja.',
+                        'dica' => 'Aparece na aba de vídeo do produto na loja.',
                     ])
                 </div>
             </x-admin.card>
 
-            <button class="btn btn-golden w-100 mt-3"><i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}</button>
+            <div class="d-flex flex-column gap-2 mt-3">
+                <button type="submit" form="formProduto" class="btn btn-golden w-100 py-2 fw-semibold shadow-sm" id="btnSalvarProduto">
+                    <i class="fas fa-save me-1"></i> {{ $editando ? 'Salvar alterações' : 'Criar produto' }}
+                </button>
+                <button type="submit" form="formProduto" name="salvar_e_continuar" value="1" class="btn btn-outline-secondary w-100 btn-sm">
+                    <i class="fas fa-floppy-disk me-1"></i> {{ $editando ? 'Salvar e continuar editando' : 'Criar e continuar editando' }}
+                </button>
+            </div>
         </div>
     </div>
 </form>

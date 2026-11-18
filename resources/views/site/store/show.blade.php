@@ -143,7 +143,7 @@
                         $noCarrinho = (int) ($quantidadeNoCarrinho ?? 0);
                         $qtdInicial = $noCarrinho > 0 ? $noCarrinho : 1;
                     @endphp
-                    <form method="POST" action="{{ route('site.loja.carrinho.adicionar') }}" class="pdp-buy-card buy-form" data-unit="{{ $precoBase }}" data-monthly="{{ $ehMensal ? '1' : '0' }}" data-farol="sacola" data-detalhe="{{ $produto['slug'] }}">
+                    <form method="POST" action="{{ route('site.loja.carrinho.adicionar', absolute: false) }}" class="pdp-buy-card buy-form" data-unit="{{ $precoBase }}" data-monthly="{{ $ehMensal ? '1' : '0' }}" data-farol="sacola" data-detalhe="{{ $produto['slug'] }}">
                         @csrf
                         <input type="hidden" name="produto" value="{{ $produto['id'] }}">
                         <input type="hidden" name="modo" id="pdpModoOperacao" value="{{ $noCarrinho > 0 ? 'definir' : 'somar' }}">
@@ -152,7 +152,7 @@
                             <i class="fa-solid fa-circle-check"></i>
                             <div class="pdp-in-cart-text">
                                 <span>Item já adicionado na sua sacola: <strong id="pdpInCartQty">{{ $noCarrinho }}</strong> <span id="pdpInCartWord">{{ $noCarrinho === 1 ? 'unidade' : 'unidades' }}</span>.</span>
-                                <a href="{{ route('site.loja.carrinho') }}" class="pdp-in-cart-link">Ver carrinho completo →</a>
+                                <a href="{{ route('site.loja.carrinho', absolute: false) }}" class="pdp-in-cart-link">Ver carrinho completo →</a>
                             </div>
                         </div>
 
@@ -555,9 +555,11 @@ document.addEventListener('DOMContentLoaded',function(){
 
       var modoInput = document.getElementById('pdpModoOperacao');
       var modo = modoInput ? modoInput.value : 'somar';
+      var destinoUrl = form.getAttribute('action') || '{{ route('site.loja.carrinho.adicionar', absolute: false) }}';
 
-      fetch(form.action, {
+      fetch(destinoUrl, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -608,7 +610,7 @@ document.addEventListener('DOMContentLoaded',function(){
           window.goldenSiteToast(res.data.mensagem || 'Carrinho atualizado!', {
             type: 'success',
             actionText: 'Ver carrinho →',
-            actionUrl: '{{ route('site.loja.carrinho') }}'
+            actionUrl: '{{ route('site.loja.carrinho', absolute: false) }}'
           });
         }
         setTimeout(function () { btnAddCart.innerHTML = btnPadraoHTML; }, 2200);

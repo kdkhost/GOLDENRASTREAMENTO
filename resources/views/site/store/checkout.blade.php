@@ -178,10 +178,24 @@
             <h2>Sua compra</h2>
             <ul>
                 @foreach($linhas as $l)
-                <li><span>{{ $l['quantidade'] }}× {{ $l['nome'] }}</span><b>{{ brl($l['subtotal']) }}</b></li>
+                <li>
+                    <div>
+                        <span>{{ $l['quantidade'] }}× {{ $l['nome'] }}</span>
+                        @if(!empty($l['mensalidade']))
+                            <div style="font-size:.76rem;color:#4ade80;font-weight:500">+ {{ brl($l['mensalidade'] * $l['quantidade']) }}/mês (plano)</div>
+                        @endif
+                    </div>
+                    <b>{{ brl($l['subtotal']) }}</b>
+                </li>
                 @endforeach
             </ul>
-            <div class="sum-line"><span>Subtotal</span><b>{{ brl($subtotal) }}</b></div>
+            <div class="sum-line"><span>Adesão / Equipamentos</span><b>{{ brl($subtotal) }}</b></div>
+            @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
+            <div class="sum-line" style="color:#67e8f9">
+                <span><i class="fa-solid fa-repeat" style="margin-right:4px"></i> Mensalidade recorrente</span>
+                <b>{{ brl($mensalidadeTotal) }}/mês</b>
+            </div>
+            @endif
             <div class="sum-line"><span>Frete</span><b id="sumFrete">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
             @if(!empty($cupom))
             <div class="sum-line" style="color:#4ade80">
@@ -192,7 +206,15 @@
             @if($freteGratisEm > 0)
             <p class="sum-hint"><i class="fa-solid fa-gift"></i> Faltam {{ brl($freteGratisEm) }} para o frete grátis.</p>
             @endif
-            <div class="sum-line total"><span>Total</span><b id="sumTotal">{{ brl(max(0, $subtotal - ($descontoCents ?? 0)) + $frete) }}</b></div>
+            <div class="sum-line total">
+                <div>
+                    <span>Total a pagar hoje</span>
+                    @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
+                        <div style="font-size:.75rem;font-weight:normal;color:#67e8f9">+ {{ brl($mensalidadeTotal) }}/mês recorrente</div>
+                    @endif
+                </div>
+                <b id="sumTotal">{{ brl(max(0, $subtotal - ($descontoCents ?? 0)) + $frete) }}</b>
+            </div>
 
             <div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)">
                 @if(!empty($cupom))

@@ -85,12 +85,14 @@ class StoreController extends Controller
         $carrinho = Carrinho::daSessao();
         $linhas = $carrinho->linhas();
         $subtotal = array_sum(array_column($linhas, 'subtotal'));
+        $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
         $desc = $carrinho->resumoDesconto($subtotal);
 
         return response()
             ->view('site.store.cart', [
                 'linhas' => $linhas,
                 'subtotal' => $subtotal,
+                'mensalidadeTotal' => $mensalidadeTotal,
                 'frete' => 0,
                 'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
                 'cupom' => $desc['cupom'],
@@ -200,6 +202,8 @@ class StoreController extends Controller
         $totalUnidades = array_sum(array_column($linhas, 'quantidade'));
         $totalProdutos = count($linhas);
 
+        $request->session()->save();
+
         if ($request->expectsJson()) {
             return response()->json([
                 'sucesso' => true,
@@ -232,6 +236,8 @@ class StoreController extends Controller
             $carrinho->ajustar((int) $id, (int) $quantidade);
         }
 
+        $request->session()->save();
+
         if ($request->expectsJson()) {
             return $this->resumoCarrinhoJson($carrinho, 'Carrinho atualizado.');
         }
@@ -250,6 +256,8 @@ class StoreController extends Controller
         $carrinho = Carrinho::daSessao();
         $carrinho->remover((int) $data['produto']);
 
+        $request->session()->save();
+
         if ($request->expectsJson()) {
             return $this->resumoCarrinhoJson($carrinho, 'Item removido do carrinho.');
         }
@@ -261,6 +269,7 @@ class StoreController extends Controller
     {
         $linhas = $carrinho->linhas();
         $subtotal = array_sum(array_column($linhas, 'subtotal'));
+        $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
         $desc = $carrinho->resumoDesconto($subtotal);
         $freteGratisEm = $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal);
         $totalSemFrete = max(0, $subtotal - ($desc['desconto_cents'] ?? 0));
@@ -271,9 +280,13 @@ class StoreController extends Controller
             'vazio' => $linhas === [],
             'itens_count' => count($linhas),
             'total_unidades' => array_sum(array_column($linhas, 'quantidade')),
+            'mensalidade_total_cents' => $mensalidadeTotal,
+            'mensalidade_total_formatada' => $mensalidadeTotal > 0 ? brl($mensalidadeTotal).'/mês' : null,
             'linhas' => array_map(fn (array $l): array => [
                 'id' => (int) $l['id'],
                 'quantidade' => (int) $l['quantidade'],
+                'mensalidade_cents' => (int) ($l['mensalidade'] ?? 0),
+                'mensalidade_formatada' => ! empty($l['mensalidade']) ? brl($l['mensalidade']).'/mês' : null,
                 'subtotal_formatado' => brl($l['subtotal']),
             ], $linhas),
             'subtotal_cents' => $subtotal,
@@ -796,10 +809,12 @@ class StoreController extends Controller
     {
         $desc = Carrinho::daSessao()->resumoDesconto($subtotal);
         $frete = $desc['frete_gratis'] ? 0 : Carrinho::fretePara($subtotal, 'entrega');
+        $mensalidadeTotal = array_sum(array_map(fn (array $l): int => ((int) ($l['mensalidade'] ?? 0)) * ((int) ($l['quantidade'] ?? 1)), $linhas));
 
         return [
             'linhas' => $linhas,
             'subtotal' => $subtotal,
+            'mensalidadeTotal' => $mensalidadeTotal,
             'frete' => $frete,
             'freteGratisEm' => $desc['frete_gratis'] ? 0 : Carrinho::faltaParaFreteGratis($subtotal),
             'pixChave' => Setting::get('loja_pix_chave', ''),

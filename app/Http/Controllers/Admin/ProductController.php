@@ -50,8 +50,15 @@ class ProductController extends Controller
     public function create(): View
     {
         return view('admin.products.form', [
-            'produto' => new Product(['ativo' => true, 'controle_estoque' => true]),
+            'produto' => new Product([
+                'ativo' => true,
+                'controle_estoque' => true,
+                'destaque' => false,
+                'ordem' => 0,
+                'tipo_cobranca' => 'mensal',
+            ]),
             'categorias' => Category::orderBy('nome')->get(),
+            'recursosDisponiveis' => Product::recursosDisponiveis(),
         ]);
     }
 
@@ -68,7 +75,11 @@ class ProductController extends Controller
 
         Activity::log('produto_criado', "Produto {$produto->nome} criado.", $produto);
 
-        return redirect()->route('admin.catalogo.produtos.index')->with('success', 'Produto criado.');
+        if ($request->input('salvar_e_continuar') === '1') {
+            return redirect()->route('admin.catalogo.produtos.edit', $produto)->with('success', "Produto '{$produto->nome}' criado com sucesso.");
+        }
+
+        return redirect()->route('admin.catalogo.produtos.index')->with('success', "Produto '{$produto->nome}' criado com sucesso.");
     }
 
     public function edit(Product $produto): View
@@ -76,6 +87,7 @@ class ProductController extends Controller
         return view('admin.products.form', [
             'produto' => $produto,
             'categorias' => Category::orderBy('nome')->get(),
+            'recursosDisponiveis' => Product::recursosDisponiveis(),
         ]);
     }
 
@@ -101,7 +113,11 @@ class ProductController extends Controller
 
         Activity::log('produto_atualizado', "Produto {$produto->nome} atualizado.", $produto);
 
-        return redirect()->route('admin.catalogo.produtos.index')->with('success', 'Produto atualizado.');
+        if ($request->input('salvar_e_continuar') === '1') {
+            return redirect()->route('admin.catalogo.produtos.edit', $produto)->with('success', "Produto '{$produto->nome}' atualizado com sucesso.");
+        }
+
+        return redirect()->route('admin.catalogo.produtos.index')->with('success', "Produto '{$produto->nome}' atualizado.");
     }
 
     public function destroy(Product $produto): RedirectResponse
@@ -168,6 +184,16 @@ class ProductController extends Controller
             'preco' => ['nullable', 'numeric', 'min:0'],
             'preco_promocional' => ['nullable', 'numeric', 'min:0'],
             'mensalidade' => ['nullable', 'numeric', 'min:0'],
+            'tipo_cobranca' => ['nullable', 'string', 'in:mensal,unico,combo'],
+            'chip_operadora' => ['nullable', 'string', 'max:64'],
+            'garantia' => ['nullable', 'string', 'max:64'],
+            'anatel_homologado' => ['nullable', 'string', 'max:64'],
+            'recursos' => ['nullable', 'array'],
+            'recursos.*' => ['string', 'max:64'],
+            'peso_gramas' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'comprimento_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
+            'largura_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
+            'altura_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
             'sob_consulta' => ['nullable', 'boolean'],
             'estoque' => ['nullable', 'integer', 'min:0'],
             'estoque_minimo' => ['nullable', 'integer', 'min:0'],
@@ -193,8 +219,9 @@ class ProductController extends Controller
 
                 $ehAtual = $produto && ($produto->{$campo} === $caminho || $produto->{$campo} === $caminhoNormalizado);
                 $ehPadrao = $produto && $caminhoNormalizado === Product::imagemPadraoPorSlug($produto->slug, $produto->category?->slug);
+                $ehAssetPublico = str_starts_with($caminhoNormalizado, 'img/');
 
-                if (! $ehAtual && ! $ehPadrao && ! Envio::caminhoConfere($caminhoNormalizado, $envio)) {
+                if (! $ehAtual && ! $ehPadrao && ! $ehAssetPublico && ! Envio::caminhoConfere($caminhoNormalizado, $envio)) {
                     throw ValidationException::withMessages([
                         $campo => 'Este arquivo não foi carregado por aqui. Solte-o no campo de novo.',
                     ]);
@@ -242,13 +269,10 @@ class ProductController extends Controller
         $precoPromocionalCents = $temPromocional && (float) $data['preco_promocional'] > 0 ? $this->paraCentavos($data['preco_promocional']) : null;
         $mensalidadeCents = $temMensalidade && (float) $data['mensalidade'] > 0 ? $this->paraCentavos($data['mensalidade']) : null;
 
-        if ($sobConsulta && ! $temPreco && ! $temMensalidade) {
+        if ($sobConsulta) {
             $precoCents = 0;
             $precoPromocionalCents = null;
             $mensalidadeCents = null;
-        } elseif ($sobConsulta && ! $temPreco) {
-            $precoCents = 0;
-            $precoPromocionalCents = null;
         }
 
         return [
@@ -260,6 +284,15 @@ class ProductController extends Controller
             'preco_cents' => $precoCents,
             'preco_promocional_cents' => $precoPromocionalCents,
             'mensalidade_cents' => $mensalidadeCents,
+            'tipo_cobranca' => $data['tipo_cobranca'] ?? 'mensal',
+            'chip_operadora' => ! empty($data['chip_operadora']) ? trim($data['chip_operadora']) : null,
+            'garantia' => ! empty($data['garantia']) ? trim($data['garantia']) : null,
+            'anatel_homologado' => ! empty($data['anatel_homologado']) ? trim($data['anatel_homologado']) : null,
+            'recursos' => ! empty($data['recursos']) ? array_values(array_filter((array) $data['recursos'])) : null,
+            'peso_gramas' => isset($data['peso_gramas']) && $data['peso_gramas'] !== '' ? (int) $data['peso_gramas'] : null,
+            'comprimento_cm' => isset($data['comprimento_cm']) && $data['comprimento_cm'] !== '' ? (int) $data['comprimento_cm'] : null,
+            'largura_cm' => isset($data['largura_cm']) && $data['largura_cm'] !== '' ? (int) $data['largura_cm'] : null,
+            'altura_cm' => isset($data['altura_cm']) && $data['altura_cm'] !== '' ? (int) $data['altura_cm'] : null,
             'estoque' => isset($data['estoque']) ? (int) $data['estoque'] : 0,
             'estoque_minimo' => isset($data['estoque_minimo']) ? (int) $data['estoque_minimo'] : 0,
             'ordem' => isset($data['ordem']) ? (int) $data['ordem'] : 0,

@@ -17,6 +17,8 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'nome', 'slug', 'sku', 'resumo', 'descricao',
         'preco_cents', 'preco_promocional_cents', 'mensalidade_cents',
+        'tipo_cobranca', 'chip_operadora', 'garantia', 'anatel_homologado', 'recursos',
+        'peso_gramas', 'comprimento_cm', 'largura_cm', 'altura_cm',
         'estoque', 'estoque_minimo', 'imagem', 'galeria', 'video', 'destaque', 'ativo', 'controle_estoque', 'ordem',
     ];
 
@@ -30,6 +32,11 @@ class Product extends Model
         'estoque' => 'integer',
         'estoque_minimo' => 'integer',
         'galeria' => 'array',
+        'recursos' => 'array',
+        'peso_gramas' => 'integer',
+        'comprimento_cm' => 'integer',
+        'largura_cm' => 'integer',
+        'altura_cm' => 'integer',
     ];
 
     public function category(): BelongsTo
@@ -99,6 +106,38 @@ class Product extends Model
             default => str_starts_with($slug, 'chip-m2m')
                 ? 'img/home/plataforma-monitor.jpg'
                 : ($categoriaSlug === 'planos' ? 'img/home/segmento-frota.jpg' : 'img/home/rastreador-j16.jpg'),
+        };
+    }
+
+    /**
+     * Dicionário de recursos comuns de rastreamento veicular para seleção no admin.
+     *
+     * @return array<string, string>
+     */
+    public static function recursosDisponiveis(): array
+    {
+        return [
+            'app' => 'Aplicativo Celular (Android e iOS)',
+            'web' => 'Plataforma Web para Computador',
+            'bloqueio' => 'Bloqueio e Desbloqueio Remoto',
+            'cercas' => 'Cercas Virtuais com Alerta de Saída',
+            'rotas' => 'Histórico e Reprodução de Trajetos (90 dias)',
+            'ignicao' => 'Alerta de Ignição Ligada / Desligada',
+            'bateria' => 'Alerta de Bateria Desconectada ou Baixa',
+            'velocidade' => 'Alerta de Excesso de Velocidade',
+            'movimento' => 'Sensor de Movimento Indevido / Reboque',
+            'panico' => 'Compatível com Botão de Pânico SOS',
+            'suporte' => 'Suporte Técnico Humanizado via WhatsApp',
+            'central24h' => 'Central de Alerta e Emergência 24h',
+        ];
+    }
+
+    public function tipoCobrancaRotulo(): string
+    {
+        return match ($this->tipo_cobranca) {
+            'unico' => 'Venda Única (Equipamento / Sem mensalidade)',
+            'combo' => 'Combo (Equipamento + Mensalidade por veículo)',
+            default => 'Plano Mensal (Mensalidade recorrente por veículo)',
         };
     }
 
@@ -182,6 +221,15 @@ class Product extends Model
                     'preco' => $p->preco(),
                     'promocao' => $p->temPromocao(),
                     'mensalidade' => $p->mensalidade_cents,
+                    'tipo_cobranca' => $p->tipo_cobranca ?: 'mensal',
+                    'chip_operadora' => $p->chip_operadora,
+                    'garantia' => $p->garantia,
+                    'anatel_homologado' => $p->anatel_homologado,
+                    'recursos' => (array) ($p->recursos ?? []),
+                    'peso_gramas' => $p->peso_gramas,
+                    'comprimento_cm' => $p->comprimento_cm,
+                    'largura_cm' => $p->largura_cm,
+                    'altura_cm' => $p->altura_cm,
                     'imagem' => $p->imagem ?: static::imagemPadraoPorSlug($p->slug, $p->category?->slug),
                     'galeria' => (array) ($p->galeria ?? []),
                     'imagens' => $p->todasImagens(),

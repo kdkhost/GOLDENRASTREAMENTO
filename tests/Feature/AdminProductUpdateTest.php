@@ -105,15 +105,15 @@ class AdminProductUpdateTest extends TestCase
         $admin = User::first();
         $p = Product::find(10);
 
-        // Se o operador marca sob_consulta mas define mensalidade, ela deve ser mantida
+        // Se o operador marca sob_consulta, os preços e mensalidade são zerados para exibir "Consulte"
         $payload = [
             'nome' => $p->nome,
             'sku' => $p->sku,
             'category_id' => (string) $p->category_id,
             'resumo' => $p->resumo,
             'descricao' => $p->descricao,
-            'preco' => '',
-            'preco_promocional' => '',
+            'preco' => '199',
+            'preco_promocional' => '149',
             'mensalidade' => '89,90',
             'sob_consulta' => '1',
             'estoque' => '999',
@@ -134,7 +134,7 @@ class AdminProductUpdateTest extends TestCase
 
         $res->assertOk();
         $p->refresh();
-        $this->assertSame(8990, $p->mensalidade_cents);
+        $this->assertNull($p->mensalidade_cents);
         $this->assertSame(0, $p->preco_cents);
     }
 
@@ -219,5 +219,64 @@ class AdminProductUpdateTest extends TestCase
             $this->assertEquals(200, $res->status(), "Falha ao salvar produto ID {$p->id} ({$p->nome}): ".json_encode($res->json()));
             $this->assertTrue($res->json('ok'));
         }
+    }
+
+    public function test_salvar_campos_completos_de_rastreador_e_frete(): void
+    {
+        $admin = User::first();
+        $p = Product::find(10);
+
+        $payload = [
+            'nome' => 'Plano Frota Completo 4G',
+            'sku' => 'FROTA-4G-VIVO',
+            'category_id' => (string) $p->category_id,
+            'resumo' => 'Monitoramento completo de frotas com telemetria e bloqueio remoto.',
+            'descricao' => 'Acesso total à plataforma web e app móvel, com alertas e cercas virtuais.',
+            'tipo_cobranca' => 'combo',
+            'preco' => '199,00',
+            'preco_promocional' => '149,00',
+            'mensalidade' => '59,90',
+            'chip_operadora' => 'Multi-operadora 4G (Vivo/Claro/TIM)',
+            'garantia' => 'Vitalícia no plano',
+            'anatel_homologado' => 'Homologado Anatel',
+            'recursos' => ['app', 'web', 'bloqueio', 'cercas', 'rotas', 'ignicao'],
+            'peso_gramas' => '220',
+            'comprimento_cm' => '16',
+            'largura_cm' => '12',
+            'altura_cm' => '5',
+            'estoque' => '999',
+            'estoque_minimo' => '5',
+            'ordem' => '1',
+            'ativo' => '1',
+            'destaque' => '1',
+            'controle_estoque' => '0',
+            'imagem' => $p->imagem,
+        ];
+
+        $res = $this->actingAs($admin)
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->post(route('admin.catalogo.produtos.update', $p), $payload);
+
+        $res->assertOk();
+        $this->assertTrue($res->json('ok'));
+
+        $p->refresh();
+        $this->assertSame('Plano Frota Completo 4G', $p->nome);
+        $this->assertSame('FROTA-4G-VIVO', $p->sku);
+        $this->assertSame('combo', $p->tipo_cobranca);
+        $this->assertSame(14900, $p->preco_promocional_cents);
+        $this->assertSame(19900, $p->preco_cents);
+        $this->assertSame(5990, $p->mensalidade_cents);
+        $this->assertSame('Multi-operadora 4G (Vivo/Claro/TIM)', $p->chip_operadora);
+        $this->assertSame('Vitalícia no plano', $p->garantia);
+        $this->assertSame('Homologado Anatel', $p->anatel_homologado);
+        $this->assertEquals(['app', 'web', 'bloqueio', 'cercas', 'rotas', 'ignicao'], $p->recursos);
+        $this->assertSame(220, $p->peso_gramas);
+        $this->assertSame(16, $p->comprimento_cm);
+        $this->assertSame(12, $p->largura_cm);
+        $this->assertSame(5, $p->altura_cm);
     }
 }

@@ -43,14 +43,32 @@
                     <div class="cart-info">
                         <a href="{{ route('site.loja.produto', $l['slug']) }}"><b>{{ $l['nome'] }}</b></a>
                         <small>{{ $l['categoria'] }}@if($l['sku']) · {{ $l['sku'] }}@endif</small>
-                        <span class="cart-unit">{{ brl($l['preco']) }} cada</span>
+                        @if($l['preco'] > 0)
+                            <span class="cart-unit">{{ brl($l['preco']) }} à vista</span>
+                        @elseif(!empty($l['mensalidade']))
+                            <span class="cart-unit" style="color:var(--teal);font-weight:600">Adesão grátis</span>
+                        @else
+                            <span class="cart-unit">{{ brl($l['preco']) }} cada</span>
+                        @endif
+                        @if(!empty($l['mensalidade']))
+                            <div style="font-size:.82rem;font-weight:600;color:var(--gold-2);margin-top:2px">
+                                <i class="fa-solid fa-repeat" style="font-size:.75rem"></i> Mensalidade: {{ brl($l['mensalidade']) }}/mês por veículo
+                            </div>
+                        @endif
                     </div>
                     <div class="qty">
                         <button type="button" data-cart-action="dec" data-product-id="{{ $l['id'] }}" aria-label="Diminuir quantidade de {{ $l['nome'] }}">−</button>
                         <input type="number" name="quantidades[{{ $l['id'] }}]" data-cart-qty="{{ $l['id'] }}" min="0" max="{{ $l['controle_estoque'] ? $l['estoque'] : 999 }}" value="{{ $l['quantidade'] }}" aria-label="Quantidade de {{ $l['nome'] }}">
                         <button type="button" data-cart-action="inc" data-product-id="{{ $l['id'] }}" aria-label="Aumentar quantidade de {{ $l['nome'] }}">+</button>
                     </div>
-                    <b class="cart-total" data-cart-line-total="{{ $l['id'] }}">{{ brl($l['subtotal']) }}</b>
+                    <div style="text-align:right">
+                        <b class="cart-total" data-cart-line-total="{{ $l['id'] }}">{{ brl($l['subtotal']) }}</b>
+                        @if(!empty($l['mensalidade']))
+                            <div class="cart-line-mensal" data-cart-line-mensal="{{ $l['id'] }}" style="font-size:.78rem;color:var(--teal);font-weight:600">
+                                + {{ brl($l['mensalidade'] * $l['quantidade']) }}/mês
+                            </div>
+                        @endif
+                    </div>
                     <button class="cart-del" type="button" data-cart-action="remove" data-product-id="{{ $l['id'] }}" aria-label="Remover {{ $l['nome'] }}"><i class="fa-solid fa-trash-can"></i></button>
                 </li>
                 @endforeach
@@ -65,13 +83,24 @@
         <aside class="cart-summary" data-total-sem-frete="{{ max(0, $subtotal - ($descontoCents ?? 0)) }}">
             <h2>Resumo</h2>
             <div class="sum-line"><span id="cartSummaryUnitsLabel">Subtotal ({{ $totalUnidades }} {{ $totalUnidades === 1 ? 'unidade' : 'unidades' }})</span><b id="cartSubtotalDisplay">{{ brl($subtotal) }}</b></div>
+            <div class="sum-line" id="cartMensalidadeRow" @if(empty($mensalidadeTotal) || $mensalidadeTotal <= 0) style="display:none" @endif>
+                <span><i class="fa-solid fa-repeat" style="color:var(--teal);margin-right:4px"></i> Mensalidade recorrente</span>
+                <b id="cartMensalidadeDisplay" style="color:var(--teal)">{{ brl($mensalidadeTotal ?? 0) }}/mês</b>
+            </div>
             <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">Calcule pelo CEP</b></div>
             <div class="sum-line" id="cartCupomSummaryRow" style="color:var(--teal)" @if(empty($cupom)) hidden @endif>
                 <span id="cartCupomSummaryLabel">@if(!empty($cupom))Cupom <b>{{ $cupom->codigo }}</b> ({{ $cupom->rotuloDesconto() }})@endif</span>
                 <b id="cartCupomSummaryVal">@if(!empty($cupom)){{ ($descontoCents ?? 0) > 0 ? '− '.brl($descontoCents) : 'Frete grátis' }}@endif</b>
             </div>
             <div class="sum-line" style="font-size:1.06rem;border-bottom:0;padding-top:10px">
-                <strong>Total estimado</strong>
+                <div>
+                    <strong>Total a pagar hoje</strong>
+                    @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
+                        <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal)">+ {{ brl($mensalidadeTotal) }}/mês recorrente</div>
+                    @else
+                        <div class="small" id="cartTotalMensalHint" style="font-size:.78rem;font-weight:normal;color:var(--teal);display:none"></div>
+                    @endif
+                </div>
                 <strong id="cartTotalDisplay" style="color:var(--gold-2)">{{ brl(max(0, $subtotal - ($descontoCents ?? 0))) }}</strong>
             </div>
             <p class="sum-hint" id="cartFreteGratisHint" @if($freteGratisEm <= 0) hidden @endif>
@@ -366,9 +395,28 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             const qtyInput = li.querySelector('[data-cart-qty]');
             const lineTotal = li.querySelector('[data-cart-line-total]');
+            const lineMensal = li.querySelector('[data-cart-line-mensal]');
             if (qtyInput) qtyInput.value = linha.quantidade;
             if (lineTotal) lineTotal.textContent = linha.subtotal_formatado;
+            if (lineMensal && linha.mensalidade_cents) {
+                lineMensal.textContent = '+ R$ ' + ((linha.mensalidade_cents * linha.quantidade) / 100).toFixed(2).replace('.', ',') + '/mês';
+            }
         });
+
+        const mensalRow = document.getElementById('cartMensalidadeRow');
+        const mensalDisplay = document.getElementById('cartMensalidadeDisplay');
+        const mensalHint = document.getElementById('cartTotalMensalHint');
+        if (data.mensalidade_total_cents && data.mensalidade_total_formatada) {
+            if (mensalDisplay) mensalDisplay.textContent = data.mensalidade_total_formatada;
+            if (mensalRow) mensalRow.style.display = 'flex';
+            if (mensalHint) {
+                mensalHint.textContent = '+ ' + data.mensalidade_total_formatada + ' recorrente';
+                mensalHint.style.display = 'block';
+            }
+        } else {
+            if (mensalRow) mensalRow.style.display = 'none';
+            if (mensalHint) mensalHint.style.display = 'none';
+        }
 
         if (unitsLabel) {
             const u = data.total_unidades || 0;
@@ -421,6 +469,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         fetch(cartForm.action, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,

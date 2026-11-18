@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Canonical Domain: redirect www.goldenrastreamento.com.br to apex
+    RewriteCond %{HTTP_HOST} ^www\.goldenrastreamento\.com\.br$ [NC]
+    RewriteRule ^(.*)$ https://goldenrastreamento.com.br/$1 [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

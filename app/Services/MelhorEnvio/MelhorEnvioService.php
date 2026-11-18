@@ -207,10 +207,10 @@ final class MelhorEnvioService
 
             $produtos[] = [
                 'id' => (string) ($item['id'] ?? 'item'),
-                'width' => $larguraPadrao,
-                'height' => $alturaPadrao,
-                'length' => $comprimentoPadrao,
-                'weight' => $pesoPadrao,
+                'width' => ! empty($item['largura_cm']) ? max(11, (int) $item['largura_cm']) : $larguraPadrao,
+                'height' => ! empty($item['altura_cm']) ? max(2, (int) $item['altura_cm']) : $alturaPadrao,
+                'length' => ! empty($item['comprimento_cm']) ? max(16, (int) $item['comprimento_cm']) : $comprimentoPadrao,
+                'weight' => ! empty($item['peso_gramas']) ? max(0.05, round(((int) $item['peso_gramas']) / 1000, 3)) : $pesoPadrao,
                 'insurance_value' => max(1.0, round($precoUnitCents / 100, 2)),
                 'quantity' => $qtd,
             ];
