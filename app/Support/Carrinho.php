@@ -255,13 +255,13 @@ class Carrinho
                 'mensalidade' => $mensalidadeItem,
                 'cobrar_mensalidade_hoje' => $cobrarMensalidadeHoje,
                 'operadora_codigo' => $operadoraEscolhida,
-                'operadora_nome' => $dadosOperadora['nome'] ?? ($produto['chip_operadora'] ?: 'Algar Multioperadora'),
-                'operadora_rotulo' => $dadosOperadora['rotulo'] ?? ($produto['chip_operadora'] ?: 'Algar Multioperadora'),
+                'operadora_nome' => $dadosOperadora['nome'] ?? ($produto['chip_operadora'] ?: 'Chip Multioperadora'),
+                'operadora_rotulo' => $dadosOperadora['rotulo'] ?? ($produto['chip_operadora'] ?: 'Chip Multioperadora'),
                 'operadora_tipo' => $dadosOperadora['tipo'] ?? 'multioperadora',
                 'operadora_icone' => $dadosOperadora['icone'] ?? 'fa-sim-card',
                 'operadora_destaque' => $dadosOperadora['destaque'] ?? null,
                 'chip_incluso' => true,
-                'beneficio_chip' => 'Chip M2M incluso no benefício do plano',
+                'beneficio_chip' => ! empty($produto['beneficio_chip_texto']) ? $produto['beneficio_chip_texto'] : 'Chip M2M incluso no benefício do plano',
             ];
         }
 

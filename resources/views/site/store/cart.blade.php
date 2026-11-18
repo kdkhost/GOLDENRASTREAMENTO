@@ -62,12 +62,12 @@
                             </div>
                         @else
                             <div style="font-size:.76rem;color:var(--slate);margin-top:3px">
-                                <i class="fa-solid fa-sim-card" style="color:var(--gold)"></i> Chip: <strong>{{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Algar Multioperadora') }}</strong>
+                                <i class="fa-solid fa-sim-card" style="color:var(--gold)"></i> Chip: <strong>{{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Chip Multioperadora') }}</strong>
                             </div>
                         @endif
 
                         <div style="font-size:.74rem;color:var(--teal);font-weight:600;margin-top:2px">
-                            <i class="fa-solid fa-circle-check"></i> Benefício: Chip incluso no plano (R$ 0,00 de adesão do chip)
+                            <i class="fa-solid fa-circle-check"></i> Benefício: {{ !empty($l['beneficio_chip_texto']) ? $l['beneficio_chip_texto'] : 'Chip incluso no plano (R$ 0,00 de adesão do chip)' }}
                         </div>
 
                         @if(!empty($l['mensalidade']))

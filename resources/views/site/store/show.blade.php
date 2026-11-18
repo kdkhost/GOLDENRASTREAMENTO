@@ -273,7 +273,7 @@
                                 </div>
                                 <div style="font-size:.76rem;color:var(--teal);margin-top:8px;display:flex;align-items:center;gap:6px">
                                     <i class="fa-solid fa-circle-check"></i>
-                                    <span><strong>Benefício garantido:</strong> Chip de telemetria M2M incluso no plano (R$ 0,00 de adesão do chip).</span>
+                                    <span><strong>Benefício garantido:</strong> {{ !empty($produto['beneficio_chip_texto']) ? $produto['beneficio_chip_texto'] : 'Chip de telemetria M2M incluso no plano (R$ 0,00 de adesão do chip).' }}</span>
                                 </div>
                             </div>
                         @else
@@ -321,15 +321,15 @@
                     <div class="pdp-trust-tile">
                         <i class="fa-solid fa-shield-halved"></i>
                         <div>
-                            <strong>Homologado Anatel</strong>
-                            <small>Equipamento certificado</small>
+                            <strong>{{ !empty($produto['anatel_homologado']) ? $produto['anatel_homologado'] : 'Homologado Anatel' }}</strong>
+                            <small>{{ !empty($produto['garantia']) ? 'Garantia: ' . $produto['garantia'] : 'Equipamento certificado' }}</small>
                         </div>
                     </div>
                     <div class="pdp-trust-tile">
                         <i class="fa-solid fa-sim-card"></i>
                         <div>
-                            <strong>Multi-operadora</strong>
-                            <small>{{ implode(', ', $golden['parceiros']) }}</small>
+                            <strong>Chip Multioperadora</strong>
+                            <small>{{ !empty($produto['chip_operadora']) ? $produto['chip_operadora'] : 'Vivo, Claro e TIM' }}</small>
                         </div>
                     </div>
                     <div class="pdp-trust-tile">

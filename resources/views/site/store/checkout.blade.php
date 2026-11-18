@@ -183,10 +183,10 @@
                         <span>{{ $l['quantidade'] }}× {{ $l['nome'] }}</span>
                         @if(!empty($l['operadora_nome']) || !empty($l['chip_operadora']))
                             <div style="font-size:.74rem;color:#fcd34d;font-weight:600;margin-top:2px">
-                                <i class="fa-solid fa-sim-card" style="font-size:.7rem"></i> Chip: {{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Algar Multioperadora') }}
+                                <i class="fa-solid fa-sim-card" style="font-size:.7rem"></i> Chip: {{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Chip Multioperadora') }}
                             </div>
                             <div style="font-size:.72rem;color:#4ade80;font-weight:600">
-                                <i class="fa-solid fa-circle-check"></i> Benefício: Chip incluso no plano (R$ 0,00)
+                                <i class="fa-solid fa-circle-check"></i> Benefício: {{ !empty($l['beneficio_chip_texto']) ? $l['beneficio_chip_texto'] : 'Chip incluso no plano (R$ 0,00)' }}
                             </div>
                         @endif
                         @if(!empty($l['mensalidade']))

@@ -17,9 +17,9 @@ class Product extends Model
     public const OPERADORAS_CHIP = [
         'algar' => [
             'id' => 'algar',
-            'nome' => 'Algar Multioperadora',
+            'nome' => 'Chip Multioperadora',
             'tipo' => 'multioperadora',
-            'rotulo' => 'Algar Multioperadora (Claro, Vivo e TIM)',
+            'rotulo' => 'Chip Multioperadora (Claro, Vivo e TIM)',
             'descricao' => 'Conecta automaticamente na melhor rede entre Claro, Vivo e TIM com máxima cobertura nacional.',
             'destaque' => 'Recomendado · Maior Cobertura',
             'icone' => 'fa-satellite-dish',
@@ -56,7 +56,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'nome', 'slug', 'sku', 'resumo', 'descricao',
         'preco_cents', 'preco_promocional_cents', 'mensalidade_cents', 'sob_consulta', 'cobrar_primeira_mensalidade',
-        'tipo_cobranca', 'chip_operadora', 'permite_escolha_chip', 'operadoras_chip', 'precos_chip', 'chip_padrao', 'garantia', 'anatel_homologado', 'recursos',
+        'tipo_cobranca', 'chip_operadora', 'beneficio_chip_texto', 'permite_escolha_chip', 'operadoras_chip', 'precos_chip', 'chip_padrao', 'garantia', 'anatel_homologado', 'recursos',
         'peso_gramas', 'comprimento_cm', 'largura_cm', 'altura_cm',
         'estoque', 'estoque_minimo', 'imagem', 'galeria', 'video', 'destaque', 'ativo', 'controle_estoque', 'ordem',
     ];
@@ -337,6 +337,7 @@ class Product extends Model
                     'cobrar_primeira_mensalidade' => (bool) ($p->cobrar_primeira_mensalidade ?? true),
                     'tipo_cobranca' => $p->tipo_cobranca ?: 'mensal',
                     'chip_operadora' => $p->chip_operadora,
+                    'beneficio_chip_texto' => $p->beneficio_chip_texto,
                     'category_id' => $p->category_id,
                     'permite_escolha_chip' => $p->permiteEscolhaChip(),
                     'operadoras_chip' => (array) ($p->operadoras_chip ?? []),
