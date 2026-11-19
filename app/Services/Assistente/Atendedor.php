@@ -462,10 +462,23 @@ final class Atendedor
         return $direta && Nome::soONome($pergunta) ? $nome : null;
     }
 
-    /** A última fala do assistente nesta conversa foi exatamente a pergunta pelo nome? */
+    /** A última fala do assistente nesta conversa foi uma pergunta direta pelo nome? */
     private static function acabouDePerguntarONome(Conversa $conversa, Assistente $ficha): bool
     {
-        return self::ultimaFalaDaMaquina($conversa) === $ficha->textoPerguntaNome();
+        $ultima = self::ultimaFalaDaMaquina($conversa);
+
+        if ($ultima === null) {
+            return false;
+        }
+
+        if ($ultima === $ficha->textoPerguntaNome()) {
+            return true;
+        }
+
+        return preg_match(
+            '/\b(?:como\s+(?:voc[eê]|vc)\s+se\s+chama|como\s+posso\s+(?:te|lhe)\s+chamar|qual\s+(?:[eé]|eh)?\s*(?:o\s+)?seu\s+nome|me\s+(?:diga|diz|conta|fala)\s+(?:o\s+)?seu\s+nome)\b/iu',
+            $ultima
+        ) === 1;
     }
 
     /**
@@ -708,11 +721,11 @@ final class Atendedor
             : ['saudacao' => null, 'perguntou_bem_estar' => false, 'carinho_ou_elogio' => false, 'agradecimento' => false];
 
         if ($cortesia) {
-            $ordem[] = 'Esta fala do cliente é uma saudação, gentileza ou demonstração de carinho — não uma dúvida técnica: '
+            $ordem[] = 'Esta fala do cliente é uma saudação, conversa amigável, gentileza ou demonstração de carinho — não uma dúvida técnica: '
                 .'responda como uma pessoa real com sentimentos genuínos, calor humano, gratidão e educação. '
                 .'Retribua explicitamente o cumprimento ("bom dia", "boa tarde", "boa noite"), responda com simpatia como você está se o cliente perguntou '
-                .'e, se recebeu carinho, elogio ou agradecimento, agradeça com ternura elegante e respeito — '
-                .'com maturidade e postura profissional (acolhedora e gentil, nunca boba, infantil ou cheia de gírias), '
+                .'e, se recebeu carinho, elogio ou apelido afetivo (como "meu amor", "linda", "querida", "aninha"), '
+                .'não se assuste nem desconverse: agradeça o carinho com doçura, ternura elegante e respeito profissional (acolhedora e gentil, nunca boba, infantil ou cheia de gírias), '
                 .'colocando-se à disposição para ajudar no que ele precisar. '
                 .'Não diga que não sabe, não chame a equipe e não invente preço, prazo, cobertura, especificação, desconto ou condição.';
         } else {
@@ -727,7 +740,7 @@ final class Atendedor
             }
 
             if ($sinais['carinho_ou_elogio']) {
-                $retribuir[] = 'agradeça o carinho ou elogio recebido com acolhimento sincero, sensibilidade e maturidade';
+                $retribuir[] = 'agradeça o carinho, apelido afetivo ou elogio recebido com acolhimento sincero, sensibilidade elegante e maturidade profissional';
             } elseif ($sinais['agradecimento']) {
                 $retribuir[] = 'corresponda ao agradecimento com gentileza antes de seguir';
             }
@@ -816,13 +829,13 @@ final class Atendedor
     private static function respostaDeNome(Assistente $ficha, string $nome, string $pergunta): string
     {
         $sinais = Busca::sinaisDeCordialidade($pergunta);
-        $cumprimentoDeTurno = in_array($sinais['saudacao'], ['bom dia', 'boa tarde', 'boa noite'], true);
 
-        if (! $cumprimentoDeTurno && ! $sinais['perguntou_bem_estar'] && ! $sinais['carinho_ou_elogio']) {
+        if (! $sinais['perguntou_bem_estar'] && ! $sinais['carinho_ou_elogio']) {
             return $ficha->textoConfirmacaoNome($nome);
         }
 
         $abertura = [];
+        $cumprimentoDeTurno = in_array($sinais['saudacao'], ['bom dia', 'boa tarde', 'boa noite'], true);
 
         if ($cumprimentoDeTurno) {
             $abertura[] = Str::ucfirst($sinais['saudacao']).'!';
@@ -850,7 +863,7 @@ final class Atendedor
     {
         $nomeEscapado = preg_quote($nome, '/');
         $semFrase = (string) preg_replace(
-            '/\b(?:meu\s+nome\s+(?:[eé]|eh)|me\s+chamo|pode\s+me\s+chamar\s+de|sou\s+(?:o|a)?|aqui\s+(?:[eé]|eh)\s+(?:o|a)?)\s+'.$nomeEscapado.'\b/iu',
+            '/\b(?:meu\s+nome\s+(?:[eé]|eh)|me\s+chamo|pode\s+me\s+chamar\s+de|(?:(?:voc[eê]|vc|tu)\s+(?:est[aá]|t[aá])?\s*falando|(?:voc[eê]|vc)\s+fala|falando)\s+com(?:\s+(?:o|a))?|sou(?:\s+(?:o|a))?|aqui\s+(?:[eé]|eh)(?:\s+(?:o|a))?)\s+'.$nomeEscapado.'\b/iu',
             ' ',
             $pergunta
         );

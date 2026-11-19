@@ -7,6 +7,7 @@ use App\Models\Conversa;
 use App\Models\Setting;
 use App\Support\ChavesDeIntegracao;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -148,7 +149,8 @@ class NomeNaConversaTest extends TestCase
 
     /** O reconhecimento é texto da ficha, e o que a pessoa escreveu junto com o nome é assunto. */
     public function test_a_fala_com_assunto_pela_frente_nao_e_trocada_por_reconhecimento(): void
-    {        $conversa = $this->abreBolha();
+    {
+        $conversa = $this->abreBolha();
 
         $resposta = $this->diga('Maria Aparecida, quero a segunda via da minha fatura');
 
@@ -215,5 +217,34 @@ class NomeNaConversaTest extends TestCase
         $conversa->refresh();
         $this->assertSame(0, $conversa->nome_pedidos);
         $this->assertCount(1, $conversa->mensagens, 'A abertura pediu o nome com o interruptor desligado.');
+    }
+
+    public function test_reconhece_apresentacao_com_vc_fala_com_e_resposta_quando_a_ia_pediu_o_nome(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Oi Arnaldo Antunes! Obrigada pelo carinho, como posso te ajudar hoje?']]]]]], 200)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Boa noite! Tudo bem por aí? Como você se chama para eu saber com quem estou falando?']]]]]], 200),
+        ]);
+
+        // 1. Apresentação informal com "vc fala com" e apelido afetivo
+        $c1 = $this->abreBolha();
+        $this->diga('oi meu amor vc fala com arnaldo antunes');
+
+        $c1->refresh();
+        $this->assertSame('Arnaldo Antunes', $c1->nome);
+        $this->assertNotSame('aguardando_equipe', $c1->status);
+
+        // 2. Quando a própria IA pergunta "Como você se chama?" após uma saudação, a resposta solta "Marcelo Lima" é aceita
+        $this->flushSession();
+        $this->postJson('/assistente/abrir')->assertOk()->assertJson(['ativo' => true]);
+        $c2 = Conversa::latest('id')->firstOrFail();
+        $this->diga('Boa noite!');
+        $resposta = $this->diga('Marcelo Lima');
+
+        $c2->refresh();
+        $this->assertSame('Marcelo Lima', $c2->nome);
+        $this->assertNotSame('aguardando_equipe', $c2->status);
+        $this->assertSame(Assistente::paraABolha()->textoConfirmacaoNome('Marcelo Lima'), $resposta);
     }
 }

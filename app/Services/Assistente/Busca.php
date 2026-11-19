@@ -59,8 +59,11 @@ final class Busca
         'querida', 'querido', 'linda', 'lindo', 'maravilhosa', 'maravilhoso', 'incrivel',
         'sensacional', 'prestativa', 'prestativo', 'amavel', 'humana', 'humanizada',
         'fofa', 'fofo', 'anjo', 'amor', 'parabens', 'adorei', 'amei', 'gostei',
+        'lindinha', 'queridao', 'flor', 'docinho', 'bjo', 'bj', 'tmj', 'salve',
         'abraco', 'abracos', 'beijo', 'beijos', 'bjs', 'coracao', 'deus', 'abencoe', 'amem',
         'licenca', 'desculpa', 'desculpe',
+        'entendi', 'entendido', 'certinho', 'compreendi', 'combinado', 'fechado', 'alo',
+        'exato', 'concordo', 'imagina', 'disponha',
     ];
 
     /**
@@ -68,7 +71,7 @@ final class Busca
      * "como vai?", "você é muito gentil") — mantidos fora de `PARADAS` para não enfraquecer a busca.
      */
     private const COMPLEMENTOS_DE_CORTESIA = [
-        'ana', 'voce', 'vc', 'moca', 'atendente', 'consultora', 'amiga', 'amigo',
+        'ana', 'aninha', 'voce', 'vc', 'moca', 'atendente', 'consultora', 'amiga', 'amigo',
         'vai', 'anda', 'esta', 'estao', 'estou', 'estamos', 'to', 'ta', 'vao', 'passa',
         'muito', 'muita', 'muitissimo', 'super', 'tao', 'demais', 'bastante',
         'hoje', 'agora', 'aqui', 'sempre', 'tambem', 'tbm', 'sim',
@@ -102,13 +105,13 @@ final class Busca
      */
     public static function fontes(string $pergunta, ?int $limite = null): array
     {
+        $limite ??= (int) config('assistente.resposta.itens_de_fonte');
         $palavras = self::palavrasDaPergunta($pergunta);
 
         if ($palavras === []) {
-            return [];
+            return self::perguntaSobreAssistente($pergunta) ? self::fontesSobreAssistente($limite) : [];
         }
 
-        $limite ??= (int) config('assistente.resposta.itens_de_fonte');
         $piso = (float) config('assistente.resposta.minimo_de_fonte');
 
         $query = ConhecimentoItem::query()
@@ -130,6 +133,10 @@ final class Busca
             ->take($limite)
             ->values()
             ->all();
+
+        if ($escored === [] && self::perguntaSobreAssistente($pergunta)) {
+            return self::fontesSobreAssistente($limite);
+        }
 
         return $escored;
     }
@@ -154,6 +161,11 @@ final class Busca
         }
 
         $limpo = implode(' ', $palavras);
+
+        if (self::conversaCasual($limpo)) {
+            return true;
+        }
+
         $saudou = preg_match('/\bcomo\s+(?:voce\s+|vc\s+)?(?:vai|esta|anda|ta)\b/', $limpo) === 1;
         $elogiou = array_intersect($palavras, self::ELOGIOS_E_GRATIDAO) !== []
             || preg_match('/\b(?:bom|otimo|excelente)\s+(?:atendimento|trabalho)\b/', $limpo) === 1;
@@ -211,7 +223,7 @@ final class Busca
             || ($saudacao !== null && preg_match('/\b(?:tudo|td)\s+(?:bem|bom|joia|certo|otimo|beleza)\b/', $limpo) === 1);
 
         $carinhoOuElogio = preg_match(
-            '/\b(?:querid[ao]|lind[ao]|gentil(?:eza)?|simpatic[ao]|simpatia|atencios[ao]|carinh(?:o|os[ao])|maravilhos[ao]|incrivel|sensacional|prestativ[ao]|amavel|human[ao]|humanizada|educad[ao]|fof[ao]|anjo|meu\s+bem|parabens|adorei|amei|gostei\s+muito|deus\s+(?:te\s+)?abencoe|bom\s+trabalho|muito\s+obrigad[ao]|obrigad[ao]\s+(?:pelo\s+carinho|pela\s+atencao|de\s+coracao))\b/',
+            '/\b(?:querid[ao]|queridinh[ao]|lind[ao]|lindinh[ao]|aninha|gentil(?:eza)?|simpatic[ao]|simpatia|atencios[ao]|carinh(?:o|os[ao])|maravilhos[ao]|incrivel|sensacional|prestativ[ao]|amavel|human[ao]|humanizada|educad[ao]|fof[ao]|fofinh[ao]|anjo|(?:meu\s+)?amor|meu\s+bem|flor|docinho|parabens|adorei|amei|gostei\s+muito|deus\s+(?:te\s+)?abencoe|bom\s+trabalho|muito\s+obrigad[ao]|obrigad[ao]\s+(?:pelo\s+carinho|pela\s+atencao|de\s+coracao))\b/',
             $limpo
         ) === 1;
 
@@ -340,5 +352,92 @@ final class Busca
         $limpo = preg_replace('/[^a-z0-9]+/u', ' ', $limpo) ?? '';
 
         return array_values(array_filter(explode(' ', $limpo), static fn (string $p): bool => $p !== ''));
+    }
+
+    /** Pergunta aberta sobre quem a Ana é, o que ela sabe fazer ou em que pode ajudar. */
+    private static function perguntaSobreAssistente(string $pergunta): bool
+    {
+        $limpo = implode(' ', self::dividir($pergunta));
+
+        if ($limpo === '') {
+            return false;
+        }
+
+        $padroes = [
+            '/\b(?:o\s+que|no\s+que|em\s+que|como|pra\s+que|para\s+que|do\s+que)\s+(?:voce|vc|tu|a?\s*ana|aninha|ela|assistente|robo)\s+(?:[a-z]+\s+){0,2}?(?:sabe|consegue|pode|faz|fazer|resolve|atende|ajuda|ajudar|funciona|serve|entende|trabalha|responde)\b/',
+            '/\bquem\s+(?:e|eh|seria)\s+(?:voce|vc|tu|a?\s*ana|aninha)\b/',
+            '/\bquais\s+(?:sao\s+)?(?:seus|os\s+seus|suas|as\s+suas)\s+(?:servicos|funcoes|capacidades|atribuicoes|assuntos)\b/',
+            '/\b(?:voce|vc)\s+(?:sabe|faz|atende|entende|responde)\s+(?:sobre\s+)?o\s+que\b/',
+            '/\b(?:o\s+que\s+(?:e|eh)\s+que\s+(?:voce|vc)\s+(?:faz|sabe|resolve))\b/',
+        ];
+
+        foreach ($padroes as $padrao) {
+            if (preg_match($padrao, $limpo) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Carrega os itens institucionais que explicam quem é a Golden e tudo o que a Ana sabe resolver.
+     *
+     * @return array<int, array{id: int, titulo: string, texto: string, procedencia: string, pontuacao: float, ancorado: bool}>
+     */
+    private static function fontesSobreAssistente(int $limite): array
+    {
+        $referencias = ['golden:o-que-a-ana-resolve', 'golden:quem-somos'];
+
+        if (Assistente::permissaoAtiva('consultar_catalogo')) {
+            $referencias[] = 'golden:catalogo';
+        }
+
+        return ConhecimentoItem::query()
+            ->ativos()
+            ->whereIn('referencia', $referencias)
+            ->orderBy('id')
+            ->take($limite)
+            ->get()
+            ->map(fn (ConhecimentoItem $item): array => [
+                'id' => (int) $item->id,
+                'titulo' => (string) $item->titulo,
+                'texto' => $item->textoParaIA(),
+                'procedencia' => $item->procedencia(),
+                'pontuacao' => 1.0,
+                'ancorado' => true,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** Expressões puramente conversacionais ("só tô conversando com vc", "tá aí?", "não precisa chamar ninguém"). */
+    private static function conversaCasual(string $limpo): bool
+    {
+        $padroes = [
+            '/\b(?:nao|n)\s+precisa\s+chamar\s+(?:ninguem|equipe|atendente)\b/',
+            '/\b(?:eu\s+)?so\s+(?:to|estou|queria|quero)\s+conversar?(?:\s+com\s+(?:voce|vc|tu))?\b/',
+            '/^\s*so\s+conversando(?:\s+com\s+(?:voce|vc))?\s*$/',
+            '/^\s*(?:fala|conversa)\s+comigo(?:\s+(?:ana|aninha|querida|amor|meu\s+amor))?\s*$/',
+            '/^\s*(?:oi+\s+)?(?:voce|vc)\s+(?:esta|ta)\s+ai\s*$/',
+            '/^\s*(?:oi+\s+)?tem\s+alguem\s+ai\s*$/',
+        ];
+
+        $bateu = false;
+
+        foreach ($padroes as $padrao) {
+            if (preg_match($padrao, $limpo) === 1) {
+                $bateu = true;
+
+                break;
+            }
+        }
+
+        if (! $bateu) {
+            return false;
+        }
+
+        // Se vier misturado com dúvida técnica ou assunto comercial, deixa a busca normal agir.
+        return preg_match('/\b(?:rastreador|plano|chip|preco|valor|fatura|boleto|instala|bloque|roub|furt|cancel|moto|carro|frota|portal|app|aplicativo|servidor)\b/', $limpo) !== 1;
     }
 }

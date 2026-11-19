@@ -89,16 +89,44 @@ class BuscaDoAssistenteTest extends TestCase
         $this->assertTrue(Busca::eCortesia('Você é muito gentil, adorei seu atendimento!'));
         $this->assertTrue(Busca::eCortesia('Como você está?'));
         $this->assertTrue(Busca::eCortesia('Boa tarde linda, muito obrigada pelo carinho!'));
+        $this->assertTrue(Busca::eCortesia('Bom dia meu amor'));
+        $this->assertTrue(Busca::eCortesia('nao precisa chamar ninguem so to conversando com vc'));
+        $this->assertTrue(Busca::eCortesia('oi aninha linda boa tarde amor tudo bem com voce'));
 
         $sinaisMistos = Busca::sinaisDeCordialidade('Bom dia Ana querida, tudo bem? Como funciona o rastreador?');
         $this->assertSame('bom dia', $sinaisMistos['saudacao']);
         $this->assertTrue($sinaisMistos['perguntou_bem_estar']);
         $this->assertTrue($sinaisMistos['carinho_ou_elogio']);
 
+        $sinaisAmor = Busca::sinaisDeCordialidade('o que vc sabe fazer meu amor?');
+        $this->assertTrue($sinaisAmor['carinho_ou_elogio']);
+
         $sinaisSecos = Busca::sinaisDeCordialidade('tudo bem, quero cancelar');
         $this->assertNull($sinaisSecos['saudacao']);
         $this->assertFalse($sinaisSecos['perguntou_bem_estar']);
         $this->assertFalse($sinaisSecos['carinho_ou_elogio']);
+    }
+
+    public function test_o_que_voce_sabe_fazer_e_perguntas_sobre_a_ana_encontram_fontes_da_base(): void
+    {
+        $this->item([
+            'referencia' => 'golden:o-que-a-ana-resolve',
+            'titulo' => 'O que a assistente Ana resolve',
+            'corpo' => 'A Ana ajuda com rastreadores, planos, acesso ao portal e segunda via de fatura.',
+            'tags' => 'ajuda, o que voce faz, sabe fazer',
+        ]);
+
+        foreach ([
+            'o que vc sabe fazer?',
+            'o que vc sabe fazer meu amor?',
+            'o que vc faz aqui entao se nao sabe nada?',
+            'o que você faz?',
+            'quem é você?',
+        ] as $pergunta) {
+            $fontes = Busca::fontes($pergunta);
+            $this->assertNotEmpty($fontes, "Deveria encontrar fonte institucional para: {$pergunta}");
+            $this->assertSame('O que a assistente Ana resolve', $fontes[0]['titulo']);
+        }
     }
 
     public function test_reconhece_plurais_e_flexoes_com_o_radical(): void

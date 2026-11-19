@@ -44,9 +44,10 @@ final class Nome
         '/\bnome\s*[:\-]\s*([^\n?.]{2,60})/iu',
         '/\b(?:me\s+chamo|chamo[-\s]?me|eu\s+chamo)\s+([^\n?.]{2,60})/iu',
         '/\bpod(?:e|em)\s+me\s+chamar\s+de\s+([^\n?.]{2,60})/iu',
-        '/\b(?:quem\s+(?:est[aá]\s+)?falando|quem\s+fala)\s+(?:aqui\s+)?[ée]h?\s+([^\n?.]{2,60})/iu',
-        '/\b(?:aqui\s+[ée]h?|do\s+outro\s+lado\s+[ée]h?)\s+(?:o|a|os|as)?\s*([^\n?.]{2,60})/iu',
-        '/\bsou\s+(?:a|o|uma|um)?\s*([^\n?.]{2,60})/iu',
+        '/\b(?:quem\s+(?:est[aá]\s+)?falando|quem\s+fala)\s+(?:aqui\s+)?[ée]h?\s+(?:(?:o|a)\s+)?([^\n?.]{2,60})/iu',
+        '/\b(?:aqui\s+[ée]h?|do\s+outro\s+lado\s+[ée]h?)\s+(?:(?:o|a|os|as)\s+)?([^\n?.]{2,60})/iu',
+        '/\b(?:(?:voc[eê]|vc|tu)\s+(?:est[aá]|t[aá])?\s*falando|falando|(?:voc[eê]|vc)\s+fala)\s+com\s+(?:(?:o|a)\s+)?([^\n?.]{2,60})/iu',
+        '/\bsou\s+(?:(?:a|o|uma|um)\s+)?([^\n?.]{2,60})/iu',
     ];
 
     /**
@@ -71,6 +72,7 @@ final class Nome
         'agora', 'ainda', 'sempre', 'nunca', 'talvez', 'sei', 'sabia', 'aqui', 'ali', 'la', 'ca',
         'mim', 'eu', 'isso', 'isto', 'aquilo', 'nada', 'tanta', 'tanto', 'mesmo',
         'sou', 'estou', 'somos', 'tenho', 'acho', 'penso',
+        'amor', 'linda', 'lindo', 'querida', 'querido', 'aninha', 'gentil', 'simpatica', 'simpatico',
     ];
 
     /**
@@ -198,7 +200,17 @@ final class Nome
         // "marcelo" e "MARCELO" são a mesma pessoa mal digitada; "Marcelo" e "marCelO" ficam
         // como a pessoa escreveu.
         if ($nome === mb_strtolower($nome) || $nome === Str::upper($nome)) {
-            return Str::ucfirst(mb_strtolower($nome));
+            $partes = array_map(static function (string $parte, int $indice): string {
+                $min = mb_strtolower($parte);
+
+                if ($indice > 0 && in_array($min, ['de', 'da', 'do', 'dos', 'das', 'e'], true)) {
+                    return $min;
+                }
+
+                return Str::ucfirst($min);
+            }, $palavras, array_keys($palavras));
+
+            return implode(' ', $partes);
         }
 
         return $nome;

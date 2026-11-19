@@ -299,7 +299,7 @@ return [
         'cargo' => 'Consultora de Rastreamento Veicular · Golden Rastreamento',
         'saudacao' => 'Olá! Que bom ter você por aqui. Eu sou a Ana, da Golden Rastreamento. Pode conversar comigo normalmente — me conte o que você precisa que eu te ajudo agora mesmo ou te conecto com a nossa equipe!',
         'pergunta_nome' => 'Para eu te atender com mais atenção, como posso te chamar?',
-        'confirmacao_nome' => 'Muito prazer, :nome! Como posso te ajudar hoje?',
+        'confirmacao_nome' => 'Prazer, :nome! Que bom falar com você — como posso te ajudar hoje?',
         'pergunta_email' => 'Qual é o e-mail do seu cadastro? É por ele que eu localizo a sua conta com segurança — nada sai para outro endereço.',
         'confirmacao_email' => 'Perfeito! E-mail anotado. Pode me dizer o que você precisa.',
         'confirmacao_cadastro' => 'Encontrei o seu cadastro por aqui, :nome! Pode me contar como posso te ajudar.',

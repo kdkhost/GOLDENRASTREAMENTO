@@ -839,6 +839,45 @@ class BolhaDoAssistenteTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_a_ana_responde_o_que_sabe_fazer_e_lida_com_carinho_ou_conversa_casual_sem_escalar(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Obrigada pelo carinho! Posso te ajudar com rastreadores, planos, plataforma e segunda via de fatura.']]]]]], 200)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Combinado! Estou por aqui sempre que quiser conversar ou tirar qualquer dúvida.']]]]]], 200),
+        ]);
+
+        ConhecimentoItem::create([
+            'referencia' => 'golden:o-que-a-ana-resolve',
+            'titulo' => 'O que a assistente Ana resolve',
+            'corpo' => 'A Ana ajuda a contratar rastreadores J16, escolher chip M2M e tirar segunda via de fatura.',
+            'tags' => 'ajuda, o que voce faz, sabe fazer',
+            'origem' => 'painel',
+            'ativo' => '1',
+        ]);
+
+        $this->postJson('/assistente/fala', ['texto' => 'o que vc sabe fazer meu amor?'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $this->postJson('/assistente/fala', ['texto' => 'nao precisa chamar ninguem so to conversando com vc'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $pedidos = Http::recorded();
+        $this->assertCount(2, $pedidos);
+
+        $ordemPerguntaFuncoes = (string) data_get($pedidos[0][0]->data(), 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('agradeça o carinho', $ordemPerguntaFuncoes);
+
+        $corpoPerguntaFuncoes = $this->textoDoPedido($this->partesDoPedido($pedidos[0][0]));
+        $this->assertStringContainsString('O que a assistente Ana resolve', $corpoPerguntaFuncoes);
+
+        $ordemConversa = (string) data_get($pedidos[1][0]->data(), 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('saudação', $ordemConversa);
+        $this->assertStringContainsString('nunca boba', $ordemConversa);
+    }
+
     public function test_a_ana_adapta_o_tom_a_cada_conversa_entre_descontraida_e_seria(): void
     {
         config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);

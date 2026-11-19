@@ -33,7 +33,7 @@ return [
         [
             'referencia' => 'golden:o-que-a-ana-resolve',
             'titulo' => 'O que a assistente Ana resolve',
-            'tags' => 'ajuda assuntos atendimento vendas serviços produtos dúvidas o que você faz quem é você como pode me ajudar consultora',
+            'tags' => 'ajuda assuntos atendimento vendas serviços produtos dúvidas o que você faz sabe fazer funções capacidades quem é você como pode me ajudar consultora ana aninha',
             'corpo' => 'A Ana é a consultora virtual da Golden Rastreamento. Ela atende com cordialidade e ajuda a entender e contratar os serviços e produtos da Golden: explica como funciona cada rastreador (J16 para carros, motos e frota), qual equipamento combina com cada veículo, como funciona a instalação com profissional de confiança, o bloqueio remoto via relé e chicote, a escolha do chip M2M incluso no benefício (Chip Multioperadora com Algar, Claro, Vivo e TIM ou operadoras individuais Vivo, Claro e TIM), os planos mensais e pacotes adicionais de alertas recorrentes no carrinho. Também orienta sobre o acesso à plataforma web (Servidor 1 e Servidor 2), aplicativo Android/iOS, portal do cliente e segunda via de fatura no chat com conferência de segurança. O que ela não faz: divulgar preços de itens sob consulta, conceder descontos por conta própria ou pedir senhas e dados de cartão.',
         ],
 
