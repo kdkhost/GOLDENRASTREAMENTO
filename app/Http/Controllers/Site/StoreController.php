@@ -200,10 +200,14 @@ class StoreController extends Controller
         $qtdAnterior = $carrinho->quantidadeDoProduto((int) $produto['id']);
         $modo = $data['modo'] ?? 'somar';
 
-        if (! empty($data['operadora'])) {
-            $carrinho->definirOperadora((int) $produto['id'], $data['operadora']);
-        } elseif (! empty($produto['chip_padrao'])) {
-            $carrinho->definirOperadora((int) $produto['id'], (string) $produto['chip_padrao']);
+        if (! empty($produto['permite_escolha_chip'])) {
+            $operadorasPermitidas = array_keys((array) ($produto['operadoras_detalhes'] ?? []));
+            $opValida = (! empty($data['operadora']) && ($operadorasPermitidas === [] || in_array($data['operadora'], $operadorasPermitidas, true)))
+                ? $data['operadora']
+                : (string) ($produto['chip_padrao'] ?? 'algar');
+            $carrinho->definirOperadora((int) $produto['id'], $opValida);
+        } else {
+            $carrinho->removerOperadora((int) $produto['id']);
         }
 
         if ($modo === 'definir') {
@@ -248,6 +252,30 @@ class StoreController extends Controller
             'produto' => ['required', 'integer'],
             'operadora' => ['required', 'string', 'in:algar,vivo,claro,tim'],
         ]);
+
+        $produto = Product::doCatalogo((int) $data['produto']);
+
+        if ($produto === null || empty($produto['permite_escolha_chip'])) {
+            $msg = 'A escolha de operadora do chip não está habilitada para este produto.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['sucesso' => false, 'mensagem' => $msg], 422);
+            }
+
+            return back()->with('error', $msg);
+        }
+
+        $operadorasPermitidas = array_keys((array) ($produto['operadoras_detalhes'] ?? []));
+
+        if ($operadorasPermitidas !== [] && ! in_array($data['operadora'], $operadorasPermitidas, true)) {
+            $msg = 'Operadora de chip indisponível para este produto.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['sucesso' => false, 'mensagem' => $msg], 422);
+            }
+
+            return back()->with('error', $msg);
+        }
 
         $carrinho = Carrinho::daSessao();
         $carrinho->definirOperadora((int) $data['produto'], $data['operadora']);
@@ -349,9 +377,9 @@ class StoreController extends Controller
                 'mensalidade_cents' => (int) ($l['mensalidade'] ?? 0),
                 'mensalidade_formatada' => ! empty($l['mensalidade']) ? brl($l['mensalidade']).'/mês' : null,
                 'cobrar_mensalidade_hoje' => (bool) ($l['cobrar_mensalidade_hoje'] ?? false),
-                'operadora_codigo' => $l['operadora_codigo'] ?? 'algar',
-                'operadora_nome' => $l['operadora_nome'] ?? 'Chip Multioperadora',
-                'operadora_rotulo' => $l['operadora_rotulo'] ?? 'Chip Multioperadora',
+                'operadora_codigo' => $l['operadora_codigo'] ?? null,
+                'operadora_nome' => $l['operadora_nome'] ?? null,
+                'operadora_rotulo' => $l['operadora_rotulo'] ?? null,
                 'pacotes_alertas_ids' => (array) ($l['pacotes_alertas_ids'] ?? []),
                 'pacotes_alertas_unit_cents' => (int) ($l['pacotes_alertas_unit_cents'] ?? 0),
                 'subtotal_formatado' => brl($l['subtotal']),
@@ -622,7 +650,9 @@ class StoreController extends Controller
                 }
 
                 $unit = $produto->preco();
-                $operadoraEscolhida = $linha['operadora_codigo'] ?? ($produto->chip_padrao ?? 'algar');
+                $operadoraEscolhida = $produto->permiteEscolhaChip()
+                    ? ($linha['operadora_codigo'] ?? $produto->operadoraPadrao())
+                    : null;
                 $mensalidadeChip = $produto->mensalidadeParaOperadora($operadoraEscolhida);
 
                 $pacotesIdsMarcados = (array) ($linha['pacotes_alertas_ids'] ?? []);

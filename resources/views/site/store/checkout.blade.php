@@ -181,7 +181,7 @@
                 <li>
                     <div>
                         <span>{{ $l['quantidade'] }}× {{ $l['nome'] }}</span>
-                        @if(!empty($l['operadora_nome']) || !empty($l['chip_operadora']))
+                        @if(!empty($l['permite_escolha_chip']) && (!empty($l['operadora_nome']) || !empty($l['chip_operadora'])))
                             <div style="font-size:.74rem;color:#fcd34d;font-weight:600;margin-top:2px">
                                 <i class="fa-solid fa-sim-card" style="font-size:.7rem"></i> Chip: {{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Chip Multioperadora') }}
                             </div>

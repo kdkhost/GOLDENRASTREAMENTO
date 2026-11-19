@@ -59,6 +59,7 @@ class ProductController extends Controller
                 'destaque' => false,
                 'ordem' => 0,
                 'tipo_cobranca' => 'mensal',
+                'permite_escolha_chip' => true,
                 'cobrar_primeira_mensalidade' => Setting::get('loja_cobrar_primeira_mensalidade', '1') === '1',
             ]),
             'categorias' => Category::orderBy('nome')->get(),
@@ -79,6 +80,7 @@ class ProductController extends Controller
         }
 
         Activity::log('produto_criado', "Produto {$produto->nome} criado.", $produto);
+        $produto->esquecerCache();
         $this->sincronizarCatalogoAssistente();
 
         if ($request->input('salvar_e_continuar') === '1') {
@@ -119,6 +121,7 @@ class ProductController extends Controller
         }
 
         Activity::log('produto_atualizado', "Produto {$produto->nome} atualizado.", $produto);
+        $produto->esquecerCache();
         $this->sincronizarCatalogoAssistente();
 
         if ($request->input('salvar_e_continuar') === '1') {

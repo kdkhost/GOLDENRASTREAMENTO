@@ -1115,4 +1115,119 @@ class FluxoDaLojaTest extends TestCase
             ->assertSee('Incluso')
             ->assertDontSee('Recurso Inativo Oculto');
     }
+
+    public function test_desativar_escolha_do_chip_oculta_seletor_na_loja_carrinho_checkout_e_impede_selecao(): void
+    {
+        Mail::fake();
+        Setting::set('loja_livre', '1');
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'ativo',
+        ]);
+
+        // Primeiro garante o cache aquecido e o produto com escolha de chip ativa e preços por operadora
+        $this->produto->update([
+            'permite_escolha_chip' => true,
+            'operadoras_chip' => ['algar', 'vivo'],
+            'precos_chip' => ['algar' => 7990, 'vivo' => 4990],
+            'chip_padrao' => 'algar',
+            'mensalidade_cents' => 5990,
+            'cobrar_primeira_mensalidade' => true,
+        ]);
+        Product::catalogoParaSite();
+
+        // Admin desativa a escolha do chip (enviando valor '0' do hidden input, sem marcar o checkbox)
+        $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $this->produto), [
+                'nome' => $this->produto->nome,
+                'category_id' => $this->produto->category_id,
+                'preco' => '299,00',
+                'mensalidade' => '59,90',
+                'cobrar_primeira_mensalidade' => '1',
+                'permite_escolha_chip' => '0',
+                'operadoras_chip' => ['algar', 'vivo'],
+                'precos_chip' => ['algar' => '79,90', 'vivo' => '49,90'],
+                'chip_padrao' => 'algar',
+                'estoque' => 10,
+                'ativo' => '1',
+            ])
+            ->assertRedirect(route('admin.catalogo.produtos.index'));
+
+        $this->produto->refresh();
+        $this->assertFalse((bool) $this->produto->permite_escolha_chip);
+        $this->assertFalse($this->produto->permiteEscolhaChip());
+
+        // Ao abrir a edição novamente, o switch deve continuar desmarcado
+        $editHtml = $this->actingAs($admin)
+            ->get(route('admin.catalogo.produtos.edit', $this->produto))
+            ->assertOk()
+            ->getContent();
+        $this->assertMatchesRegularExpression('/id="f-permite-escolha-chip"[^>]*>/', $editHtml);
+        $this->assertDoesNotMatchRegularExpression('/id="f-permite-escolha-chip"[^>]*checked/', $editHtml);
+
+        // Página do produto (sem flush manual — valida invalidação de cache): oculta seletor e usa mensalidade padrão (59,90)
+        $this->get(route('site.loja.produto', $this->produto->slug))
+            ->assertOk()
+            ->assertDontSee('Escolha a operadora do chip')
+            ->assertDontSee('<div class="pdp-chip-selector">', false)
+            ->assertDontSee('<input type="radio" name="operadora"', false)
+            ->assertDontSee('<input type="hidden" name="operadora"', false)
+            ->assertSee('Mensalidade do plano')
+            ->assertSee('59,90');
+
+        // Mesmo que um payload tente enviar 'operadora' ao adicionar no carrinho, deve ignorar e usar a mensalidade padrão
+        $this->post('/loja/carrinho', [
+            'produto' => $this->produto->id,
+            'quantidade' => 1,
+            'operadora' => 'vivo',
+        ])->assertRedirect(route('site.loja.carrinho'));
+
+        $this->get('/loja/carrinho')
+            ->assertOk()
+            ->assertDontSee('<select id="cartOp_'.$this->produto->id.'"', false)
+            ->assertDontSee('Benefício: Chip incluso')
+            ->assertSee('59,90');
+
+        // Endpoint de troca de operadora no carrinho recusa alteração quando desativada
+        $this->postJson('/loja/carrinho/operadora', [
+            'produto' => $this->produto->id,
+            'operadora' => 'vivo',
+        ])->assertStatus(422)
+            ->assertJson(['sucesso' => false]);
+
+        // Checkout e pedido gravam sem operadora escolhida e com a mensalidade padrão do produto
+        $this->get(route('site.loja.checkout'))
+            ->assertOk()
+            ->assertDontSee('Benefício: Chip incluso');
+
+        $this->post('/loja/pedido', $this->dadosCheckout())->assertRedirect();
+
+        $pedido = $this->ultimoPedido();
+        $item = $pedido->items()->first();
+
+        $this->assertNull($item->chip_operadora);
+        $this->assertSame(5990, (int) $item->mensalidade_cents);
+
+        // Reativar no admin volta a exibir imediatamente a escolha de chip na loja
+        $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $this->produto), [
+                'nome' => $this->produto->nome,
+                'category_id' => $this->produto->category_id,
+                'preco' => '299,00',
+                'mensalidade' => '59,90',
+                'cobrar_primeira_mensalidade' => '1',
+                'permite_escolha_chip' => '1',
+                'operadoras_chip' => ['algar', 'vivo'],
+                'precos_chip' => ['algar' => '79,90', 'vivo' => '49,90'],
+                'chip_padrao' => 'algar',
+                'estoque' => 10,
+                'ativo' => '1',
+            ])
+            ->assertRedirect(route('admin.catalogo.produtos.index'));
+
+        $this->get(route('site.loja.produto', $this->produto->slug))
+            ->assertOk()
+            ->assertSee('Escolha a operadora do chip');
+    }
 }

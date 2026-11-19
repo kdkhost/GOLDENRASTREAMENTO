@@ -96,6 +96,13 @@ class Carrinho
         session([self::CHAVE_OPERADORAS => $operadoras]);
     }
 
+    public function removerOperadora(int $produtoId): void
+    {
+        $operadoras = (array) session(self::CHAVE_OPERADORAS, []);
+        unset($operadoras[$produtoId]);
+        session([self::CHAVE_OPERADORAS => $operadoras]);
+    }
+
     public function operadoraDoProduto(int $produtoId, string $padrao = 'algar'): string
     {
         $operadoras = (array) session(self::CHAVE_OPERADORAS, []);
@@ -282,11 +289,21 @@ class Carrinho
                 $this->itens[$id] = $quantidade;
             }
 
+            $permiteEscolhaChip = ! empty($produto['permite_escolha_chip']);
             $operadoraPadrao = $produto['chip_padrao'] ?? 'algar';
-            $operadoraEscolhida = $this->operadoraDoProduto((int) $id, $operadoraPadrao);
-            $dadosOperadora = $produto['operadoras_detalhes'][$operadoraEscolhida] ?? ($produto['operadoras_detalhes'][$operadoraPadrao] ?? (Product::OPERADORAS_CHIP[$operadoraEscolhida] ?? null));
+            $operadoraEscolhida = $permiteEscolhaChip
+                ? $this->operadoraDoProduto((int) $id, $operadoraPadrao)
+                : null;
+            if ($permiteEscolhaChip && ! empty($produto['operadoras_detalhes']) && ! isset($produto['operadoras_detalhes'][$operadoraEscolhida])) {
+                $operadoraEscolhida = $operadoraPadrao;
+            }
+            $dadosOperadora = $permiteEscolhaChip && $operadoraEscolhida !== null
+                ? ($produto['operadoras_detalhes'][$operadoraEscolhida] ?? ($produto['operadoras_detalhes'][$operadoraPadrao] ?? (Product::OPERADORAS_CHIP[$operadoraEscolhida] ?? null)))
+                : null;
             $cobrarMensalidadeHoje = (bool) ($produto['cobrar_primeira_mensalidade'] ?? false);
-            $mensalidadeChip = (int) ($dadosOperadora['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0));
+            $mensalidadeChip = $permiteEscolhaChip
+                ? (int) ($dadosOperadora['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0))
+                : (int) ($produto['mensalidade'] ?? 0);
 
             $pacotesDisponiveis = (array) ($produto['pacotes_alertas'] ?? []);
             $pacotesIdsMarcados = $this->pacotesAlertasDoProduto((int) $id);
@@ -315,13 +332,15 @@ class Carrinho
                 'mensalidade' => $mensalidadeItem,
                 'cobrar_mensalidade_hoje' => $cobrarMensalidadeHoje,
                 'operadora_codigo' => $operadoraEscolhida,
-                'operadora_nome' => $dadosOperadora['nome'] ?? ($produto['chip_operadora'] ?: 'Chip Multioperadora'),
-                'operadora_rotulo' => $dadosOperadora['rotulo'] ?? ($produto['chip_operadora'] ?: 'Chip Multioperadora'),
-                'operadora_tipo' => $dadosOperadora['tipo'] ?? 'multioperadora',
-                'operadora_icone' => $dadosOperadora['icone'] ?? 'fa-sim-card',
-                'operadora_destaque' => $dadosOperadora['destaque'] ?? null,
-                'chip_incluso' => true,
-                'beneficio_chip' => ! empty($produto['beneficio_chip_texto']) ? $produto['beneficio_chip_texto'] : 'Chip M2M incluso no benefício do plano',
+                'operadora_nome' => $permiteEscolhaChip ? ($dadosOperadora['nome'] ?? ($produto['chip_operadora'] ?: 'Chip Multioperadora')) : null,
+                'operadora_rotulo' => $permiteEscolhaChip ? ($dadosOperadora['rotulo'] ?? ($produto['chip_operadora'] ?: 'Chip Multioperadora')) : null,
+                'operadora_tipo' => $permiteEscolhaChip ? ($dadosOperadora['tipo'] ?? 'multioperadora') : null,
+                'operadora_icone' => $permiteEscolhaChip ? ($dadosOperadora['icone'] ?? 'fa-sim-card') : null,
+                'operadora_destaque' => $permiteEscolhaChip ? ($dadosOperadora['destaque'] ?? null) : null,
+                'chip_incluso' => $permiteEscolhaChip,
+                'beneficio_chip' => $permiteEscolhaChip
+                    ? (! empty($produto['beneficio_chip_texto']) ? $produto['beneficio_chip_texto'] : 'Chip M2M incluso no benefício do plano')
+                    : null,
             ];
         }
 

@@ -152,16 +152,15 @@
 
                 @php
                     $cobrarHoje = !empty($produto['cobrar_primeira_mensalidade']);
-                    $ehRastreadorOuPlano = in_array((int) ($produto['category_id'] ?? 0), [1, 2, 4], true)
-                        || str_contains(strtolower($produto['nome']), 'rastreador')
-                        || str_contains(strtolower($produto['nome']), 'plano')
-                        || str_contains(strtolower($produto['nome']), 'chip')
-                        || !empty($produto['mensalidade']);
-                    $permiteChip = !empty($produto['permite_escolha_chip']) || $ehRastreadorOuPlano;
-                    $operadoras = $produto['operadoras_detalhes'] ?? \App\Models\Product::operadorasDisponiveis();
+                    $permiteChip = !empty($produto['permite_escolha_chip']);
+                    $operadoras = $permiteChip ? ($produto['operadoras_detalhes'] ?? \App\Models\Product::operadorasDisponiveis()) : [];
                     $chipPadrao = $produto['chip_padrao'] ?? 'algar';
-                    $mensalidadeChipInicial = (int) ($operadoras[$chipPadrao]['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0));
-                    $nomeChipInicial = $operadoras[$chipPadrao]['nome'] ?? 'Chip Multioperadora';
+                    $mensalidadeChipInicial = $permiteChip
+                        ? (int) ($operadoras[$chipPadrao]['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0))
+                        : (int) ($produto['mensalidade'] ?? 0);
+                    $nomeChipInicial = $permiteChip
+                        ? ($operadoras[$chipPadrao]['nome'] ?? 'Chip Multioperadora')
+                        : null;
                     $precoItemUnit = (int) ($produto['preco'] ?? 0);
                     $precoHojeUnit = $precoItemUnit + ($cobrarHoje ? $mensalidadeChipInicial : 0);
                 @endphp
@@ -209,6 +208,10 @@
                                 <span><i class="fa-solid fa-shield-halved"></i> Adesão do produto grátis · <strong class="ok">Chip M2M incluso</strong></span>
                                 <small>Selecione a operadora desejada abaixo em <strong>Escolha a operadora do chip</strong>.</small>
                             </div>
+                        @elseif($mensalidadeChipInicial > 0)
+                            <div class="pdp-item-subtitle">
+                                <span><i class="fa-solid fa-shield-halved"></i> Adesão do produto grátis · <strong class="ok">Plano mensal</strong></span>
+                            </div>
                         @endif
 
                         @if($mensalidadeChipInicial > 0 || $permiteChip)
@@ -216,7 +219,11 @@
                                 <div class="pdp-monthly-box-row">
                                     <span class="pdp-monthly-box-label">
                                         <i class="fa-solid fa-tower-broadcast"></i>
-                                        Mensalidade (<span id="pdpPriceChipName">{{ $nomeChipInicial }}</span>)
+                                        @if($permiteChip && $nomeChipInicial)
+                                            Mensalidade (<span id="pdpPriceChipName">{{ $nomeChipInicial }}</span>)
+                                        @else
+                                            Mensalidade do plano
+                                        @endif
                                     </span>
                                     <strong class="pdp-monthly-box-val" id="pdpPriceMonthlyVal">{{ brl($mensalidadeChipInicial) }}/mês</strong>
                                 </div>
@@ -321,8 +328,6 @@
                                     <span><strong>Benefício garantido:</strong> {!! $textoBeneficioHtml !!}</span>
                                 </div>
                             </div>
-                        @else
-                            <input type="hidden" name="operadora" value="{{ $produto['chip_padrao'] ?? 'algar' }}">
                         @endif
 
                         <div class="quantity-row">
@@ -378,11 +383,19 @@
                         </div>
                     </div>
                     <div class="pdp-trust-tile">
-                        <i class="fa-solid fa-sim-card"></i>
-                        <div>
-                            <strong>Chip Multioperadora</strong>
-                            <small>{{ !empty($produto['chip_operadora']) ? $produto['chip_operadora'] : 'Algar, Vivo, Claro e TIM' }}</small>
-                        </div>
+                        @if($permiteChip)
+                            <i class="fa-solid fa-sim-card"></i>
+                            <div>
+                                <strong>Chip Multioperadora</strong>
+                                <small>{{ !empty($produto['chip_operadora']) ? $produto['chip_operadora'] : 'Algar, Vivo, Claro e TIM' }}</small>
+                            </div>
+                        @else
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                            <div>
+                                <strong>Plataforma Web e App</strong>
+                                <small>Acesso Android, iOS e Desktop</small>
+                            </div>
+                        @endif
                     </div>
                     <div class="pdp-trust-tile">
                         <i class="fa-solid {{ $ehSobConsulta ? 'fa-headset' : 'fa-lock' }}"></i>
@@ -835,6 +848,15 @@ document.addEventListener('DOMContentLoaded',function(){
       var destinoUrl = form.getAttribute('action') || '{{ route('site.loja.carrinho.adicionar', absolute: false) }}';
       var opInput = form.querySelector('input[name="operadora"]:checked') || form.querySelector('input[name="operadora"]');
       var opEscolhida = opInput ? opInput.value : '';
+      var payload = {
+        produto: {{ (int) $produto['id'] }},
+        quantidade: inp ? Math.max(1, parseInt(inp.value, 10) || 1) : 1,
+        modo: modo,
+        ir: 'carrinho'
+      };
+      if (opEscolhida) {
+        payload.operadora = opEscolhida;
+      }
 
       fetch(destinoUrl, {
         method: 'POST',
@@ -844,13 +866,7 @@ document.addEventListener('DOMContentLoaded',function(){
           'X-CSRF-TOKEN': '{{ csrf_token() }}',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          produto: {{ (int) $produto['id'] }},
-          quantidade: inp ? Math.max(1, parseInt(inp.value, 10) || 1) : 1,
-          modo: modo,
-          ir: 'carrinho',
-          operadora: opEscolhida
-        })
+        body: JSON.stringify(payload)
       })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
       .then(function (res) {

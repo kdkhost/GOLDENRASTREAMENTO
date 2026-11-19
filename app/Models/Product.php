@@ -292,6 +292,10 @@ class Product extends Model
 
     public function mensalidadeParaOperadora(?string $operadora = null): int
     {
+        if (! $this->permiteEscolhaChip()) {
+            return (int) ($this->mensalidade_cents ?? 0);
+        }
+
         $op = $operadora ?: $this->operadoraPadrao();
         $precos = (array) ($this->precos_chip ?? []);
         if (isset($precos[$op]) && is_numeric($precos[$op]) && (int) $precos[$op] > 0) {
@@ -328,8 +332,8 @@ class Product extends Model
 
     public function permiteEscolhaChip(): bool
     {
-        if ($this->permite_escolha_chip !== null && (bool) $this->permite_escolha_chip) {
-            return true;
+        if ($this->permite_escolha_chip !== null) {
+            return (bool) $this->permite_escolha_chip;
         }
 
         $temMensalidade = ! empty($this->mensalidade_cents) && $this->mensalidade_cents > 0;
@@ -450,7 +454,7 @@ class Product extends Model
                     'permite_escolha_chip' => $p->permiteEscolhaChip(),
                     'operadoras_chip' => (array) ($p->operadoras_chip ?? []),
                     'precos_chip' => (array) ($p->precos_chip ?? []),
-                    'operadoras_detalhes' => $p->operadorasConfiguradas(),
+                    'operadoras_detalhes' => $p->permiteEscolhaChip() ? $p->operadorasConfiguradas() : [],
                     'chip_padrao' => $p->operadoraPadrao(),
                     'garantia' => $p->garantia,
                     'anatel_homologado' => $p->anatel_homologado,
