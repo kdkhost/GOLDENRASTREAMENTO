@@ -364,29 +364,8 @@
     }
   }
 
-  function criaBalaoDigitando() {
-    var balao = document.createElement('div');
-    balao.className = 'ia-fala assistente ia-fala-digitando';
-    balao.setAttribute('data-ia-balao-digitando', '');
-
-    var quem = document.createElement('b');
-    quem.textContent = cfg.nome || 'Ana';
-    balao.appendChild(quem);
-
-    var pontos = document.createElement('span');
-    pontos.className = 'ia-pontos-animados';
-    pontos.setAttribute('aria-hidden', 'true');
-    for (var i = 0; i < 3; i++) {
-      pontos.appendChild(document.createElement('i'));
-    }
-    balao.appendChild(pontos);
-
-    return balao;
-  }
-
   function mostraDigitandoBalao() {
     removeDigitandoBalao();
-    corpo.appendChild(criaBalaoDigitando());
     if (digitando) digitando.hidden = false;
     if (aberto) rolar();
   }
@@ -396,13 +375,18 @@
     if (balao) balao.remove();
   }
 
+  function escondeDigitando() {
+    removeDigitandoBalao();
+    if (digitando) digitando.hidden = true;
+  }
+
   function cancelaDigitacao() {
     cancelaDigitacaoAtiva();
     if (digitandoTimer) {
       clearTimeout(digitandoTimer);
       digitandoTimer = null;
     }
-    removeDigitandoBalao();
+    escondeDigitando();
     filaDigitacao = [];
     emDigitacao = false;
   }
@@ -598,8 +582,7 @@
   function processaFilaDigitacao(fila, animar, aoFinal) {
     if (!fila || !fila.length) {
       emDigitacao = false;
-      removeDigitandoBalao();
-      if (digitando) digitando.hidden = true;
+      escondeDigitando();
       if (typeof aoFinal === 'function') aoFinal();
       return;
     }
@@ -791,13 +774,13 @@
 
     enviar_post(cfg.nova, {}).then(function (d) {
       if (d.ativo === false) {
-        removeDigitandoBalao();
+        escondeDigitando();
         liberaEnvioAposAbertura();
         desaparece();
         return;
       }
       if (!d.falas) {
-        removeDigitandoBalao();
+        escondeDigitando();
         liberaEnvioAposAbertura();
         mostraErros(d);
         return;
@@ -909,7 +892,7 @@
       enviar_post(cfg.abrir, { de: de }).then(function (d) {
         ocupado = false;
         if (!d.ativo) {
-          removeDigitandoBalao();
+          escondeDigitando();
           liberaEnvioAposAbertura();
           desaparece();
           return;
@@ -1039,7 +1022,6 @@
     ocupado = true;
     envio.disabled = true;
     if (anexar) anexar.disabled = true;
-    mostraDigitandoBalao();
 
     // O balão do cliente entra na hora; quando a resposta voltar, a fala real do servidor
     // ocupa o lugar dele. Sem isso, dez segundos de IA pareceriam nada acontecendo.
@@ -1051,7 +1033,7 @@
     var balao = pintura(previa);
     balao.setAttribute('data-pendente', '');
     corpo.appendChild(balao);
-    rolar();
+    mostraDigitandoBalao();
 
     var pedido = anexo ? enviar_arquivo(cfg.arquivo, anexo, texto) : enviar_post(cfg.fala, { texto: texto });
 
@@ -1060,20 +1042,19 @@
       // e precisa continuar na tela, com a frase da regra que foi quebrada.
       if (d.ativo === false) {
         limpaPendente();
-        removeDigitandoBalao();
+        escondeDigitando();
         desaparece();
         return;
       }
 
       if (!d.falas) {
         limpaPendente();
-        removeDigitandoBalao();
+        escondeDigitando();
         mostraErros(d);
         if (texto !== '') campo.value = texto;
         ocupado = false;
         envio.disabled = false;
         if (anexar) anexar.disabled = false;
-        if (digitando) digitando.hidden = true;
         return;
       }
 

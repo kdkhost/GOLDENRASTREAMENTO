@@ -878,6 +878,51 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertStringContainsString('nunca boba', $ordemConversa);
     }
 
+    public function test_a_ana_corrige_com_gentileza_quando_o_cliente_erra_a_saudacao_do_horario(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Boa tarde! Haha, por aqui já é tarde — obrigada pelo carinho! Como posso te ajudar?']]]]]], 200)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Boa noite! Já escureceu por aqui — o rastreador custa R$ 299,00 na loja.']]]]]], 200),
+        ]);
+
+        ConhecimentoItem::create([
+            'titulo' => 'Preço do rastreador',
+            'corpo' => 'O rastreador J16 custa R$ 299,00 na loja.',
+            'tags' => 'rastreador, preco',
+            'origem' => 'painel',
+            'ativo' => '1',
+        ]);
+
+        // 1. À tarde (15h10), cliente manda "bom dia minha linda"
+        $this->travelTo(now()->setTimezone('America/Sao_Paulo')->setTime(15, 10, 0));
+        $this->postJson('/assistente/fala', ['texto' => 'bom dia minha linda'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        // 2. À noite (21h00), cliente manda "boa tarde, quanto custa o rastreador?" em nova conversa
+        $this->flushSession();
+        $this->travelTo(now()->setTimezone('America/Sao_Paulo')->setTime(21, 0, 0));
+        $this->postJson('/assistente/fala', ['texto' => 'boa tarde, quanto custa o rastreador?'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $pedidos = Http::recorded();
+        $this->assertCount(2, $pedidos);
+
+        $ordemTarde = (string) data_get($pedidos[0][0]->data(), 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('15h10', $ordemTarde);
+        $this->assertStringContainsString('Boa tarde', $ordemTarde);
+        $this->assertStringContainsString('bom dia', $ordemTarde);
+        $this->assertStringContainsString('Corrija esse lapso de horário', $ordemTarde);
+
+        $ordemNoite = (string) data_get($pedidos[1][0]->data(), 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('21h00', $ordemNoite);
+        $this->assertStringContainsString('Boa noite', $ordemNoite);
+        $this->assertStringContainsString('boa tarde', $ordemNoite);
+        $this->assertStringContainsString('corrija com leveza', $ordemNoite);
+    }
+
     public function test_a_ana_adapta_o_tom_a_cada_conversa_entre_descontraida_e_seria(): void
     {
         config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);

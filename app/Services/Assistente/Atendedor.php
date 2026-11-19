@@ -720,10 +720,24 @@ final class Atendedor
             ? Busca::sinaisDeCordialidade($pergunta)
             : ['saudacao' => null, 'perguntou_bem_estar' => false, 'carinho_ou_elogio' => false, 'agradecimento' => false];
 
+        $contextoHora = self::contextoDeHorarioAtual();
+        $saudacaoCorreta = $contextoHora['saudacao'];
+        $saudacaoDita = $sinais['saudacao'];
+        $saudacaoTurnoDita = in_array($saudacaoDita, ['bom dia', 'boa tarde', 'boa noite'], true) ? $saudacaoDita : null;
+        $saudacaoTrocada = $saudacaoTurnoDita !== null && $saudacaoTurnoDita !== mb_strtolower($saudacaoCorreta);
+
+        $ordem[] = 'Referência de horário atual no Brasil (Brasília): '.$contextoHora['hora'].' ('.$contextoHora['periodo'].' — a saudação adequada para este momento é "'.$saudacaoCorreta.'").';
+
         if ($cortesia) {
+            $regraHorario = $saudacaoTrocada
+                ? 'Atenção: o cliente disse "'.$saudacaoTurnoDita.'", mas agora já é '.$contextoHora['periodo'].' ('.$contextoHora['hora'].'). '
+                    .'Corrija esse lapso de horário de forma leve, bem-humorada, carinhosa e elegante (com um sorriso simpático, nunca seca nem dando bronca) '
+                    .'e cumprimente com a saudação certa ("'.$saudacaoCorreta.'!")'
+                : 'Cumprimente usando a saudação adequada ao horário ("'.$saudacaoCorreta.'!")'.($saudacaoDita !== null ? ' em retribuição ao que ele disse' : '');
+
             $ordem[] = 'Esta fala do cliente é uma saudação, conversa amigável, gentileza ou demonstração de carinho — não uma dúvida técnica: '
                 .'responda como uma pessoa real com sentimentos genuínos, calor humano, gratidão e educação. '
-                .'Retribua explicitamente o cumprimento ("bom dia", "boa tarde", "boa noite"), responda com simpatia como você está se o cliente perguntou '
+                .$regraHorario.', responda com simpatia como você está se o cliente perguntou '
                 .'e, se recebeu carinho, elogio ou apelido afetivo (como "meu amor", "linda", "querida", "aninha"), '
                 .'não se assuste nem desconverse: agradeça o carinho com doçura, ternura elegante e respeito profissional (acolhedora e gentil, nunca boba, infantil ou cheia de gírias), '
                 .'colocando-se à disposição para ajudar no que ele precisar. '
@@ -731,8 +745,10 @@ final class Atendedor
         } else {
             $retribuir = [];
 
-            if ($sinais['saudacao'] !== null) {
-                $retribuir[] = 'retribua o cumprimento ("'.$sinais['saudacao'].'") logo na primeira frase';
+            if ($saudacaoTrocada) {
+                $retribuir[] = 'o cliente disse "'.$saudacaoTurnoDita.'", mas agora já é '.$contextoHora['periodo'].' ('.$contextoHora['hora'].'): corrija com leveza, bom humor gentil e simpatia logo na primeira frase, desejando "'.$saudacaoCorreta.'"';
+            } elseif ($saudacaoDita !== null) {
+                $retribuir[] = 'retribua o cumprimento ("'.$saudacaoDita.'") utilizando "'.$saudacaoCorreta.'" logo na primeira frase';
             }
 
             if ($sinais['perguntou_bem_estar']) {
@@ -836,13 +852,19 @@ final class Atendedor
 
         $abertura = [];
         $cumprimentoDeTurno = in_array($sinais['saudacao'], ['bom dia', 'boa tarde', 'boa noite'], true);
+        $contextoHora = self::contextoDeHorarioAtual();
+        $saudacaoCorreta = $contextoHora['saudacao'];
 
         if ($cumprimentoDeTurno) {
-            $abertura[] = Str::ucfirst($sinais['saudacao']).'!';
+            if ($sinais['saudacao'] !== mb_strtolower($saudacaoCorreta)) {
+                $abertura[] = $saudacaoCorreta.'! Por aqui já é '.$contextoHora['periodo'].' — haha!';
+            } else {
+                $abertura[] = $saudacaoCorreta.'!';
+            }
         } elseif ($sinais['saudacao'] === 'olá') {
-            $abertura[] = 'Olá!';
+            $abertura[] = 'Olá, '.mb_strtolower($saudacaoCorreta).'!';
         } elseif ($sinais['saudacao'] === 'oi') {
-            $abertura[] = 'Oi!';
+            $abertura[] = 'Oi, '.mb_strtolower($saudacaoCorreta).'!';
         }
 
         if ($sinais['perguntou_bem_estar']) {
@@ -856,6 +878,28 @@ final class Atendedor
         $abertura[] = $ficha->textoConfirmacaoNome($nome);
 
         return implode(' ', $abertura);
+    }
+
+    /**
+     * Horário oficial de Brasília com o período do dia e a saudação esperada para que a Ana
+     * não repita "bom dia" à tarde ou à noite e saiba corrigir o engano com gentileza.
+     *
+     * @return array{hora: string, periodo: string, saudacao: string}
+     */
+    private static function contextoDeHorarioAtual(): array
+    {
+        $agora = now()->timezone('America/Sao_Paulo');
+        $horaNum = (int) $agora->format('G');
+
+        if ($horaNum >= 5 && $horaNum < 12) {
+            return ['hora' => $agora->format('H\hi'), 'periodo' => 'manhã', 'saudacao' => 'Bom dia'];
+        }
+
+        if ($horaNum >= 12 && $horaNum < 18) {
+            return ['hora' => $agora->format('H\hi'), 'periodo' => 'tarde', 'saudacao' => 'Boa tarde'];
+        }
+
+        return ['hora' => $agora->format('H\hi'), 'periodo' => 'noite', 'saudacao' => 'Boa noite'];
     }
 
     /** Retira apenas a apresentação do nome para conferir se o restante da fala é pura cortesia. */
