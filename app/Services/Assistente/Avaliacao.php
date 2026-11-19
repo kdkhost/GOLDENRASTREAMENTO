@@ -85,7 +85,17 @@ final class Avaliacao
             }
         }
 
-        return preg_match(self::SAUDACAO, $texto) === 1 && Busca::eCortesia($fala);
+        if (preg_match(self::SAUDACAO, $texto) !== 1 || ! Busca::eCortesia($fala)) {
+            return false;
+        }
+
+        if (str_contains($fala, '?') || preg_match('/\b(?:oi+|ola+|opa+|e\s*ai|tudo|td|como)\b/', $texto) === 1) {
+            return false;
+        }
+
+        $sinais = Busca::sinaisDeCordialidade($fala);
+
+        return ! $sinais['perguntou_bem_estar'] && ! $sinais['carinho_ou_elogio'];
     }
 
     /**

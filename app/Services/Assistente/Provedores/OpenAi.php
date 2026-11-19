@@ -6,8 +6,8 @@ use App\Services\Assistente\Chamada;
 use App\Services\Assistente\Contratos\PodeConversar;
 use App\Services\Assistente\Contratos\PodeFalar;
 use App\Services\Assistente\Contratos\PodeTranscrever;
-use App\Services\Assistente\Excecoes\ChamadaFalhou;
 use App\Services\Assistente\Excecoes\CapacidadeNaoOferecida;
+use App\Services\Assistente\Excecoes\ChamadaFalhou;
 use App\Services\Assistente\Resposta;
 use Illuminate\Support\Facades\Http;
 
@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Http;
  * `/chat/completions` fala JSON, `/audio/transcriptions` recebe multipart e `/audio/speech`
  * devolve bytes. O log, esse, é o mesmo para as três.
  */
-class OpenAi extends Provedor implements PodeConversar, PodeTranscrever, PodeFalar
+class OpenAi extends Provedor implements PodeConversar, PodeFalar, PodeTranscrever
 {
     public static function id(): string
     {
@@ -58,7 +58,7 @@ class OpenAi extends Provedor implements PodeConversar, PodeTranscrever, PodeFal
         $corpo = [
             'model' => $this->modelo,
             'messages' => $mensagens,
-            'temperature' => 0.4,
+            'temperature' => $chamada->cortesia ? 0.72 : 0.6,
             'max_tokens' => $chamada->maxTokens ?? (int) config('assistente.resposta.caracteres_max') * 2,
         ];
 

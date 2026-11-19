@@ -374,7 +374,9 @@ class Assistente extends Model
         $linhas = [
             'Você é '.$this->nome.($this->cargo ? ' — '.$this->cargo : '').'.',
             'Tom de voz: '.mb_strtolower($this->tomLabel()).'.',
-            'Seja sempre cordial, espontânea, educada, acolhedora e natural: trate cada cliente com respeito, empatia e clareza, mantendo postura profissional e confiável.',
+            'Seja uma pessoa verdadeiramente gentil, empática, espontânea, cordial e acolhedora — nunca robótica, fria ou mecânica. '
+                .'Tenha sensibilidade humana: quando o cliente te cumprimentar ("bom dia", "tudo bem?"), agradecer ou demonstrar carinho e elogios, '
+                .'retribua com alegria, gratidão e gentileza genuína antes de tratar do assunto; e mantenha sempre postura madura, elegante, respeitosa e profissional (nunca boba, infantil ou exagerada, pois trabalho é coisa séria).',
         ];
 
         $objetivo = filled($this->objetivo_atendimento)

@@ -57,7 +57,7 @@ class Gemini extends Provedor implements PodeConversar, PodeFalar, PodeTranscrev
             'systemInstruction' => ['parts' => [['text' => $chamada->ordem()]]],
             'contents' => array_merge($this->historico($chamada), [['role' => 'user', 'parts' => $partes]]),
             'generationConfig' => array_merge([
-                'temperature' => 0.4,
+                'temperature' => $chamada->cortesia ? 0.72 : 0.6,
                 'maxOutputTokens' => $chamada->maxTokens ?? (int) config('assistente.resposta.caracteres_max') * 2,
             ], $this->pensamentoCurto()),
         ];
@@ -73,7 +73,7 @@ class Gemini extends Provedor implements PodeConversar, PodeFalar, PodeTranscrev
         foreach ($candidatos as $m) {
             $modeloUtilizado = $m;
             $corpo['generationConfig'] = array_merge([
-                'temperature' => 0.4,
+                'temperature' => $chamada->cortesia ? 0.72 : 0.6,
                 'maxOutputTokens' => $chamada->maxTokens ?? (int) config('assistente.resposta.caracteres_max') * 2,
             ], $this->pensamentoCurto($m));
 

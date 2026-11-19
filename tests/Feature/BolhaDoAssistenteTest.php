@@ -768,6 +768,77 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertStringContainsString('O rastreador custa o valor publicado na loja.', $texto);
     }
 
+    public function test_a_ana_retribui_cumprimento_e_carinho_sem_escalar_nem_soar_boba(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Oi! Tudo ótimo por aqui, muito obrigada pelo carinho! Como posso te ajudar hoje?']]]]]], 200)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Bom dia! Tudo ótimo por aqui, muito obrigada pelo carinho. O rastreador envia a localização em tempo real para o app.']]]]]], 200),
+        ]);
+
+        ConhecimentoItem::create([
+            'titulo' => 'Como funciona o rastreador',
+            'corpo' => 'O rastreador envia a localização em tempo real para o aplicativo e plataforma Web.',
+            'tags' => 'rastreador, funciona, aplicativo',
+            'origem' => 'painel',
+            'ativo' => '1',
+        ]);
+
+        $this->postJson('/assistente/fala', ['texto' => 'Oi Ana querida, tudo bem com você?'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $this->postJson('/assistente/fala', ['texto' => 'Bom dia Ana querida, tudo bem? Como funciona o rastreador?'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $pedidos = Http::recorded();
+        $this->assertCount(2, $pedidos);
+
+        $ordemCortesia = (string) data_get($pedidos[0][0]->data(), 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('saudação', $ordemCortesia);
+        $this->assertStringContainsString('nunca boba', $ordemCortesia);
+        $this->assertEqualsWithDelta(0.72, (float) data_get($pedidos[0][0]->data(), 'generationConfig.temperature'), 0.001);
+
+        $ordemMista = (string) data_get($pedidos[1][0]->data(), 'systemInstruction.parts.0.text');
+        $this->assertStringContainsString('Reciprocidade obrigatória', $ordemMista);
+        $this->assertStringContainsString('bom dia', $ordemMista);
+        $this->assertStringContainsString('carinho', $ordemMista);
+        $this->assertEqualsWithDelta(0.6, (float) data_get($pedidos[1][0]->data(), 'generationConfig.temperature'), 0.001);
+    }
+
+    public function test_cumprimento_afetivo_apos_informar_nome_nao_encerra_a_conversa(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [['content' => ['parts' => [['text' => 'Boa tarde, Maria! Tudo ótimo por aqui, obrigada por perguntar. Como posso te ajudar hoje?']]]]],
+        ], 200)]);
+
+        $this->postJson('/assistente/abrir')->assertOk();
+
+        $this->postJson('/assistente/fala', ['texto' => 'Maria'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $conversa = Conversa::firstOrFail();
+        $this->assertSame('Maria', $conversa->nome);
+
+        Http::assertNothingSent();
+
+        $this->postJson('/assistente/fala', ['texto' => 'Boa tarde Ana, tudo bem com você?'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $ultimaFala = (string) $conversa->mensagens()
+            ->where('autor', 'assistente')
+            ->latest('id')
+            ->value('corpo');
+
+        $this->assertStringNotContainsString('Foi um prazer ajudar', $ultimaFala);
+        $this->assertStringContainsString('Boa tarde, Maria!', $ultimaFala);
+        Http::assertSentCount(1);
+    }
+
     public function test_a_ana_adapta_o_tom_a_cada_conversa_entre_descontraida_e_seria(): void
     {
         config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);

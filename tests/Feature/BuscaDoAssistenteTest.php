@@ -79,6 +79,26 @@ class BuscaDoAssistenteTest extends TestCase
         $this->assertFalse(Busca::eCortesia('tem como?'), 'Palavra vazia não é cortesia.');
         $this->assertFalse(Busca::eCortesia('Oi, quanto custa o rastreador?'));
         $this->assertFalse(Busca::eCortesia('tudo bem, quero cancelar'));
+        $this->assertFalse(Busca::eCortesia('Oi, tem atendimento hoje?'));
+        $this->assertFalse(Busca::eCortesia('Quero ajuda com meu rastreador'));
+    }
+
+    public function test_reconhece_carinho_elogios_e_perguntas_de_bem_estar_como_cortesia(): void
+    {
+        $this->assertTrue(Busca::eCortesia('Oi Ana querida, tudo bem com você?'));
+        $this->assertTrue(Busca::eCortesia('Você é muito gentil, adorei seu atendimento!'));
+        $this->assertTrue(Busca::eCortesia('Como você está?'));
+        $this->assertTrue(Busca::eCortesia('Boa tarde linda, muito obrigada pelo carinho!'));
+
+        $sinaisMistos = Busca::sinaisDeCordialidade('Bom dia Ana querida, tudo bem? Como funciona o rastreador?');
+        $this->assertSame('bom dia', $sinaisMistos['saudacao']);
+        $this->assertTrue($sinaisMistos['perguntou_bem_estar']);
+        $this->assertTrue($sinaisMistos['carinho_ou_elogio']);
+
+        $sinaisSecos = Busca::sinaisDeCordialidade('tudo bem, quero cancelar');
+        $this->assertNull($sinaisSecos['saudacao']);
+        $this->assertFalse($sinaisSecos['perguntou_bem_estar']);
+        $this->assertFalse($sinaisSecos['carinho_ou_elogio']);
     }
 
     public function test_reconhece_plurais_e_flexoes_com_o_radical(): void

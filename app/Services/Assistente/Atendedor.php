@@ -126,6 +126,7 @@ final class Atendedor
             return $conversa->acao === null ? (self::pecaAValiacao($conversa, $ficha) ?? $resposta) : $resposta;
         }
 
+        $tinhaNomeAntes = filled($conversa->nome);
         $nomeDito = self::guardeONome($conversa, $pergunta, $ficha);
         $emailDito = self::guardeOEmail($conversa, $pergunta);
 
@@ -146,7 +147,7 @@ final class Atendedor
         // fixa custa zero chamada de IA e não escala a conversa de quem só se apresentou — mandar
         // "Maria Aparecida" ao provedor era o jeito mais educado de dizer "chamei a equipe".
         if ($nomeDito !== null) {
-            return self::fale($conversa, $ficha->textoConfirmacaoNome($nomeDito));
+            return self::fale($conversa, self::respostaDeNome($ficha, $nomeDito, $pergunta));
         }
 
         if ($emailDito !== null) {
@@ -179,7 +180,12 @@ final class Atendedor
         // pedir nota e se despedir da primeira pessoa que chegou seria o atendimento mais curto.
         $cortesia = Busca::eCortesia($pergunta);
 
-        if (Avaliacao::eDespedida($pergunta) && ! ($cortesia && self::primeiraFalaDoCliente($conversa))) {
+        if (! $cortesia && ! $tinhaNomeAntes && filled($conversa->nome)) {
+            $semApresentacao = self::removerApresentacaoDeNome($pergunta, (string) $conversa->nome);
+            $cortesia = $semApresentacao !== '' && Busca::eCortesia($semApresentacao);
+        }
+
+        if (Avaliacao::eDespedida($pergunta) && ! ($cortesia && self::saudacaoDeAbertura($conversa, $ficha))) {
             return self::pecaAValiacao($conversa, $ficha)
                 ?? self::fale($conversa, $ficha->textoDespedida($conversa->nome));
         }
@@ -193,7 +199,7 @@ final class Atendedor
 
         $resposta = Motor::responder(new Chamada(
             pergunta: $pergunta,
-            instrucoes: self::ordemDaConversa($conversa, $ficha, $pedeONome, $cortesia),
+            instrucoes: self::ordemDaConversa($conversa, $ficha, $pedeONome, $cortesia, $pergunta),
             historico: self::historico($conversa, $ultima),
             fontes: $fontes,
             conversaId: $conversa->id,
@@ -337,7 +343,7 @@ final class Atendedor
         // O arquivo é a única fonte desta resposta. Sem esta linha o modelo completa o que falta
         // com conhecimento geral — e um contrato de teste virava um contrato com cláusulas que
         // ninguém escreveu, na frente de quem enviou o arquivo.
-        $ordem = self::ordemDaConversa($conversa, $ficha, false);
+        $ordem = self::ordemDaConversa($conversa, $ficha, false, pergunta: $pergunta);
         $ordem[] = $tipo === 'imagem'
             ? 'A resposta tem que sair do que a imagem mostra. Não invente detalhe que não esteja nela; '
                 .'se a imagem não responder à pergunta, diga o que deu para ver e ofereça a equipe.'
@@ -694,18 +700,48 @@ final class Atendedor
      * outro lado. É aqui que o nome entra na boca da máquina, porque o atendimento formal da casa
      * não pode depender de a IA ter lido a frase em que a pessoa se apresentou.
      */
-    private static function ordemDaConversa(Conversa $conversa, Assistente $ficha, bool $pedeONome, bool $cortesia = false): array
+    private static function ordemDaConversa(Conversa $conversa, Assistente $ficha, bool $pedeONome, bool $cortesia = false, string $pergunta = ''): array
     {
         $ordem = explode("\n", $ficha->instrucoes());
+        $sinais = $pergunta !== ''
+            ? Busca::sinaisDeCordialidade($pergunta)
+            : ['saudacao' => null, 'perguntou_bem_estar' => false, 'carinho_ou_elogio' => false, 'agradecimento' => false];
 
         if ($cortesia) {
-            $ordem[] = 'Esta fala é só uma saudação: cumprimente de volta em uma frase e diga como você pode ajudar. '
+            $ordem[] = 'Esta fala do cliente é uma saudação, gentileza ou demonstração de carinho — não uma dúvida técnica: '
+                .'responda como uma pessoa real com sentimentos genuínos, calor humano, gratidão e educação. '
+                .'Retribua explicitamente o cumprimento ("bom dia", "boa tarde", "boa noite"), responda com simpatia como você está se o cliente perguntou '
+                .'e, se recebeu carinho, elogio ou agradecimento, agradeça com ternura elegante e respeito — '
+                .'com maturidade e postura profissional (acolhedora e gentil, nunca boba, infantil ou cheia de gírias), '
+                .'colocando-se à disposição para ajudar no que ele precisar. '
                 .'Não diga que não sabe, não chame a equipe e não invente preço, prazo, cobertura, especificação, desconto ou condição.';
         } else {
-            // A persona escrita na ficha pode ter sido trocada por outra; esta linha é do código e
-            // vale sempre: a conversa é um fio só, e é ele que faz a Ana parecer uma pessoa.
-            $ordem[] = 'Esta é uma conversa em andamento: continue de onde ela está, sem repetir a saudação, '
-                .'a pergunta que a pessoa acabou de responder ou o que você já disse.';
+            $retribuir = [];
+
+            if ($sinais['saudacao'] !== null) {
+                $retribuir[] = 'retribua o cumprimento ("'.$sinais['saudacao'].'") logo na primeira frase';
+            }
+
+            if ($sinais['perguntou_bem_estar']) {
+                $retribuir[] = 'responda com simpatia que está tudo bem e agradeça por perguntar';
+            }
+
+            if ($sinais['carinho_ou_elogio']) {
+                $retribuir[] = 'agradeça o carinho ou elogio recebido com acolhimento sincero, sensibilidade e maturidade';
+            } elseif ($sinais['agradecimento']) {
+                $retribuir[] = 'corresponda ao agradecimento com gentileza antes de seguir';
+            }
+
+            if ($retribuir !== []) {
+                $ordem[] = 'Reciprocidade obrigatória nesta resposta: antes de responder ao assunto, '.implode('; ', $retribuir).'. '
+                    .'Nunca ignore quando o cliente te cumprimenta ou trata com carinho — corresponda com educação e sentimentos reais, '
+                    .'sem ser boba nem robótica, e logo em seguida atenda a dúvida de forma clara e profissional.';
+            } else {
+                // A persona escrita na ficha pode ter sido trocada por outra; esta linha é do código e
+                // vale sempre: a conversa é um fio só, e é ele que faz a Ana parecer uma pessoa.
+                $ordem[] = 'Esta é uma conversa em andamento: continue de onde ela está, sem repetir a saudação, '
+                    .'a pergunta que a pessoa acabou de responder ou o que você já disse.';
+            }
         }
 
         $ordem[] = self::adaptacaoAoCliente($conversa);
@@ -746,7 +782,7 @@ final class Atendedor
         $limpo = Str::ascii(Str::lower($falas));
 
         if ($limpo === '') {
-            return 'Seja espontânea, próxima e natural nesta conversa, mantendo sempre postura profissional e séria.';
+            return 'Seja espontânea, próxima, cordial e humana nesta conversa, mantendo sempre postura profissional madura e séria.';
         }
 
         $urgentes = ['roub', 'furt', 'sumiu', 'bloque', 'emergenc', 'socorro', 'acidente', 'guincho', 'boletim'];
@@ -757,15 +793,90 @@ final class Atendedor
             }
         }
 
-        $informais = ['oi', 'ola', 'e ai', 'blz', 'beleza', 'cara', 'mano', 'amig', 'valeu', 'show', 'top', 'kkk', 'haha', 'tudo bem', 'bom dia', 'boa tarde', 'boa noite', 'pfv', 'obg', 'vlw'];
+        $informais = [
+            'oi', 'ola', 'e ai', 'blz', 'beleza', 'cara', 'mano', 'amig', 'valeu', 'show', 'top',
+            'kkk', 'haha', 'tudo bem', 'bom dia', 'boa tarde', 'boa noite', 'pfv', 'obg', 'vlw',
+            'querid', 'gentil', 'simpatic', 'atencios', 'carinh', 'adorei', 'amei', 'maravilhos',
+            'parabens', 'obrigad', 'como vai', 'com voce',
+        ];
 
         foreach ($informais as $termo) {
             if (preg_match('/\b'.preg_quote($termo, '/').'/u', $limpo) === 1) {
-                return 'Tom para esta conversa: o cliente está espontâneo e acessível; corresponda com leveza, simpatia e descontração equilibrada, mantendo sempre a seriedade e a postura profissional.';
+                return 'Tom para esta conversa: o cliente está espontâneo, cordial e próximo; corresponda com leveza, simpatia, gentileza genuína e descontração equilibrada — acolhendo cumprimentos e carinho com calor humano e maturidade, mantendo sempre a seriedade, o respeito e a postura profissional (nunca boba ou infantil).';
             }
         }
 
-        return 'Tom para esta conversa: adapte-se ao ritmo do cliente de forma espontânea, humana e clara, variando o jeito de falar sem soar mecânica e mantendo postura séria e profissional.';
+        return 'Tom para esta conversa: adapte-se ao ritmo do cliente de forma espontânea, humana, gentil e clara, retribuindo qualquer cumprimento com naturalidade, variando o jeito de falar sem soar mecânica e mantendo postura séria, respeitosa e profissional.';
+    }
+
+    /**
+     * Retribui com calor humano caso o cliente tenha cumprimentado ou demonstrado carinho ao dizer
+     * o próprio nome (ex.: "Bom dia! Sou o Marcelo"), mantendo a confirmação fixa quando veio só o nome.
+     */
+    private static function respostaDeNome(Assistente $ficha, string $nome, string $pergunta): string
+    {
+        $sinais = Busca::sinaisDeCordialidade($pergunta);
+        $cumprimentoDeTurno = in_array($sinais['saudacao'], ['bom dia', 'boa tarde', 'boa noite'], true);
+
+        if (! $cumprimentoDeTurno && ! $sinais['perguntou_bem_estar'] && ! $sinais['carinho_ou_elogio']) {
+            return $ficha->textoConfirmacaoNome($nome);
+        }
+
+        $abertura = [];
+
+        if ($cumprimentoDeTurno) {
+            $abertura[] = Str::ucfirst($sinais['saudacao']).'!';
+        } elseif ($sinais['saudacao'] === 'olá') {
+            $abertura[] = 'Olá!';
+        } elseif ($sinais['saudacao'] === 'oi') {
+            $abertura[] = 'Oi!';
+        }
+
+        if ($sinais['perguntou_bem_estar']) {
+            $abertura[] = 'Tudo ótimo por aqui, obrigada por perguntar!';
+        }
+
+        if ($sinais['carinho_ou_elogio']) {
+            $abertura[] = 'Fico muito feliz com o carinho, obrigada!';
+        }
+
+        $abertura[] = $ficha->textoConfirmacaoNome($nome);
+
+        return implode(' ', $abertura);
+    }
+
+    /** Retira apenas a apresentação do nome para conferir se o restante da fala é pura cortesia. */
+    private static function removerApresentacaoDeNome(string $pergunta, string $nome): string
+    {
+        $nomeEscapado = preg_quote($nome, '/');
+        $semFrase = (string) preg_replace(
+            '/\b(?:meu\s+nome\s+(?:[eé]|eh)|me\s+chamo|pode\s+me\s+chamar\s+de|sou\s+(?:o|a)?|aqui\s+(?:[eé]|eh)\s+(?:o|a)?)\s+'.$nomeEscapado.'\b/iu',
+            ' ',
+            $pergunta
+        );
+
+        $semNome = (string) preg_replace('/\b'.$nomeEscapado.'\b/iu', ' ', $semFrase);
+
+        return trim((string) preg_replace('/[\s,.;:!?]+/u', ' ', $semNome));
+    }
+
+    /**
+     * Identifica se a saudação veio na abertura do diálogo (primeira fala ou logo após a máquina
+     * confirmar o nome), evitando encerrar por engano quem acabou de dizer seu nome e dar "boa tarde".
+     */
+    private static function saudacaoDeAbertura(Conversa $conversa, Assistente $ficha): bool
+    {
+        if (self::primeiraFalaDoCliente($conversa)) {
+            return true;
+        }
+
+        if (filled($conversa->nome) && $conversa->mensagens()->where('autor', 'cliente')->count() === 2) {
+            $ultimaDaMaquina = self::ultimaFalaDaMaquina($conversa);
+
+            return $ultimaDaMaquina !== null && str_ends_with($ultimaDaMaquina, $ficha->textoConfirmacaoNome($conversa->nome));
+        }
+
+        return false;
     }
 
     /**

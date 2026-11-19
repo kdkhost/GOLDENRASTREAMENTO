@@ -51,6 +51,45 @@ final class Busca
     private const CORTESIAS = [
         'oi', 'ola', 'opa', 'eai', 'ai', 'bom', 'boa', 'dia', 'tarde', 'noite', 'tudo', 'bem',
         'beleza', 'saudacoes', 'favor', 'obrigado', 'obrigada', 'obg', 'valeu', 'brigado', 'agradeco',
+        'agradecida', 'agradecido', 'grata', 'grato', 'vlw', 'brigada', 'blz', 'joia', 'td',
+        'otimo', 'otima', 'maravilha', 'excelente', 'tranquilo', 'tranquila', 'perfeito', 'perfeita',
+        'show', 'top', 'massa', 'prazer', 'feliz',
+        'gentil', 'gentileza', 'simpatica', 'simpatico', 'simpatia', 'atenciosa', 'atencioso',
+        'atencao', 'carinho', 'carinhosa', 'carinhoso', 'educada', 'educado', 'educacao',
+        'querida', 'querido', 'linda', 'lindo', 'maravilhosa', 'maravilhoso', 'incrivel',
+        'sensacional', 'prestativa', 'prestativo', 'amavel', 'humana', 'humanizada',
+        'fofa', 'fofo', 'anjo', 'amor', 'parabens', 'adorei', 'amei', 'gostei',
+        'abraco', 'abracos', 'beijo', 'beijos', 'bjs', 'coracao', 'deus', 'abencoe', 'amem',
+        'licenca', 'desculpa', 'desculpe',
+    ];
+
+    /**
+     * Vocativos, pronomes e verbos afetivos comuns em cumprimentos ("oi Ana, tudo bem com você?",
+     * "como vai?", "você é muito gentil") — mantidos fora de `PARADAS` para não enfraquecer a busca.
+     */
+    private const COMPLEMENTOS_DE_CORTESIA = [
+        'ana', 'voce', 'vc', 'moca', 'atendente', 'consultora', 'amiga', 'amigo',
+        'vai', 'anda', 'esta', 'estao', 'estou', 'estamos', 'to', 'ta', 'vao', 'passa',
+        'muito', 'muita', 'muitissimo', 'super', 'tao', 'demais', 'bastante',
+        'hoje', 'agora', 'aqui', 'sempre', 'tambem', 'tbm', 'sim',
+        'falar', 'conversar', 'tratou', 'trata', 'atendeu', 'ajudou',
+        'pessoa', 'gente', 'menina', 'senhora', 'senhor', 'doutora',
+        'te', 'ti', 'me', 'mim', 'comigo', 'contigo', 'nos', 'vcs',
+        'pelo', 'pela', 'seu', 'sua',
+        'rs', 'rsrs', 'rsrsrs', 'haha', 'hahaha', 'kkk', 'kkkk', 'kkkkk', 'hehe',
+    ];
+
+    /** Palavras que elogiam ou agradecem — desbloqueiam termos como "atendimento", "ajuda" e "trabalho". */
+    private const ELOGIOS_E_GRATIDAO = [
+        'obrigado', 'obrigada', 'obg', 'valeu', 'brigado', 'brigada', 'agradeco', 'agradecida',
+        'agradecido', 'grata', 'grato', 'vlw', 'parabens', 'adorei', 'amei', 'gostei',
+        'excelente', 'otimo', 'otima', 'maravilhoso', 'maravilhosa', 'incrivel', 'sensacional',
+        'gentil', 'atencioso', 'atenciosa', 'simpatico', 'simpatica', 'perfeito', 'perfeita',
+        'humanizada', 'carinho', 'carinhosa', 'carinhoso',
+    ];
+
+    private const SUBSTANTIVOS_DE_ELOGIO = [
+        'atendimento', 'ajuda', 'trabalho',
     ];
 
     /** Quantos itens a varredura lê por pergunta. Acima disto, a lista ativa está fora de uso. */
@@ -114,12 +153,24 @@ final class Busca
             return false;
         }
 
-        $saudou = false;
+        $limpo = implode(' ', $palavras);
+        $saudou = preg_match('/\bcomo\s+(?:voce\s+|vc\s+)?(?:vai|esta|anda|ta)\b/', $limpo) === 1;
+        $elogiou = array_intersect($palavras, self::ELOGIOS_E_GRATIDAO) !== []
+            || preg_match('/\b(?:bom|otimo|excelente)\s+(?:atendimento|trabalho)\b/', $limpo) === 1;
+        $pediuDisponibilidade = in_array('tem', $palavras, true) || in_array('ha', $palavras, true);
 
         foreach ($palavras as $palavra) {
             if (in_array($palavra, self::CORTESIAS, true)) {
                 $saudou = true;
 
+                continue;
+            }
+
+            if (in_array($palavra, self::COMPLEMENTOS_DE_CORTESIA, true)) {
+                continue;
+            }
+
+            if (in_array($palavra, self::SUBSTANTIVOS_DE_ELOGIO, true) && $elogiou && ! $pediuDisponibilidade) {
                 continue;
             }
 
@@ -129,6 +180,49 @@ final class Busca
         }
 
         return $saudou;
+    }
+
+    /**
+     * Detecta sinais explícitos de saudação, pergunta de bem-estar, carinho/elogio ou agradecimento
+     * na fala do cliente (mesmo quando vêm junto de uma pergunta sobre produtos ou serviços).
+     *
+     * @return array{saudacao: ?string, perguntou_bem_estar: bool, carinho_ou_elogio: bool, agradecimento: bool}
+     */
+    public static function sinaisDeCordialidade(string $texto): array
+    {
+        $limpo = trim((string) preg_replace('/\s+/', ' ', Str::ascii(mb_strtolower($texto))));
+
+        $saudacao = null;
+
+        if (preg_match('/\bbom\s+dia\b/', $limpo) === 1) {
+            $saudacao = 'bom dia';
+        } elseif (preg_match('/\bboa\s+tarde\b/', $limpo) === 1) {
+            $saudacao = 'boa tarde';
+        } elseif (preg_match('/\bboa\s+noite\b/', $limpo) === 1) {
+            $saudacao = 'boa noite';
+        } elseif (preg_match('/\b(?:ola+|saudacoes)\b/', $limpo) === 1) {
+            $saudacao = 'olá';
+        } elseif (preg_match('/\b(?:oi+|opa+|e\s*ai)\b/', $limpo) === 1) {
+            $saudacao = 'oi';
+        }
+
+        $perguntouBemEstar = preg_match('/\bcomo\s+(?:voce\s+|vc\s+)?(?:vai|esta|anda|ta)\b/', $limpo) === 1
+            || preg_match('/\b(?:tudo|td)\s+(?:bem|bom|joia|certo|otimo|beleza)\s*(?:\?|com\s+(?:voce|vc)|e\s+(?:voce|vc|ai)|por\s+ai)/', $limpo) === 1
+            || ($saudacao !== null && preg_match('/\b(?:tudo|td)\s+(?:bem|bom|joia|certo|otimo|beleza)\b/', $limpo) === 1);
+
+        $carinhoOuElogio = preg_match(
+            '/\b(?:querid[ao]|lind[ao]|gentil(?:eza)?|simpatic[ao]|simpatia|atencios[ao]|carinh(?:o|os[ao])|maravilhos[ao]|incrivel|sensacional|prestativ[ao]|amavel|human[ao]|humanizada|educad[ao]|fof[ao]|anjo|meu\s+bem|parabens|adorei|amei|gostei\s+muito|deus\s+(?:te\s+)?abencoe|bom\s+trabalho|muito\s+obrigad[ao]|obrigad[ao]\s+(?:pelo\s+carinho|pela\s+atencao|de\s+coracao))\b/',
+            $limpo
+        ) === 1;
+
+        $agradecimento = preg_match('/\b(?:obrigad[ao]|obg|valeu|brigad[ao]|agradec(?:o|id[ao])|grat[ao]|vlw)\b/', $limpo) === 1;
+
+        return [
+            'saudacao' => $saudacao,
+            'perguntou_bem_estar' => $perguntouBemEstar,
+            'carinho_ou_elogio' => $carinhoOuElogio,
+            'agradecimento' => $agradecimento,
+        ];
     }
 
     /**
