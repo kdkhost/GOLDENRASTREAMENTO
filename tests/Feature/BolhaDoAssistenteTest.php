@@ -923,6 +923,27 @@ class BolhaDoAssistenteTest extends TestCase
         $this->assertStringContainsString('corrija com leveza', $ordemNoite);
     }
 
+    public function test_cumprimentos_com_vocativos_afetivos_como_gata_ou_rainha_chamam_ia_sem_escalar(): void
+    {
+        config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Boa tarde! Haha, obrigada pelo carinho, mas ainda é tarde por aqui. Como posso te ajudar?']]]]]], 200)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Boa tarde! Muito obrigada pela gentileza. Em que posso te auxiliar hoje?']]]]]], 200),
+        ]);
+
+        $this->travelTo(now()->setTimezone('America/Sao_Paulo')->setTime(15, 0, 0));
+
+        $this->postJson('/assistente/fala', ['texto' => 'boa noite minha gata!'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        $this->postJson('/assistente/fala', ['texto' => 'boa noite minha rainha'])
+            ->assertOk()
+            ->assertJson(['status' => 'aberta']);
+
+        Http::assertSentCount(2);
+    }
+
     public function test_a_ana_adapta_o_tom_a_cada_conversa_entre_descontraida_e_seria(): void
     {
         config(['assistente.chaves.gemini' => 'chave-de-teste', 'assistente.chaves.openai' => null]);

@@ -90,6 +90,8 @@ class BuscaDoAssistenteTest extends TestCase
         $this->assertTrue(Busca::eCortesia('Como você está?'));
         $this->assertTrue(Busca::eCortesia('Boa tarde linda, muito obrigada pelo carinho!'));
         $this->assertTrue(Busca::eCortesia('Bom dia meu amor'));
+        $this->assertTrue(Busca::eCortesia('boa noite minha gata!'));
+        $this->assertTrue(Busca::eCortesia('boa noite minha rainha'));
         $this->assertTrue(Busca::eCortesia('nao precisa chamar ninguem so to conversando com vc'));
         $this->assertTrue(Busca::eCortesia('oi aninha linda boa tarde amor tudo bem com voce'));
 

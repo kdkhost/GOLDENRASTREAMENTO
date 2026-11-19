@@ -58,9 +58,13 @@ final class Busca
         'atencao', 'carinho', 'carinhosa', 'carinhoso', 'educada', 'educado', 'educacao',
         'querida', 'querido', 'linda', 'lindo', 'maravilhosa', 'maravilhoso', 'incrivel',
         'sensacional', 'prestativa', 'prestativo', 'amavel', 'humana', 'humanizada',
-        'fofa', 'fofo', 'anjo', 'amor', 'parabens', 'adorei', 'amei', 'gostei',
-        'lindinha', 'queridao', 'flor', 'docinho', 'bjo', 'bj', 'tmj', 'salve',
+        'fofa', 'fofo', 'fofura', 'docura', 'anjo', 'anjinho', 'amor', 'benzinho',
+        'parabens', 'adorei', 'amei', 'gostei',
+        'gata', 'gato', 'rainha', 'rei', 'princesa', 'principe', 'musa', 'diva',
+        'lindinha', 'queridao', 'flor', 'docinho', 'belezinha', 'estrela', 'fera',
+        'campea', 'campeao', 'nota', 'dez', '10', 'demais', 'bjo', 'bj', 'tmj', 'salve',
         'abraco', 'abracos', 'beijo', 'beijos', 'bjs', 'coracao', 'deus', 'abencoe', 'amem',
+        'abencoada', 'abencoado', 'iluminada',
         'licenca', 'desculpa', 'desculpe',
         'entendi', 'entendido', 'certinho', 'compreendi', 'combinado', 'fechado', 'alo',
         'exato', 'concordo', 'imagina', 'disponha',
@@ -72,13 +76,14 @@ final class Busca
      */
     private const COMPLEMENTOS_DE_CORTESIA = [
         'ana', 'aninha', 'voce', 'vc', 'moca', 'atendente', 'consultora', 'amiga', 'amigo',
+        'parceira', 'parceiro', 'colega', 'chefe', 'patroa', 'consagrado', 'consagrada',
         'vai', 'anda', 'esta', 'estao', 'estou', 'estamos', 'to', 'ta', 'vao', 'passa',
         'muito', 'muita', 'muitissimo', 'super', 'tao', 'demais', 'bastante',
         'hoje', 'agora', 'aqui', 'sempre', 'tambem', 'tbm', 'sim',
         'falar', 'conversar', 'tratou', 'trata', 'atendeu', 'ajudou',
         'pessoa', 'gente', 'menina', 'senhora', 'senhor', 'doutora',
         'te', 'ti', 'me', 'mim', 'comigo', 'contigo', 'nos', 'vcs',
-        'pelo', 'pela', 'seu', 'sua',
+        'pelo', 'pela', 'seu', 'sua', 'essa', 'esse',
         'rs', 'rsrs', 'rsrsrs', 'haha', 'hahaha', 'kkk', 'kkkk', 'kkkkk', 'hehe',
     ];
 
@@ -88,11 +93,11 @@ final class Busca
         'agradecido', 'grata', 'grato', 'vlw', 'parabens', 'adorei', 'amei', 'gostei',
         'excelente', 'otimo', 'otima', 'maravilhoso', 'maravilhosa', 'incrivel', 'sensacional',
         'gentil', 'atencioso', 'atenciosa', 'simpatico', 'simpatica', 'perfeito', 'perfeita',
-        'humanizada', 'carinho', 'carinhosa', 'carinhoso',
+        'humanizada', 'carinho', 'carinhosa', 'carinhoso', 'muita', 'muito',
     ];
 
     private const SUBSTANTIVOS_DE_ELOGIO = [
-        'atendimento', 'ajuda', 'trabalho',
+        'atendimento', 'ajuda', 'trabalho', 'paciencia', 'disponibilidade', 'simpatia', 'gentileza', 'educacao', 'alegria',
     ];
 
     /** Quantos itens a varredura lê por pergunta. Acima disto, a lista ativa está fora de uso. */
@@ -162,7 +167,7 @@ final class Busca
 
         $limpo = implode(' ', $palavras);
 
-        if (self::conversaCasual($limpo)) {
+        if (self::conversaCasual($limpo) || self::saudacaoComVocativoAfetivo($texto, $limpo)) {
             return true;
         }
 
@@ -223,9 +228,9 @@ final class Busca
             || ($saudacao !== null && preg_match('/\b(?:tudo|td)\s+(?:bem|bom|joia|certo|otimo|beleza)\b/', $limpo) === 1);
 
         $carinhoOuElogio = preg_match(
-            '/\b(?:querid[ao]|queridinh[ao]|lind[ao]|lindinh[ao]|aninha|gentil(?:eza)?|simpatic[ao]|simpatia|atencios[ao]|carinh(?:o|os[ao])|maravilhos[ao]|incrivel|sensacional|prestativ[ao]|amavel|human[ao]|humanizada|educad[ao]|fof[ao]|fofinh[ao]|anjo|(?:meu\s+)?amor|meu\s+bem|flor|docinho|parabens|adorei|amei|gostei\s+muito|deus\s+(?:te\s+)?abencoe|bom\s+trabalho|muito\s+obrigad[ao]|obrigad[ao]\s+(?:pelo\s+carinho|pela\s+atencao|de\s+coracao))\b/',
+            '/\b(?:querid[ao]|queridinh[ao]|lind[ao]|lindinh[ao]|aninha|gentil(?:eza)?|simpatic[ao]|simpatia|atencios[ao]|carinh(?:o|os[ao])|maravilhos[ao]|incrivel|sensacional|prestativ[ao]|amavel|human[ao]|humanizada|educad[ao]|fof[ao]|fofinh[ao]|fofura|docura|anjo|anjinho|(?:meu\s+)?amor|meu\s+bem|benzinho|gata|rainha|princesa|musa|diva|minha\s+(?:gata|rainha|princesa|flor|estrela|linda|querida|joia)|flor|docinho|parabens|adorei|amei|gostei\s+muito|deus\s+(?:te\s+)?abencoe|bom\s+trabalho|muito\s+obrigad[ao]|obrigad[ao]\s+(?:pelo\s+carinho|pela\s+atencao|de\s+coracao)|voce\s+e\s+(?:demais|nota\s*(?:10|dez)))\b/',
             $limpo
-        ) === 1;
+        ) === 1 || preg_match('/^(?:oi+|ola+|opa|e\s*ai|bom\s+dia|boa\s+tarde|boa\s+noite)\s+(?:meu|minha)\s+(?!carro\b|moto\b|fatura\b|boleto\b|pedido\b|conta\b)[a-z]{2,20}/', $limpo) === 1;
 
         $agradecimento = preg_match('/\b(?:obrigad[ao]|obg|valeu|brigad[ao]|agradec(?:o|id[ao])|grat[ao]|vlw)\b/', $limpo) === 1;
 
@@ -439,5 +444,19 @@ final class Busca
 
         // Se vier misturado com dúvida técnica ou assunto comercial, deixa a busca normal agir.
         return preg_match('/\b(?:rastreador|plano|chip|preco|valor|fatura|boleto|instala|bloque|roub|furt|cancel|moto|carro|frota|portal|app|aplicativo|servidor)\b/', $limpo) !== 1;
+    }
+
+    /** Cumprimento direto acompanhado de um vocativo afetivo ou respeitoso ("boa noite minha gata!", "bom dia minha rainha"). */
+    private static function saudacaoComVocativoAfetivo(string $original, string $limpo): bool
+    {
+        if (str_contains($original, '?')) {
+            return false;
+        }
+
+        if (preg_match('/^(?:oi+|ola+|opa|e\s*ai|bom\s+dia|boa\s+tarde|boa\s+noite)\s+(?:meu|minha)\s+[a-z]{2,20}(?:\s+(?:tudo\s+bem|tudo\s+bom))?$/', $limpo) !== 1) {
+            return false;
+        }
+
+        return preg_match('/\b(?:carro|moto|veiculo|rastreador|chip|plano|fatura|boleto|preco|valor|conta|pedido|suporte|cancelamento|instalacao)\b/', $limpo) !== 1;
     }
 }
