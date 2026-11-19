@@ -51,7 +51,7 @@ class Rastreio
 
         return Visit::create([
             'visitor_id' => Str::limit($visitorId, 64, ''),
-            'sessao' => $request->session()->getId(),
+            'sessao' => $request->hasSession() ? $request->session()->getId() : null,
             'canal' => $nova['canal'],
             'rede' => $nova['rede'],
             'pago' => $nova['pago'],

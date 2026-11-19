@@ -1044,6 +1044,7 @@
       var url;
       try { url = new URL(a.href, location.href); } catch (e) { return; }
       if (url.origin !== location.origin || url.pathname === location.pathname || url.hash || ja[url.href]) return;
+      if (/^\/(loja\/(carrinho|checkout|pedido)|admin|minha-conta|login|logout|sair)(\/|$)/i.test(url.pathname)) return;
 
       ja[url.href] = 1;
       var l = document.createElement('link');

@@ -64,7 +64,11 @@ use App\Http\Middleware\CheckCustomMaintenance;
 use App\Http\Middleware\IdentificadorVisita;
 use App\Http\Middleware\RegistrarRastreio;
 use App\Http\Middleware\ResponderEscritaAjax;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
 |--------------------------------------------------------------------------
@@ -98,7 +102,14 @@ Route::post('/leads', [SiteLeadController::class, 'store'])
     ->name('site.leads.store');
 
 // Farol do site: cada clique, kit, ligação e formulário iniciado do visitante.
+// Sem StartSession para nunca sobrescrever a sessão do carrinho em cliques simultâneos.
 Route::post('/rastreio/evento', [SiteRastreioController::class, 'evento'])
+    ->withoutMiddleware([
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        ValidateCsrfToken::class,
+        PreventRequestForgery::class,
+    ])
     ->middleware('throttle:120,1,farol')
     ->name('site.rastreio.evento');
 
@@ -132,31 +143,47 @@ Route::prefix('assistente')->name('site.assistente.')->group(function () {
 Route::middleware('loja')->group(function () {
     Route::get('/loja', [StoreController::class, 'index'])->name('site.loja.index');
 
-    // Sacola: adicionar, ajustar quantidade e remover mantêm o carrinho na sessão.
-    Route::get('/loja/carrinho', [StoreController::class, 'carrinho'])->name('site.loja.carrinho');
+    // Sacola: adicionar, ajustar quantidade e remover mantêm o carrinho na sessão com lock de concorrência.
+    Route::get('/loja/carrinho', [StoreController::class, 'carrinho'])
+        ->block(lockSeconds: 10, waitSeconds: 10)->name('site.loja.carrinho');
     Route::post('/loja/carrinho', [StoreController::class, 'adicionar'])
+        ->block(lockSeconds: 10, waitSeconds: 10)
         ->middleware('throttle:40,1')->name('site.loja.carrinho.adicionar');
     Route::post('/loja/carrinho/quantidade', [StoreController::class, 'atualizar'])
+        ->block(lockSeconds: 10, waitSeconds: 10)
         ->middleware('throttle:40,1')->name('site.loja.carrinho.atualizar');
     Route::post('/loja/carrinho/remover', [StoreController::class, 'remover'])
+        ->block(lockSeconds: 10, waitSeconds: 10)
         ->middleware('throttle:40,1')->name('site.loja.carrinho.remover');
     Route::post('/loja/carrinho/operadora', [StoreController::class, 'alterarOperadora'])
+        ->block(lockSeconds: 10, waitSeconds: 10)
         ->middleware('throttle:40,1')->name('site.loja.carrinho.operadora');
     Route::post('/loja/carrinho/pacotes-alertas', [StoreController::class, 'alterarPacotesAlertas'])
+        ->block(lockSeconds: 10, waitSeconds: 10)
         ->middleware('throttle:40,1')->name('site.loja.carrinho.pacotes_alertas');
     Route::post('/loja/cupom', [StoreController::class, 'aplicarCupom'])
+        ->block(lockSeconds: 10, waitSeconds: 10)
         ->middleware('throttle:20,1')->name('site.loja.cupom.aplicar');
     Route::post('/loja/cupom/remover', [StoreController::class, 'removerCupom'])
+        ->block(lockSeconds: 10, waitSeconds: 10)
         ->middleware('throttle:20,1')->name('site.loja.cupom.remover');
 
     // Pedido: formulário, gravação e acompanhamento por número + token.
-    Route::get('/loja/checkout', [StoreController::class, 'checkout'])->name('site.loja.checkout');
+    Route::get('/loja/checkout', [StoreController::class, 'checkout'])
+        ->block(lockSeconds: 10, waitSeconds: 10)->name('site.loja.checkout');
     Route::get('/loja/cep/{cep}', [StoreController::class, 'consultarCep'])
+        ->withoutMiddleware([
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            ValidateCsrfToken::class,
+            PreventRequestForgery::class,
+        ])
         ->where('cep', '[0-9\-]{8,10}')
         ->middleware('throttle:60,1')->name('site.loja.cep.consultar');
     Route::post('/loja/frete/calcular', [StoreController::class, 'calcularFrete'])
         ->middleware('throttle:30,1')->name('site.loja.frete.calcular');
     Route::post('/loja/pedido', [StoreController::class, 'registrar'])
+        ->block(lockSeconds: 10, waitSeconds: 10)
         ->middleware('throttle:8,1')->name('site.loja.pedido.registrar');
     Route::get('/loja/pedido/{numero}/{token}', [StoreController::class, 'pedido'])
         ->where(['numero' => 'GR\d{2}-\d{4,6}', 'token' => '[A-Za-z0-9]{20,40}'])
