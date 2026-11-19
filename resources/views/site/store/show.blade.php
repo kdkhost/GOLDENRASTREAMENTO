@@ -54,12 +54,6 @@
                         <span class="pdp-badge-feat"><i class="fa-solid fa-star"></i> Mais vendido</span>
                     @endif
 
-                    @if(count($todasFotos) > 1)
-                        <span class="pdp-count-badge" id="pdpCounterBadge"><i class="fa-solid fa-camera"></i> <span id="pdpCurrentNum">1</span> / {{ count($todasFotos) }}</span>
-                        <button type="button" class="pdp-nav-btn prev" id="pdpPrevBtn" aria-label="Foto anterior"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button type="button" class="pdp-nav-btn next" id="pdpNextBtn" aria-label="Próxima foto"><i class="fa-solid fa-chevron-right"></i></button>
-                    @endif
-
                     @if(!empty($todasFotos[0]))
                         <img id="prodMainImg" src="{{ produto_foto_url($todasFotos[0]) }}" alt="{{ $produto['nome'] }}" data-index="0">
                         <span class="pdp-zoom-hint"><i class="fa-solid fa-magnifying-glass-plus"></i> Passe o mouse ou clique para ampliar</span>
