@@ -748,11 +748,13 @@
 .pdp-why-list li span{display:block;font-size:.86rem;color:#6b7280;line-height:1.45}
 
 .pdp-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:28px}
-.pdp-step-card{position:relative;background:#fff;border-radius:20px;padding:22px;border:1px solid rgba(15,23,42,.05);display:flex;flex-direction:column;gap:6px}
-.pdp-step-num{position:absolute;top:16px;right:18px;font-size:1.4rem;font-weight:800;color:rgba(15,23,42,.08);line-height:1}
-.pdp-step-card i{color:var(--gold-2);font-size:1.25rem;margin-bottom:4px}
-.pdp-step-card b{font-size:.98rem;color:#111827}
-.pdp-step-card span{font-size:.85rem;color:#6b7280;line-height:1.45}
+.pdp-step-card{position:relative;overflow:hidden;isolation:isolate;background:#fff;border-radius:20px;padding:24px 22px;border:1px solid rgba(15,23,42,.06);box-shadow:0 8px 22px rgba(15,23,42,.04);display:flex;flex-direction:column;gap:6px;transition:transform .2s ease,box-shadow .2s ease}
+.pdp-step-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(15,23,42,.07)}
+.pdp-step-card .pdp-step-num{position:absolute;top:-6px;right:14px;z-index:0;font-family:'Poppins',sans-serif;font-size:5.8rem;font-weight:800;line-height:.92;letter-spacing:-.05em;background:linear-gradient(180deg,rgba(224,163,62,.24) 0%,rgba(224,163,62,.05) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;pointer-events:none;user-select:none;transition:opacity .2s ease,transform .2s ease}
+.pdp-step-card:hover .pdp-step-num{transform:scale(1.04)}
+.pdp-step-card i{position:relative;z-index:1;color:var(--gold-2);font-size:1.25rem;margin-bottom:4px}
+.pdp-step-card b{position:relative;z-index:1;font-size:.98rem;color:#111827}
+.pdp-step-card span:not(.pdp-step-num){position:relative;z-index:1;font-size:.85rem;color:#6b7280;line-height:1.45}
 
 .pdp-rel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 
