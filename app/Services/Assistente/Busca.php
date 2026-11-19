@@ -2,6 +2,7 @@
 
 namespace App\Services\Assistente;
 
+use App\Models\Assistente;
 use App\Models\ConhecimentoItem;
 use Illuminate\Support\Str;
 
@@ -71,9 +72,17 @@ final class Busca
         $limite ??= (int) config('assistente.resposta.itens_de_fonte');
         $piso = (float) config('assistente.resposta.minimo_de_fonte');
 
-        $escored = ConhecimentoItem::query()
+        $query = ConhecimentoItem::query()
             ->ativos()
-            ->latest('updated_at')
+            ->latest('updated_at');
+
+        if (! Assistente::permissaoAtiva('consultar_catalogo')) {
+            $query->where(function ($q): void {
+                $q->whereNull('referencia')->orWhere('referencia', '!=', 'golden:catalogo');
+            });
+        }
+
+        $escored = $query
             ->limit(self::LIMIAR_DE_VARREDURA)
             ->get()
             ->map(fn (ConhecimentoItem $item): array => self::comPontuacao($item, $palavras))

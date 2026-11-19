@@ -34,7 +34,7 @@ return [
             'referencia' => 'golden:o-que-a-ana-resolve',
             'titulo' => 'O que a assistente Ana resolve',
             'tags' => 'ajuda assuntos atendimento vendas serviços produtos dúvidas o que você faz quem é você como pode me ajudar consultora',
-            'corpo' => 'A Ana é a consultora virtual da Golden Rastreamento. Ela ajuda a entender e contratar os serviços da Golden, explicando como funciona cada rastreador (J16 para carros e motos), qual equipamento combina com cada veículo, como funciona a instalação com profissional de confiança, o bloqueio remoto via relé e chicote, a cobertura do chip M2M multi-operadora (Vivo, Claro, TIM e Algar), os planos e a mensalidade (incluindo Plano Frota). Mostra como acessar a plataforma web, Servidor 1, Servidor 2 e aplicativo móvel, e o portal do cliente. Para segunda via de fatura, ela pode iniciar a conferência de dados diretamente no chat para envio seguro ao e-mail cadastrado. O que ela não faz: fechar desconto sem o time comercial, alterar contas diretamente ou pedir senhas e cartões pelo chat.',
+            'corpo' => 'A Ana é a consultora virtual da Golden Rastreamento. Ela atende com cordialidade e ajuda a entender e contratar os serviços e produtos da Golden: explica como funciona cada rastreador (J16 para carros, motos e frota), qual equipamento combina com cada veículo, como funciona a instalação com profissional de confiança, o bloqueio remoto via relé e chicote, a escolha do chip M2M incluso no benefício (Chip Multioperadora com Algar, Claro, Vivo e TIM ou operadoras individuais Vivo, Claro e TIM), os planos mensais e pacotes adicionais de alertas recorrentes no carrinho. Também orienta sobre o acesso à plataforma web (Servidor 1 e Servidor 2), aplicativo Android/iOS, portal do cliente e segunda via de fatura no chat com conferência de segurança. O que ela não faz: divulgar preços de itens sob consulta, conceder descontos por conta própria ou pedir senhas e dados de cartão.',
         ],
 
         [
@@ -67,16 +67,16 @@ return [
 
         [
             'referencia' => 'golden:cobertura',
-            'titulo' => 'Cobertura do chip M2M',
-            'tags' => 'cobertura chip m2m sinal 4g 2g vivo claro tim algar interior cidade região',
-            'corpo' => 'O chip M2M usa a cobertura das operadoras nacionais com rede 4G/2G, conforme a região de uso. A Golden trabalha com chips Vivo, Claro, TIM e Algar; a Algar costuma atender bem o interior de Minas Gerais e região. A cobertura exata no endereço onde o veículo circula é confirmada no atendimento, porque varia de cidade para cidade e até dentro do mesmo município.',
+            'titulo' => 'Cobertura e escolha do chip M2M (Multioperadora ou Individual)',
+            'tags' => 'cobertura chip m2m multioperadora individual sinal 4g 2g vivo claro tim algar interior cidade região benefício incluso',
+            'corpo' => 'Os rastreadores e planos contam com Chip M2M de telemetria incluso como benefício (R$ 0,00 de taxa de ativação do chip). Na página do produto e no carrinho da loja, o cliente pode escolher entre o Chip Multioperadora (Algar, Claro, Vivo e TIM — recomendado por conectar automaticamente na melhor rede disponível) ou uma operadora individual dedicada (Vivo M2M, Claro M2M ou TIM M2M), cada uma com seu valor mensal transparente. A cobertura exata na região onde o veículo circula também pode ser confirmada com a equipe no WhatsApp :whatsapp.',
         ],
 
         [
             'referencia' => 'golden:mensalidade-e-planos',
-            'titulo' => 'Mensalidade, conectividade e planos',
-            'tags' => 'mensalidade plano preço valor quanto custa recorrência conectividade m2m plano frota por veículo',
-            'corpo' => 'O rastreamento tem cobrança recorrente: a conectividade M2M do chip e o acesso à plataforma. Existe o Plano Frota, cobrado por veículo e por mês, com plataforma web, aplicativo, cercas virtuais e relatórios. Os valores vigentes são informados na proposta e aparecem na loja do site quando o produto está publicado. Quem já é cliente vê as faturas e a situação de cada serviço no portal do cliente. A Ana não fecha desconto nem altera valor: isso é com o time comercial.',
+            'titulo' => 'Mensalidade, conectividade, 1ª cobrança e pacotes de alertas',
+            'tags' => 'mensalidade plano preço valor quanto custa recorrência primeira mensalidade conectividade m2m pacote alertas whatsapp sms plano frota',
+            'corpo' => 'O rastreamento combina o equipamento/adesão (quando aplicável) com a mensalidade recorrente referente à conectividade M2M e ao acesso à plataforma web e aplicativo. De acordo com a configuração de cada produto na loja, a 1ª mensalidade do chip escolhido pode ser somada no ato da compra ou faturada somente no próximo mês (recorrente). Além disso, no carrinho de compras, alguns produtos oferecem pacotes adicionais opcionais de alertas recorrentes (como alertas extras ou suporte dedicado). Quando o item estiver marcado como Sob consulta, todos os valores e condições são negociados diretamente com o time comercial pelo WhatsApp :whatsapp.',
         ],
 
         [

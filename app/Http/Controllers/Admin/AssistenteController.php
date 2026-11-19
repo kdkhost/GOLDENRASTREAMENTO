@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Assistente;
+use App\Models\ConhecimentoItem;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Services\Assistente\Provedores\Fabrica;
+use App\Services\Assistente\Semeador;
 use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,13 +31,20 @@ class AssistenteController extends Controller
 {
     public function editar(): View
     {
+        $assistente = Assistente::garanta();
+
         return view('admin.assistente.persona', [
-            'assistente' => Assistente::garanta(),
+            'assistente' => $assistente,
             'tons' => Assistente::tons(),
             'vozes' => Fabrica::opcoesDeVoz(),
             'icones' => (array) config('assistente.icones_bolha'),
             'faltando' => Fabrica::faltando(),
             'ligado' => Fabrica::ligado(),
+            'acessosDefinicao' => Assistente::ACESSOS_DEFINICAO,
+            'acessosAtuais' => $assistente->acessosConfigurados(),
+            'totalConhecimento' => ConhecimentoItem::where('ativo', true)->count(),
+            'totalProdutosAtivos' => Product::where('ativo', true)->count(),
+            'padroesPersona' => (array) config('assistente.persona'),
             'contato_whatsapp' => (string) Setting::get('contato_whatsapp', config('golden.whatsapp')),
             'contato_telefone' => (string) Setting::get('contato_telefone', implode(' · ', (array) config('golden.contato.telefones'))),
             'contato_email' => (string) Setting::get('contato_email', config('golden.email')),
@@ -44,6 +54,22 @@ class AssistenteController extends Controller
         ]);
     }
 
+    public function treinar(Semeador $semeador): RedirectResponse
+    {
+        $res = $semeador->conhecimento(false);
+        $catalogoOk = $semeador->catalogo();
+
+        Activity::log('assistente_treinado', 'Base de conhecimento e catálogo da Ana sincronizados pelo painel.');
+
+        $msg = sprintf(
+            'Treinamento sincronizado! %d novo(s) item(ns) na base oficial e catálogo da loja %s.',
+            (int) ($res['criados'] ?? 0),
+            $catalogoOk ? 'atualizado com sucesso' : 'sem produtos ativos'
+        );
+
+        return redirect()->route('admin.assistente.persona')->with('success', $msg);
+    }
+
     public function atualizar(Request $request): RedirectResponse
     {
         $data = $this->validar($request);
@@ -51,6 +77,16 @@ class AssistenteController extends Controller
 
         foreach (['ativo', 'no_site', 'no_funil', 'no_chamado'] as $canal) {
             $data[$canal] = $request->boolean($canal);
+        }
+
+        if ($request->boolean('acessos_enviado') || $request->has('acessos_sistema')) {
+            $acessos = [];
+            foreach (array_keys(Assistente::ACESSOS_DEFINICAO) as $chaveAcesso) {
+                $acessos[$chaveAcesso] = $request->boolean("acessos_sistema.{$chaveAcesso}");
+            }
+            $data['acessos_sistema'] = $acessos;
+        } else {
+            unset($data['acessos_sistema']);
         }
 
         // Salva os dados de contato do atendimento humanizado nas configurações gerais do sistema
@@ -113,6 +149,11 @@ class AssistenteController extends Controller
             'despedida' => ['nullable', 'string', 'max:500'],
             'tom' => ['required', 'string', 'in:'.implode(',', array_keys(Assistente::tons()))],
             'regras' => ['nullable', 'string', 'max:8000'],
+            'objetivo_atendimento' => ['nullable', 'string', 'max:5000'],
+            'restricoes' => ['nullable', 'string', 'max:5000'],
+            'instrucoes_extras' => ['nullable', 'string', 'max:5000'],
+            'acessos_sistema' => ['nullable', 'array'],
+            'acessos_sistema.*' => ['nullable', 'boolean'],
             'avatar' => ['nullable', 'string', 'max:190'],
             'avatar_alt' => ['nullable', 'string', 'max:120'],
             'dica' => ['nullable', 'string', 'max:80'],

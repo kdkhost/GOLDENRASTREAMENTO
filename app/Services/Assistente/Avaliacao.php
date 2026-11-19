@@ -2,6 +2,7 @@
 
 namespace App\Services\Assistente;
 
+use App\Models\Assistente;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
 use Illuminate\Support\Str;
@@ -57,7 +58,8 @@ final class Avaliacao
     /** Pedir a nota é regra da casa, e a casa liga ou desliga na tela de chaves. */
     public static function pedir(): bool
     {
-        return (bool) config('assistente.avaliacao.pedir');
+        return (bool) config('assistente.avaliacao.pedir')
+            && Assistente::permissaoAtiva('pedir_avaliacao');
     }
 
     /** Quantas falas da máquina antes de incomodar com pesquisa. */
@@ -132,7 +134,7 @@ final class Avaliacao
             $nota = (int) $parte[1];
         } else {
             foreach (self::EXTENSO as $palavra => $valor) {
-                if (preg_match('/^(?:uma?\s+)?' . $palavra . '(?:\s+estrelas?)?$/', $alvo) === 1) {
+                if (preg_match('/^(?:uma?\s+)?'.$palavra.'(?:\s+estrelas?)?$/', $alvo) === 1) {
                     $nota = $valor;
 
                     break;
@@ -145,7 +147,7 @@ final class Avaliacao
         }
 
         $resto = trim((string) preg_replace(
-            '/^\s*(?:nota\s*(?:de\s*)?)?(?:[1-5](?:\s*(?:de|\/)?\s*' . self::NOTA_MAX . ')?|\w+)(?:\s*estrelas?)?[\s.,;:!-]*/iu',
+            '/^\s*(?:nota\s*(?:de\s*)?)?(?:[1-5](?:\s*(?:de|\/)?\s*'.self::NOTA_MAX.')?|\w+)(?:\s*estrelas?)?[\s.,;:!-]*/iu',
             '',
             $texto,
             1
@@ -188,8 +190,8 @@ final class Avaliacao
             'conversa_id' => $conversa->id,
             'autor' => 'sistema',
             'tipo' => 'texto',
-            'corpo' => 'Avaliação do atendimento: ' . $nota . '/' . self::NOTA_MAX
-                . ($texto !== '' ? ' — ' . $texto : ''),
+            'corpo' => 'Avaliação do atendimento: '.$nota.'/'.self::NOTA_MAX
+                .($texto !== '' ? ' — '.$texto : ''),
         ]);
     }
 

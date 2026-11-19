@@ -4,6 +4,7 @@ namespace App\Services\Assistente;
 
 use App\Mail\SegundaViaFatura as EmailDaSegundaVia;
 use App\Models\Activity;
+use App\Models\Assistente;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
 use App\Models\Customer;
@@ -104,7 +105,8 @@ final class SegundaViaDaFatura implements Acao
      */
     public function ligada(): bool
     {
-        return Veiculacao::segundaVia();
+        return Veiculacao::segundaVia()
+            && Assistente::permissaoAtiva('consultar_faturas');
     }
 
     public function gatilho(string $fala): bool

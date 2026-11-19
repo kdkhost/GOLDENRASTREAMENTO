@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Category;
+use App\Models\ConhecimentoItem;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\StockMovement;
+use App\Services\Assistente\Semeador;
 use App\Support\Envio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -77,6 +79,7 @@ class ProductController extends Controller
         }
 
         Activity::log('produto_criado', "Produto {$produto->nome} criado.", $produto);
+        $this->sincronizarCatalogoAssistente();
 
         if ($request->input('salvar_e_continuar') === '1') {
             return redirect()->route('admin.catalogo.produtos.edit', $produto)->with('success', "Produto '{$produto->nome}' criado com sucesso.");
@@ -116,6 +119,7 @@ class ProductController extends Controller
         }
 
         Activity::log('produto_atualizado', "Produto {$produto->nome} atualizado.", $produto);
+        $this->sincronizarCatalogoAssistente();
 
         if ($request->input('salvar_e_continuar') === '1') {
             return redirect()->route('admin.catalogo.produtos.edit', $produto)->with('success', "Produto '{$produto->nome}' atualizado com sucesso.");
@@ -134,6 +138,7 @@ class ProductController extends Controller
         }
         $produto->delete();
         Activity::log('produto_excluido', "Produto {$nome} excluído.");
+        $this->sincronizarCatalogoAssistente();
 
         return back()->with('success', 'Produto excluído.');
     }
@@ -476,5 +481,13 @@ class ProductController extends Controller
     private function paraCentavos($valor): int
     {
         return (int) round(((float) $valor) * 100);
+    }
+
+    /** Mantém o catálogo da assistente virtual Ana sempre atualizado quando o item já existe na base. */
+    private function sincronizarCatalogoAssistente(): void
+    {
+        if (ConhecimentoItem::where('referencia', 'golden:catalogo')->exists()) {
+            app(Semeador::class)->catalogo();
+        }
     }
 }

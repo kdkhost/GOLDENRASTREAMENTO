@@ -604,6 +604,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'dois_fatores'])->gr
     Route::prefix('assistente')->name('assistente.')->group(function () {
         Route::get('/', [AssistenteController::class, 'editar'])->name('persona')->middleware('role:admin');
         Route::post('/', [AssistenteController::class, 'atualizar'])->name('persona.update')->middleware('role:admin');
+        Route::post('/treinar', [AssistenteController::class, 'treinar'])->name('treinar')->middleware('role:admin');
 
         Route::prefix('conhecimento')->name('conhecimento.')->middleware('role:admin')->group(function () {
             Route::get('/', [ConhecimentoController::class, 'index'])->name('index');

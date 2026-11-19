@@ -79,7 +79,8 @@ final class Motor
 
     public static function exigeFonte(): bool
     {
-        return (bool) config('assistente.resposta.so_com_fonte');
+        return (bool) config('assistente.resposta.so_com_fonte')
+            && Assistente::permissaoAtiva('responder_apenas_com_fonte');
     }
 
     /**

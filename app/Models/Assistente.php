@@ -34,10 +34,49 @@ class Assistente extends Model
 
     protected $table = 'assistente';
 
+    /** Permissões de acesso da Ana no sistema (controláveis individualmente no painel). */
+    public const ACESSOS_DEFINICAO = [
+        'consultar_catalogo' => [
+            'rotulo' => 'Consultar catálogo da loja (produtos, chips e pacotes)',
+            'descricao' => 'Permite à Ana responder sobre rastreadores, planos, operadoras de chip, recursos inclusos e pacotes de alertas.',
+            'padrao' => true,
+        ],
+        'consultar_faturas' => [
+            'rotulo' => 'Consultar e enviar 2ª via de faturas',
+            'descricao' => 'Permite iniciar a conferência de segurança e entregar segunda via de faturas do cliente.',
+            'padrao' => true,
+        ],
+        'consultar_cadastro' => [
+            'rotulo' => 'Reconhecer cliente cadastrado no CRM',
+            'descricao' => 'Identifica automaticamente clientes existentes pelo e-mail informado para um atendimento personalizado.',
+            'padrao' => true,
+        ],
+        'abrir_chamado_equipe' => [
+            'rotulo' => 'Acionar equipe humana quando necessário',
+            'descricao' => 'Quando a dúvida não estiver na base ou exigir negociação, a Ana avisa e aciona o time comercial/suporte.',
+            'padrao' => true,
+        ],
+        'responder_apenas_com_fonte' => [
+            'rotulo' => 'Responder apenas com base oficial (anti-alucinação)',
+            'descricao' => 'Bloqueia suposições: a Ana só afirma preços, prazos e regras confirmados na base de conhecimento.',
+            'padrao' => true,
+        ],
+        'pedir_nome' => [
+            'rotulo' => 'Pedir o nome do cliente no início da conversa',
+            'descricao' => 'Torna o atendimento mais pessoal e cordial chamando o cliente pelo primeiro nome.',
+            'padrao' => true,
+        ],
+        'pedir_avaliacao' => [
+            'rotulo' => 'Pedir avaliação (1 a 5 estrelas) ao finalizar',
+            'descricao' => 'Coleta a nota de satisfação do cliente no encerramento do atendimento.',
+            'padrao' => true,
+        ],
+    ];
+
     protected $fillable = [
         'nome', 'cargo', 'saudacao', 'pergunta_nome', 'confirmacao_nome', 'pergunta_email',
         'confirmacao_email', 'confirmacao_cadastro', 'pedido_avaliacao', 'agradecimento_avaliacao',
-        'despedida', 'tom', 'regras',
+        'despedida', 'tom', 'regras', 'objetivo_atendimento', 'restricoes', 'instrucoes_extras', 'acessos_sistema',
         'avatar', 'avatar_alt', 'dica', 'status', 'placeholder', 'humano', 'icone',
         'voz', 'ativo', 'no_site', 'no_funil', 'no_chamado', 'criado_por',
     ];
@@ -47,6 +86,7 @@ class Assistente extends Model
         'no_site' => 'boolean',
         'no_funil' => 'boolean',
         'no_chamado' => 'boolean',
+        'acessos_sistema' => 'array',
     ];
 
     public function criadoPor(): BelongsTo
@@ -79,9 +119,63 @@ class Assistente extends Model
             'despedida' => (string) config('assistente.persona.despedida'),
             'tom' => (string) config('assistente.persona.tom'),
             'regras' => (string) config('assistente.persona.regras'),
+            'objetivo_atendimento' => (string) config('assistente.persona.objetivo_atendimento'),
+            'restricoes' => (string) config('assistente.persona.restricoes'),
+            'instrucoes_extras' => (string) config('assistente.persona.instrucoes_extras'),
+            'acessos_sistema' => static::acessosPadrao(),
         ]);
 
         return $ficha->wasRecentlyCreated ? $ficha->refresh() : $ficha;
+    }
+
+    /**
+     * Mapa padrão de permissões de acesso da Ana no sistema.
+     *
+     * @return array<string, bool>
+     */
+    public static function acessosPadrao(): array
+    {
+        $mapa = [];
+        foreach (self::ACESSOS_DEFINICAO as $chave => $def) {
+            $mapa[$chave] = (bool) $def['padrao'];
+        }
+
+        return $mapa;
+    }
+
+    /**
+     * Permissões vigentes desta ficha mescladas com os padrões.
+     *
+     * @return array<string, bool>
+     */
+    public function acessosConfigurados(): array
+    {
+        $salvos = is_array($this->acessos_sistema) ? $this->acessos_sistema : [];
+        $resultado = [];
+
+        foreach (self::ACESSOS_DEFINICAO as $chave => $def) {
+            $resultado[$chave] = array_key_exists($chave, $salvos)
+                ? (bool) $salvos[$chave]
+                : (bool) $def['padrao'];
+        }
+
+        return $resultado;
+    }
+
+    /** Verifica se o administrador liberou determinado acesso/permissão para a Ana. */
+    public function podeAcessar(string $chave): bool
+    {
+        return $this->acessosConfigurados()[$chave] ?? false;
+    }
+
+    /** Consulta uma permissão sem criar registro na tabela caso ainda não exista ficha salva. */
+    public static function permissaoAtiva(string $chave): bool
+    {
+        if (Cache::has('golden.assistente_bolha') || static::query()->exists()) {
+            return static::paraABolha()->podeAcessar($chave);
+        }
+
+        return (bool) (self::ACESSOS_DEFINICAO[$chave]['padrao'] ?? true);
     }
 
     /** Os tons de fala que a tela oferece — a lista vem da config, a view não escreve nenhuma. */
@@ -280,14 +374,50 @@ class Assistente extends Model
         $linhas = [
             'Você é '.$this->nome.($this->cargo ? ' — '.$this->cargo : '').'.',
             'Tom de voz: '.mb_strtolower($this->tomLabel()).'.',
-            'Adapte-se a cada conversa com naturalidade: seja espontânea, leve e descontraída na medida certa, mantendo sempre a postura profissional, séria e confiável.',
+            'Seja sempre cordial, espontânea, educada, acolhedora e natural: trate cada cliente com respeito, empatia e clareza, mantendo postura profissional e confiável.',
         ];
+
+        $objetivo = filled($this->objetivo_atendimento)
+            ? (string) $this->objetivo_atendimento
+            : (string) config('assistente.persona.objetivo_atendimento');
+        if (filled($objetivo)) {
+            $linhas[] = "O que você deve fazer durante o atendimento:\n".$objetivo;
+        }
 
         if (filled($this->regras)) {
             $linhas[] = "Regras do atendimento:\n".$this->regras;
         }
 
-        if ((bool) config('assistente.resposta.so_com_fonte')) {
+        $restricoes = filled($this->restricoes)
+            ? (string) $this->restricoes
+            : (string) config('assistente.persona.restricoes');
+        if (filled($restricoes)) {
+            $linhas[] = "Restrições obrigatórias (o que você NÃO pode fazer):\n".$restricoes;
+        }
+
+        $extras = filled($this->instrucoes_extras)
+            ? (string) $this->instrucoes_extras
+            : (string) config('assistente.persona.instrucoes_extras');
+        if (filled($extras)) {
+            $linhas[] = "Treinamento e orientações adicionais da Golden:\n".$extras;
+        }
+
+        // Permissões de acesso configuradas pelo administrador no painel
+        $bloqueios = [];
+        if (! $this->podeAcessar('consultar_catalogo')) {
+            $bloqueios[] = 'Não informe preços ou catálogo de produtos; direcione o cliente para a equipe comercial.';
+        }
+        if (! $this->podeAcessar('consultar_faturas')) {
+            $bloqueios[] = 'Não prometa emissão automática de 2ª via de fatura pelo chat; oriente o cliente a acessar o Portal do Cliente ou falar com o financeiro.';
+        }
+        if (! $this->podeAcessar('consultar_cadastro')) {
+            $bloqueios[] = 'Não consulte nem confirme dados de cadastro no CRM pelo chat.';
+        }
+        if ($bloqueios !== []) {
+            $linhas[] = "Limites de acesso definidos pelo administrador:\n".implode("\n", $bloqueios);
+        }
+
+        if ((bool) config('assistente.resposta.so_com_fonte') && $this->podeAcessar('responder_apenas_com_fonte')) {
             $linhas[] = 'Só responda o que estiver nas fontes abaixo. Sem fonte confiável, '
                 .'responda exatamente com a frase de escalada e não invente nada.';
         }

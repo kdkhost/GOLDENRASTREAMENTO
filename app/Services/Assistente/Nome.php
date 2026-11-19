@@ -2,6 +2,7 @@
 
 namespace App\Services\Assistente;
 
+use App\Models\Assistente;
 use Illuminate\Support\Str;
 
 /**
@@ -115,7 +116,8 @@ final class Nome
     /** Pedir o nome é regra da casa, e a casa liga ou desliga na tela de chaves. */
     public static function pedir(): bool
     {
-        return (bool) config('assistente.nome.pedir');
+        return (bool) config('assistente.nome.pedir')
+            && Assistente::permissaoAtiva('pedir_nome');
     }
 
     /** Quantas vezes a máquina ainda pergunta antes de seguir sem nome. */

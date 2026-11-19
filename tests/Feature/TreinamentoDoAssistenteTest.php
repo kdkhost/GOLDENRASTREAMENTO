@@ -4,9 +4,15 @@ namespace Tests\Feature;
 
 use App\Models\Assistente;
 use App\Models\ConhecimentoItem;
+use App\Models\Conversa;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Assistente\Busca;
+use App\Services\Assistente\Identificacao;
+use App\Services\Assistente\Motor;
+use App\Services\Assistente\SegundaViaDaFatura;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -48,7 +54,7 @@ class TreinamentoDoAssistenteTest extends TestCase
         $this->assertStringContainsString($produto->nome, $catalogo->corpo);
 
         $ficha = Assistente::garanta();
-        $this->assertSame('descolado', $ficha->tom);
+        $this->assertSame('humanizado', $ficha->tom);
         $this->assertSame(config('assistente.persona.cargo'), $ficha->cargo);
     }
 
@@ -98,7 +104,7 @@ class TreinamentoDoAssistenteTest extends TestCase
 
         $this->artisan('assistente:ensinar', ['--personalidade' => true])->assertSuccessful();
 
-        $this->assertSame('descolado', $ficha->fresh()->tom);
+        $this->assertSame('humanizado', $ficha->fresh()->tom);
         $this->assertSame('Bia', $ficha->fresh()->nome, 'O nome escolhido pela equipe foi sobrescrito.');
     }
 
@@ -111,5 +117,102 @@ class TreinamentoDoAssistenteTest extends TestCase
 
         $this->assertTrue(ConhecimentoItem::where('referencia', 'golden:portal-do-cliente')->exists());
         $this->assertTrue(ConhecimentoItem::where('referencia', 'golden:catalogo')->exists());
+    }
+
+    public function test_admin_configura_treinamento_restricoes_e_permissoes_de_acesso_da_ana(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('admin.assistente.persona.update'), [
+                'nome' => 'Ana',
+                'cargo' => 'Consultora Golden',
+                'tom' => 'humanizado',
+                'regras' => 'Seja sempre gentil e objetiva.',
+                'objetivo_atendimento' => 'Ajudar clientes com rastreadores e planos Golden.',
+                'restricoes' => 'Nunca prometer desconto sem autorização.',
+                'instrucoes_extras' => 'Destacar o Chip Multioperadora incluso no plano.',
+                'acessos_enviado' => '1',
+                'acessos_sistema' => [
+                    'consultar_catalogo' => '1',
+                    'consultar_faturas' => '0',
+                    'consultar_cadastro' => '1',
+                    'abrir_chamado_equipe' => '1',
+                    'responder_apenas_com_fonte' => '1',
+                    'pedir_nome' => '1',
+                    'pedir_avaliacao' => '0',
+                ],
+                'ativo' => '1',
+                'no_site' => '1',
+            ])
+            ->assertRedirect(route('admin.assistente.persona'));
+
+        $ficha = Assistente::garanta()->fresh();
+        $this->assertSame('Ajudar clientes com rastreadores e planos Golden.', $ficha->objetivo_atendimento);
+        $this->assertSame('Nunca prometer desconto sem autorização.', $ficha->restricoes);
+        $this->assertSame('Destacar o Chip Multioperadora incluso no plano.', $ficha->instrucoes_extras);
+        $this->assertTrue($ficha->podeAcessar('consultar_catalogo'));
+        $this->assertFalse($ficha->podeAcessar('consultar_faturas'));
+        $this->assertFalse($ficha->podeAcessar('pedir_avaliacao'));
+
+        $prompt = $ficha->instrucoes();
+        $this->assertStringContainsString('Ajudar clientes com rastreadores e planos Golden.', $prompt);
+        $this->assertStringContainsString('Nunca prometer desconto sem autorização.', $prompt);
+        $this->assertStringContainsString('Destacar o Chip Multioperadora incluso no plano.', $prompt);
+        $this->assertStringContainsString('Não prometa emissão automática de 2ª via de fatura', $prompt);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.assistente.treinar'))
+            ->assertRedirect(route('admin.assistente.persona'));
+    }
+
+    public function test_permissoes_de_acesso_da_ana_controlam_catalogo_cadastro_e_regras_no_motor(): void
+    {
+        $this->artisan('assistente:ensinar')->assertSuccessful();
+
+        $cliente = Customer::create([
+            'nome' => 'Carlos Teste',
+            'email' => 'carlos.teste@golden.com.br',
+            'telefone' => '19999999999',
+        ]);
+
+        // Por padrão, tudo liberado: encontra catálogo, exige fonte e consulta cadastro
+        $fontesComCatalogo = Busca::fontes('quanto custa o plano frota rastreador catálogo');
+        $this->assertNotEmpty($fontesComCatalogo);
+        $this->assertTrue(Motor::exigeFonte());
+        $this->assertTrue((new SegundaViaDaFatura)->ligada());
+
+        // Desliga consultar_catalogo, consultar_cadastro, consultar_faturas e responder_apenas_com_fonte
+        $this->actingAs($this->admin)
+            ->post(route('admin.assistente.persona.update'), [
+                'nome' => 'Ana',
+                'tom' => 'humanizado',
+                'acessos_enviado' => '1',
+                'acessos_sistema' => [
+                    'consultar_catalogo' => '0',
+                    'consultar_faturas' => '0',
+                    'consultar_cadastro' => '0',
+                    'abrir_chamado_equipe' => '1',
+                    'responder_apenas_com_fonte' => '0',
+                    'pedir_nome' => '1',
+                    'pedir_avaliacao' => '1',
+                ],
+                'ativo' => '1',
+                'no_site' => '1',
+            ])
+            ->assertRedirect(route('admin.assistente.persona'));
+
+        $this->assertFalse(Motor::exigeFonte());
+        $this->assertFalse((new SegundaViaDaFatura)->ligada());
+
+        // Busca não deve mais retornar o item golden:catalogo
+        $catalogoId = ConhecimentoItem::where('referencia', 'golden:catalogo')->value('id');
+        $idsEncontrados = array_column(Busca::fontes('catálogo produtos rastreador preço', 50), 'id');
+        $this->assertNotContains($catalogoId, $idsEncontrados);
+
+        // Identificação grava e-mail na conversa mas não consulta nem vincula o cliente do CRM
+        $conversa = Conversa::abrir('site');
+        $achado = Identificacao::vincular($conversa, $cliente->email);
+        $this->assertNull($achado);
+        $this->assertNull($conversa->fresh()->customer_id);
+        $this->assertSame($cliente->email, $conversa->fresh()->email);
     }
 }

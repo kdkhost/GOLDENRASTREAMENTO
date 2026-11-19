@@ -2,6 +2,7 @@
 
 namespace App\Services\Assistente;
 
+use App\Models\Assistente;
 use App\Models\Conversa;
 use App\Models\ConversaMensagem;
 use App\Models\Customer;
@@ -98,7 +99,9 @@ final class Identificacao
             return null;
         }
 
-        $cliente = Customer::porEmail($normalizado);
+        $cliente = Assistente::permissaoAtiva('consultar_cadastro')
+            ? Customer::porEmail($normalizado)
+            : null;
         $dados = ['email' => $normalizado];
 
         if ($cliente !== null) {

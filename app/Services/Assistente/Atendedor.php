@@ -876,6 +876,10 @@ final class Atendedor
      */
     public static function chameEquipe(Conversa $conversa, string $motivo, string $prova): void
     {
+        if (! Assistente::permissaoAtiva('abrir_chamado_equipe')) {
+            return;
+        }
+
         $conversa->escalar($motivo);
 
         // O sino é o único aviso que chega mesmo sem SMTP: a conversa já está esperando na caixa

@@ -68,28 +68,72 @@ class Semeador
      */
     public function catalogo(): bool
     {
-        $produtos = Product::query()->where('ativo', true)->orderBy('ordem')->orderBy('nome')->get();
+        $produtos = Product::query()
+            ->with('category:id,nome')
+            ->where('ativo', true)
+            ->orderBy('ordem')
+            ->orderBy('nome')
+            ->get();
 
         if ($produtos->isEmpty()) {
             return false;
         }
 
         $linhas = $produtos->map(function (Product $produto): string {
+            $categoria = $produto->category?->nome ? ' ['.$produto->category->nome.']' : '';
+            $estoque = $produto->disponivel() ? 'Disponível para pedido.' : 'Temporariamente sem estoque (consultar reposição).';
+
             if ($produto->sob_consulta) {
                 $preco = 'Produto, plano, chip e todas as condições comerciais sob consulta — oriente o cliente a entrar em contato com a equipe Golden para receber uma proposta.';
-                $mensal = '';
+                $detalhesExtras = '';
             } else {
                 $preco = $produto->preco() > 0
-                    ? 'Preço na loja: '.brl($produto->preco()).'.'
-                    : 'Preço sob consulta na proposta.';
+                    ? 'Valor do item na loja: '.brl($produto->preco()).'.'
+                    : 'Adesão do equipamento grátis.';
 
-                $mensal = $produto->mensalidade_cents
-                    ? ' Mensalidade: '.brl($produto->mensalidade_cents).' por mês.'
-                    : '';
+                $partes = [];
+                if ($produto->permiteEscolhaChip()) {
+                    $opsTexto = collect($produto->operadorasConfiguradas())
+                        ->map(fn (array $op): string => $op['nome'].' ('.brl((int) ($op['mensalidade_cents'] ?? 0)).'/mês)')
+                        ->implode(', ');
+                    if ($opsTexto !== '') {
+                        $cobranca1a = $produto->cobrar_primeira_mensalidade
+                            ? '1ª mensalidade somada no ato da compra'
+                            : 'mensalidade cobrada apenas no próximo mês (recorrente)';
+                        $partes[] = 'Chip M2M incluso (sem taxa de ativação). Opções de operadora: '.$opsTexto.'. Regra: '.$cobranca1a.'.';
+                    }
+                } elseif ($produto->mensalidade_cents) {
+                    $partes[] = 'Mensalidade: '.brl($produto->mensalidade_cents).'/mês.';
+                }
+
+                $recursos = collect($produto->recursosEstruturados(true))
+                    ->map(function (array $r): string {
+                        if (($r['tipo_valor'] ?? '') === 'mensal' && ($r['valor_cents'] ?? 0) > 0) {
+                            return $r['titulo'].' ('.brl($r['valor_cents']).'/mês)';
+                        }
+                        if (($r['tipo_valor'] ?? '') === 'unico' && ($r['valor_cents'] ?? 0) > 0) {
+                            return $r['titulo'].' ('.brl($r['valor_cents']).')';
+                        }
+
+                        return $r['titulo'];
+                    })
+                    ->implode(', ');
+                if ($recursos !== '') {
+                    $partes[] = 'Recursos inclusos: '.$recursos.'.';
+                }
+
+                $pacotes = collect($produto->pacotesAlertasAtivos())
+                    ->map(fn (array $p): string => $p['nome'].' (+'.brl($p['valor_cents']).'/mês)')
+                    ->implode(', ');
+                if ($pacotes !== '') {
+                    $partes[] = 'Pacotes opcionais de alertas no carrinho: '.$pacotes.'.';
+                }
+
+                $detalhesExtras = $partes !== [] ? ' '.implode(' ', $partes) : '';
             }
 
-            return '• '.$produto->nome.': '.trim((string) $produto->resumo).' '.$preco.$mensal
-                .(filled($produto->descricao) ? ' '.trim(preg_replace('/\s+/', ' ', $produto->descricao)) : '');
+            return '• '.$produto->nome.$categoria.': '.trim((string) $produto->resumo).' '.$preco.' '.$estoque.$detalhesExtras
+                .(filled($produto->descricao) ? ' '.trim(preg_replace('/\s+/', ' ', strip_tags((string) $produto->descricao))) : '');
         })->implode("\n");
 
         ConhecimentoItem::updateOrCreate(
@@ -118,8 +162,20 @@ class Semeador
         $dados = [
             'cargo' => (string) ($padrao['cargo'] ?? ''),
             'saudacao' => (string) ($padrao['saudacao'] ?? ''),
-            'tom' => (string) ($padrao['tom'] ?? 'amigavel'),
+            'pergunta_nome' => (string) ($padrao['pergunta_nome'] ?? ''),
+            'confirmacao_nome' => (string) ($padrao['confirmacao_nome'] ?? ''),
+            'pergunta_email' => (string) ($padrao['pergunta_email'] ?? ''),
+            'confirmacao_email' => (string) ($padrao['confirmacao_email'] ?? ''),
+            'confirmacao_cadastro' => (string) ($padrao['confirmacao_cadastro'] ?? ''),
+            'pedido_avaliacao' => (string) ($padrao['pedido_avaliacao'] ?? ''),
+            'agradecimento_avaliacao' => (string) ($padrao['agradecimento_avaliacao'] ?? ''),
+            'despedida' => (string) ($padrao['despedida'] ?? ''),
+            'tom' => (string) ($padrao['tom'] ?? 'humanizado'),
             'regras' => (string) ($padrao['regras'] ?? ''),
+            'objetivo_atendimento' => (string) ($padrao['objetivo_atendimento'] ?? ''),
+            'restricoes' => (string) ($padrao['restricoes'] ?? ''),
+            'instrucoes_extras' => (string) ($padrao['instrucoes_extras'] ?? ''),
+            'acessos_sistema' => Assistente::acessosPadrao(),
             'ativo' => true,
             'no_site' => true,
             'no_funil' => true,
@@ -133,7 +189,7 @@ class Semeador
         $mudou = false;
 
         foreach ($dados as $campo => $valor) {
-            if ((string) $ficha->{$campo} !== $valor) {
+            if ($ficha->{$campo} != $valor) {
                 $ficha->{$campo} = $valor;
                 $mudou = true;
             }
