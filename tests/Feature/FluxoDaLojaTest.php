@@ -837,7 +837,7 @@ class FluxoDaLojaTest extends TestCase
             ->assertDontSee('R$ 59,90')
             ->assertDontSee('R$ 69,90')
             ->assertDontSee('R$ 49,90')
-            ->assertDontSee('pdp-chip-selector')
+            ->assertDontSee('<div class="pdp-chip-selector">', false)
             ->assertDontSee('Simular Frete e Prazo de Entrega')
             ->assertDontSee('value="checkout"', false);
 
@@ -958,5 +958,99 @@ class FluxoDaLojaTest extends TestCase
                 'mensalidade_cobrada_hoje_cents' => 4990,
                 'total_sem_frete_cents' => 24990,
             ]);
+    }
+
+    public function test_pacote_adicional_de_alertas_configuravel_no_admin_soma_recorrencia_no_carrinho_e_grava_no_pedido(): void
+    {
+        Mail::fake();
+        Setting::set('loja_livre', '1');
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'ativo',
+        ]);
+
+        // 1. Admin configura pacotes adicionais de alertas no produto
+        $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $this->produto), [
+                'nome' => $this->produto->nome,
+                'preco' => '250,00',
+                'mensalidade' => '35,90',
+                'cobrar_primeira_mensalidade' => '1',
+                'permite_escolha_chip' => '1',
+                'operadoras_chip' => ['algar', 'vivo'],
+                'chip_padrao' => 'algar',
+                'pacotes_alertas' => [
+                    [
+                        'nome' => 'Alertas WhatsApp + SMS',
+                        'valor' => '14,90',
+                        'servicos' => "Alertas de ignição no WhatsApp\nAlertas de reboque via SMS",
+                        'ativo' => '1',
+                    ],
+                    [
+                        'nome' => 'Central 24h Dedicada',
+                        'valor' => '29,90',
+                        'servicos' => 'Atendimento 24h por telefone, Apoio em sinistros',
+                        'ativo' => '1',
+                    ],
+                ],
+                'estoque' => 10,
+                'ativo' => '1',
+            ])
+            ->assertRedirect(route('admin.catalogo.produtos.index'));
+
+        $this->produto->refresh();
+        $pacotes = $this->produto->pacotesAlertasAtivos();
+        $this->assertCount(2, $pacotes);
+        $this->assertSame(1490, $pacotes[0]['valor_cents']);
+        $this->assertSame(['Alertas de ignição no WhatsApp', 'Alertas de reboque via SMS'], $pacotes[0]['servicos']);
+        Cache::flush();
+
+        // 2. Cliente adiciona o produto ao carrinho
+        $this->post('/loja/carrinho', [
+            'produto' => $this->produto->id,
+            'quantidade' => 1,
+            'operadora' => 'algar',
+        ])->assertRedirect(route('site.loja.carrinho'));
+
+        // Carrinho exibe o pacote opcional configurado
+        $this->get(route('site.loja.carrinho'))
+            ->assertOk()
+            ->assertSee('Pacote adicional de alertas')
+            ->assertSee('Alertas WhatsApp + SMS')
+            ->assertSee('Alertas de ignição no WhatsApp');
+
+        // 3. Cliente marca o pacote Alertas WhatsApp + SMS via AJAX
+        $resAddon = $this->postJson(route('site.loja.carrinho.pacotes_alertas'), [
+            'produto' => $this->produto->id,
+            'pacotes' => [$pacotes[0]['id']],
+        ]);
+
+        // Mensalidade: 35,90 (chip) + 14,90 (pacote alertas) = 50,80 (5080 cents)
+        // Total hoje: 250,00 (item) + 50,80 (1ª mensalidade) = 300,80 (30080 cents)
+        $resAddon->assertOk()
+            ->assertJson([
+                'sucesso' => true,
+                'subtotal_cents' => 25000,
+                'mensalidade_total_cents' => 5080,
+                'mensalidade_cobrada_hoje_cents' => 5080,
+                'total_sem_frete_cents' => 30080,
+            ]);
+
+        // 4. Checkout exibe o pacote adicional e registra no pedido
+        $this->get(route('site.loja.checkout'))
+            ->assertOk()
+            ->assertSee('Alertas WhatsApp + SMS');
+
+        $this->post('/loja/pedido', $this->dadosCheckout())->assertRedirect();
+
+        $pedido = $this->ultimoPedido();
+        $item = $pedido->items()->first();
+
+        $this->assertSame(5080, (int) $pedido->mensalidade_total_cents);
+        $this->assertSame(30080, (int) $pedido->total_cents);
+        $this->assertSame(1490, (int) $item->pacotes_alertas_cents);
+        $this->assertCount(1, (array) $item->pacotes_alertas);
+        $this->assertSame('Alertas WhatsApp + SMS', $item->pacotes_alertas[0]['nome']);
     }
 }

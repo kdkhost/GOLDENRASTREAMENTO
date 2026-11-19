@@ -56,7 +56,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'nome', 'slug', 'sku', 'resumo', 'descricao',
         'preco_cents', 'preco_promocional_cents', 'mensalidade_cents', 'sob_consulta', 'cobrar_primeira_mensalidade',
-        'tipo_cobranca', 'chip_operadora', 'beneficio_chip_texto', 'permite_escolha_chip', 'operadoras_chip', 'precos_chip', 'chip_padrao', 'garantia', 'anatel_homologado', 'recursos',
+        'tipo_cobranca', 'chip_operadora', 'beneficio_chip_texto', 'permite_escolha_chip', 'operadoras_chip', 'precos_chip', 'chip_padrao', 'garantia', 'anatel_homologado', 'recursos', 'pacotes_alertas',
         'peso_gramas', 'comprimento_cm', 'largura_cm', 'altura_cm',
         'estoque', 'estoque_minimo', 'imagem', 'galeria', 'video', 'destaque', 'ativo', 'controle_estoque', 'ordem',
     ];
@@ -77,6 +77,7 @@ class Product extends Model
         'estoque_minimo' => 'integer',
         'galeria' => 'array',
         'recursos' => 'array',
+        'pacotes_alertas' => 'array',
         'peso_gramas' => 'integer',
         'comprimento_cm' => 'integer',
         'largura_cm' => 'integer',
@@ -180,6 +181,52 @@ class Product extends Model
     public static function operadorasDisponiveis(): array
     {
         return static::OPERADORAS_CHIP;
+    }
+
+    /**
+     * Retorna os pacotes adicionais de alertas ativos configurados neste produto.
+     *
+     * @return array<int, array{id: string, nome: string, servicos: array<int, string>, valor_cents: int, valor_formatado: string, ativo: bool}>
+     */
+    public function pacotesAlertasAtivos(): array
+    {
+        $lista = (array) ($this->pacotes_alertas ?? []);
+        $ativos = [];
+
+        foreach ($lista as $idx => $pacote) {
+            if (! is_array($pacote)) {
+                continue;
+            }
+
+            $nome = trim((string) ($pacote['nome'] ?? ''));
+            $valorCents = (int) ($pacote['valor_cents'] ?? 0);
+            $ativo = array_key_exists('ativo', $pacote) ? (bool) $pacote['ativo'] : true;
+
+            if (! $ativo || $nome === '' || $valorCents <= 0) {
+                continue;
+            }
+
+            $id = trim((string) ($pacote['id'] ?? ''));
+            if ($id === '') {
+                $id = slugify_pt($nome) ?: 'pacote-'.($idx + 1);
+            }
+
+            $servicos = array_values(array_filter(array_map(
+                fn ($s): string => trim((string) $s),
+                (array) ($pacote['servicos'] ?? [])
+            )));
+
+            $ativos[] = [
+                'id' => $id,
+                'nome' => $nome,
+                'servicos' => $servicos,
+                'valor_cents' => $valorCents,
+                'valor_formatado' => brl($valorCents).'/mês',
+                'ativo' => true,
+            ];
+        }
+
+        return $ativos;
     }
 
     public function mensalidadeParaOperadora(?string $operadora = null): int
@@ -347,6 +394,7 @@ class Product extends Model
                     'garantia' => $p->garantia,
                     'anatel_homologado' => $p->anatel_homologado,
                     'recursos' => (array) ($p->recursos ?? []),
+                    'pacotes_alertas' => $p->pacotesAlertasAtivos(),
                     'peso_gramas' => $p->peso_gramas,
                     'comprimento_cm' => $p->comprimento_cm,
                     'largura_cm' => $p->largura_cm,

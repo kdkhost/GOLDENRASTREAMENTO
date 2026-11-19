@@ -161,6 +161,68 @@
                 </div>
             </x-admin.card>
 
+            <x-admin.card title="Pacotes Adicionais de Alertas (Opcional no Carrinho)" icon="fa-bell" class="mt-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <p class="small text-muted mb-0">Configure pacotes opcionais com valor mensal recorrente que o cliente poderá adicionar no carrinho de compras deste produto.</p>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddPacoteAlerta">
+                        <i class="fas fa-plus me-1"></i> Adicionar pacote de alertas
+                    </button>
+                </div>
+
+                @php
+                    $pacotesAlertasAtuais = (array) old('pacotes_alertas', $produto->pacotes_alertas ?? []);
+                @endphp
+
+                <div id="pacotesAlertasContainer" class="d-flex flex-column gap-3">
+                    @foreach($pacotesAlertasAtuais as $idx => $pacote)
+                        @php
+                            $valPacote = isset($pacote['valor'])
+                                ? $pacote['valor']
+                                : (isset($pacote['valor_cents']) && is_numeric($pacote['valor_cents']) ? number_format(((int) $pacote['valor_cents']) / 100, 2, ',', '.') : '');
+                            $servicosPacote = is_array($pacote['servicos'] ?? null)
+                                ? implode("\n", $pacote['servicos'])
+                                : (string) ($pacote['servicos'] ?? '');
+                            $ativoPacote = array_key_exists('ativo', (array) $pacote) ? (bool) $pacote['ativo'] : true;
+                        @endphp
+                        <div class="pacote-alerta-item p-3 rounded border bg-light-subtle" data-pacote-index="{{ $idx }}">
+                            <input type="hidden" name="pacotes_alertas[{{ $idx }}][id]" value="{{ $pacote['id'] ?? '' }}">
+                            <div class="row g-3 align-items-start">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small fw-semibold mb-1">Nome do pacote</label>
+                                    <input type="text" name="pacotes_alertas[{{ $idx }}][nome]" class="form-control form-control-sm" value="{{ $pacote['nome'] ?? '' }}" placeholder="Ex.: Alertas WhatsApp + SMS">
+                                </div>
+                                <div class="col-8 col-md-4">
+                                    <label class="form-label small fw-semibold mb-1">Valor recorrente</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="text" name="pacotes_alertas[{{ $idx }}][valor]" class="form-control text-end fw-semibold" value="{{ $valPacote }}" placeholder="14,90">
+                                        <span class="input-group-text">/mês</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-md-2 d-flex flex-column align-items-end justify-content-between pt-1">
+                                    <div class="form-check form-switch mb-1">
+                                        <input class="form-check-input" type="checkbox" name="pacotes_alertas[{{ $idx }}][ativo]" value="1" id="pacote_ativo_{{ $idx }}" @checked($ativoPacote)>
+                                        <label class="form-check-label small" for="pacote_ativo_{{ $idx }}">Ativo</label>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-remover-pacote" title="Remover pacote">
+                                        <i class="fas fa-trash-can"></i>
+                                    </button>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold mb-1">Serviços inclusos neste pacote</label>
+                                    <textarea name="pacotes_alertas[{{ $idx }}][servicos]" class="form-control form-control-sm" rows="2" placeholder="Informe um serviço por linha ou separados por vírgula. Ex.:&#10;Alertas instantâneos no WhatsApp&#10;Alertas de ignição e movimento via SMS">{{ $servicosPacote }}</textarea>
+                                    <small class="form-text text-muted">Cada linha (ou item separado por vírgula) aparece como benefício listado para o cliente no carrinho.</small>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div id="pacotesAlertasVazio" class="text-center py-3 px-2 rounded border border-dashed text-muted small @if(!empty($pacotesAlertasAtuais)) d-none @endif">
+                    <i class="fas fa-bell-slash me-1"></i> Nenhum pacote adicional de alertas configurado para este produto. Clique em <strong>Adicionar pacote de alertas</strong> para criar.
+                </div>
+            </x-admin.card>
+
             <x-admin.card title="Dimensões e Embalagem (Frete Correios / Melhor Envio)" icon="fa-truck-fast" class="mt-3">
                 <p class="small text-muted mb-3">Dimensões do pacote para cálculo de frete no carrinho. Se deixar em branco, o sistema aplica os padrões gerais da loja.</p>
                 <div class="row g-3">
@@ -253,10 +315,75 @@
 <script>
 (function() {
     var form = document.getElementById('formProduto');
-    if (!form) return;
-    form.addEventListener('submit', function() {
-        if (window.GoldenSummernote && typeof window.GoldenSummernote.syncForm === 'function') {
-            window.GoldenSummernote.syncForm(form);
+    if (form) {
+        form.addEventListener('submit', function() {
+            if (window.GoldenSummernote && typeof window.GoldenSummernote.syncForm === 'function') {
+                window.GoldenSummernote.syncForm(form);
+            }
+        });
+    }
+
+    var container = document.getElementById('pacotesAlertasContainer');
+    var btnAdd = document.getElementById('btnAddPacoteAlerta');
+    var vazio = document.getElementById('pacotesAlertasVazio');
+    if (!container || !btnAdd) return;
+
+    var proximoIdx = container.querySelectorAll('.pacote-alerta-item').length;
+
+    function atualizarEstadoVazio() {
+        if (!vazio) return;
+        var tem = container.querySelectorAll('.pacote-alerta-item').length > 0;
+        vazio.classList.toggle('d-none', tem);
+    }
+
+    btnAdd.addEventListener('click', function() {
+        var idx = proximoIdx++;
+        var div = document.createElement('div');
+        div.className = 'pacote-alerta-item p-3 rounded border bg-light-subtle';
+        div.setAttribute('data-pacote-index', String(idx));
+        div.innerHTML =
+            '<input type="hidden" name="pacotes_alertas[' + idx + '][id]" value="">' +
+            '<div class="row g-3 align-items-start">' +
+                '<div class="col-12 col-md-6">' +
+                    '<label class="form-label small fw-semibold mb-1">Nome do pacote</label>' +
+                    '<input type="text" name="pacotes_alertas[' + idx + '][nome]" class="form-control form-control-sm" placeholder="Ex.: Alertas WhatsApp + SMS">' +
+                '</div>' +
+                '<div class="col-8 col-md-4">' +
+                    '<label class="form-label small fw-semibold mb-1">Valor recorrente</label>' +
+                    '<div class="input-group input-group-sm">' +
+                        '<span class="input-group-text">R$</span>' +
+                        '<input type="text" name="pacotes_alertas[' + idx + '][valor]" class="form-control text-end fw-semibold" placeholder="14,90">' +
+                        '<span class="input-group-text">/mês</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-4 col-md-2 d-flex flex-column align-items-end justify-content-between pt-1">' +
+                    '<div class="form-check form-switch mb-1">' +
+                        '<input class="form-check-input" type="checkbox" name="pacotes_alertas[' + idx + '][ativo]" value="1" id="pacote_ativo_' + idx + '" checked>' +
+                        '<label class="form-check-label small" for="pacote_ativo_' + idx + '">Ativo</label>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-remover-pacote" title="Remover pacote">' +
+                        '<i class="fas fa-trash-can"></i>' +
+                    '</button>' +
+                '</div>' +
+                '<div class="col-12">' +
+                    '<label class="form-label small fw-semibold mb-1">Serviços inclusos neste pacote</label>' +
+                    '<textarea name="pacotes_alertas[' + idx + '][servicos]" class="form-control form-control-sm" rows="2" placeholder="Informe um serviço por linha ou separados por vírgula. Ex.:\nAlertas instantâneos no WhatsApp\nAlertas de ignição e movimento via SMS"></textarea>' +
+                    '<small class="form-text text-muted">Cada linha (ou item separado por vírgula) aparece como benefício listado para o cliente no carrinho.</small>' +
+                '</div>' +
+            '</div>';
+        container.appendChild(div);
+        atualizarEstadoVazio();
+        var inputNome = div.querySelector('input[type="text"]');
+        if (inputNome) inputNome.focus();
+    });
+
+    container.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-remover-pacote');
+        if (!btn) return;
+        var card = btn.closest('.pacote-alerta-item');
+        if (card) {
+            card.remove();
+            atualizarEstadoVazio();
         }
     });
 })();

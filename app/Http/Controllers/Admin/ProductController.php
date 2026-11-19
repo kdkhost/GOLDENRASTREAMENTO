@@ -202,6 +202,12 @@ class ProductController extends Controller
             'anatel_homologado' => ['nullable', 'string', 'max:64'],
             'recursos' => ['nullable', 'array'],
             'recursos.*' => ['string', 'max:64'],
+            'pacotes_alertas' => ['nullable', 'array'],
+            'pacotes_alertas.*.id' => ['nullable', 'string', 'max:64'],
+            'pacotes_alertas.*.nome' => ['nullable', 'string', 'max:120'],
+            'pacotes_alertas.*.valor' => ['nullable'],
+            'pacotes_alertas.*.servicos' => ['nullable'],
+            'pacotes_alertas.*.ativo' => ['nullable', 'boolean'],
             'peso_gramas' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'comprimento_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
             'largura_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
@@ -291,6 +297,53 @@ class ProductController extends Controller
             }
         }
 
+        $pacotesAlertas = [];
+        $idsUsados = [];
+        if ($request->has('pacotes_alertas') && is_array($request->input('pacotes_alertas'))) {
+            foreach ($request->input('pacotes_alertas') as $pacote) {
+                if (! is_array($pacote)) {
+                    continue;
+                }
+
+                $nomePacote = trim((string) ($pacote['nome'] ?? ''));
+                $valNorm = $this->normalizarPreco($pacote['valor'] ?? null);
+                $valorCents = ($valNorm !== null && $valNorm > 0) ? $this->paraCentavos($valNorm) : 0;
+
+                if ($nomePacote === '' || $valorCents <= 0) {
+                    continue;
+                }
+
+                $baseId = trim((string) ($pacote['id'] ?? ''));
+                if ($baseId === '') {
+                    $baseId = slugify_pt($nomePacote) ?: 'pacote-alertas';
+                }
+                $idFinal = $baseId;
+                $sufixo = 2;
+                while (in_array($idFinal, $idsUsados, true)) {
+                    $idFinal = $baseId.'-'.$sufixo;
+                    $sufixo++;
+                }
+                $idsUsados[] = $idFinal;
+
+                $servicosBruto = $pacote['servicos'] ?? [];
+                if (is_string($servicosBruto)) {
+                    $servicosBruto = preg_split('/[\r\n,;]+/', $servicosBruto) ?: [];
+                }
+                $servicosLimpos = array_values(array_filter(array_map(
+                    fn ($s): string => trim((string) $s),
+                    (array) $servicosBruto
+                )));
+
+                $pacotesAlertas[] = [
+                    'id' => $idFinal,
+                    'nome' => $nomePacote,
+                    'servicos' => $servicosLimpos,
+                    'valor_cents' => $valorCents,
+                    'ativo' => ! empty($pacote['ativo']),
+                ];
+            }
+        }
+
         return [
             'nome' => trim($data['nome']),
             'category_id' => $data['category_id'] ?: null,
@@ -312,6 +365,7 @@ class ProductController extends Controller
             'garantia' => ! empty($data['garantia']) ? trim($data['garantia']) : null,
             'anatel_homologado' => ! empty($data['anatel_homologado']) ? trim($data['anatel_homologado']) : null,
             'recursos' => ! empty($data['recursos']) ? array_values(array_filter((array) $data['recursos'])) : null,
+            'pacotes_alertas' => ! empty($pacotesAlertas) ? $pacotesAlertas : null,
             'peso_gramas' => isset($data['peso_gramas']) && $data['peso_gramas'] !== '' ? (int) $data['peso_gramas'] : null,
             'comprimento_cm' => isset($data['comprimento_cm']) && $data['comprimento_cm'] !== '' ? (int) $data['comprimento_cm'] : null,
             'largura_cm' => isset($data['largura_cm']) && $data['largura_cm'] !== '' ? (int) $data['largura_cm'] : null,

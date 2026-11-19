@@ -260,6 +260,25 @@ class StoreController extends Controller
         return back()->with('success', 'Operadora de chip atualizada.');
     }
 
+    public function alterarPacotesAlertas(Request $request): RedirectResponse|JsonResponse
+    {
+        $data = $request->validate([
+            'produto' => ['required', 'integer'],
+            'pacotes' => ['nullable', 'array'],
+            'pacotes.*' => ['string', 'max:64'],
+        ]);
+
+        $carrinho = Carrinho::daSessao();
+        $carrinho->definirPacotesAlertas((int) $data['produto'], (array) ($data['pacotes'] ?? []));
+        $request->session()->save();
+
+        if ($request->expectsJson()) {
+            return $this->resumoCarrinhoJson($carrinho, 'Pacote adicional de alertas atualizado.');
+        }
+
+        return back()->with('success', 'Pacote adicional de alertas atualizado.');
+    }
+
     public function atualizar(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
@@ -333,6 +352,8 @@ class StoreController extends Controller
                 'operadora_codigo' => $l['operadora_codigo'] ?? 'algar',
                 'operadora_nome' => $l['operadora_nome'] ?? 'Chip Multioperadora',
                 'operadora_rotulo' => $l['operadora_rotulo'] ?? 'Chip Multioperadora',
+                'pacotes_alertas_ids' => (array) ($l['pacotes_alertas_ids'] ?? []),
+                'pacotes_alertas_unit_cents' => (int) ($l['pacotes_alertas_unit_cents'] ?? 0),
                 'subtotal_formatado' => brl($l['subtotal']),
             ], $linhas),
             'subtotal_cents' => $subtotal,
@@ -602,7 +623,25 @@ class StoreController extends Controller
 
                 $unit = $produto->preco();
                 $operadoraEscolhida = $linha['operadora_codigo'] ?? ($produto->chip_padrao ?? 'algar');
-                $mensalidadeUnit = $produto->mensalidadeParaOperadora($operadoraEscolhida);
+                $mensalidadeChip = $produto->mensalidadeParaOperadora($operadoraEscolhida);
+
+                $pacotesIdsMarcados = (array) ($linha['pacotes_alertas_ids'] ?? []);
+                $pacotesEscolhidos = [];
+                $pacotesAlertasCents = 0;
+
+                foreach ($produto->pacotesAlertasAtivos() as $pacoteAtivo) {
+                    if (in_array($pacoteAtivo['id'], $pacotesIdsMarcados, true)) {
+                        $pacotesEscolhidos[] = [
+                            'id' => $pacoteAtivo['id'],
+                            'nome' => $pacoteAtivo['nome'],
+                            'servicos' => $pacoteAtivo['servicos'],
+                            'valor_cents' => $pacoteAtivo['valor_cents'],
+                        ];
+                        $pacotesAlertasCents += $pacoteAtivo['valor_cents'];
+                    }
+                }
+
+                $mensalidadeUnit = $mensalidadeChip + $pacotesAlertasCents;
                 $cobrarHoje = (bool) ($produto->cobrar_primeira_mensalidade ?? false);
 
                 $aprovados[] = [
@@ -612,6 +651,8 @@ class StoreController extends Controller
                     'mensalidade' => $mensalidadeUnit,
                     'cobrar_mensalidade_hoje' => $cobrarHoje,
                     'chip_operadora' => $operadoraEscolhida,
+                    'pacotes_alertas' => $pacotesEscolhidos,
+                    'pacotes_alertas_cents' => $pacotesAlertasCents,
                 ];
                 $subtotal += $unit * $linha['quantidade'];
                 $mensalidadeTotal += $mensalidadeUnit * $linha['quantidade'];
@@ -715,6 +756,8 @@ class StoreController extends Controller
                     'mensalidade_cents' => $linha['mensalidade'],
                     'subtotal_cents' => $linha['unit'] * $linha['quantidade'],
                     'chip_operadora' => $linha['chip_operadora'] ?? null,
+                    'pacotes_alertas' => ! empty($linha['pacotes_alertas']) ? $linha['pacotes_alertas'] : null,
+                    'pacotes_alertas_cents' => (int) ($linha['pacotes_alertas_cents'] ?? 0),
                     'cobrar_mensalidade_hoje' => (bool) ($linha['cobrar_mensalidade_hoje'] ?? true),
                 ]);
 

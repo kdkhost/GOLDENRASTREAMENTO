@@ -20,6 +20,8 @@ class Carrinho
 
     public const CHAVE_OPERADORAS = 'golden_carrinho_operadoras';
 
+    public const CHAVE_PACOTES_ALERTAS = 'golden_carrinho_pacotes_alertas';
+
     /** @var array<int, int> product_id => quantidade */
     private array $itens;
 
@@ -72,6 +74,10 @@ class Carrinho
         $operadoras = (array) session(self::CHAVE_OPERADORAS, []);
         unset($operadoras[$produtoId]);
         session([self::CHAVE_OPERADORAS => $operadoras]);
+
+        $pacotes = (array) session(self::CHAVE_PACOTES_ALERTAS, []);
+        unset($pacotes[$produtoId]);
+        session([self::CHAVE_PACOTES_ALERTAS => $pacotes]);
     }
 
     public function limpar(): void
@@ -80,6 +86,7 @@ class Carrinho
         $this->salvar();
         $this->removerCupom();
         session()->forget(self::CHAVE_OPERADORAS);
+        session()->forget(self::CHAVE_PACOTES_ALERTAS);
     }
 
     public function definirOperadora(int $produtoId, string $operadora): void
@@ -94,6 +101,39 @@ class Carrinho
         $operadoras = (array) session(self::CHAVE_OPERADORAS, []);
 
         return $operadoras[$produtoId] ?? $padrao;
+    }
+
+    /**
+     * @param  array<int, string>  $pacotesIds
+     */
+    public function definirPacotesAlertas(int $produtoId, array $pacotesIds): void
+    {
+        $pacotes = (array) session(self::CHAVE_PACOTES_ALERTAS, []);
+        $limpos = array_values(array_unique(array_filter(array_map(
+            fn ($id): string => trim((string) $id),
+            $pacotesIds
+        ))));
+
+        if ($limpos === []) {
+            unset($pacotes[$produtoId]);
+        } else {
+            $pacotes[$produtoId] = $limpos;
+        }
+
+        session([self::CHAVE_PACOTES_ALERTAS => $pacotes]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function pacotesAlertasDoProduto(int $produtoId): array
+    {
+        $pacotes = (array) session(self::CHAVE_PACOTES_ALERTAS, []);
+
+        return array_values(array_filter(array_map(
+            fn ($id): string => trim((string) $id),
+            (array) ($pacotes[$produtoId] ?? [])
+        )));
     }
 
     /**
@@ -246,12 +286,32 @@ class Carrinho
             $operadoraEscolhida = $this->operadoraDoProduto((int) $id, $operadoraPadrao);
             $dadosOperadora = $produto['operadoras_detalhes'][$operadoraEscolhida] ?? ($produto['operadoras_detalhes'][$operadoraPadrao] ?? (Product::OPERADORAS_CHIP[$operadoraEscolhida] ?? null));
             $cobrarMensalidadeHoje = (bool) ($produto['cobrar_primeira_mensalidade'] ?? false);
-            $mensalidadeItem = (int) ($dadosOperadora['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0));
+            $mensalidadeChip = (int) ($dadosOperadora['mensalidade_cents'] ?? ($produto['mensalidade'] ?? 0));
+
+            $pacotesDisponiveis = (array) ($produto['pacotes_alertas'] ?? []);
+            $pacotesIdsMarcados = $this->pacotesAlertasDoProduto((int) $id);
+            $pacotesSelecionados = [];
+            $pacotesAlertasUnitCents = 0;
+
+            foreach ($pacotesDisponiveis as $pacote) {
+                $pacoteId = (string) ($pacote['id'] ?? '');
+                if ($pacoteId !== '' && in_array($pacoteId, $pacotesIdsMarcados, true)) {
+                    $pacotesSelecionados[] = $pacote;
+                    $pacotesAlertasUnitCents += (int) ($pacote['valor_cents'] ?? 0);
+                }
+            }
+
+            $mensalidadeItem = $mensalidadeChip + $pacotesAlertasUnitCents;
 
             $linhas[] = [
                 ...$produto,
                 'quantidade' => $quantidade,
                 'subtotal' => $produto['preco'] * $quantidade,
+                'mensalidade_chip' => $mensalidadeChip,
+                'pacotes_alertas_disponiveis' => $pacotesDisponiveis,
+                'pacotes_alertas_selecionados' => $pacotesSelecionados,
+                'pacotes_alertas_ids' => array_column($pacotesSelecionados, 'id'),
+                'pacotes_alertas_unit_cents' => $pacotesAlertasUnitCents,
                 'mensalidade' => $mensalidadeItem,
                 'cobrar_mensalidade_hoje' => $cobrarMensalidadeHoje,
                 'operadora_codigo' => $operadoraEscolhida,

@@ -142,6 +142,8 @@ Route::middleware('loja')->group(function () {
         ->middleware('throttle:40,1')->name('site.loja.carrinho.remover');
     Route::post('/loja/carrinho/operadora', [StoreController::class, 'alterarOperadora'])
         ->middleware('throttle:40,1')->name('site.loja.carrinho.operadora');
+    Route::post('/loja/carrinho/pacotes-alertas', [StoreController::class, 'alterarPacotesAlertas'])
+        ->middleware('throttle:40,1')->name('site.loja.carrinho.pacotes_alertas');
     Route::post('/loja/cupom', [StoreController::class, 'aplicarCupom'])
         ->middleware('throttle:20,1')->name('site.loja.cupom.aplicar');
     Route::post('/loja/cupom/remover', [StoreController::class, 'removerCupom'])

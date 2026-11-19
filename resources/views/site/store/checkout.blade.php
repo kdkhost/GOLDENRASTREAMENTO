@@ -189,6 +189,13 @@
                                 <i class="fa-solid fa-circle-check"></i> Benefício: {{ !empty($l['beneficio_chip_texto']) ? $l['beneficio_chip_texto'] : 'Chip incluso no plano (R$ 0,00)' }}
                             </div>
                         @endif
+                        @if(!empty($l['pacotes_alertas_selecionados']))
+                            @foreach($l['pacotes_alertas_selecionados'] as $pacoteSel)
+                                <div style="font-size:.73rem;color:#93c5fd;font-weight:600;margin-top:2px">
+                                    <i class="fa-solid fa-bell" style="font-size:.68rem"></i> Adicional: {{ $pacoteSel['nome'] }} (+ {{ brl($pacoteSel['valor_cents']) }}/mês)
+                                </div>
+                            @endforeach
+                        @endif
                         @if(!empty($l['mensalidade']))
                             <div style="font-size:.76rem;color:#4ade80;font-weight:500">
                                 + {{ brl($l['mensalidade'] * $l['quantidade']) }}/mês (plano)

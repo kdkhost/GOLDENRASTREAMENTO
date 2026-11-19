@@ -70,19 +70,56 @@
                             <i class="fa-solid fa-circle-check"></i> Benefício: {{ !empty($l['beneficio_chip_texto']) ? $l['beneficio_chip_texto'] : 'Chip incluso no plano (R$ 0,00 de adesão do chip)' }}
                         </div>
 
-                        @if(!empty($l['mensalidade']))
-                            <div style="font-size:.82rem;font-weight:600;color:var(--gold-2);margin-top:2px">
-                                <i class="fa-solid fa-repeat" style="font-size:.75rem"></i> Mensalidade: {{ brl($l['mensalidade']) }}/mês por veículo
+                        @if(!empty($l['mensalidade']) || !empty($l['pacotes_alertas_disponiveis']))
+                            <div data-cart-line-mensal-info="{{ $l['id'] }}" style="font-size:.82rem;font-weight:600;color:var(--gold-2);margin-top:2px;{{ empty($l['mensalidade']) ? 'display:none' : '' }}">
+                                <i class="fa-solid fa-repeat" style="font-size:.75rem"></i> Mensalidade: <span data-cart-line-mensal-unit="{{ $l['id'] }}">{{ brl($l['mensalidade']) }}</span>/mês por veículo
                             </div>
-                            @if(empty($l['cobrar_mensalidade_hoje']))
-                                <div style="font-size:.74rem;color:#0284c7;font-weight:600">
-                                    <i class="fa-solid fa-calendar-check"></i> 1ª Mensalidade faturada após 30 dias (pós-paga)
-                                </div>
-                            @else
-                                <div style="font-size:.74rem;color:var(--teal);font-weight:600">
-                                    <i class="fa-solid fa-circle-check"></i> 1ª Mensalidade inclusa no pedido hoje
-                                </div>
+                            @if(!empty($l['mensalidade']))
+                                @if(empty($l['cobrar_mensalidade_hoje']))
+                                    <div style="font-size:.74rem;color:#0284c7;font-weight:600">
+                                        <i class="fa-solid fa-calendar-check"></i> 1ª Mensalidade faturada após 30 dias (pós-paga)
+                                    </div>
+                                @else
+                                    <div style="font-size:.74rem;color:var(--teal);font-weight:600">
+                                        <i class="fa-solid fa-circle-check"></i> 1ª Mensalidade inclusa no pedido hoje
+                                    </div>
+                                @endif
                             @endif
+                        @endif
+
+                        @if(!empty($l['pacotes_alertas_disponiveis']))
+                            <div class="cart-alert-addons" data-cart-addons-wrap="{{ $l['id'] }}" style="margin-top:10px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">
+                                <div style="font-size:.78rem;font-weight:700;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px">
+                                    <span><i class="fa-solid fa-bell" style="color:var(--gold-2);margin-right:4px"></i> Pacote adicional de alertas <span style="font-weight:500;color:#64748b">(opcional · recorrente)</span></span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:6px">
+                                    @foreach($l['pacotes_alertas_disponiveis'] as $pacote)
+                                        @php
+                                            $pacoteMarcado = in_array($pacote['id'], (array) ($l['pacotes_alertas_ids'] ?? []), true);
+                                        @endphp
+                                        <label style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 10px;background:#fff;border:1.5px solid {{ $pacoteMarcado ? 'var(--gold)' : '#e2e8f0' }};border-radius:8px;cursor:pointer;transition:border-color .15s ease" data-cart-addon-card>
+                                            <div style="display:flex;align-items:flex-start;gap:8px;min-width:0">
+                                                <input type="checkbox"
+                                                    value="{{ $pacote['id'] }}"
+                                                    data-cart-pacote-alerta="{{ $l['id'] }}"
+                                                    @checked($pacoteMarcado)
+                                                    style="accent-color:var(--gold);margin-top:3px;flex-shrink:0;cursor:pointer">
+                                                <div style="min-width:0">
+                                                    <div style="font-size:.82rem;font-weight:700;color:var(--ink);line-height:1.25">{{ $pacote['nome'] }}</div>
+                                                    @if(!empty($pacote['servicos']))
+                                                        <ul style="list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.72rem;color:#475569">
+                                                            @foreach($pacote['servicos'] as $srv)
+                                                                <li><i class="fa-solid fa-check" style="color:var(--teal);margin-right:3px;font-size:.66rem"></i>{{ $srv }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <strong style="font-size:.82rem;color:var(--gold-2);white-space:nowrap;flex-shrink:0">+ {{ brl($pacote['valor_cents']) }}<span style="font-size:.7rem;font-weight:500;color:#64748b">/mês</span></strong>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
                         @endif
                     </div>
                     <div class="qty">
@@ -92,11 +129,11 @@
                     </div>
                     <div style="text-align:right">
                         <b class="cart-total" data-cart-line-total="{{ $l['id'] }}">{{ brl($l['subtotal']) }}</b>
-                        @if(!empty($l['mensalidade']))
-                            <div class="cart-line-mensal" data-cart-line-mensal="{{ $l['id'] }}" style="font-size:.78rem;color:var(--teal);font-weight:600">
+                        <div class="cart-line-mensal" data-cart-line-mensal="{{ $l['id'] }}" style="font-size:.78rem;color:var(--teal);font-weight:600;{{ empty($l['mensalidade']) ? 'display:none' : '' }}">
+                            @if(!empty($l['mensalidade']))
                                 + {{ brl($l['mensalidade'] * $l['quantidade']) }}/mês
-                            </div>
-                        @endif
+                            @endif
+                        </div>
                     </div>
                     <button class="cart-del" type="button" data-cart-action="remove" data-product-id="{{ $l['id'] }}" aria-label="Remover {{ $l['nome'] }}"><i class="fa-solid fa-trash-can"></i></button>
                 </li>
@@ -432,10 +469,26 @@ document.addEventListener('DOMContentLoaded', function () {
             const qtyInput = li.querySelector('[data-cart-qty]');
             const lineTotal = li.querySelector('[data-cart-line-total]');
             const lineMensal = li.querySelector('[data-cart-line-mensal]');
+            const lineMensalInfo = li.querySelector('[data-cart-line-mensal-info]');
+            const lineMensalUnit = li.querySelector('[data-cart-line-mensal-unit]');
             if (qtyInput) qtyInput.value = linha.quantidade;
             if (lineTotal) lineTotal.textContent = linha.subtotal_formatado;
-            if (lineMensal && linha.mensalidade_cents) {
-                lineMensal.textContent = '+ R$ ' + ((linha.mensalidade_cents * linha.quantidade) / 100).toFixed(2).replace('.', ',') + '/mês';
+            if (lineMensal) {
+                if (linha.mensalidade_cents && linha.mensalidade_cents > 0) {
+                    lineMensal.textContent = '+ R$ ' + ((linha.mensalidade_cents * linha.quantidade) / 100).toFixed(2).replace('.', ',') + '/mês';
+                    lineMensal.style.display = 'block';
+                } else {
+                    lineMensal.textContent = '';
+                    lineMensal.style.display = 'none';
+                }
+            }
+            if (lineMensalInfo && lineMensalUnit) {
+                if (linha.mensalidade_cents && linha.mensalidade_cents > 0) {
+                    lineMensalUnit.textContent = 'R$ ' + (linha.mensalidade_cents / 100).toFixed(2).replace('.', ',');
+                    lineMensalInfo.style.display = 'block';
+                } else {
+                    lineMensalInfo.style.display = 'none';
+                }
             }
         });
 
@@ -584,6 +637,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 aplicarEstadoCarrinho(data);
                 if (data && data.sucesso && typeof window.goldenSiteToast === 'function') {
                     window.goldenSiteToast(data.mensagem || 'Operadora atualizada.', { type: 'success', duration: 2400 });
+                }
+            })
+            .catch(() => {});
+        } else if (e.target.matches('[data-cart-pacote-alerta]')) {
+            const produtoId = e.target.getAttribute('data-cart-pacote-alerta');
+            const card = e.target.closest('[data-cart-addon-card]');
+            if (card) {
+                card.style.borderColor = e.target.checked ? 'var(--gold)' : '#e2e8f0';
+            }
+
+            const pacotes = Array.from(cartForm.querySelectorAll('[data-cart-pacote-alerta="' + produtoId + '"]:checked'))
+                .map(el => el.value);
+
+            fetch("{{ route('site.loja.carrinho.pacotes_alertas') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ produto: produtoId, pacotes: pacotes })
+            })
+            .then(res => res.json())
+            .then(function (data) {
+                aplicarEstadoCarrinho(data);
+                if (data && data.sucesso && typeof window.goldenSiteToast === 'function') {
+                    window.goldenSiteToast(data.mensagem || 'Pacote adicional atualizado.', { type: 'success', duration: 2400 });
                 }
             })
             .catch(() => {});

@@ -34,6 +34,15 @@
                                 </span>
                             </div>
                         @endif
+                        @if(!empty($it->pacotes_alertas))
+                            <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
+                                @foreach((array) $it->pacotes_alertas as $pacotePedido)
+                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle" style="font-size:.75rem">
+                                        <i class="fas fa-bell me-1"></i> {{ $pacotePedido['nome'] ?? 'Pacote de Alertas' }} (+ {{ brl((int) ($pacotePedido['valor_cents'] ?? 0)) }}/mês)
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
                         @if(($it->mensalidade_cents ?? 0) > 0)
                             <div class="small mt-1 {{ $it->cobrar_mensalidade_hoje ? 'text-teal fw-semibold' : 'text-primary' }}">
                                 <i class="fas fa-repeat me-1"></i> Mensalidade: {{ brl($it->mensalidade_cents) }}/mês
