@@ -182,25 +182,25 @@
                     <div>
                         <span>{{ $l['quantidade'] }}× {{ $l['nome'] }}</span>
                         @if(!empty($l['permite_escolha_chip']) && (!empty($l['operadora_nome']) || !empty($l['chip_operadora'])))
-                            <div style="font-size:.74rem;color:#fcd34d;font-weight:600;margin-top:2px">
+                            <div style="font-size:.74rem;color:var(--gold);font-weight:600;margin-top:2px">
                                 <i class="fa-solid fa-sim-card" style="font-size:.7rem"></i> Chip: {{ $l['operadora_rotulo'] ?? ($l['chip_operadora'] ?: 'Chip Multioperadora') }}
                             </div>
-                            <div style="font-size:.72rem;color:#4ade80;font-weight:600">
+                            <div style="font-size:.72rem;color:var(--teal);font-weight:600">
                                 <i class="fa-solid fa-circle-check"></i> Benefício: {{ !empty($l['beneficio_chip_texto']) ? $l['beneficio_chip_texto'] : 'Chip incluso no plano (R$ 0,00)' }}
                             </div>
                         @endif
                         @if(!empty($l['pacotes_alertas_selecionados']))
                             @foreach($l['pacotes_alertas_selecionados'] as $pacoteSel)
-                                <div style="font-size:.73rem;color:#93c5fd;font-weight:600;margin-top:2px">
+                                <div style="font-size:.73rem;color:var(--gold-soft);font-weight:600;margin-top:2px">
                                     <i class="fa-solid fa-bell" style="font-size:.68rem"></i> Adicional: {{ $pacoteSel['nome'] }} (+ {{ brl($pacoteSel['valor_cents']) }}/mês)
                                 </div>
                             @endforeach
                         @endif
                         @if(!empty($l['mensalidade']))
-                            <div style="font-size:.76rem;color:#4ade80;font-weight:500">
+                            <div style="font-size:.76rem;color:var(--teal);font-weight:500">
                                 + {{ brl($l['mensalidade'] * $l['quantidade']) }}/mês (plano)
                                 @if(empty($l['cobrar_mensalidade_hoje']))
-                                    <span style="color:#38bdf8;font-size:.72rem">· pós-pago</span>
+                                    <span style="color:var(--gold-soft);font-size:.72rem">· pós-pago</span>
                                 @endif
                             </div>
                         @endif
@@ -211,19 +211,19 @@
             </ul>
             <div class="sum-line"><span>Adesão / Equipamentos</span><b>{{ brl($subtotal) }}</b></div>
             @if(!empty($mensalidadeCobradaHoje) && $mensalidadeCobradaHoje > 0)
-            <div class="sum-line" style="color:#67e8f9">
+            <div class="sum-line" style="color:var(--gold-soft)">
                 <span><i class="fa-solid fa-repeat" style="margin-right:4px"></i> 1ª Mensalidade antecipada</span>
                 <b>{{ brl($mensalidadeCobradaHoje) }}</b>
             </div>
             @elseif(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
-            <div class="sum-line" style="color:#38bdf8">
+            <div class="sum-line" style="color:var(--gold-soft)">
                 <span><i class="fa-solid fa-calendar-check" style="margin-right:4px"></i> 1ª Mensalidade (pós-paga)</span>
-                <b style="font-size:.84rem;color:#38bdf8">Faturada após 30 dias</b>
+                <b style="font-size:.84rem;color:var(--gold-soft)">Faturada após 30 dias</b>
             </div>
             @endif
             <div class="sum-line"><span>Frete</span><b id="sumFrete">{{ $frete > 0 ? brl($frete) : 'Grátis' }}</b></div>
             @if(!empty($cupom))
-            <div class="sum-line" style="color:#4ade80">
+            <div class="sum-line" style="color:var(--teal)">
                 <span>Cupom {{ $cupom->codigo }}</span>
                 <b>{{ ($descontoCents ?? 0) > 0 ? '− '.brl($descontoCents) : 'Frete grátis' }}</b>
             </div>
@@ -235,7 +235,7 @@
                 <div>
                     <span>Total a pagar hoje</span>
                     @if(!empty($mensalidadeTotal) && $mensalidadeTotal > 0)
-                        <div style="font-size:.76rem;font-weight:normal;color:#67e8f9;line-height:1.35;margin-top:3px">
+                        <div style="font-size:.76rem;font-weight:normal;color:var(--gold-soft);line-height:1.35;margin-top:3px">
                             <div>+ Recorrência: {{ brl($mensalidadeTotal) }}/mês</div>
                             <div style="opacity:.85;font-size:.72rem">{{ (!empty($mensalidadeCobradaHoje) && $mensalidadeCobradaHoje > 0) ? 'a partir do 2º mês' : 'a partir de 30 dias' }}</div>
                         </div>
@@ -246,7 +246,7 @@
 
             <div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)">
                 @if(!empty($cupom))
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.82rem;color:#4ade80">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.82rem;color:var(--teal)">
                         <span><i class="fa-solid fa-ticket"></i> {{ $cupom->codigo }} ({{ $cupom->rotuloDesconto() }})</span>
                         <form method="POST" action="{{ route('site.loja.cupom.remover') }}" style="margin:0">
                             @csrf

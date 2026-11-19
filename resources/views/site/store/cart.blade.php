@@ -78,7 +78,7 @@
                             </div>
                             @if(!empty($l['mensalidade']))
                                 @if(empty($l['cobrar_mensalidade_hoje']))
-                                    <div style="font-size:.74rem;color:#0284c7;font-weight:600">
+                                    <div style="font-size:.74rem;color:var(--gold-2);font-weight:600">
                                         <i class="fa-solid fa-calendar-check"></i> 1ª Mensalidade faturada após 30 dias (pós-paga)
                                     </div>
                                 @else
@@ -155,9 +155,9 @@
                 <span><i class="fa-solid fa-repeat" style="color:var(--teal);margin-right:4px"></i> 1ª Mensalidade antecipada</span>
                 <b id="cartMensalidadeDisplay" style="color:var(--teal)">{{ brl($mensalidadeCobradaHoje ?? 0) }}</b>
             </div>
-            <div class="sum-line" id="cartMensalidadePosRow" @if(!empty($mensalidadeCobradaHoje) || empty($mensalidadeTotal) || $mensalidadeTotal <= 0) style="display:none" @endif style="color:#0284c7">
+            <div class="sum-line" id="cartMensalidadePosRow" style="color:var(--gold-2);{{ (!empty($mensalidadeCobradaHoje) || empty($mensalidadeTotal) || $mensalidadeTotal <= 0) ? 'display:none;' : '' }}">
                 <span><i class="fa-solid fa-calendar-check" style="margin-right:4px"></i> 1ª Mensalidade (pós-paga)</span>
-                <b id="cartMensalidadePosDisplay" style="font-size:.82rem;color:#0284c7">Faturada após 30 dias</b>
+                <b id="cartMensalidadePosDisplay" style="font-size:.82rem;color:var(--gold-2)">Faturada após 30 dias</b>
             </div>
             <div class="sum-line"><span>Frete</span><b id="cartFreteDisplay">Calcule pelo CEP</b></div>
             <div class="sum-line" id="cartCupomSummaryRow" style="color:var(--teal)" @if(empty($cupom)) hidden @endif>
