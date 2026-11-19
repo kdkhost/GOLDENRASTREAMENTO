@@ -139,23 +139,87 @@
                     </div>
 
                     <div class="col-12 mt-3 pt-3 border-top">
-                        <label class="form-label fw-semibold mb-2"><i class="fas fa-list-check me-1 text-golden"></i> Recursos e Benefícios Inclusos</label>
-                        <p class="small text-muted mb-3">Marque os recursos que acompanham este rastreador ou plano de monitoramento:</p>
-                        @php
-                            $recursosAtuais = (array) (old('recursos', $produto->recursos ?? []));
-                            $catalogoRecursos = $recursosDisponiveis ?? \App\Models\Product::recursosDisponiveis();
-                        @endphp
-                        <div class="row g-2">
-                            @foreach($catalogoRecursos as $chave => $rotulo)
-                                <div class="col-12 col-md-6">
-                                    <div class="form-check p-2 rounded border bg-light-subtle d-flex align-items-center">
-                                        <input class="form-check-input ms-1 me-2" type="checkbox" name="recursos[]" value="{{ $chave }}" id="rec_{{ $chave }}" @checked(in_array($chave, $recursosAtuais, true))>
-                                        <label class="form-check-label small fw-semibold text-dark mb-0 cursor-pointer" for="rec_{{ $chave }}">
-                                            {{ $rotulo }}
-                                        </label>
+                        <input type="hidden" name="recursos_estruturado" value="1">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                            <div>
+                                <label class="form-label fw-semibold mb-0"><i class="fas fa-list-check me-1 text-golden"></i> Recursos e Benefícios Inclusos</label>
+                                <p class="small text-muted mb-0">Cadastre, edite, defina valores ou remova os recursos específicos deste produto.</p>
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                @php
+                                    $catalogoRecursos = $recursosDisponiveis ?? \App\Models\Product::recursosDisponiveis();
+                                    $recursosItensAtuais = old('recursos_itens');
+                                    if ($recursosItensAtuais === null) {
+                                        $recursosItensAtuais = $produto->recursosEstruturados(false);
+                                    }
+                                @endphp
+                                <div class="input-group input-group-sm" style="width:auto;max-width:300px">
+                                    <select id="selectModeloRecurso" class="form-select form-select-sm">
+                                        <option value="">Adicionar modelo pronto...</option>
+                                        @foreach($catalogoRecursos as $rotuloModelo)
+                                            <option value="{{ $rotuloModelo }}">{{ \Illuminate\Support\Str::limit($rotuloModelo, 44) }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary" id="btnAddModeloRecurso" title="Inserir modelo selecionado">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddRecursoItem">
+                                    <i class="fas fa-plus me-1"></i> Novo recurso
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="recursosItensContainer" class="d-flex flex-column gap-2 mt-3">
+                            @foreach((array) $recursosItensAtuais as $idxRec => $rec)
+                                @php
+                                    $tipoValRec = $rec['tipo_valor'] ?? 'incluso';
+                                    $valRec = isset($rec['valor'])
+                                        ? $rec['valor']
+                                        : (isset($rec['valor_cents']) && is_numeric($rec['valor_cents']) && (int) $rec['valor_cents'] > 0 ? number_format(((int) $rec['valor_cents']) / 100, 2, ',', '.') : '');
+                                    $ativoRec = array_key_exists('ativo', (array) $rec) ? (bool) $rec['ativo'] : true;
+                                    $usaValor = in_array($tipoValRec, ['mensal', 'unico'], true);
+                                @endphp
+                                <div class="recurso-item-card p-3 rounded border bg-light-subtle" data-recurso-index="{{ $idxRec }}">
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-12 col-md-5">
+                                            <label class="form-label small fw-semibold mb-1">Recurso / Benefício</label>
+                                            <input type="text" name="recursos_itens[{{ $idxRec }}][titulo]" class="form-control form-control-sm" value="{{ $rec['titulo'] ?? '' }}" placeholder="Ex.: Aplicativo Celular (Android e iOS)">
+                                        </div>
+                                        <div class="col-12 col-md-3">
+                                            <label class="form-label small fw-semibold mb-1">Tipo de valor</label>
+                                            <select name="recursos_itens[{{ $idxRec }}][tipo_valor]" class="form-select form-select-sm recurso-tipo-valor">
+                                                <option value="incluso" @selected($tipoValRec === 'incluso')>Incluso (grátis)</option>
+                                                <option value="sem_valor" @selected($tipoValRec === 'sem_valor')>Sem selo de valor</option>
+                                                <option value="mensal" @selected($tipoValRec === 'mensal')>Valor mensal (/mês)</option>
+                                                <option value="unico" @selected($tipoValRec === 'unico')>Valor único</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-8 col-md-2">
+                                            <label class="form-label small fw-semibold mb-1">Valor (R$)</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">R$</span>
+                                                <input type="text" name="recursos_itens[{{ $idxRec }}][valor]" class="form-control text-end recurso-valor-input" value="{{ $valRec }}" placeholder="0,00" @disabled(!$usaValor)>
+                                            </div>
+                                        </div>
+                                        <div class="col-4 col-md-2 d-flex align-items-center justify-content-end gap-2 pb-1">
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input" type="checkbox" name="recursos_itens[{{ $idxRec }}][ativo]" value="1" id="rec_ativo_{{ $idxRec }}" @checked($ativoRec) title="Ativo">
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-remover-recurso" title="Remover recurso">
+                                                <i class="fas fa-trash-can"></i>
+                                            </button>
+                                        </div>
+                                        <div class="col-12">
+                                            <input type="text" name="recursos_itens[{{ $idxRec }}][detalhe]" class="form-control form-control-sm" value="{{ $rec['detalhe'] ?? '' }}" placeholder="Detalhe ou observação opcional (ex.: Sem custo de ativação, 90 dias de histórico, etc.)">
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach
+                        </div>
+
+                        <div id="recursosItensVazio" class="text-center py-3 px-2 mt-2 rounded border border-dashed text-muted small @if(!empty($recursosItensAtuais)) d-none @endif">
+                            <i class="fas fa-list-check me-1"></i> Nenhum recurso cadastrado neste produto. Clique em <strong>Novo recurso</strong> ou escolha um <strong>modelo pronto</strong> acima.
                         </div>
                     </div>
                 </div>
@@ -386,6 +450,107 @@
             atualizarEstadoVazio();
         }
     });
+
+    // Gerenciador individual de Recursos e Benefícios Inclusos
+    var recContainer = document.getElementById('recursosItensContainer');
+    var btnAddRec = document.getElementById('btnAddRecursoItem');
+    var btnAddModelo = document.getElementById('btnAddModeloRecurso');
+    var selectModelo = document.getElementById('selectModeloRecurso');
+    var recVazio = document.getElementById('recursosItensVazio');
+
+    if (recContainer && btnAddRec) {
+        var proximoRecIdx = recContainer.querySelectorAll('.recurso-item-card').length;
+
+        function atualizarRecVazio() {
+            if (!recVazio) return;
+            var tem = recContainer.querySelectorAll('.recurso-item-card').length > 0;
+            recVazio.classList.toggle('d-none', tem);
+        }
+
+        function criarCardRecurso(tituloInicial) {
+            var idx = proximoRecIdx++;
+            var div = document.createElement('div');
+            div.className = 'recurso-item-card p-3 rounded border bg-light-subtle';
+            div.setAttribute('data-recurso-index', String(idx));
+            var safeTitle = (tituloInicial || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            div.innerHTML =
+                '<div class="row g-2 align-items-end">' +
+                    '<div class="col-12 col-md-5">' +
+                        '<label class="form-label small fw-semibold mb-1">Recurso / Benefício</label>' +
+                        '<input type="text" name="recursos_itens[' + idx + '][titulo]" class="form-control form-control-sm" value="' + safeTitle + '" placeholder="Ex.: Aplicativo Celular (Android e iOS)">' +
+                    '</div>' +
+                    '<div class="col-12 col-md-3">' +
+                        '<label class="form-label small fw-semibold mb-1">Tipo de valor</label>' +
+                        '<select name="recursos_itens[' + idx + '][tipo_valor]" class="form-select form-select-sm recurso-tipo-valor">' +
+                            '<option value="incluso" selected>Incluso (grátis)</option>' +
+                            '<option value="sem_valor">Sem selo de valor</option>' +
+                            '<option value="mensal">Valor mensal (/mês)</option>' +
+                            '<option value="unico">Valor único</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="col-8 col-md-2">' +
+                        '<label class="form-label small fw-semibold mb-1">Valor (R$)</label>' +
+                        '<div class="input-group input-group-sm">' +
+                            '<span class="input-group-text">R$</span>' +
+                            '<input type="text" name="recursos_itens[' + idx + '][valor]" class="form-control text-end recurso-valor-input" placeholder="0,00" disabled>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-4 col-md-2 d-flex align-items-center justify-content-end gap-2 pb-1">' +
+                        '<div class="form-check form-switch mb-0">' +
+                            '<input class="form-check-input" type="checkbox" name="recursos_itens[' + idx + '][ativo]" value="1" id="rec_ativo_' + idx + '" checked title="Ativo">' +
+                        '</div>' +
+                        '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-remover-recurso" title="Remover recurso">' +
+                            '<i class="fas fa-trash-can"></i>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="col-12">' +
+                        '<input type="text" name="recursos_itens[' + idx + '][detalhe]" class="form-control form-control-sm" placeholder="Detalhe ou observação opcional (ex.: Sem custo de ativação, 90 dias de histórico, etc.)">' +
+                    '</div>' +
+                '</div>';
+            recContainer.appendChild(div);
+            atualizarRecVazio();
+            var inp = div.querySelector('input[type="text"]');
+            if (inp && !tituloInicial) inp.focus();
+        }
+
+        btnAddRec.addEventListener('click', function() {
+            criarCardRecurso('');
+        });
+
+        if (btnAddModelo && selectModelo) {
+            btnAddModelo.addEventListener('click', function() {
+                if (selectModelo.value) {
+                    criarCardRecurso(selectModelo.value);
+                    selectModelo.value = '';
+                }
+            });
+        }
+
+        recContainer.addEventListener('click', function(e) {
+            var btn = e.target.closest('.btn-remover-recurso');
+            if (!btn) return;
+            var card = btn.closest('.recurso-item-card');
+            if (card) {
+                card.remove();
+                atualizarRecVazio();
+            }
+        });
+
+        recContainer.addEventListener('change', function(e) {
+            if (!e.target.matches('.recurso-tipo-valor')) return;
+            var card = e.target.closest('.recurso-item-card');
+            if (!card) return;
+            var valInput = card.querySelector('.recurso-valor-input');
+            if (!valInput) return;
+            var precisaValor = (e.target.value === 'mensal' || e.target.value === 'unico');
+            valInput.disabled = !precisaValor;
+            if (!precisaValor) {
+                valInput.value = '';
+            } else {
+                valInput.focus();
+            }
+        });
+    }
 })();
 </script>
 @endsection

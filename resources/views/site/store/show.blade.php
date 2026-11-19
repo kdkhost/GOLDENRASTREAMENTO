@@ -12,9 +12,19 @@
         : 0;
     $dicionarioRecursos = \App\Models\Product::recursosDisponiveis();
     $recursosLista = [];
-    foreach ((array) ($produto['recursos'] ?? []) as $chaveRec) {
-        if (is_string($chaveRec) && $chaveRec !== '') {
-            $recursosLista[] = $dicionarioRecursos[$chaveRec] ?? $chaveRec;
+    if (!empty($produto['recursos_itens']) && is_array($produto['recursos_itens'])) {
+        $recursosLista = $produto['recursos_itens'];
+    } else {
+        foreach ((array) ($produto['recursos'] ?? []) as $chaveRec) {
+            if (is_string($chaveRec) && $chaveRec !== '') {
+                $recursosLista[] = [
+                    'titulo' => $dicionarioRecursos[$chaveRec] ?? $chaveRec,
+                    'detalhe' => '',
+                    'valor_cents' => 0,
+                    'tipo_valor' => 'incluso',
+                    'ativo' => true,
+                ];
+            }
         }
     }
 @endphp
@@ -80,10 +90,30 @@
                             <strong>Recursos e Benefícios Inclusos</strong>
                         </div>
                         <ul class="pdp-features-list">
-                            @foreach($recursosLista as $rotuloRecurso)
+                            @foreach($recursosLista as $itemRecurso)
+                                @php
+                                    $recTitulo = is_array($itemRecurso) ? ($itemRecurso['titulo'] ?? '') : (string) $itemRecurso;
+                                    $recDetalhe = is_array($itemRecurso) ? ($itemRecurso['detalhe'] ?? '') : '';
+                                    $recTipoVal = is_array($itemRecurso) ? ($itemRecurso['tipo_valor'] ?? 'incluso') : 'incluso';
+                                    $recValCents = is_array($itemRecurso) ? (int) ($itemRecurso['valor_cents'] ?? 0) : 0;
+                                @endphp
                                 <li>
                                     <i class="fa-solid fa-circle-check"></i>
-                                    <span>{{ $rotuloRecurso }}</span>
+                                    <div class="pdp-feature-body">
+                                        <div class="pdp-feature-top">
+                                            <span class="pdp-feature-title">{{ $recTitulo }}</span>
+                                            @if(!$ehSobConsulta && $recTipoVal === 'mensal' && $recValCents > 0)
+                                                <span class="pdp-feature-badge is-price">{{ brl($recValCents) }}/mês</span>
+                                            @elseif(!$ehSobConsulta && $recTipoVal === 'unico' && $recValCents > 0)
+                                                <span class="pdp-feature-badge is-price">{{ brl($recValCents) }}</span>
+                                            @elseif($recTipoVal === 'incluso')
+                                                <span class="pdp-feature-badge is-free">Incluso</span>
+                                            @endif
+                                        </div>
+                                        @if($recDetalhe !== '')
+                                            <small class="pdp-feature-detail">{{ $recDetalhe }}</small>
+                                        @endif
+                                    </div>
                                 </li>
                             @endforeach
                         </ul>
@@ -577,9 +607,17 @@
 .pdp-features-card{margin-top:18px;background:#fff;border-radius:20px;padding:18px 20px;border:1px solid rgba(15,23,42,.08);box-shadow:0 8px 24px rgba(15,23,42,.05)}
 .pdp-features-head{display:flex;align-items:center;gap:9px;font-size:.96rem;color:var(--ink);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(15,23,42,.07)}
 .pdp-features-head i{color:var(--gold-2);font-size:1.05rem}
-.pdp-features-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 14px}
-.pdp-features-list li{display:flex;align-items:flex-start;gap:8px;font-size:.86rem;line-height:1.38;color:#334155}
-.pdp-features-list li i{color:var(--teal);font-size:.9rem;margin-top:2px;flex-shrink:0}
+.pdp-features-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.pdp-features-list li{display:flex;align-items:flex-start;gap:9px;font-size:.86rem;line-height:1.38;color:#334155;padding-bottom:8px;border-bottom:1px dashed rgba(15,23,42,.06)}
+.pdp-features-list li:last-child{padding-bottom:0;border-bottom:0}
+.pdp-features-list li i{color:var(--teal);font-size:.9rem;margin-top:3px;flex-shrink:0}
+.pdp-feature-body{flex:1;min-width:0}
+.pdp-feature-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pdp-feature-title{font-weight:600;color:var(--ink)}
+.pdp-feature-detail{display:block;font-size:.76rem;color:#64748b;margin-top:2px;line-height:1.35}
+.pdp-feature-badge{font-size:.71rem;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.pdp-feature-badge.is-free{background:rgba(31,158,134,.12);color:var(--teal)}
+.pdp-feature-badge.is-price{background:rgba(224,163,62,.16);color:var(--gold-2)}
 
 .pdp-chip-selector{margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px}
 .pdp-chip-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.86rem;font-weight:700;color:var(--ink);margin-bottom:10px}

@@ -1053,4 +1053,66 @@ class FluxoDaLojaTest extends TestCase
         $this->assertCount(1, (array) $item->pacotes_alertas);
         $this->assertSame('Alertas WhatsApp + SMS', $item->pacotes_alertas[0]['nome']);
     }
+
+    public function test_admin_cadastra_edita_deleta_e_configura_valores_de_recursos_individualmente_por_produto(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'ativo',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.catalogo.produtos.update', $this->produto), [
+                'nome' => $this->produto->nome,
+                'preco' => '299,00',
+                'mensalidade' => '49,90',
+                'recursos_estruturado' => '1',
+                'recursos_itens' => [
+                    [
+                        'titulo' => 'Instalação VIP em domicílio',
+                        'detalhe' => 'Técnico credenciado na sua região',
+                        'tipo_valor' => 'unico',
+                        'valor' => '120,00',
+                        'ativo' => '1',
+                    ],
+                    [
+                        'titulo' => 'Aplicativo Golden 24h',
+                        'detalhe' => 'Android e iOS',
+                        'tipo_valor' => 'incluso',
+                        'valor' => '',
+                        'ativo' => '1',
+                    ],
+                    [
+                        'titulo' => 'Recurso Inativo Oculto',
+                        'detalhe' => 'Não deve aparecer na loja',
+                        'tipo_valor' => 'mensal',
+                        'valor' => '19,90',
+                    ],
+                ],
+                'estoque' => 10,
+                'ativo' => '1',
+            ])
+            ->assertRedirect(route('admin.catalogo.produtos.index'));
+
+        $this->produto->refresh();
+        $todos = $this->produto->recursosEstruturados(false);
+        $ativos = $this->produto->recursosEstruturados(true);
+
+        $this->assertCount(3, $todos);
+        $this->assertCount(2, $ativos);
+        $this->assertSame(12000, $ativos[0]['valor_cents']);
+        $this->assertSame('unico', $ativos[0]['tipo_valor']);
+        $this->assertSame('incluso', $ativos[1]['tipo_valor']);
+
+        Cache::flush();
+
+        $this->get(route('site.loja.produto', $this->produto->slug))
+            ->assertOk()
+            ->assertSee('Instalação VIP em domicílio')
+            ->assertSee('Técnico credenciado na sua região')
+            ->assertSee('R$ 120,00')
+            ->assertSee('Aplicativo Golden 24h')
+            ->assertSee('Incluso')
+            ->assertDontSee('Recurso Inativo Oculto');
+    }
 }

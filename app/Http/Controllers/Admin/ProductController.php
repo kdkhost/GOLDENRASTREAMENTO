@@ -202,6 +202,12 @@ class ProductController extends Controller
             'anatel_homologado' => ['nullable', 'string', 'max:64'],
             'recursos' => ['nullable', 'array'],
             'recursos.*' => ['string', 'max:64'],
+            'recursos_itens' => ['nullable', 'array'],
+            'recursos_itens.*.titulo' => ['nullable', 'string', 'max:160'],
+            'recursos_itens.*.detalhe' => ['nullable', 'string', 'max:255'],
+            'recursos_itens.*.tipo_valor' => ['nullable', 'string', 'in:incluso,mensal,unico,sem_valor'],
+            'recursos_itens.*.valor' => ['nullable'],
+            'recursos_itens.*.ativo' => ['nullable', 'boolean'],
             'pacotes_alertas' => ['nullable', 'array'],
             'pacotes_alertas.*.id' => ['nullable', 'string', 'max:64'],
             'pacotes_alertas.*.nome' => ['nullable', 'string', 'max:120'],
@@ -344,6 +350,39 @@ class ProductController extends Controller
             }
         }
 
+        $recursosProcessados = null;
+        if ($request->boolean('recursos_estruturado') || $request->has('recursos_itens')) {
+            $listaRecursos = [];
+            foreach ((array) $request->input('recursos_itens', []) as $rec) {
+                if (! is_array($rec)) {
+                    continue;
+                }
+                $tituloRec = trim((string) ($rec['titulo'] ?? ''));
+                if ($tituloRec === '') {
+                    continue;
+                }
+                $tipoValor = (string) ($rec['tipo_valor'] ?? 'incluso');
+                if (! in_array($tipoValor, ['incluso', 'mensal', 'unico', 'sem_valor'], true)) {
+                    $tipoValor = 'incluso';
+                }
+                $valNormRec = $this->normalizarPreco($rec['valor'] ?? null);
+                $valorCentsRec = ($valNormRec !== null && $valNormRec > 0 && in_array($tipoValor, ['mensal', 'unico'], true))
+                    ? $this->paraCentavos($valNormRec)
+                    : 0;
+
+                $listaRecursos[] = [
+                    'titulo' => $tituloRec,
+                    'detalhe' => trim((string) ($rec['detalhe'] ?? '')),
+                    'tipo_valor' => $tipoValor,
+                    'valor_cents' => $valorCentsRec,
+                    'ativo' => ! empty($rec['ativo']),
+                ];
+            }
+            $recursosProcessados = ! empty($listaRecursos) ? $listaRecursos : null;
+        } elseif (! empty($data['recursos'])) {
+            $recursosProcessados = array_values(array_filter((array) $data['recursos']));
+        }
+
         return [
             'nome' => trim($data['nome']),
             'category_id' => $data['category_id'] ?: null,
@@ -364,7 +403,7 @@ class ProductController extends Controller
             'chip_padrao' => ! empty($data['chip_padrao']) ? $data['chip_padrao'] : 'algar',
             'garantia' => ! empty($data['garantia']) ? trim($data['garantia']) : null,
             'anatel_homologado' => ! empty($data['anatel_homologado']) ? trim($data['anatel_homologado']) : null,
-            'recursos' => ! empty($data['recursos']) ? array_values(array_filter((array) $data['recursos'])) : null,
+            'recursos' => $recursosProcessados,
             'pacotes_alertas' => ! empty($pacotesAlertas) ? $pacotesAlertas : null,
             'peso_gramas' => isset($data['peso_gramas']) && $data['peso_gramas'] !== '' ? (int) $data['peso_gramas'] : null,
             'comprimento_cm' => isset($data['comprimento_cm']) && $data['comprimento_cm'] !== '' ? (int) $data['comprimento_cm'] : null,

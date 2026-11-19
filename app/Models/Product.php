@@ -184,6 +184,67 @@ class Product extends Model
     }
 
     /**
+     * Normaliza os recursos e benefícios do produto (compatível com chaves legadas e itens estruturados).
+     *
+     * @return array<int, array{titulo: string, detalhe: string, valor_cents: int, tipo_valor: string, ativo: bool}>
+     */
+    public function recursosEstruturados(bool $apenasAtivos = false): array
+    {
+        $dicionario = static::recursosDisponiveis();
+        $bruto = (array) ($this->recursos ?? []);
+        $itens = [];
+
+        foreach ($bruto as $entry) {
+            if (is_string($entry)) {
+                $chave = trim($entry);
+                if ($chave === '') {
+                    continue;
+                }
+                $itens[] = [
+                    'titulo' => $dicionario[$chave] ?? $chave,
+                    'detalhe' => '',
+                    'valor_cents' => 0,
+                    'tipo_valor' => 'incluso',
+                    'ativo' => true,
+                ];
+
+                continue;
+            }
+
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $titulo = trim((string) ($entry['titulo'] ?? ''));
+            if ($titulo === '') {
+                continue;
+            }
+
+            $ativo = array_key_exists('ativo', $entry) ? (bool) $entry['ativo'] : true;
+            if ($apenasAtivos && ! $ativo) {
+                continue;
+            }
+
+            $tipoValor = (string) ($entry['tipo_valor'] ?? 'incluso');
+            if (! in_array($tipoValor, ['incluso', 'mensal', 'unico', 'sem_valor'], true)) {
+                $tipoValor = 'incluso';
+            }
+
+            $valorCents = max(0, (int) ($entry['valor_cents'] ?? 0));
+
+            $itens[] = [
+                'titulo' => $titulo,
+                'detalhe' => trim((string) ($entry['detalhe'] ?? '')),
+                'valor_cents' => $valorCents,
+                'tipo_valor' => $tipoValor,
+                'ativo' => $ativo,
+            ];
+        }
+
+        return $itens;
+    }
+
+    /**
      * Retorna os pacotes adicionais de alertas ativos configurados neste produto.
      *
      * @return array<int, array{id: string, nome: string, servicos: array<int, string>, valor_cents: int, valor_formatado: string, ativo: bool}>
@@ -394,6 +455,7 @@ class Product extends Model
                     'garantia' => $p->garantia,
                     'anatel_homologado' => $p->anatel_homologado,
                     'recursos' => (array) ($p->recursos ?? []),
+                    'recursos_itens' => $p->recursosEstruturados(true),
                     'pacotes_alertas' => $p->pacotesAlertasAtivos(),
                     'peso_gramas' => $p->peso_gramas,
                     'comprimento_cm' => $p->comprimento_cm,
