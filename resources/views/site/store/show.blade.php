@@ -950,7 +950,6 @@ document.addEventListener('DOMContentLoaded',function(){
 
   thumbs.forEach(function(btn, idx){
     btn.addEventListener('click', function(){ setGalleryIndex(idx); });
-    btn.addEventListener('mouseenter', function(){ setGalleryIndex(idx); });
   });
   if(prevBtn){
     prevBtn.addEventListener('click', function(e){ e.stopPropagation(); setGalleryIndex(curIdx - 1); });
